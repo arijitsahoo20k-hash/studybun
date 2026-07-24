@@ -19,7 +19,7 @@ const MODELS_TO_TRY = CONFIGURED_MODEL
   ? [CONFIGURED_MODEL, ...FALLBACK_MODELS.filter((m) => m !== CONFIGURED_MODEL)]
   : FALLBACK_MODELS;
 
-function buildPrompt(stats) {
+function buildInsightsPrompt(stats) {
   return `You are the analysis engine inside StudyBun, a cozy productivity app for a JEE (Indian engineering entrance exam) aspirant.
 Analyze ONLY the real data below. Never invent numbers. Never give generic motivational quotes — every sentence must reference
 something specific from the data. If a section has no relevant data, say so plainly instead of guessing.
@@ -47,14 +47,14 @@ Return ONLY valid JSON (no markdown fences) matching this exact shape:
 }`;
 }
 
-async function callModel(model, apiKey, stats) {
+async function callModel(model, apiKey, prompt) {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: buildPrompt(stats) }] }],
+        contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
       }),
     }
@@ -78,6 +78,28 @@ async function callModel(model, apiKey, stats) {
   }
 }
 
+/** Tries each model in MODELS_TO_TRY, only moving on when a model itself is unavailable. */
+async function runWithFallback(prompt) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey || apiKey.includes("YOUR-GEMINI")) {
+    throw new Error("Missing VITE_GEMINI_API_KEY. Add your Gemini API key to .env to enable AI features.");
+  }
+
+  let lastError;
+  for (const model of MODELS_TO_TRY) {
+    try {
+      return await callModel(model, apiKey, prompt);
+    } catch (err) {
+      lastError = err;
+      // Only fall through to the next model if this one isn't available/found.
+      // Any other error (bad key, quota, malformed response) should surface immediately.
+      if (err.status === 404 || err.status === 400) continue;
+      throw err;
+    }
+  }
+  throw lastError;
+}
+
 /**
  * Calls Gemini with the user's real aggregated stats. Not locked to one model
  * version — set VITE_GEMINI_MODEL in .env to pin a specific one (e.g.
@@ -89,22 +111,33 @@ async function callModel(model, apiKey, stats) {
  * never on a timer, on mount, or in the background.
  */
 export async function generateAIInsights(stats) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey || apiKey.includes("YOUR-GEMINI")) {
-    throw new Error("Missing VITE_GEMINI_API_KEY. Add your Gemini API key to .env to enable AI Insights.");
-  }
+  return runWithFallback(buildInsightsPrompt(stats));
+}
 
-  let lastError;
-  for (const model of MODELS_TO_TRY) {
-    try {
-      return await callModel(model, apiKey, stats);
-    } catch (err) {
-      lastError = err;
-      // Only fall through to the next model if this one isn't available/found.
-      // Any other error (bad key, quota, malformed response) should surface immediately.
-      if (err.status === 404 || err.status === 400) continue;
-      throw err;
-    }
-  }
-  throw lastError;
+function buildRevisionPrompt(revisions) {
+  return `You are the revision-planning engine inside StudyBun, a cozy productivity app for a JEE (Indian engineering entrance exam) aspirant.
+You are given ONLY this user's revision history below — no other study data. Base every suggestion strictly on this list: which
+chapters have been revised, how many times, how recently, and which are overdue or never revised. Never invent chapters that
+aren't in this data. If the list is too sparse to say anything meaningful, say so plainly instead of guessing.
+
+REVISION HISTORY (each entry: subject, chapter, revision_number, due_date, status):
+${JSON.stringify(revisions, null, 2)}
+
+Return ONLY valid JSON (no markdown fences) matching this exact shape:
+{
+  "summary": "1-2 sentence read on this user's revision pattern (e.g. neglected subjects, overdue clusters, good habits)",
+  "suggested_chapters": [
+    { "subject": "subject name", "chapter": "chapter name", "reason": "short reason grounded in this specific history (e.g. 'overdue by 5 days', 'never revised a 2nd time', 'last revised 12 days ago')" }
+  ]
+}
+Order suggested_chapters by urgency, most urgent first. Include at most 8 chapters.`;
+}
+
+/**
+ * Looks exclusively at the user's revision history (nothing else — no sessions,
+ * questions, mocks, or backlog) and suggests which chapters to revise next.
+ * Must only be invoked from a user click — never on a timer, on mount, or in the background.
+ */
+export async function generateRevisionSuggestions(revisions) {
+  return runWithFallback(buildRevisionPrompt(revisions));
 }
