@@ -59,7 +59,7 @@ export default function App() {
   const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date" });
   const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true });
   const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date" });
-  const achievementsQ = useRealtimeTable("achievements");
+  const achievementsQ = useRealtimeTable("achievements", { orderBy: "unlocked_at" });
 
   const [page, setPage] = useState("dashboard");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
