@@ -1,5 +1,6 @@
 import React from "react";
-import { Card } from "../components/ui";
+import { Palette } from "lucide-react";
+import { Card, SectionTitle, ThemePicker } from "../components/ui";
 import Mascot from "../components/Mascot";
 
 export default function ProfilePage(p) {
@@ -19,6 +20,10 @@ export default function ProfilePage(p) {
         <Card><div className="sb-mini-stat"><div className="sb-mini-num">{p.totalQuestions}</div><div className="sb-muted">Questions solved</div></div></Card>
         <Card><div className="sb-mini-stat"><div className="sb-mini-num">{p.unlockedAchievements.length}</div><div className="sb-muted">Badges earned</div></div></Card>
       </div>
+      <Card>
+        <SectionTitle icon={Palette}>Theme</SectionTitle>
+        <ThemePicker value={p.profile.theme} onChange={(name) => p.saveProfile({ theme: name })} />
+      </Card>
     </div>
   );
 }
