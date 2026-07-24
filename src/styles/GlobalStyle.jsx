@@ -272,6 +272,19 @@ export default function GlobalStyle() {
 
       .sb-bottom-nav { display: none; }
 
+      /* ===== Buddy guide (persistent mascot companion, all pages) ===== */
+      .sb-buddy { position: fixed; bottom: 20px; right: 20px; z-index: 65; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+      .sb-buddy-bubble { position: relative; max-width: 260px; background: var(--card); border: 2.5px solid var(--outline); border-radius: 18px; padding: 14px 30px 12px 16px; box-shadow: 4px 4px 0 var(--outline); animation: sb-pop .2s ease; }
+      .sb-buddy-text { font-size: 12.5px; font-weight: 700; color: var(--ink); margin: 0; line-height: 1.45; }
+      .sb-buddy-close { position: absolute; top: 8px; right: 8px; background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px; display: flex; }
+      .sb-buddy-close:hover { color: var(--ink); }
+      .sb-buddy-action { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; background: var(--soft); border: 1.5px solid var(--outline); border-radius: 999px; padding: 5px 10px; font-size: 11.5px; font-weight: 800; color: var(--ink); cursor: pointer; transition: transform .12s ease; }
+      .sb-buddy-action:hover { transform: translateY(-1px); }
+      .sb-buddy-avatar { position: relative; background: var(--card); border: 2.5px solid var(--outline); border-radius: 50%; width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 3px 3px 0 var(--outline); flex-shrink: 0; padding: 0; transition: transform .12s ease, box-shadow .12s ease; }
+      .sb-buddy-avatar:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--outline); }
+      .sb-buddy-dot { position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--card); animation: sb-buddy-pulse 1.4s ease-in-out infinite; }
+      @keyframes sb-buddy-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: .65; } }
+
       /* ===== theme picker (compact chips, used in sidebar footer) ===== */
       .sb-theme-picker { display: flex; flex-wrap: wrap; gap: 8px; }
       .sb-theme-picker.compact { gap: 6px; }
@@ -318,6 +331,8 @@ export default function GlobalStyle() {
         .sb-bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 2.5px solid var(--outline); padding: 8px 4px; justify-content: space-around; z-index: 50; }
         .sb-bottom-item { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; color: var(--muted); font-size: 10px; font-weight: 800; }
         .sb-bottom-item.active { color: var(--outline); }
+        .sb-buddy { bottom: 78px; right: 14px; }
+        .sb-buddy-bubble { max-width: 210px; }
       }
       @media (max-width: 560px) {
         .sb-chapter-card-open { grid-column: span 1; }
