@@ -11,7 +11,7 @@ import { isSupabaseConfigured } from "./lib/supabaseClient";
 
 import Mascot from "./components/Mascot";
 import PWAPrompt from "./components/PWAPrompt";
-import { Confetti, LoadingScreen, DecorLayer, ThemePicker } from "./components/ui";
+import { Confetti, LoadingScreen, DecorLayer } from "./components/ui";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import StudyTracker from "./pages/StudyTracker";
@@ -307,10 +307,6 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="sb-sidebar-footer">
-          <div className="sb-sidebar-footer-label">Theme</div>
-          <ThemePicker compact value={profile.theme} onChange={(name) => saveProfile({ theme: name })} />
-        </div>
       </aside>
 
       <button className="sb-mobile-toggle" onClick={() => setMobileNavOpen((v) => !v)}><Menu size={20} /></button>
