@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { FolderClock, RotateCcw, Clock3, CheckCircle2, CalendarPlus, Trash2 } from "lucide-react";
+import { FolderClock, RotateCcw, Clock3, CheckCircle2, CalendarPlus, Trash2, Sparkles, RefreshCw, AlertTriangle } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
+import { generateRevisionSuggestions } from "../services/gemini";
 
 const dayLabel = (d) => {
   const today = new Date().toISOString().slice(0, 10);
@@ -9,6 +10,84 @@ const dayLabel = (d) => {
   if (d === y) return "yesterday";
   return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
+
+function AIRevisionRecommendations(p) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+
+  const hasHistory = p.revisions.length > 0;
+
+  const generate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Send ONLY revision history — nothing else — so suggestions are based
+      // exclusively on this user's revision pattern.
+      const slim = p.revisions.map((r) => ({
+        subject: r.subject,
+        chapter: r.chapter,
+        revision_number: r.revision_number,
+        due_date: r.due_date,
+        status: r.status,
+      }));
+      const output = await generateRevisionSuggestions(slim);
+      setResult(output);
+    } catch (e) {
+      setError(e.message || "Something went wrong generating suggestions.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <SectionTitle icon={Sparkles}>AI revision suggestions</SectionTitle>
+
+      {!hasHistory && !result ? (
+        <div className="sb-empty">
+          <p className="sb-empty-text">No revision history yet.</p>
+          <p className="sb-empty-sub">Plan and complete a few revisions first — suggestions are based only on your revision history.</p>
+        </div>
+      ) : (
+        <>
+          <Btn onClick={generate} disabled={loading || !hasHistory}>
+            {loading ? <><RefreshCw size={16} className="sb-spin" /> Analyzing your revisions...</> : <><Sparkles size={16} /> {result ? "Regenerate" : "Suggest chapters to revise"}</>}
+          </Btn>
+          <div className="sb-muted" style={{ marginTop: 8, fontSize: 12 }}>
+            Looks only at your revision history — nothing else — and only runs when you click.
+          </div>
+
+          {error && (
+            <div style={{ marginTop: 12 }}>
+              <SectionTitle icon={AlertTriangle}>Couldn't generate suggestions</SectionTitle>
+              <p className="sb-muted">{error}</p>
+            </div>
+          )}
+
+          {result && (
+            <div style={{ marginTop: 14 }}>
+              {result.summary && <p style={{ marginBottom: 12 }}>{result.summary}</p>}
+              {(result.suggested_chapters || []).map((c, i) => (
+                <div key={i} className="sb-revision-row">
+                  <div><b>{c.chapter}</b><div className="sb-muted">{c.subject}{c.reason ? ` · ${c.reason}` : ""}</div></div>
+                  <div className="sb-revision-actions">
+                    <Btn
+                      variant="soft"
+                      onClick={() => p.addRevision({ subject: c.subject, chapter: c.chapter, due_date: new Date().toISOString().slice(0, 10), revision_number: 1 })}
+                    >
+                      <CalendarPlus size={16} /> Plan it
+                    </Btn>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </Card>
+  );
+}
 
 export default function RevisionPage(p) {
   const subjects = [...new Set(p.allChapters.map((c) => c.subject))];
@@ -76,6 +155,8 @@ export default function RevisionPage(p) {
         </div>
         <Btn onClick={handlePlan} style={{ marginTop: 10 }}><CalendarPlus size={16} /> Add to plan</Btn>
       </Card>
+
+      <AIRevisionRecommendations {...p} />
 
       <Group title="Overdue" items={p.overdueRevisions} icon={FolderClock} showComplete />
       <Group title="Due today" items={p.dueRevisions} icon={RotateCcw} showComplete />
