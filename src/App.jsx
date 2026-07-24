@@ -10,6 +10,8 @@ import { useDeviceRow, useRealtimeTable, useChapterProgress } from "./hooks/useR
 import { isSupabaseConfigured } from "./lib/supabaseClient";
 
 import Mascot from "./components/Mascot";
+import BuddyGuide from "./components/BuddyGuide";
+import { reactionMood } from "./data/mascots";
 import PWAPrompt from "./components/PWAPrompt";
 import { Confetti, LoadingScreen, DecorLayer } from "./components/ui";
 import Onboarding from "./pages/Onboarding";
@@ -139,6 +141,13 @@ export default function App() {
   const dueRevisions = revisions.filter((r) => r.status === "Pending" && r.due_date <= todayStr());
   const upcomingRevisions = revisions.filter((r) => r.status === "Pending" && r.due_date > todayStr());
   const overdueRevisions = revisions.filter((r) => r.status === "Pending" && r.due_date < todayStr());
+
+  const buddyMood = reactionMood({
+    finishedGoal: todayHours >= (profile?.daily_goal || 6),
+    streak: streak >= 3,
+    revisionOverdue: overdueRevisions.length > 0,
+    noStudyToday: todayHours === 0,
+  });
 
   const achievementDefs = [
     { id: "first_hop", label: "First Hop", emoji: "🐰", cond: sessions.length >= 1 },
@@ -344,6 +353,8 @@ export default function App() {
           </button>
         ))}
       </nav>
+
+      <BuddyGuide {...pageProps} page={page} mood={buddyMood} hopping={hopping} />
     </div>
   );
 }
