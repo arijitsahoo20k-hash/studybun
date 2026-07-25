@@ -149,6 +149,55 @@ export default function AuthOnboardStyle() {
         50% { transform: scale(1.09); opacity: 0; }
       }
 
+      /* ---------- auth: "What's StudyBun?" info panel (pages/auth/info/) ---------- */
+      .sb-info-panel { text-align: left; display: flex; flex-direction: column; gap: 20px; cursor: default; }
+      .sb-info-panel::after { display: none; } /* skip the corner-circle decor on this card — too busy alongside the feature grid */
+
+      .sb-info-hero { display: flex; align-items: center; gap: 14px; }
+      .sb-info-title { font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--ink); }
+      .sb-info-sub { color: var(--muted); font-size: 12px; font-weight: 700; margin-top: 4px; line-height: 1.5; }
+
+      .sb-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .sb-info-feature {
+        display: flex; flex-direction: column; gap: 6px; background: var(--card); border: 2px solid var(--outline);
+        border-radius: 18px; padding: 12px 12px 11px; box-shadow: 2px 2px 0 var(--outline);
+        transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease;
+        animation: sb-flow-bubble-in .4s cubic-bezier(.22,1,.36,1) both;
+      }
+      .sb-info-feature:hover { transform: translateY(-3px) rotate(-1deg); box-shadow: 3px 3px 0 var(--outline); }
+      .sb-info-feature-icon {
+        width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--outline);
+        display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+      }
+      .sb-info-feature-label { font-weight: 800; font-size: 12px; color: var(--ink); }
+      .sb-info-feature-blurb { font-weight: 600; font-size: 10.5px; color: var(--muted); line-height: 1.4; }
+
+      .sb-info-note { display: flex; gap: 11px; align-items: flex-start; background: var(--soft); border: 2px dashed var(--outline); border-radius: 20px; padding: 13px 15px; }
+      .sb-info-note-icon {
+        width: 28px; height: 28px; border-radius: 999px; background: var(--card); border: 2px solid var(--outline);
+        display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0;
+      }
+      .sb-info-note-title { font-weight: 800; font-size: 12.5px; color: var(--ink); margin-bottom: 6px; }
+      .sb-info-note-row { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+      .sb-info-faq { display: flex; flex-direction: column; gap: 8px; }
+      .sb-info-faq-title { font-family: var(--font-display); font-weight: 800; font-size: 14px; color: var(--ink); margin-bottom: 2px; }
+      .sb-info-faq-item { border: 2px solid var(--outline); border-radius: 16px; background: var(--card); overflow: hidden; box-shadow: 2px 2px 0 var(--outline); transition: box-shadow .15s ease, transform .15s ease; }
+      .sb-info-faq-item.open { box-shadow: 3px 3px 0 var(--outline); }
+      .sb-info-faq-q {
+        width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left;
+        background: none; border: none; cursor: pointer; padding: 11px 14px; font-weight: 800; font-size: 12px; color: var(--ink); font-family: inherit;
+      }
+      .sb-info-faq-item.open .sb-info-faq-q { color: var(--accent); background: var(--soft); }
+      .sb-info-faq-chevron { transition: transform .2s ease; color: var(--muted); flex-shrink: 0; }
+      .sb-info-faq-item.open .sb-info-faq-chevron { transform: rotate(180deg); color: var(--accent); }
+      .sb-info-faq-a { padding: 10px 14px 13px; font-size: 11.5px; font-weight: 600; color: var(--muted); line-height: 1.55; animation: sb-flow-step-in .18s ease; }
+      .sb-info-faq-a p { margin: 0 0 9px; }
+
+      @media (max-width: 480px) {
+        .sb-info-grid { grid-template-columns: 1fr; }
+      }
+
       /* ---------- auth: sliding segmented mode toggle ---------- */
       .sb-au-toggle { position: relative; display: grid; grid-template-columns: 1fr 1fr; width: 100%; max-width: 260px; margin: 0 auto 20px; padding: 4px; background: var(--soft); border: 2px solid var(--outline); border-radius: 999px; }
       .sb-au-toggle-pill { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); background: var(--card); border: 2px solid var(--outline); border-radius: 999px; box-shadow: 2px 2px 0 var(--outline); transition: transform .28s cubic-bezier(.34,1.56,.64,1); z-index: 0; }
@@ -176,7 +225,7 @@ export default function AuthOnboardStyle() {
 
       /* ---------- auth info side panel polish (keeps prior structure) ---------- */
       .sb-flow-shell { display: flex; gap: 26px; align-items: flex-start; justify-content: center; flex-wrap: wrap; width: 100%; }
-      .sb-flow-shell .sb-flow-card, .sb-flow-shell .sb-auth-info { max-width: 440px; flex: 1 1 380px; }
+      .sb-flow-shell .sb-flow-card { max-width: 440px; flex: 1 1 380px; }
 
       @media (max-width: 900px) {
         .sb-flow-card { padding: 26px 20px 22px; border-radius: 24px; }

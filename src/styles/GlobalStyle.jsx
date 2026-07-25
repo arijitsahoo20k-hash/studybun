@@ -505,59 +505,12 @@ export default function GlobalStyle() {
       .sb-onboard { display: flex; align-items: center; justify-content: center; padding: 20px; }
 
       /* ===== auth page: two-column shell (login card + kawaii info panel) =====
-         Shell layout (.sb-flow-shell) lives in AuthOnboardStyle.jsx; this file
-         still owns the info-panel content styling below since AuthInfo.jsx is
-         shared, general-purpose UI rather than part of the auth/onboard redesign. */
+         Shell layout AND all info-panel styling now live in
+         styles/AuthOnboardStyle.jsx alongside pages/auth/info/ — this file
+         only keeps the page-level alignment override below. */
       .sb-auth-page { align-items: flex-start !important; padding: 32px 20px !important; }
 
-      .sb-auth-info {
-        background: var(--card); border: 2.5px solid var(--outline); border-radius: 28px; box-shadow: 6px 6px 0 var(--outline);
-        padding: 26px; width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 18px; text-align: left;
-      }
-      .sb-auth-info-hero { display: flex; align-items: center; gap: 12px; }
-      .sb-auth-info-title { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--ink); }
-      .sb-auth-info-sub { color: var(--muted); font-size: 12px; font-weight: 700; margin-top: 3px; line-height: 1.45; }
-
-      .sb-auth-features { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .sb-auth-feature {
-        display: flex; gap: 8px; align-items: flex-start; background: var(--soft); border: 1.5px solid var(--outline);
-        border-radius: 16px; padding: 9px 10px; transition: transform .15s cubic-bezier(.34,1.56,.64,1);
-      }
-      .sb-auth-feature:hover { transform: translateY(-2px) rotate(-1deg); }
-      .sb-auth-feature-emoji { font-size: 16px; line-height: 1.3; flex-shrink: 0; }
-      .sb-auth-feature-label { font-weight: 800; font-size: 11.5px; color: var(--ink); }
-      .sb-auth-feature-blurb { font-weight: 600; font-size: 10.5px; color: var(--muted); line-height: 1.35; margin-top: 1px; }
-
-      .sb-auth-data-note {
-        display: flex; gap: 10px; align-items: flex-start; background: var(--soft); border: 2px dashed var(--outline);
-        border-radius: 18px; padding: 12px 14px;
-      }
-      .sb-auth-data-note-icon {
-        width: 26px; height: 26px; border-radius: 999px; background: var(--card); border: 2px solid var(--outline);
-        display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0;
-      }
-      .sb-auth-data-note-title { font-weight: 800; font-size: 12px; color: var(--ink); margin-bottom: 5px; }
-      .sb-auth-data-note-row { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 10.5px; color: var(--muted); margin-top: 3px; }
-
-      .sb-auth-faq { display: flex; flex-direction: column; gap: 6px; }
-      .sb-auth-faq-title { font-family: var(--font-display); font-weight: 800; font-size: 13.5px; color: var(--ink); margin-bottom: 2px; }
-      .sb-faq-item { border: 1.5px solid var(--outline); border-radius: 14px; background: var(--card); overflow: hidden; }
-      .sb-faq-q {
-        width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left;
-        background: none; border: none; cursor: pointer; padding: 9px 12px; font-weight: 800; font-size: 11.5px; color: var(--ink); font-family: inherit;
-      }
-      .sb-faq-chevron { transition: transform .2s ease; color: var(--muted); flex-shrink: 0; }
-      .sb-faq-item.open .sb-faq-chevron { transform: rotate(180deg); color: var(--accent); }
-      .sb-faq-item.open .sb-faq-q { color: var(--accent); }
-      .sb-faq-a { padding: 0 12px 11px; font-size: 11.5px; font-weight: 600; color: var(--muted); line-height: 1.5; animation: sb-pop .18s ease; }
-      .sb-faq-a p { margin: 0 0 9px; }
-
-      @media (max-width: 480px) {
-        .sb-auth-features { grid-template-columns: 1fr; }
-      }
-
       /* ===== auth page delight: entrances, loops, and the scratch card ===== */
-      .sb-flow-shell .sb-auth-info { animation: sb-auth-rise .5s cubic-bezier(.22,1,.36,1) .1s both; }
       @keyframes sb-auth-rise {
         0% { opacity: 0; transform: translateY(16px) scale(.97); }
         100% { opacity: 1; transform: translateY(0) scale(1); }
@@ -579,8 +532,6 @@ export default function GlobalStyle() {
         92% { transform: rotate(10deg) scale(1.08); }
         96% { transform: rotate(-4deg) scale(1); }
       }
-
-      .sb-auth-feature { animation: sb-auth-rise .45s cubic-bezier(.22,1,.36,1) both; }
 
       /* scratch-and-tear reveal card, tucked inside the "how do I reach you" FAQ */
       .sb-scratch-wrap {

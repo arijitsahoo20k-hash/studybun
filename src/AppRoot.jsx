@@ -5,7 +5,7 @@ import { THEMES, themeVars } from "./data/themes";
 import { DecorLayer, LoadingScreen } from "./components/ui";
 import GlobalStyle from "./styles/GlobalStyle";
 import Auth from "./pages/auth";
-import AuthInfo from "./components/AuthInfo";
+import AuthInfo from "./pages/auth/info";
 import App from "./App";
 
 const DEFAULT_THEME = THEMES["Sakura Bloom"];
