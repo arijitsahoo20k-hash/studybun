@@ -5,6 +5,7 @@ import { THEMES, themeVars } from "./data/themes";
 import { DecorLayer, LoadingScreen } from "./components/ui";
 import GlobalStyle from "./styles/GlobalStyle";
 import Auth from "./pages/Auth";
+import AuthInfo from "./components/AuthInfo";
 import App from "./App";
 
 const DEFAULT_THEME = THEMES["Sakura Bloom"];
@@ -29,10 +30,13 @@ function Gate() {
 
   if (!user) {
     return (
-      <div className="sb-onboard" style={cssVars}>
+      <div className="sb-onboard sb-auth-page" style={cssVars}>
         <GlobalStyle />
         <DecorLayer theme={DEFAULT_THEME} />
-        <Auth />
+        <div className="sb-auth-shell">
+          <Auth />
+          <AuthInfo />
+        </div>
       </div>
     );
   }

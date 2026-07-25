@@ -55,6 +55,20 @@ export const THEMES = {
     mascotFill: "#E8C79E", mascotInner: "#F8ECD9", mascotBlush: "#E39A8C",
     dot: "rgba(90,58,40,0.06)", emoji: "🧸", stitched: true,
   },
+  "Panda Paper": {
+    bg: "#F6F4EE", card: "#FFFFFC", outline: "#2E2C2A", ink: "#242220", muted: "#8D8983",
+    accent: "#333130", accent2: "#F0AFC0", soft: "#EAE7DE",
+    palette: ["#D9D5C9", "#BDB8A9", "#333130", "#F0AFC0", "#9A968C", "#EAE7DE"],
+    mascotFill: "#E9E6DD", mascotInner: "#FFFFFC", mascotBlush: "#F0AFC0",
+    dot: "rgba(46,44,42,0.055)", emoji: "🐼",
+  },
+  "Candlelit Scholar": {
+    bg: "#FBF3E2", card: "#FFFAEE", outline: "#5C3A28", ink: "#472C1D", muted: "#9C8067",
+    accent: "#D98A3D", accent2: "#8B3A3A", soft: "#F3DFAE",
+    palette: ["#F6C97A", "#D98A3D", "#8B3A3A", "#C9B38B", "#E8D9B5", "#F3DFAE"],
+    mascotFill: "#F0DFC0", mascotInner: "#FFF6E4", mascotBlush: "#E8956B",
+    dot: "rgba(92,58,40,0.06)", emoji: "🕯️", stitched: true,
+  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the

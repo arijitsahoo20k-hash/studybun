@@ -83,65 +83,103 @@ function DataBackupCard({ exportBackup, importBackup }) {
   );
 }
 
+const TABS = [
+  { id: "profile", emoji: "👤", label: "Profile & account", sub: "You, your goals" },
+  { id: "look", emoji: "🎀", label: "Mascot & theme", sub: "Make it yours" },
+  { id: "buddy", emoji: "🧠", label: "AI study buddy", sub: "Smart chat setup" },
+  { id: "data", emoji: "💾", label: "Data & backup", sub: "Export / import" },
+];
+
 export default function SettingsPage(p) {
   const { profile, saveProfile, exportBackup, importBackup } = p;
   const { user, signOut } = useAuth();
+  const [tab, setTab] = useState("profile");
+
   return (
     <div className="sb-page">
-      {user && (
-        <Card>
-          <SectionTitle icon={UserCircle}>Account</SectionTitle>
-          <div className="sb-form-grid">
-            <div><label>Signed in as</label><input className="sb-input" value={user.email || ""} disabled /></div>
-          </div>
-          <div style={{ marginTop: 14 }}>
-            <Btn variant="ghost" onClick={signOut}><LogOut size={15} style={{ marginRight: 6, verticalAlign: "-2px" }} />Sign out</Btn>
-          </div>
-        </Card>
-      )}
-
-      <Card>
-        <SectionTitle icon={Settings}>Profile</SectionTitle>
-        <div className="sb-form-grid">
-          <div><label>Name</label><input className="sb-input" defaultValue={profile.name} onBlur={(e) => saveProfile({ name: e.target.value })} /></div>
-          <div><label>Daily goal (hours)</label><input type="number" className="sb-input" defaultValue={profile.daily_goal} onBlur={(e) => saveProfile({ daily_goal: +e.target.value })} /></div>
-          <div><label>Exam date</label><input type="date" className="sb-input" defaultValue={profile.exam_date} onChange={(e) => saveProfile({ exam_date: e.target.value })} /></div>
-          <div><label>Target exam</label>
-            <select className="sb-input" value={profile.exam} onChange={(e) => saveProfile({ exam: e.target.value })}>
-              {["JEE Main", "JEE Advanced"].map((x) => <option key={x}>{x}</option>)}
-            </select>
-          </div>
-        </div>
-      </Card>
-
-      <DataBackupCard exportBackup={exportBackup} importBackup={importBackup} />
-
-      <SmartBuddyCard />
-
-      <Card>
-        <SectionTitle icon={Rabbit}>Mascot</SectionTitle>
-        <div className="sb-mascot-grid">
-          {Object.entries(MASCOTS).map(([id, m]) => (
-            <button key={id} className={`sb-mascot-pick ${profile.mascot === id ? "active" : ""}`} onClick={() => saveProfile({ mascot: id })}>
-              <Mascot species={id} mood="happy" size={54} />
-              <span>{m.label}</span>
+      <div className="sb-settings-shell">
+        <nav className="sb-settings-nav">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`sb-settings-nav-item ${tab === t.id ? "active" : ""}`}
+              onClick={() => setTab(t.id)}
+            >
+              <span className="sb-settings-nav-icon">{t.emoji}</span>
+              <span className="sb-settings-nav-text">
+                <span className="sb-settings-nav-label">{t.label}</span>
+                <span className="sb-settings-nav-sub">{t.sub}</span>
+              </span>
             </button>
           ))}
-        </div>
-      </Card>
+        </nav>
 
-      <Card>
-        <SectionTitle icon={Sparkles}>Theme</SectionTitle>
-        <div className="sb-theme-grid">
-          {Object.entries(THEMES).map(([name, val]) => (
-            <button key={name} className={`sb-theme-swatch ${profile.theme === name ? "active" : ""}`}
-              style={{ background: val.soft, borderColor: val.accent }}
-              onClick={() => saveProfile({ theme: name })}>
-              <span style={{ background: val.accent }} className="sb-theme-dot" />{val.emoji} {name}
-            </button>
-          ))}
+        <div className="sb-settings-content" key={tab}>
+          {tab === "profile" && (
+            <>
+              {user && (
+                <Card>
+                  <SectionTitle icon={UserCircle}>Account</SectionTitle>
+                  <div className="sb-form-grid">
+                    <div><label>Signed in as</label><input className="sb-input" value={user.email || ""} disabled /></div>
+                  </div>
+                  <div style={{ marginTop: 14 }}>
+                    <Btn variant="ghost" onClick={signOut}><LogOut size={15} style={{ marginRight: 6, verticalAlign: "-2px" }} />Sign out</Btn>
+                  </div>
+                </Card>
+              )}
+
+              <Card>
+                <SectionTitle icon={Settings}>Profile</SectionTitle>
+                <div className="sb-form-grid">
+                  <div><label>Name</label><input className="sb-input" defaultValue={profile.name} onBlur={(e) => saveProfile({ name: e.target.value })} /></div>
+                  <div><label>Daily goal (hours)</label><input type="number" className="sb-input" defaultValue={profile.daily_goal} onBlur={(e) => saveProfile({ daily_goal: +e.target.value })} /></div>
+                  <div><label>Exam date</label><input type="date" className="sb-input" defaultValue={profile.exam_date} onChange={(e) => saveProfile({ exam_date: e.target.value })} /></div>
+                  <div><label>Target exam</label>
+                    <select className="sb-input" value={profile.exam} onChange={(e) => saveProfile({ exam: e.target.value })}>
+                      {["JEE Main", "JEE Advanced"].map((x) => <option key={x}>{x}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </Card>
+            </>
+          )}
+
+          {tab === "look" && (
+            <>
+              <Card>
+                <SectionTitle icon={Rabbit}>Mascot</SectionTitle>
+                <div className="sb-mascot-grid">
+                  {Object.entries(MASCOTS).map(([id, m]) => (
+                    <button key={id} className={`sb-mascot-pick ${profile.mascot === id ? "active" : ""}`} onClick={() => saveProfile({ mascot: id })}>
+                      <Mascot species={id} mood="happy" size={54} />
+                      <span>{m.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </Card>
+
+              <Card>
+                <SectionTitle icon={Sparkles}>Theme</SectionTitle>
+                <div className="sb-theme-grid">
+                  {Object.entries(THEMES).map(([name, val]) => (
+                    <button key={name} className={`sb-theme-swatch ${profile.theme === name ? "active" : ""}`}
+                      style={{ background: val.soft, borderColor: val.accent }}
+                      onClick={() => saveProfile({ theme: name })}>
+                      <span style={{ background: val.accent }} className="sb-theme-dot" />{val.emoji} {name}
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            </>
+          )}
+
+          {tab === "buddy" && <SmartBuddyCard />}
+
+          {tab === "data" && <DataBackupCard exportBackup={exportBackup} importBackup={importBackup} />}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
