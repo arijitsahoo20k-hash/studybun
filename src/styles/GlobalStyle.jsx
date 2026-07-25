@@ -199,6 +199,10 @@ export default function GlobalStyle() {
       .sb-radio-options { display: flex; flex-wrap: wrap; gap: 6px; }
       .sb-radio-chip { padding: 6px 12px; border-radius: 999px; border: 2px solid var(--outline); background: var(--card); color: var(--ink); font-weight: 700; font-size: 11.5px; cursor: pointer; }
       .sb-radio-chip.active { background: var(--soft); }
+      .sb-radio-chip { display: inline-flex; align-items: center; gap: 4px; }
+      .sb-radio-custom-row { display: flex; gap: 6px; align-items: center; }
+      .sb-radio-custom-row .sb-input { flex: 1; }
+      .sb-radio-error { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #d1495b; margin: 0; }
       .sb-radio-embed-wrap { display: flex; flex-direction: column; gap: 4px; }
       .sb-radio-embed { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; border: 2px solid var(--outline); }
       .sb-radio-hint { font-size: 10.5px; color: var(--muted); text-align: center; }

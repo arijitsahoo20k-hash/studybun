@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
-  Pencil, Settings, Minus, Plus, X, Radio, ExternalLink,
+  Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle,
 } from "lucide-react";
 import { Card, Btn, ProgressBar, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
@@ -9,18 +9,27 @@ import { SYLLABUS } from "../data/syllabus";
 
 const MODE_ORDER = ["Deep Focus", "Pomodoro", "Lecture", "Practice", "Revision"];
 
+// Direct, specific video/livestream IDs — NOT the "live_stream?channel=..."
+// lookup trick. That embed only resolves if the channel happens to have an
+// active broadcast at the exact moment the iframe loads; the moment a
+// channel's stream ends, goes private, or gets taken down (which is exactly
+// what happened to Lofi Girl's main stream), the embed just shows "Video
+// unavailable" with nothing we can detect or recover from client-side.
+// Pinning to a specific, currently-live video id is more reliable, and
+// pairing it with the custom-link box below means a dead preset is never a
+// dead end for the user.
 const RADIO_OPTIONS = [
-  {
-    id: "lofi-girl",
-    label: "Lofi Girl radio",
-    hint: "24/7 lofi hip hop — always live",
-    embed: "https://www.youtube.com/embed/live_stream?channel=UCSJ4gkVC6NrvII8umztf0Ow&autoplay=0",
-  },
   {
     id: "chillhop",
     label: "Chillhop radio",
-    hint: "Jazzy chillhop beats — always live",
-    embed: "https://www.youtube.com/embed/live_stream?channel=UCOxqgCwgOqC2lMqC5PYz_Dg&autoplay=0",
+    hint: "Jazzy chillhop beats — 24/7",
+    videoId: "5yx6BWlEVcY",
+  },
+  {
+    id: "lofi-24-7",
+    label: "Lofi study radio",
+    hint: "24/7 lofi hip hop beats",
+    videoId: "uMntpJdjrbM",
   },
 ];
 
@@ -29,6 +38,32 @@ const RADIO_LINKS = [
   { label: "Piano lofi", query: "piano lofi study radio" },
   { label: "Synthwave radio", query: "synthwave radio 24/7" },
 ];
+
+// Turns pretty much anything a person might paste — a full watch URL, a
+// youtu.be short link, a /live/ or /embed/ link, or just the bare
+// 11-character video id — into a proper embeddable video id.
+function extractYouTubeId(raw) {
+  if (!raw) return null;
+  const input = raw.trim();
+  if (/^[\w-]{11}$/.test(input)) return input; // bare id
+  try {
+    const url = new URL(input);
+    const host = url.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") {
+      const id = url.pathname.split("/").filter(Boolean)[0];
+      return id || null;
+    }
+    if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+      if (url.searchParams.get("v")) return url.searchParams.get("v");
+      const parts = url.pathname.split("/").filter(Boolean);
+      // /live/VIDEOID , /embed/VIDEOID , /shorts/VIDEOID
+      if (["live", "embed", "shorts"].includes(parts[0]) && parts[1]) return parts[1];
+    }
+  } catch {
+    /* not a valid URL — fall through */
+  }
+  return null;
+}
 
 export default function FocusTimer(p) {
   const t = p.focusTimer;
@@ -54,7 +89,25 @@ export default function FocusTimer(p) {
     t.resetForNewSession();
   };
 
-  const activeRadio = RADIO_OPTIONS.find((r) => r.id === t.radioChoice);
+  const [customDraft, setCustomDraft] = useState(t.radioCustomUrl || "");
+  const [customError, setCustomError] = useState(false);
+  useEffect(() => { setCustomDraft(t.radioCustomUrl || ""); }, [t.radioCustomUrl]);
+
+  const activePreset = RADIO_OPTIONS.find((r) => r.id === t.radioChoice);
+  const customVideoId = useMemo(() => extractYouTubeId(t.radioCustomUrl), [t.radioCustomUrl]);
+  const activeVideoId = t.radioChoice === "custom" ? customVideoId : activePreset?.videoId;
+  const activeLabel = t.radioChoice === "custom" ? "Custom radio" : activePreset?.label;
+  const activeEmbedSrc = activeVideoId
+    ? `https://www.youtube.com/embed/${activeVideoId}?autoplay=0&rel=0`
+    : null;
+
+  const saveCustomUrl = () => {
+    const id = extractYouTubeId(customDraft);
+    if (!id) { setCustomError(true); return; }
+    setCustomError(false);
+    t.setRadioCustomUrl(customDraft.trim());
+    t.setRadioChoice("custom");
+  };
 
   return (
     <div className="sb-page">
@@ -117,19 +170,45 @@ export default function FocusTimer(p) {
                   {r.label}
                 </button>
               ))}
+              <button className={`sb-radio-chip ${t.radioChoice === "custom" ? "active" : ""}`} onClick={() => t.setRadioChoice("custom")}>
+                <Link2 size={12} /> Custom link
+              </button>
             </div>
-            {activeRadio && (
+
+            {t.radioChoice === "custom" && (
+              <div className="sb-radio-custom-row">
+                <input
+                  className="sb-input"
+                  placeholder="Paste any YouTube video or live link…"
+                  value={customDraft}
+                  onChange={(e) => { setCustomDraft(e.target.value); setCustomError(false); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") saveCustomUrl(); }}
+                />
+                <Btn variant="soft" onClick={saveCustomUrl}>Use</Btn>
+              </div>
+            )}
+            {t.radioChoice === "custom" && customError && (
+              <p className="sb-radio-error"><AlertTriangle size={13} /> Couldn't read a video from that link — try copying it straight from YouTube's address bar or share button.</p>
+            )}
+
+            {activeEmbedSrc ? (
               <div className="sb-radio-embed-wrap">
                 <iframe
+                  key={activeEmbedSrc}
                   className="sb-radio-embed"
-                  src={activeRadio.embed}
-                  title={activeRadio.label}
+                  src={activeEmbedSrc}
+                  title={activeLabel}
                   allow="autoplay; encrypted-media"
                   allowFullScreen
                 />
-                <span className="sb-radio-hint">{activeRadio.hint}</span>
+                <span className="sb-radio-hint">
+                  {t.radioChoice === "custom" ? "Playing your link" : activePreset?.hint}
+                  {" — if it shows \"Video unavailable\", the stream itself has ended; paste a fresh link above."}
+                </span>
               </div>
-            )}
+            ) : (t.radioChoice !== "none" && t.radioChoice !== "custom") ? (
+              <p className="sb-radio-hint">Pick a station above, or paste your own link.</p>
+            ) : null}
             <div className="sb-radio-links">
               {RADIO_LINKS.map((l) => (
                 <a key={l.label} className="sb-radio-link" target="_blank" rel="noopener noreferrer"

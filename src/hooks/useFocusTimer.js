@@ -125,6 +125,7 @@ export function useFocusTimer({ onComplete } = {}) {
   const [askDone, setAskDone] = useState(!!persisted?.askDone);
   const [soundOn, setSoundOn] = useState(persisted?.soundOn ?? true);
   const [radioChoice, setRadioChoice] = useState(persisted?.radioChoice || "none");
+  const [radioCustomUrl, setRadioCustomUrl] = useState(persisted?.radioCustomUrl || "");
   const [startedMinutes, setStartedMinutes] = useState(persisted?.startedMinutes || 0);
 
   const endAtRef = useRef(persisted?.running ? persisted?.endAt || null : null);
@@ -146,10 +147,10 @@ export function useFocusTimer({ onComplete } = {}) {
   // Persist on every change relevant to resuming later.
   useEffect(() => {
     savePersisted({
-      modeMinutes, mode, running, askDone, soundOn, radioChoice, startedMinutes,
+      modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
       secondsLeft, endAt: endAtRef.current,
     });
-  }, [modeMinutes, mode, running, askDone, soundOn, radioChoice, startedMinutes, secondsLeft]);
+  }, [modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes, secondsLeft]);
 
   useEffect(() => () => stopDroneOsc(audioCtxRef.current, droneRef), []);
 
@@ -286,9 +287,9 @@ export function useFocusTimer({ onComplete } = {}) {
   const pct = total > 0 ? ((total - secondsLeft) / total) * 100 : 0;
 
   return {
-    modeMinutes, mode, running, askDone, soundOn, radioChoice, startedMinutes,
+    modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
     secondsLeft, total, pct,
     changeMode, setCustomMinutes, start, pause, reset, resetForNewSession,
-    toggleSound, setRadioChoice,
+    toggleSound, setRadioChoice, setRadioCustomUrl,
   };
 }
