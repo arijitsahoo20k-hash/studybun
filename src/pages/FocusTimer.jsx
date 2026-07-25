@@ -192,20 +192,10 @@ export default function FocusTimer(p) {
             )}
 
             {activeEmbedSrc ? (
-              <div className="sb-radio-embed-wrap">
-                <iframe
-                  key={activeEmbedSrc}
-                  className="sb-radio-embed"
-                  src={activeEmbedSrc}
-                  title={activeLabel}
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                />
-                <span className="sb-radio-hint">
-                  {t.radioChoice === "custom" ? "Playing your link" : activePreset?.hint}
-                  {" — if it shows \"Video unavailable\", the stream itself has ended; paste a fresh link above."}
-                </span>
-              </div>
+              <p className="sb-radio-hint">
+                {t.radioChoice === "custom" ? "Playing your link" : activePreset?.hint}
+                {" — keeps playing in the background even after you close this panel. If it shows \"Video unavailable\", the stream itself has ended; paste a fresh link above."}
+              </p>
             ) : (t.radioChoice !== "none" && t.radioChoice !== "custom") ? (
               <p className="sb-radio-hint">Pick a station above, or paste your own link.</p>
             ) : null}
@@ -217,6 +207,23 @@ export default function FocusTimer(p) {
                 </a>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Kept mounted regardless of settingsOpen — closing the gear panel
+            must NOT unmount this iframe, or the radio audio stops with it.
+            It only actually plays/renders once a station is chosen; when
+            the panel is closed we just tuck it out of view visually. */}
+        {activeEmbedSrc && (
+          <div className={`sb-radio-embed-wrap ${settingsOpen ? "" : "sb-radio-embed-tucked"}`}>
+            <iframe
+              key={activeEmbedSrc}
+              className="sb-radio-embed"
+              src={activeEmbedSrc}
+              title={activeLabel}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
           </div>
         )}
 

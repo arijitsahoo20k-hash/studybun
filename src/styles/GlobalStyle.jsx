@@ -204,6 +204,7 @@ export default function GlobalStyle() {
       .sb-radio-custom-row .sb-input { flex: 1; }
       .sb-radio-error { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #d1495b; margin: 0; }
       .sb-radio-embed-wrap { display: flex; flex-direction: column; gap: 4px; }
+      .sb-radio-embed-tucked { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
       .sb-radio-embed { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; border: 2px solid var(--outline); }
       .sb-radio-hint { font-size: 10.5px; color: var(--muted); text-align: center; }
       .sb-radio-links { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; border-top: 2px dashed var(--outline); }
