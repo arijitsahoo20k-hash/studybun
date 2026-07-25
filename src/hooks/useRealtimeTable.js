@@ -1,0 +1,193 @@
+import { useEffect, useState, useCallback, useRef } from "react";
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../lib/AuthContext";
+
+/**
+ * Keeps a Supabase table's rows (scoped to the signed-in user) in sync in
+ * real time. If there's no signed-in user yet (e.g. Supabase isn't
+ * configured), it stays idle with empty rows rather than erroring.
+ */
+export function useRealtimeTable(table, { orderBy = "created_at", ascending = false } = {}) {
+  const { user } = useAuth();
+  const userId = user?.id;
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+
+    if (!userId) {
+      setRows([]);
+      setLoading(false);
+      return () => { mounted.current = false; };
+    }
+
+    async function load() {
+      setLoading(true);
+      const { data, error: err } = await supabase
+        .from(table)
+        .select("*")
+        .eq("user_id", userId)
+        .order(orderBy, { ascending });
+      if (!mounted.current) return;
+      if (err) setError(err);
+      else setRows(data || []);
+      setLoading(false);
+    }
+    load();
+
+    const channel = supabase
+      .channel(`rt:${table}:${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table, filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setRows((prev) => {
+            if (payload.eventType === "INSERT") {
+              if (prev.some((r) => r.id === payload.new.id)) return prev;
+              return [payload.new, ...prev];
+            }
+            if (payload.eventType === "UPDATE") {
+              return prev.map((r) => (r.id === payload.new.id ? payload.new : r));
+            }
+            if (payload.eventType === "DELETE") {
+              return prev.filter((r) => r.id !== payload.old.id);
+            }
+            return prev;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      mounted.current = false;
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, userId]);
+
+  const insert = useCallback(
+    async (row) => {
+      if (!userId) return null;
+      const { data, error: err } = await supabase
+        .from(table)
+        .insert({ ...row, user_id: userId })
+        .select()
+        .single();
+      if (err) { setError(err); console.error(`[StudyBun] insert into ${table} failed:`, err.message); return null; }
+      // Optimistic add in case the realtime echo is slow/disabled on this table.
+      setRows((prev) => (prev.some((r) => r.id === data.id) ? prev : [data, ...prev]));
+      return data;
+    },
+    [table, userId]
+  );
+
+  const update = useCallback(
+    async (id, patch) => {
+      const { data, error: err } = await supabase.from(table).update(patch).eq("id", id).select().single();
+      if (err) { setError(err); console.error(`[StudyBun] update on ${table} failed:`, err.message); return null; }
+      setRows((prev) => prev.map((r) => (r.id === id ? data : r)));
+      return data;
+    },
+    [table]
+  );
+
+  const remove = useCallback(
+    async (id) => {
+      const { error: err } = await supabase.from(table).delete().eq("id", id);
+      if (err) { setError(err); console.error(`[StudyBun] delete on ${table} failed:`, err.message); return; }
+      setRows((prev) => prev.filter((r) => r.id !== id));
+    },
+    [table]
+  );
+
+  return { rows, loading, error, insert, update, remove, setRows };
+}
+
+/** Single-row-per-user table (profiles, user_settings, user_statistics). */
+export function useDeviceRow(table, defaults = {}) {
+  const { user } = useAuth();
+  const userId = user?.id;
+  const [row, setRow] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!userId) {
+      setRow(null);
+      setLoading(false);
+      return () => { active = false; };
+    }
+
+    async function load() {
+      const { data, error } = await supabase.from(table).select("*").eq("user_id", userId).maybeSingle();
+      if (!active) return;
+      if (!data && !error) {
+        const { data: created } = await supabase
+          .from(table)
+          .insert({ user_id: userId, ...defaults })
+          .select()
+          .single();
+        setRow(created);
+      } else {
+        setRow(data);
+      }
+      setLoading(false);
+    }
+    load();
+
+    const channel = supabase
+      .channel(`rt:${table}:row:${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table, filter: `user_id=eq.${userId}` },
+        (payload) => setRow(payload.new || null)
+      )
+      .subscribe();
+
+    return () => { active = false; supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, userId]);
+
+  const save = useCallback(
+    async (patch) => {
+      if (!userId) return null;
+      const { data, error } = await supabase
+        .from(table)
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .select()
+        .single();
+      if (error) { console.error(`[StudyBun] update on ${table} failed:`, error.message); return null; }
+      setRow(data);
+      return data;
+    },
+    [table, userId]
+  );
+
+  return { row, loading, save };
+}
+
+/** chapter_progress is keyed by (subject, chapter) rather than id-first — a thin wrapper with upsert semantics. */
+export function useChapterProgress() {
+  const { rows, loading, insert, update } = useRealtimeTable("chapter_progress", { orderBy: "updated_at" });
+
+  const map = {};
+  rows.forEach((r) => { map[`${r.subject}::${r.chapter}`] = r; });
+
+  const upsert = useCallback(
+    async (subject, chapter, patch) => {
+      const key = `${subject}::${chapter}`;
+      const existing = map[key];
+      if (existing) return update(existing.id, { ...patch, updated_at: new Date().toISOString() });
+      return insert({ subject, chapter, ...patch });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows]
+  );
+
+  return { map, rows, loading, upsert };
+}
