@@ -500,29 +500,15 @@ export default function GlobalStyle() {
       }
       .sb-theme-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 2px solid var(--outline); flex-shrink: 0; }
 
-      /* Onboarding */
+      /* Onboarding — page-level background/dot wrapper only; the card chrome,
+         steps, and form styling live in styles/AuthOnboardStyle.jsx */
       .sb-onboard { display: flex; align-items: center; justify-content: center; padding: 20px; }
-      .sb-onboard-card { background: var(--card); border-radius: 28px; padding: 34px; max-width: 440px; width: 100%; text-align: center; border: 2.5px solid var(--outline); box-shadow: 6px 6px 0 var(--outline); position: relative; z-index: 1; }
-      .sb-onboard-title { font-family: var(--font-display); font-size: 22px; margin: 10px 0 4px; }
-      .sb-onboard-sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; font-weight: 700; }
-      .sb-onboard-step { text-align: left; margin-bottom: 20px; }
-      .sb-onboard-step label { display: block; font-weight: 800; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
-      .sb-onboard-actions { display: flex; justify-content: center; gap: 10px; }
-      .sb-onboard-dots { display: flex; justify-content: center; gap: 6px; margin-top: 18px; }
-      .sb-onboard-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--soft); border: 1.5px solid var(--outline); }
-      .sb-onboard-dots span.active { background: var(--outline); width: 18px; border-radius: 4px; }
 
-      .sb-auth-error { background: #FDECEC; color: #A3363B; border: 1.5px solid #E7A9AC; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; font-weight: 700; margin-bottom: 14px; text-align: left; }
-      .sb-auth-info { background: var(--soft); color: var(--ink); border: 1.5px solid var(--outline); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; font-weight: 700; margin-bottom: 14px; text-align: left; }
-      .sb-auth-link { background: none; border: none; color: var(--accent); font-weight: 800; font-size: 12.5px; cursor: pointer; padding: 0; margin-top: 10px; text-decoration: underline; }
-
-      /* ===== auth page: two-column shell (login card + kawaii info panel) ===== */
+      /* ===== auth page: two-column shell (login card + kawaii info panel) =====
+         Shell layout (.sb-flow-shell) lives in AuthOnboardStyle.jsx; this file
+         still owns the info-panel content styling below since AuthInfo.jsx is
+         shared, general-purpose UI rather than part of the auth/onboard redesign. */
       .sb-auth-page { align-items: flex-start !important; padding: 32px 20px !important; }
-      .sb-auth-shell {
-        display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; align-items: flex-start;
-        width: 100%; max-width: 920px; margin: 0 auto; position: relative; z-index: 1;
-      }
-      .sb-auth-shell .sb-onboard-card { margin: 0 auto; }
 
       .sb-auth-info {
         background: var(--card); border: 2.5px solid var(--outline); border-radius: 28px; box-shadow: 6px 6px 0 var(--outline);
@@ -566,17 +552,12 @@ export default function GlobalStyle() {
       .sb-faq-a { padding: 0 12px 11px; font-size: 11.5px; font-weight: 600; color: var(--muted); line-height: 1.5; animation: sb-pop .18s ease; }
       .sb-faq-a p { margin: 0 0 9px; }
 
-      @media (max-width: 900px) {
-        .sb-auth-shell { flex-wrap: wrap; }
-        .sb-auth-info, .sb-auth-shell .sb-onboard-card { max-width: 440px; }
-      }
       @media (max-width: 480px) {
         .sb-auth-features { grid-template-columns: 1fr; }
       }
 
       /* ===== auth page delight: entrances, loops, and the scratch card ===== */
-      .sb-auth-shell .sb-onboard-card { animation: sb-auth-rise .5s cubic-bezier(.22,1,.36,1) both; }
-      .sb-auth-shell .sb-auth-info { animation: sb-auth-rise .5s cubic-bezier(.22,1,.36,1) .1s both; }
+      .sb-flow-shell .sb-auth-info { animation: sb-auth-rise .5s cubic-bezier(.22,1,.36,1) .1s both; }
       @keyframes sb-auth-rise {
         0% { opacity: 0; transform: translateY(16px) scale(.97); }
         100% { opacity: 1; transform: translateY(0) scale(1); }
@@ -597,16 +578,6 @@ export default function GlobalStyle() {
         85% { transform: rotate(-12deg) scale(1.08); }
         92% { transform: rotate(10deg) scale(1.08); }
         96% { transform: rotate(-4deg) scale(1); }
-      }
-
-      .sb-auth-shell .sb-onboard-step .sb-btn-primary { position: relative; }
-      .sb-auth-shell .sb-onboard-step .sb-btn-primary::before {
-        content: ""; position: absolute; inset: -4px; border-radius: 999px; background: var(--accent);
-        opacity: .35; z-index: -1; animation: sb-cta-pulse 2.4s ease-in-out infinite;
-      }
-      @keyframes sb-cta-pulse {
-        0%, 100% { transform: scale(1); opacity: .3; }
-        50% { transform: scale(1.09); opacity: 0; }
       }
 
       .sb-auth-feature { animation: sb-auth-rise .45s cubic-bezier(.22,1,.36,1) both; }

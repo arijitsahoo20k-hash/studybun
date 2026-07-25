@@ -4,7 +4,7 @@ import { isSupabaseConfigured } from "./lib/supabaseClient";
 import { THEMES, themeVars } from "./data/themes";
 import { DecorLayer, LoadingScreen } from "./components/ui";
 import GlobalStyle from "./styles/GlobalStyle";
-import Auth from "./pages/Auth";
+import Auth from "./pages/auth";
 import AuthInfo from "./components/AuthInfo";
 import App from "./App";
 
@@ -33,7 +33,7 @@ function Gate() {
       <div className="sb-onboard sb-auth-page" style={cssVars}>
         <GlobalStyle />
         <DecorLayer theme={DEFAULT_THEME} />
-        <div className="sb-auth-shell">
+        <div className="sb-flow-shell">
           <Auth />
           <AuthInfo />
         </div>

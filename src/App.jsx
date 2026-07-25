@@ -18,7 +18,7 @@ import BuddyGuide from "./components/BuddyGuide";
 import { reactionMood, mascotTheme, MASCOTS } from "./data/mascots";
 import PWAPrompt from "./components/PWAPrompt";
 import { Confetti, LoadingScreen, DecorLayer } from "./components/ui";
-import Onboarding from "./pages/Onboarding";
+import Onboarding from "./pages/onboarding";
 import Dashboard from "./pages/Dashboard";
 import StudyTracker from "./pages/StudyTracker";
 import FocusTimer from "./pages/FocusTimer";
