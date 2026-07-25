@@ -11,22 +11,22 @@
  */
 
 export const GEMINI_3_MODELS = [
-  "gemini-3-pro-preview",
   "gemini-3-flash-preview",
-  "gemini-3.1-pro-preview",
   "gemini-3.1-flash-lite",
   "gemini-3.5-flash",
   "gemini-3.6-flash",
+  "gemini-3-pro-preview",
+  "gemini-3.1-pro-preview",
 ];
 
 export const GEMINI_2_MODELS = [
   "gemini-2.5-flash",
-  "gemini-2.5-pro",
   "gemini-2.5-flash-lite",
   "gemini-2.0-flash",
   "gemini-2.0-flash-lite",
-  "gemini-2.0-pro-exp",
   "gemini-2.0-flash-thinking-exp",
+  "gemini-2.5-pro",
+  "gemini-2.0-pro-exp",
 ];
 
 /** Every model the buddy knows about, 3.0 family first, 2.0 family as the safety net. */

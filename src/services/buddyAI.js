@@ -61,7 +61,16 @@ async function callGemini({ model, apiKey, systemPrompt, contents }) {
 }
 
 function classifyError(err) {
-  if (err.status === 429) return "rate_limited";
+  if (err.status === 429) {
+    // "limit: 0" means this specific model has NO free-tier quota on this key at
+    // all (common for Pro-tier models on a free key) — that's permanent for this
+    // model, not temporary. Treat it like model-unavailable so we move on to the
+    // next (usually cheaper/flash) model on the SAME key instead of benching the
+    // whole key on a cooldown it doesn't need.
+    const raw = err.raw || "";
+    if (/"limit"\s*:\s*0\b/.test(raw)) return "model_unavailable";
+    return "rate_limited";
+  }
   if (err.status === 400 || err.status === 403) {
     const raw = (err.raw || "").toLowerCase();
     if (raw.includes("api key") || raw.includes("api_key") || err.status === 403) return "invalid_key";
