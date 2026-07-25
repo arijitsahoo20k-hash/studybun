@@ -402,11 +402,9 @@ export default function GlobalStyle() {
         .sb-sidebar { display: none; }
         .sb-mobile-toggle { display: flex; position: fixed; top: 14px; left: 14px; z-index: 55; background: var(--card); border: 2px solid var(--outline); border-radius: 12px; padding: 8px; box-shadow: 3px 3px 0 var(--outline); }
         .sb-mobile-nav { display: flex; flex-direction: column; position: fixed; top: 58px; left: 14px; background: var(--card); border: 2px solid var(--outline); border-radius: 16px; padding: 10px; gap: 4px; z-index: 55; box-shadow: 5px 5px 0 var(--outline); max-height: 80vh; overflow-y: auto; }
-        .sb-main { padding: 70px 16px 90px; }
-        .sb-bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 2.5px solid var(--outline); padding: 8px 4px; justify-content: space-around; z-index: 50; }
-        .sb-bottom-item { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; color: var(--muted); font-size: 10px; font-weight: 800; }
-        .sb-bottom-item.active { color: var(--outline); }
-        .sb-buddy { bottom: 78px; right: 14px; }
+        .sb-main { padding: 70px 16px 24px; }
+        .sb-bottom-nav { display: none; }
+        .sb-buddy { bottom: 20px; right: 14px; }
         .sb-buddy-bubble { max-width: 210px; }
         .sb-buddy-chat { width: min(280px, calc(100vw - 28px)); }
       }

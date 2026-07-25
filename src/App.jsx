@@ -515,14 +515,6 @@ export default function App() {
         {page === "settings" && <SettingsPage {...pageProps} />}
       </main>
 
-      <nav className="sb-bottom-nav">
-        {NAV.slice(0, 5).map((n) => (
-          <button key={n.id} className={`sb-bottom-item ${page === n.id ? "active" : ""}`} onClick={() => setPage(n.id)}>
-            <n.icon size={20} /><span>{n.label.split(" ")[0]}</span>
-          </button>
-        ))}
-      </nav>
-
       <BuddyGuide {...pageProps} page={page} mood={buddyMood} hopping={hopping} />
     </div>
   );
