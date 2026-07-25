@@ -358,6 +358,47 @@ export default function GlobalStyle() {
       @media (max-width: 560px) {
         .sb-chapter-card-open { grid-column: span 1; }
       }
+
+      /* ===== per-species mascot motion -- each animal moves differently, not just looks different ===== */
+      .sb-species-cat .sb-cat-tail { transform-origin: 20px 30px; animation: sb-cat-tail-swish 3.2s ease-in-out infinite; }
+      @keyframes sb-cat-tail-swish { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(8deg); } }
+
+      .sb-species-fox .sb-fox-tail { transform-origin: 18px 26px; animation: sb-fox-tail-swish 2.6s ease-in-out infinite; }
+      @keyframes sb-fox-tail-swish { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-6deg); } }
+
+      .sb-species-hamster .sb-hamster-cheek { transform-box: fill-box; transform-origin: center; animation: sb-cheek-breathe 3.6s ease-in-out infinite; }
+      @keyframes sb-cheek-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+
+      /* penguin waddles side-to-side instead of hopping straight up */
+      .sb-waddle { animation: sb-waddle .55s ease; }
+      @keyframes sb-waddle {
+        0% { transform: rotate(0deg) translateY(0); }
+        25% { transform: rotate(-7deg) translateX(-2px); }
+        50% { transform: translateY(-5px); }
+        75% { transform: rotate(7deg) translateX(2px); }
+        100% { transform: rotate(0deg) translateY(0); }
+      }
+
+      /* peek/hover reactions, one per species, using the shared ear-wiggle keyframes where an ear exists */
+      .sb-cat-peek:hover .sb-ear-l { animation: sb-ear-wiggle-l .55s ease; }
+      .sb-cat-peek:hover .sb-ear-r { animation: sb-ear-wiggle-r .55s ease .06s; }
+      .sb-cat-peek:hover .sb-cat-tail { animation: sb-cat-tail-flick .4s ease; }
+      @keyframes sb-cat-tail-flick { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(22deg); } }
+
+      .sb-fox-peek:hover .sb-ear-l { animation: sb-ear-wiggle-l .55s ease; }
+      .sb-fox-peek:hover .sb-ear-r { animation: sb-ear-wiggle-r .55s ease .06s; }
+      .sb-fox-peek:hover .sb-fox-tail { transform-box: fill-box; transform-origin: center; animation: sb-fox-tail-poof .4s ease; }
+      @keyframes sb-fox-tail-poof { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1) rotate(-5deg); } }
+
+      .sb-bear-peek:hover .sb-ear-l { animation: sb-ear-wiggle-l .55s ease; }
+      .sb-bear-peek:hover .sb-ear-r { animation: sb-ear-wiggle-r .55s ease .06s; }
+
+      .sb-hamster-peek:hover .sb-ear-l { animation: sb-ear-wiggle-l .55s ease; }
+      .sb-hamster-peek:hover .sb-ear-r { animation: sb-ear-wiggle-r .55s ease .06s; }
+      .sb-hamster-peek:hover .sb-hamster-cheek { animation: sb-cheek-breathe .5s ease; }
+
+      .sb-penguin-peek:hover .sb-penguin-flipper { transform-box: fill-box; transform-origin: center; animation: sb-flipper-wave .5s ease; }
+      @keyframes sb-flipper-wave { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
     `}</style>
   );
 }
