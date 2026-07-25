@@ -341,27 +341,45 @@ export default function App() {
   ];
   const unlockedAchievements = achievementDefs.filter((a) => a.cond);
 
-  // Persist newly unlocked achievements once (fire-and-forget; harmless if it races).
-  useMemo(() => {
+  // All the queries that feed achievementDefs' conditions (streaks, totals,
+  // overdue counts, etc.) start empty and load in async on every reload.
+  // Reading unlockedAchievements before they've all settled makes it look
+  // like achievements just got unlocked, when really the data just caught
+  // up — that's what was causing the celebration to fire on every reload.
+  const dataReady = !sessionsQ.loading && !timerSessionsQ.loading && !questionsQ.loading &&
+    !mocksQ.loading && !revisionsQ.loading && !tasksQ.loading && !backlogItemsQ.loading && !achievementsQ.loading;
+
+  // Persist newly unlocked achievements once data has actually settled —
+  // inserting against a still-loading (empty) achievementsQ.rows would just
+  // try to re-insert everything the user already has, every reload.
+  useEffect(() => {
+    if (!dataReady) return;
     unlockedAchievements.forEach((a) => {
       if (!achievementsQ.rows.some((r) => r.achievement_key === a.id)) {
         achievementsQ.insert({ achievement_key: a.id });
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unlockedAchievements.length]);
+  }, [dataReady, unlockedAchievements.length]);
 
-  const prevUnlockedCount = useRef(unlockedAchievements.length);
-  const firstRender = useRef(true);
+  // null (not 0) means "no real baseline yet" — the first time dataReady
+  // flips true, whatever count we see becomes the baseline silently; it's
+  // never treated as a new unlock, even on a fresh page load where the
+  // count is already >0 from past sessions.
+  const prevUnlockedCount = useRef(null);
   useEffect(() => {
-    if (firstRender.current) { firstRender.current = false; prevUnlockedCount.current = unlockedAchievements.length; return; }
+    if (!dataReady) return;
+    if (prevUnlockedCount.current === null) {
+      prevUnlockedCount.current = unlockedAchievements.length;
+      return;
+    }
     if (unlockedAchievements.length > prevUnlockedCount.current) {
       fireCelebrate("petals");
       showToast("Achievement unlocked! 🏆");
     }
     prevUnlockedCount.current = unlockedAchievements.length;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unlockedAchievements.length]);
+  }, [dataReady, unlockedAchievements.length]);
 
   /* ---------- actions ---------- */
   const addSession = async (payload) => {
