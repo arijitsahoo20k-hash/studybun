@@ -1,148 +1,161 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX } from "lucide-react";
+import {
+  Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
+  Pencil, Settings, Minus, Plus, X, Radio, ExternalLink,
+} from "lucide-react";
 import { Card, Btn, ProgressBar, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { SYLLABUS } from "../data/syllabus";
 
-const MODES = { "Deep Focus": 50, Pomodoro: 25, Lecture: 45, Practice: 30, Revision: 20 };
+const MODE_ORDER = ["Deep Focus", "Pomodoro", "Lecture", "Practice", "Revision"];
+
+const RADIO_OPTIONS = [
+  {
+    id: "lofi-girl",
+    label: "Lofi Girl radio",
+    hint: "24/7 lofi hip hop — always live",
+    embed: "https://www.youtube.com/embed/live_stream?channel=UCSJ4gkVC6NrvII8umztf0Ow&autoplay=0",
+  },
+  {
+    id: "chillhop",
+    label: "Chillhop radio",
+    hint: "Jazzy chillhop beats — always live",
+    embed: "https://www.youtube.com/embed/live_stream?channel=UCOxqgCwgOqC2lMqC5PYz_Dg&autoplay=0",
+  },
+];
+
+const RADIO_LINKS = [
+  { label: "Rain sounds", query: "rain sounds for studying 24/7" },
+  { label: "Piano lofi", query: "piano lofi study radio" },
+  { label: "Synthwave radio", query: "synthwave radio 24/7" },
+];
 
 export default function FocusTimer(p) {
-  const [mode, setMode] = useState("Pomodoro");
-  const [secondsLeft, setSecondsLeft] = useState(MODES["Pomodoro"] * 60);
-  const [running, setRunning] = useState(false);
-  const [askDone, setAskDone] = useState(false);
-  const [soundOn, setSoundOn] = useState(false);
-  const intervalRef = useRef(null);
-  const startedMinutes = useRef(0);
-  const audioCtxRef = useRef(null);
-  const droneRef = useRef(null);
+  const t = p.focusTimer;
+  const [editingDuration, setEditingDuration] = useState(false);
+  const [durationDraft, setDurationDraft] = useState(t.modeMinutes[t.mode]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const getCtx = () => {
-    if (!audioCtxRef.current) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC) audioCtxRef.current = new AC();
-    }
-    return audioCtxRef.current;
+  useEffect(() => { setDurationDraft(t.modeMinutes[t.mode]); }, [t.mode, t.modeMinutes]);
+
+  const mm = String(Math.floor(t.secondsLeft / 60)).padStart(2, "0");
+  const ss = String(t.secondsLeft % 60).padStart(2, "0");
+
+  const saveDuration = () => {
+    t.setCustomMinutes(t.mode, durationDraft);
+    setEditingDuration(false);
   };
-
-  const startDrone = () => {
-    const ctx = getCtx();
-    if (!ctx || !soundOn || droneRef.current) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = 220;
-    gain.gain.value = 0.0001;
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    gain.gain.linearRampToValueAtTime(0.018, ctx.currentTime + 1.2);
-    droneRef.current = { osc, gain };
-  };
-
-  const stopDrone = () => {
-    const ctx = getCtx();
-    if (!droneRef.current || !ctx) return;
-    const { osc, gain } = droneRef.current;
-    gain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
-    osc.stop(ctx.currentTime + 0.5);
-    droneRef.current = null;
-  };
-
-  const playChime = () => {
-    const ctx = getCtx();
-    if (!ctx || !soundOn) return;
-    [523.25, 659.25, 783.99].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = freq;
-      gain.gain.value = 0.0001;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      const t0 = ctx.currentTime + i * 0.16;
-      osc.start(t0);
-      gain.gain.linearRampToValueAtTime(0.05, t0 + 0.04);
-      gain.gain.linearRampToValueAtTime(0.0001, t0 + 0.55);
-      osc.stop(t0 + 0.6);
-    });
-  };
-
-  useEffect(() => {
-    if (running) {
-      intervalRef.current = setInterval(() => {
-        setSecondsLeft((s) => {
-          if (s <= 1) {
-            clearInterval(intervalRef.current);
-            setRunning(false);
-            setAskDone(true);
-            stopDrone();
-            playChime();
-            return 0;
-          }
-          return s - 1;
-        });
-      }, 1000);
-    } else clearInterval(intervalRef.current);
-    return () => clearInterval(intervalRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running]);
-
-  useEffect(() => () => stopDrone(), []); // cleanup on unmount
-
-  useEffect(() => {
-    if (running && soundOn) startDrone();
-    if (!soundOn) stopDrone();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [soundOn]);
-
-  const total = MODES[mode] * 60;
-  const pct = ((total - secondsLeft) / total) * 100;
-  const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
-  const ss = String(secondsLeft % 60).padStart(2, "0");
-
-  const changeMode = (m) => { setMode(m); setSecondsLeft(MODES[m] * 60); setRunning(false); stopDrone(); };
-  const start = () => { startedMinutes.current = MODES[mode]; setRunning(true); startDrone(); };
-  const pause = () => { setRunning(false); stopDrone(); };
-  const reset = () => { setRunning(false); setSecondsLeft(MODES[mode] * 60); stopDrone(); };
 
   const [subject, setSubject] = useState("Physics");
   const [chapter, setChapter] = useState(SYLLABUS.Physics.groups["Mechanics I"][0]);
 
   const logAndReset = () => {
-    p.addSession({ subject, chapter, session_type: mode === "Pomodoro" ? "Practice" : mode, minutes: startedMinutes.current });
-    setAskDone(false);
-    setSecondsLeft(MODES[mode] * 60);
+    p.addSession({ subject, chapter, session_type: t.mode === "Pomodoro" ? "Practice" : t.mode, minutes: t.startedMinutes, platform: "Focus Timer" });
+    t.resetForNewSession();
   };
+
+  const activeRadio = RADIO_OPTIONS.find((r) => r.id === t.radioChoice);
 
   return (
     <div className="sb-page">
       <Card className="sb-timer-card">
         <div className="sb-timer-topbar">
-          <div className="sb-chip-row">{Object.keys(MODES).map((m) => <button key={m} className={`sb-chip ${mode === m ? "active" : ""}`} onClick={() => changeMode(m)}>{m}</button>)}</div>
-          <button
-            className={`sb-sound-toggle ${soundOn ? "on" : ""}`}
-            onClick={() => setSoundOn((v) => !v)}
-            title={soundOn ? "Ambient sound on — soft drone while focusing, chime on finish" : "Ambient sound off"}
-          >
-            {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            <span>{soundOn ? "Sound on" : "Sound off"}</span>
-          </button>
+          <div className="sb-chip-row">
+            {MODE_ORDER.map((m) => (
+              <button key={m} className={`sb-chip ${t.mode === m ? "active" : ""}`} onClick={() => t.changeMode(m)}>
+                {m} <span className="sb-chip-mins">{t.modeMinutes[m]}m</span>
+              </button>
+            ))}
+          </div>
+          <div className="sb-timer-actions">
+            <button className="sb-icon-round" title="Set a custom time for this mode" onClick={() => setEditingDuration((v) => !v)}>
+              <Pencil size={15} />
+            </button>
+            <button className={`sb-icon-round ${settingsOpen ? "on" : ""}`} title="Timer settings" onClick={() => setSettingsOpen((v) => !v)}>
+              <Settings size={15} />
+            </button>
+          </div>
         </div>
+
+        {editingDuration && (
+          <div className="sb-duration-pop">
+            <span className="sb-duration-pop-title">{t.mode} duration</span>
+            <div className="sb-duration-stepper">
+              <button onClick={() => setDurationDraft((v) => Math.max(1, v - 5))}><Minus size={14} /></button>
+              <input
+                type="number" min={1} max={240} value={durationDraft}
+                onChange={(e) => setDurationDraft(Number(e.target.value) || 1)}
+              />
+              <span>min</span>
+              <button onClick={() => setDurationDraft((v) => Math.min(240, v + 5))}><Plus size={14} /></button>
+            </div>
+            <div className="sb-duration-pop-actions">
+              <Btn variant="ghost" onClick={() => setEditingDuration(false)}><X size={14} /> Cancel</Btn>
+              <Btn onClick={saveDuration}><CheckCircle2 size={14} /> Save</Btn>
+            </div>
+          </div>
+        )}
+
+        {settingsOpen && (
+          <div className="sb-timer-settings">
+            <div className="sb-timer-settings-row">
+              <span className="sb-timer-settings-label">Alert sounds</span>
+              <button className={`sb-sound-toggle ${t.soundOn ? "on" : ""}`} onClick={t.toggleSound}
+                title={t.soundOn ? "Kawaii chime on start/finish, soft drone while focusing" : "Sound off"}>
+                {t.soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                <span>{t.soundOn ? "Sound on" : "Sound off"}</span>
+              </button>
+            </div>
+
+            <div className="sb-timer-settings-row sb-timer-settings-radio-head">
+              <span className="sb-timer-settings-label"><Radio size={14} /> Focus radio</span>
+            </div>
+            <div className="sb-radio-options">
+              <button className={`sb-radio-chip ${t.radioChoice === "none" ? "active" : ""}`} onClick={() => t.setRadioChoice("none")}>No music</button>
+              {RADIO_OPTIONS.map((r) => (
+                <button key={r.id} className={`sb-radio-chip ${t.radioChoice === r.id ? "active" : ""}`} onClick={() => t.setRadioChoice(r.id)}>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            {activeRadio && (
+              <div className="sb-radio-embed-wrap">
+                <iframe
+                  className="sb-radio-embed"
+                  src={activeRadio.embed}
+                  title={activeRadio.label}
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                />
+                <span className="sb-radio-hint">{activeRadio.hint}</span>
+              </div>
+            )}
+            <div className="sb-radio-links">
+              {RADIO_LINKS.map((l) => (
+                <a key={l.label} className="sb-radio-link" target="_blank" rel="noopener noreferrer"
+                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(l.query)}`}>
+                  {l.label} <ExternalLink size={12} />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="sb-timer-display">
-          <Mascot species={p.mascot} mood={running ? "studying" : "idle"} size={90} />
+          <Mascot species={p.mascot} mood={t.running ? "studying" : "idle"} size={90} />
           <div className="sb-timer-time">{mm}:{ss}</div>
         </div>
-        <ProgressBar pct={pct} />
+        <ProgressBar pct={t.pct} />
         <div className="sb-timer-controls">
-          {!running ? <Btn onClick={start}><Play size={16} /> Start</Btn> : <Btn variant="soft" onClick={pause}><Pause size={16} /> Pause</Btn>}
-          <Btn variant="ghost" onClick={reset}><RefreshCw size={16} /> Reset</Btn>
+          {!t.running ? <Btn onClick={t.start}><Play size={16} /> Start</Btn> : <Btn variant="soft" onClick={t.pause}><Pause size={16} /> Pause</Btn>}
+          <Btn variant="ghost" onClick={t.reset}><RefreshCw size={16} /> Reset</Btn>
         </div>
       </Card>
 
-      {askDone && (
+      {t.askDone && (
         <Card>
           <SectionTitle icon={Sparkles}>What did you study?</SectionTitle>
+          <p className="sb-timer-logged-note">Your {t.startedMinutes} min is already counted in today's study hours — tag it with a chapter so it also updates your syllabus progress.</p>
           <div className="sb-form-grid">
             <div><label>Subject</label>
               <select className="sb-input" value={subject} onChange={(e) => { setSubject(e.target.value); setChapter(Object.values(SYLLABUS[e.target.value].groups).flat()[0]); }}>

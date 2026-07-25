@@ -1,6 +1,6 @@
 import React from "react";
 import { Target, Clock3, Flame, TrendingUp, BookOpen, FolderClock, RotateCcw, HelpCircle, Sparkles, Timer, Plus } from "lucide-react";
-import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Card, ProgressRing, SectionTitle, EmptyState, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { SYLLABUS } from "../data/syllabus";
@@ -40,7 +40,7 @@ export default function Dashboard(p) {
           <SectionTitle icon={Clock3}>Today's goal</SectionTitle>
           <div className="sb-goal-row">
             <ProgressRing pct={goalPct} />
-            <div><div className="sb-goal-num">{p.todayHours}h <span>/ {p.profile.daily_goal}h</span></div><div className="sb-muted">Keep going, bun 🐰</div></div>
+            <div><div className="sb-goal-num">{p.todayHours}h <span>/ {p.profile.daily_goal}h</span></div><div className="sb-muted">{p.todayLoggedHours}h logged · {p.todayTimerHours}h focus timer</div></div>
           </div>
         </Card>
         <Card>
@@ -52,13 +52,15 @@ export default function Dashboard(p) {
       <div className="sb-grid-2">
         <Card>
           <SectionTitle icon={TrendingUp}>Weekly study hours</SectionTitle>
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={190}>
             <LineChart data={p.weeklyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
               <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />
               <YAxis stroke="var(--muted)" fontSize={12} />
               <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} />
-              <Line type="monotone" dataKey="hours" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
+              <Legend wrapperStyle={{ fontSize: 11.5 }} />
+              <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--outline)" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>

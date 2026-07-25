@@ -1,6 +1,6 @@
 import React from "react";
 import { TrendingUp, Library } from "lucide-react";
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
 import { Card, SectionTitle } from "../components/ui";
 import { SYLLABUS } from "../data/syllabus";
 
@@ -16,13 +16,15 @@ export default function AnalyticsPage(p) {
       <div className="sb-grid-2">
         <Card>
           <SectionTitle icon={TrendingUp}>Weekly study hours</SectionTitle>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={210}>
             <LineChart data={p.weeklyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
               <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />
               <YAxis stroke="var(--muted)" fontSize={12} />
               <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
-              <Line type="monotone" dataKey="hours" stroke="var(--accent)" strokeWidth={3} />
+              <Legend wrapperStyle={{ fontSize: 11.5 }} />
+              <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} />
+              <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--outline)" strokeWidth={3} strokeDasharray="5 3" />
             </LineChart>
           </ResponsiveContainer>
         </Card>

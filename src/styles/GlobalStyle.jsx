@@ -180,6 +180,33 @@ export default function GlobalStyle() {
       .sb-timer-time { font-family: var(--font-display); font-size: 52px; font-weight: 800; text-shadow: 3px 3px 0 var(--soft); }
       .sb-timer-controls { display: flex; gap: 10px; }
 
+      .sb-chip-mins { opacity: .6; font-weight: 700; font-size: 10.5px; margin-left: 3px; }
+      .sb-timer-actions { display: flex; gap: 8px; }
+      .sb-icon-round { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--outline); background: var(--card); color: var(--ink); cursor: pointer; box-shadow: 2px 2px 0 var(--outline); transition: transform .12s ease, box-shadow .12s ease, background-color .2s ease; }
+      .sb-icon-round:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--outline); }
+      .sb-icon-round.on { background: var(--soft); }
+
+      .sb-duration-pop, .sb-timer-settings { width: 100%; max-width: 380px; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(10px); border: 2px solid var(--outline); border-radius: 18px; padding: 14px 16px; box-shadow: 3px 3px 0 var(--outline); display: flex; flex-direction: column; gap: 10px; animation: sb-pop .18s ease; }
+      .sb-duration-pop-title { font-weight: 800; font-size: 13px; }
+      .sb-duration-stepper { display: flex; align-items: center; justify-content: center; gap: 10px; }
+      .sb-duration-stepper button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--outline); background: var(--soft); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+      .sb-duration-stepper input { width: 64px; text-align: center; font-family: var(--font-display); font-size: 20px; font-weight: 800; border: 2px solid var(--outline); border-radius: 10px; padding: 4px 2px; background: var(--card); color: var(--ink); }
+      .sb-duration-pop-actions { display: flex; justify-content: center; gap: 8px; }
+
+      .sb-timer-settings-row { display: flex; align-items: center; justify-content: space-between; }
+      .sb-timer-settings-label { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: 12.5px; color: var(--muted); }
+      .sb-timer-settings-radio-head { margin-top: 2px; }
+      .sb-radio-options { display: flex; flex-wrap: wrap; gap: 6px; }
+      .sb-radio-chip { padding: 6px 12px; border-radius: 999px; border: 2px solid var(--outline); background: var(--card); color: var(--ink); font-weight: 700; font-size: 11.5px; cursor: pointer; }
+      .sb-radio-chip.active { background: var(--soft); }
+      .sb-radio-embed-wrap { display: flex; flex-direction: column; gap: 4px; }
+      .sb-radio-embed { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; border: 2px solid var(--outline); }
+      .sb-radio-hint { font-size: 10.5px; color: var(--muted); text-align: center; }
+      .sb-radio-links { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; border-top: 2px dashed var(--outline); }
+      .sb-radio-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: var(--muted); text-decoration: none; }
+      .sb-radio-link:hover { color: var(--ink); text-decoration: underline; }
+      .sb-timer-logged-note { font-size: 12.5px; color: var(--muted); margin: -4px 0 4px; }
+
       .sb-subject-head { display: flex; justify-content: space-between; font-family: var(--font-display); font-weight: 700; margin-bottom: 4px; }
       .sb-subject-meta { display: flex; gap: 6px; font-size: 11.5px; color: var(--muted); margin-top: 8px; font-weight: 700; }
       .sb-chapter-group { margin-bottom: 18px; }
@@ -216,6 +243,10 @@ export default function GlobalStyle() {
       .sb-task-row.done .sb-task-info { text-decoration: line-through; }
       .sb-checkbox { width: 22px; height: 22px; border-radius: 8px; border: 2.5px solid var(--outline); background: var(--card); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--bg); flex-shrink: 0; position: relative; transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
       .sb-checkbox.checked { background: var(--soft); color: var(--outline); animation: sb-check-pop .3s cubic-bezier(.34,1.56,.64,1); }
+      .sb-task-row-editing { align-items: flex-start; gap: 8px; background: var(--soft); }
+      .sb-task-edit-grid { display: grid; grid-template-columns: 1fr 110px 100px; gap: 6px; flex: 1; }
+      .sb-task-edit-grid .sb-input { padding: 6px 8px; font-size: 12.5px; }
+      .sb-task-edit-actions { display: flex; gap: 2px; flex-shrink: 0; padding-top: 2px; }
       @keyframes sb-check-pop { 0% { transform: scale(0.7); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
       .sb-spark { position: absolute; font-size: 11px; color: var(--accent); opacity: 0; pointer-events: none; animation: sb-spark-burst .6s ease-out forwards; }
       .sb-spark.s1 { top: 50%; left: 50%; animation-delay: .02s; --tx: -16px; --ty: -14px; }
@@ -410,6 +441,8 @@ export default function GlobalStyle() {
       }
       @media (max-width: 560px) {
         .sb-chapter-card-open { grid-column: span 1; }
+        .sb-task-edit-grid { grid-template-columns: 1fr; }
+        .sb-task-row-editing { flex-direction: column; }
       }
 
       /* ===== per-species mascot motion -- each animal moves differently, not just looks different ===== */

@@ -7,6 +7,7 @@ import {
 import { THEMES, themeVars, timeWash } from "./data/themes";
 import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS } from "./data/syllabus";
 import { useDeviceRow, useRealtimeTable, useChapterProgress } from "./hooks/useRealtimeTable";
+import { useFocusTimer } from "./hooks/useFocusTimer";
 import { isSupabaseConfigured } from "./lib/supabaseClient";
 
 import Mascot from "./components/Mascot";
@@ -61,6 +62,7 @@ export default function App() {
   });
 
   const sessionsQ = useRealtimeTable("study_sessions", { orderBy: "session_date" });
+  const timerSessionsQ = useRealtimeTable("timer_sessions", { orderBy: "created_at" });
   const chapters = useChapterProgress();
   const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date" });
   const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date" });
@@ -68,6 +70,16 @@ export default function App() {
   const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date" });
   const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at" });
   const achievementsQ = useRealtimeTable("achievements", { orderBy: "unlocked_at" });
+
+  // Lives here (not inside FocusTimer) so switching pages never resets it.
+  // Every completed session is logged to timer_sessions automatically —
+  // that's what lets focus-timer time count toward study hours even if the
+  // user never fills in the "what did you study" card afterward.
+  const focusTimer = useFocusTimer({
+    onComplete: ({ mode, plannedMinutes, actualMinutes }) => {
+      timerSessionsQ.insert({ mode, planned_minutes: plannedMinutes, actual_minutes: actualMinutes, completed: true });
+    },
+  });
 
   const [page, setPage] = useState("dashboard");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -101,6 +113,7 @@ export default function App() {
 
   /* ---------- derived stats (shared by Dashboard / Analytics / AI Insights) ---------- */
   const sessions = sessionsQ.rows;
+  const timerSessions = timerSessionsQ.rows;
   const questions = questionsQ.rows;
   const mocks = mocksQ.rows;
   const revisions = revisionsQ.rows;
@@ -109,16 +122,29 @@ export default function App() {
 
   const getChStatus = (key) => chapters.map[key] || { ...DEFAULT_CHAPTER_PROGRESS, subject: key.split("::")[0], chapter: key.split("::")[1] };
 
+  // A study_sessions row logged from the "what did you study?" card after a
+  // focus-timer session is tagged platform: "Focus Timer" so its minutes
+  // aren't double counted — the real minutes for that session already live
+  // in timer_sessions, logged automatically the moment the timer finishes.
+  const manualSessions = sessions.filter((s) => s.platform !== "Focus Timer");
+
   const todaySessions = sessions.filter((s) => s.session_date === todayStr());
-  const todayMinutes = todaySessions.reduce((a, s) => a + Number(s.minutes || 0), 0);
+  const todayManualMinutes = manualSessions.filter((s) => s.session_date === todayStr()).reduce((a, s) => a + Number(s.minutes || 0), 0);
+  const todayTimerMinutes = timerSessions.filter((ts) => (ts.created_at || "").slice(0, 10) === todayStr()).reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0);
+  const todayMinutes = todayManualMinutes + todayTimerMinutes;
   const todayHours = +(todayMinutes / 60).toFixed(1);
+  const todayLoggedHours = +(todayManualMinutes / 60).toFixed(1);
+  const todayTimerHours = +(todayTimerMinutes / 60).toFixed(1);
 
   const streak = useMemo(() => {
-    const days = new Set(sessions.map((s) => s.session_date));
+    const days = new Set([
+      ...sessions.map((s) => s.session_date),
+      ...timerSessions.map((ts) => (ts.created_at || "").slice(0, 10)),
+    ]);
     let n = 0, d = new Date();
     while (days.has(d.toISOString().slice(0, 10))) { n++; d.setDate(d.getDate() - 1); }
     return n;
-  }, [sessions]);
+  }, [sessions, timerSessions]);
 
   const backlogChapters = ALL_CHAPTERS.filter((c) => !["Completed", "Mastered"].includes(getChStatus(c.key).status));
   const completedCount = ALL_CHAPTERS.length - backlogChapters.length;
@@ -130,11 +156,18 @@ export default function App() {
   // days logged) rather than the live `streak` above, so a badge earned once
   // stays earned even after a day gets missed and the current streak resets.
   const sortedStudyDays = useMemo(
-    () => Array.from(new Set(sessions.map((s) => s.session_date))).sort(),
-    [sessions]
+    () => Array.from(new Set([
+      ...sessions.map((s) => s.session_date),
+      ...timerSessions.map((ts) => (ts.created_at || "").slice(0, 10)),
+    ])).sort(),
+    [sessions, timerSessions]
   );
   const totalStudyDays = sortedStudyDays.length;
-  const totalHours = +(sessions.reduce((a, s) => a + Number(s.minutes || 0), 0) / 60).toFixed(1);
+  const totalManualMinutes = manualSessions.reduce((a, s) => a + Number(s.minutes || 0), 0);
+  const totalTimerMinutes = timerSessions.reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0);
+  const totalHours = +((totalManualMinutes + totalTimerMinutes) / 60).toFixed(1);
+  const totalLoggedHours = +(totalManualMinutes / 60).toFixed(1);
+  const totalTimerHours = +(totalTimerMinutes / 60).toFixed(1);
   const { longestStreak, hadComeback } = useMemo(() => {
     let longest = 0, run = 0, prev = null, comeback = false;
     sortedStudyDays.forEach((d) => {
@@ -156,11 +189,16 @@ export default function App() {
     const arr = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
-      const mins = sessions.filter((s) => s.session_date === d).reduce((a, s) => a + Number(s.minutes || 0), 0);
-      arr.push({ day: new Date(d).toLocaleDateString(undefined, { weekday: "short" }), hours: +(mins / 60).toFixed(1) });
+      const loggedMins = manualSessions.filter((s) => s.session_date === d).reduce((a, s) => a + Number(s.minutes || 0), 0);
+      const timerMins = timerSessions.filter((ts) => (ts.created_at || "").slice(0, 10) === d).reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0);
+      arr.push({
+        day: new Date(d).toLocaleDateString(undefined, { weekday: "short" }),
+        hours: +(loggedMins / 60).toFixed(1),
+        timerHours: +(timerMins / 60).toFixed(1),
+      });
     }
     return arr;
-  }, [sessions]);
+  }, [manualSessions, timerSessions]);
 
   const subjectPie = useMemo(() => {
     const map = {};
@@ -386,6 +424,12 @@ export default function App() {
     await tasksQ.update(t.id, { status: nextStatus });
     showToast(nextStatus === "Completed" ? "Task done ✅" : "Task reopened", () => tasksQ.update(t.id, { status: t.status }));
   };
+  const updateTask = async (id, patch) => {
+    const row = tasks.find((t) => t.id === id);
+    if (!row) return;
+    await tasksQ.update(id, patch);
+    showToast("Task updated ✏️", () => tasksQ.update(id, { title: row.title, subject: row.subject, priority: row.priority, category: row.category }));
+  };
   const deleteTask = async (id) => {
     const row = tasks.find((t) => t.id === id);
     if (!row) return;
@@ -446,15 +490,17 @@ export default function App() {
 
   const pageProps = {
     profile, saveProfile, mascot,
-    sessions, addSession, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
+    sessions, timerSessions, addSession, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
     questions, addQuestions, mocks, addMock, revisions, completeRevision, addRevision, deleteRevision,
-    tasks, addTask, toggleTask, deleteTask, backlogChapters, todayHours, todayMinutes,
+    tasks, addTask, toggleTask, updateTask, deleteTask, backlogChapters, todayHours, todayMinutes,
+    todayLoggedHours, todayTimerHours, totalLoggedHours, totalTimerHours,
     backlogItems, addBacklogItem, updateBacklogItem, setBacklogStatus, toggleSessionItem, deleteBacklogItem,
     streak, weeklyData, subjectPie, totalQuestions, todayQuestions, daysToExam,
     dueRevisions, upcomingRevisions, overdueRevisions, overallPct, completedCount,
     unlockedAchievements, achievementDefs, achievementRows: achievementsQ.rows, setPage, showToast, fireCelebrate,
     longestStreak, totalStudyDays, totalHours, masteredCount,
     featureUnlockStreak: FEATURE_UNLOCK_STREAK,
+    focusTimer,
   };
 
   return (
