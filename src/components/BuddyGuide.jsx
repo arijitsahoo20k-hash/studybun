@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X, Sparkles, Send, GraduationCap, Settings as SettingsIcon, RefreshCw, Lock } from "lucide-react";
 import Mascot from "./Mascot";
-import { buddyLine, MASCOTS } from "../data/mascots";
+import { buddyLine, MASCOTS, mascotTheme } from "../data/mascots";
 import { askBuddy } from "../services/buddyAI";
 import { hasUsableKeys } from "../services/buddyKeyManager";
 import { buildStatsSnapshot } from "../lib/statsSnapshot";
@@ -29,6 +29,7 @@ export default function BuddyGuide(p) {
   const listRef = useRef(null);
 
   const mascotLabel = MASCOTS[p.mascot]?.label || "Study Buddy";
+  const mSound = mascotTheme(p.mascot).sound;
 
   const tip = buddyLine(p.page, {
     name: p.profile?.name,
@@ -66,7 +67,7 @@ export default function BuddyGuide(p) {
     if (messages.length === 0) {
       setMessages([{
         role: "buddy",
-        text: `Hey${p.profile?.name ? ` ${p.profile.name}` : ""} — I'm ${mascotLabel}, your instructor here. Ask me anything about your prep and I'll answer straight, based on your actual numbers.`,
+        text: `${mSound} Hey${p.profile?.name ? ` ${p.profile.name}` : ""} — I'm ${mascotLabel}, your instructor here. Ask me anything about your prep and I'll answer straight, based on your actual numbers.`,
       }]);
     }
   };

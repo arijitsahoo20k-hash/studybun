@@ -7,6 +7,27 @@ export const MASCOTS = {
   penguin: { label: "Penguin", emoji: "🐧" },
 };
 
+/**
+ * Per-species personality: what each mascot *does* (verb, plus a capitalized
+ * "-ing"-ready form for badge names) and what it collects, plus a little
+ * signature sound used in greetings. This is what keeps achievements and
+ * buddy chatter from feeling like they're only ever about a bunny hopping
+ * for carrots — a bear hunts fish, a hamster scurries for seeds, a penguin
+ * waddles for pebbles, and so on.
+ */
+export const MASCOT_THEME = {
+  bunny: { verbing: "Hop", sound: "*boing*", collectible: { emoji: "🥕", name: "carrot", plural: "Carrots" } },
+  cat: { verbing: "Pounce", sound: "*purr*", collectible: { emoji: "🧶", name: "yarn ball", plural: "Yarn Balls" } },
+  fox: { verbing: "Dash", sound: "*yip*", collectible: { emoji: "🫐", name: "berry", plural: "Berries" } },
+  bear: { verbing: "Hunt", sound: "*grr*", collectible: { emoji: "🐟", name: "fish", plural: "Fish" } },
+  hamster: { verbing: "Scurry", sound: "*squeak*", collectible: { emoji: "🌻", name: "seed", plural: "Seeds" } },
+  penguin: { verbing: "Waddle", sound: "*honk*", collectible: { emoji: "🪨", name: "pebble", plural: "Pebbles" } },
+};
+
+export function mascotTheme(species) {
+  return MASCOT_THEME[species] || MASCOT_THEME.bunny;
+}
+
 export const MOODS = {
   idle: "Idle",
   happy: "Happy",

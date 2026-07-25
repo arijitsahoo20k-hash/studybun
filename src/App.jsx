@@ -13,7 +13,7 @@ import { isSupabaseConfigured } from "./lib/supabaseClient";
 
 import Mascot from "./components/Mascot";
 import BuddyGuide from "./components/BuddyGuide";
-import { reactionMood } from "./data/mascots";
+import { reactionMood, mascotTheme, MASCOTS } from "./data/mascots";
 import PWAPrompt from "./components/PWAPrompt";
 import { Confetti, LoadingScreen, DecorLayer } from "./components/ui";
 import Onboarding from "./pages/Onboarding";
@@ -115,6 +115,7 @@ export default function App() {
 
   const theme = THEMES[profile?.theme] || THEMES["Sakura Bloom"];
   const mascot = profile?.mascot || "bunny";
+  const mTheme = mascotTheme(mascot);
   const cssVars = { ...themeVars(theme), "--time-wash": timeWash() };
 
   /* ---------- derived stats (shared by Dashboard / Analytics / AI Insights) ---------- */
@@ -237,13 +238,13 @@ export default function App() {
   // explicit "how you unlock it" instruction shown on that page too.
   const achievementDefs = [
     // ---- Bronze: first steps ----
-    { id: "first_hop", tier: "Bronze", label: "First Hop", emoji: "🐰",
+    { id: "first_hop", tier: "Bronze", label: `First ${mTheme.verbing}`, emoji: MASCOTS[mascot]?.emoji || "🐰",
       goal: "Log your very first study session.", howTo: "Add one session in Study Tracker.",
       current: sessions.length, target: 1, cond: sessions.length >= 1 },
-    { id: "lecture_bunny", tier: "Bronze", label: "Lecture Bunny", emoji: "📚",
+    { id: "lecture_bunny", tier: "Bronze", label: `Lecture ${MASCOTS[mascot]?.label || "Bunny"}`, emoji: "📚",
       goal: "Log 5 Lecture-type sessions.", howTo: "Set Session Type to \"Lecture\" 5 times in Study Tracker.",
       current: lectureSessions, target: 5, cond: lectureSessions >= 5 },
-    { id: "carrot_collector", tier: "Bronze", label: "Carrot Collector", emoji: "🥕",
+    { id: "carrot_collector", tier: "Bronze", label: `${mTheme.collectible.name[0].toUpperCase()}${mTheme.collectible.name.slice(1)} Collector`, emoji: mTheme.collectible.emoji,
       goal: "Solve 100 questions in total.", howTo: "Log question counts in Question Practice until your lifetime total passes 100.",
       current: totalQuestions, target: 100, cond: totalQuestions >= 100 },
     { id: "mock_warrior", tier: "Bronze", label: "Mock Warrior", emoji: "🎯",
@@ -292,7 +293,7 @@ export default function App() {
     { id: "half_century", tier: "Gold", label: "Half Century", emoji: "🏏",
       goal: "Complete 50 chapters.", howTo: "Keep clearing Syllabus chapters to Completed or Mastered.",
       current: completedCount, target: 50, cond: completedCount >= 50 },
-    { id: "thousand_carrots", tier: "Gold", label: "Thousand Carrots", emoji: "🥕",
+    { id: "thousand_carrots", tier: "Gold", label: `Thousand ${mTheme.collectible.plural}`, emoji: mTheme.collectible.emoji,
       goal: "Solve 1,000 questions in total.", howTo: "Consistent daily Question Practice logging.",
       current: totalQuestions, target: 1000, cond: totalQuestions >= 1000 },
     { id: "mock_titan", tier: "Gold", label: "Mock Titan", emoji: "🛡️",
