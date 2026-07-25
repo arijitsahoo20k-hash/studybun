@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, Sparkles, Send, GraduationCap, Settings as SettingsIcon, RefreshCw } from "lucide-react";
+import { X, Sparkles, Send, GraduationCap, Settings as SettingsIcon, RefreshCw, Lock } from "lucide-react";
 import Mascot from "./Mascot";
 import { buddyLine, MASCOTS } from "../data/mascots";
 import { askBuddy } from "../services/buddyAI";
 import { hasUsableKeys } from "../services/buddyKeyManager";
 import { buildStatsSnapshot } from "../lib/statsSnapshot";
+import { ProgressBar } from "./ui";
 
 /**
  * The mascot as the app's ever-present study buddy.
@@ -45,6 +46,9 @@ export default function BuddyGuide(p) {
   });
 
   const urgent = p.mood === "reminder" || p.mood === "concerned";
+  const unlockAt = p.featureUnlockStreak ?? 6;
+  const streakLocked = (p.streak || 0) <= unlockAt;
+  const chatLocked = streakLocked || !smartReady;
 
   useEffect(() => {
     // Re-check whenever the chat is opened, in case keys were just added in Settings.
@@ -114,7 +118,14 @@ export default function BuddyGuide(p) {
             </button>
           </div>
 
-          {!smartReady ? (
+          {streakLocked ? (
+            <div className="sb-buddy-chat-empty">
+              <Lock size={22} />
+              <p>Smart chat unlocks at a {unlockAt + 1}-day streak — you're on day {p.streak || 0}.</p>
+              <div style={{ width: "100%", maxWidth: 200 }}><ProgressBar pct={((p.streak || 0) / (unlockAt + 1)) * 100} paw={false} /></div>
+              <p style={{ fontSize: 11, opacity: 0.8 }}>Keeps AI usage tied to real, daily study — not spammed for fun.</p>
+            </div>
+          ) : !smartReady ? (
             <div className="sb-buddy-chat-empty">
               <Mascot species={p.mascot} mood="idle" size={48} />
               <p>Smart chat isn't set up yet — check back soon.</p>
@@ -166,7 +177,7 @@ export default function BuddyGuide(p) {
               </button>
             )}
             <button className="sb-buddy-action sb-buddy-action-ask" onClick={openChat}>
-              Ask {mascotLabel} <GraduationCap size={12} />
+              Ask {mascotLabel} {chatLocked ? <Lock size={11} /> : <GraduationCap size={12} />}
             </button>
           </div>
         </div>
@@ -179,7 +190,7 @@ export default function BuddyGuide(p) {
       >
         <Mascot species={p.mascot} mood={p.mood} size={52} hop={p.hopping} />
         {urgent && !open && <span className="sb-buddy-dot" />}
-        {smartReady && <span className="sb-buddy-smart-dot" title="Smart mode ready" />}
+        {smartReady && !streakLocked && <span className="sb-buddy-smart-dot" title="Smart mode ready" />}
       </button>
     </div>
   );

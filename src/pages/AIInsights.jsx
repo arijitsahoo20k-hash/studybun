@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Sparkles, RefreshCw, AlertTriangle } from "lucide-react";
-import { Card, SectionTitle, Btn } from "../components/ui";
+import { Sparkles, RefreshCw, AlertTriangle, Lock } from "lucide-react";
+import { Card, SectionTitle, Btn, ProgressBar } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { generateAIInsights } from "../services/gemini";
 import { supabase } from "../lib/supabaseClient";
@@ -15,6 +15,35 @@ export default function AIInsightsPage(p) {
   const [generatedAt, setGeneratedAt] = useState(null);
 
   const hasEnoughData = p.sessions.length > 0 || p.questions.length > 0 || p.mocks.length > 0;
+  const unlockAt = p.featureUnlockStreak ?? 6;
+  const streakLocked = (p.streak || 0) <= unlockAt;
+
+  if (streakLocked) {
+    return (
+      <div className="sb-page">
+        <Card className="sb-hero">
+          <div>
+            <div className="sb-hero-greet">StudyBun AI</div>
+            <div className="sb-hero-line">I analyzed your study data and found some interesting insights.</div>
+          </div>
+          <Mascot species={p.mascot} mood="idle" size={84} />
+        </Card>
+        <Card>
+          <div className="sb-lock-screen">
+            <Lock size={28} className="sb-lock-icon" />
+            <div className="sb-lock-screen-title">AI Insights unlocks at a {unlockAt + 1}-day streak</div>
+            <p className="sb-lock-screen-sub">
+              This calls a real AI model on your data, so it's reserved for people actually showing up daily —
+              not a one-off peek. Keep logging a session every day and it'll unlock automatically.
+            </p>
+            <ProgressBar pct={((p.streak || 0) / (unlockAt + 1)) * 100} />
+            <div className="sb-lock-screen-count">Current streak: {p.streak || 0} / {unlockAt + 1} days</div>
+            <Btn variant="soft" onClick={() => p.setPage("study")}>Log today's session</Btn>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   const generate = async () => {
     setLoading(true);

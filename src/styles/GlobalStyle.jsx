@@ -239,6 +239,30 @@ export default function GlobalStyle() {
       .sb-badge-label { font-weight: 800; font-size: 12px; margin-top: 6px; }
       .sb-badge-lock { font-size: 10px; color: var(--muted); margin-top: 4px; font-weight: 700; }
 
+      .sb-achv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+      .sb-achv-card { display: flex; flex-direction: column; gap: 8px; transition: opacity .2s ease, filter .2s ease; }
+      .sb-achv-card.locked { opacity: 0.72; }
+      .sb-achv-card.locked .sb-achv-emoji { filter: grayscale(0.85); opacity: 0.6; }
+      .sb-achv-card.unlocked { box-shadow: 4px 4px 0 var(--outline); }
+      .sb-achv-top { display: flex; align-items: center; gap: 10px; }
+      .sb-achv-emoji { font-size: 28px; line-height: 1; }
+      .sb-achv-heading { flex: 1; min-width: 0; }
+      .sb-achv-label { font-weight: 800; font-size: 13.5px; }
+      .sb-achv-tier { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+      .sb-achv-status-icon { color: var(--muted); flex-shrink: 0; }
+      .sb-achv-status-icon.unlocked { color: var(--accent); }
+      .sb-achv-goal { font-size: 12.5px; line-height: 1.5; }
+      .sb-achv-howto { font-size: 11.5px; color: var(--muted); font-weight: 600; line-height: 1.5; }
+      .sb-achv-unlocked-row { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; color: var(--accent); }
+      .sb-achv-progress-label { font-size: 10.5px; color: var(--muted); font-weight: 700; text-align: right; }
+
+      .sb-lock-screen { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 22px 12px; }
+      .sb-lock-screen .sb-lock-icon { color: var(--muted); }
+      .sb-lock-screen-title { font-weight: 800; font-size: 14.5px; }
+      .sb-lock-screen-sub { color: var(--muted); font-size: 12.5px; font-weight: 600; max-width: 320px; }
+      .sb-lock-screen .sb-progress-track { width: 100%; max-width: 260px; margin-top: 4px; }
+      .sb-lock-screen-count { font-size: 11.5px; font-weight: 800; color: var(--muted); }
+
       .sb-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 24px 10px; position: relative; }
       .sb-empty-doodle { position: absolute; top: 2px; right: 14px; font-size: 22px; opacity: .35; transform: rotate(12deg); }
       .sb-empty-text { font-weight: 800; }
