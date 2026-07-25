@@ -8,6 +8,7 @@ import { THEMES, themeVars, timeWash } from "./data/themes";
 import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS } from "./data/syllabus";
 import { useDeviceRow, useRealtimeTable, useChapterProgress } from "./hooks/useRealtimeTable";
 import { useFocusTimer } from "./hooks/useFocusTimer";
+import { getActiveRadio } from "./lib/radio";
 import { isSupabaseConfigured } from "./lib/supabaseClient";
 
 import Mascot from "./components/Mascot";
@@ -80,6 +81,11 @@ export default function App() {
       timerSessionsQ.insert({ mode, planned_minutes: plannedMinutes, actual_minutes: actualMinutes, completed: true });
     },
   });
+  // Derived here (not inside FocusTimer's page component) for the same
+  // reason the timer itself lives here: so the actual playing <iframe>,
+  // rendered below outside the `page === "timer"` switch, never unmounts
+  // when the user navigates to another page or the settings panel closes.
+  const activeRadio = getActiveRadio(focusTimer);
 
   const [page, setPage] = useState("dashboard");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -509,6 +515,22 @@ export default function App() {
       <DecorLayer theme={theme} />
       <PWAPrompt />
       {celebrateType && <Confetti type={celebrateType} theme={theme} />}
+      {/* Lives here, not inside the Focus Timer page, so switching pages or
+          closing the timer's settings panel never unmounts (and thus never
+          silences) the radio. */}
+      {activeRadio.embedSrc && (
+        <div className="sb-radio-embed-tucked">
+          <iframe
+            key={activeRadio.embedSrc}
+            src={activeRadio.embedSrc}
+            title={activeRadio.label}
+            width="1"
+            height="1"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+          />
+        </div>
+      )}
       {toast && (
         <div className="sb-toast">
           <Mascot species={mascot} mood="celebrate" size={28} hop={hopping} />

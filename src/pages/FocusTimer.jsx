@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
   Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle,
@@ -6,64 +6,9 @@ import {
 import { Card, Btn, ProgressBar, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { SYLLABUS } from "../data/syllabus";
+import { RADIO_OPTIONS, RADIO_LINKS, extractYouTubeId, getActiveRadio } from "../lib/radio";
 
 const MODE_ORDER = ["Deep Focus", "Pomodoro", "Lecture", "Practice", "Revision"];
-
-// Direct, specific video/livestream IDs — NOT the "live_stream?channel=..."
-// lookup trick. That embed only resolves if the channel happens to have an
-// active broadcast at the exact moment the iframe loads; the moment a
-// channel's stream ends, goes private, or gets taken down (which is exactly
-// what happened to Lofi Girl's main stream), the embed just shows "Video
-// unavailable" with nothing we can detect or recover from client-side.
-// Pinning to a specific, currently-live video id is more reliable, and
-// pairing it with the custom-link box below means a dead preset is never a
-// dead end for the user.
-const RADIO_OPTIONS = [
-  {
-    id: "chillhop",
-    label: "Chillhop radio",
-    hint: "Jazzy chillhop beats — 24/7",
-    videoId: "5yx6BWlEVcY",
-  },
-  {
-    id: "lofi-24-7",
-    label: "Lofi study radio",
-    hint: "24/7 lofi hip hop beats",
-    videoId: "uMntpJdjrbM",
-  },
-];
-
-const RADIO_LINKS = [
-  { label: "Rain sounds", query: "rain sounds for studying 24/7" },
-  { label: "Piano lofi", query: "piano lofi study radio" },
-  { label: "Synthwave radio", query: "synthwave radio 24/7" },
-];
-
-// Turns pretty much anything a person might paste — a full watch URL, a
-// youtu.be short link, a /live/ or /embed/ link, or just the bare
-// 11-character video id — into a proper embeddable video id.
-function extractYouTubeId(raw) {
-  if (!raw) return null;
-  const input = raw.trim();
-  if (/^[\w-]{11}$/.test(input)) return input; // bare id
-  try {
-    const url = new URL(input);
-    const host = url.hostname.replace(/^www\./, "");
-    if (host === "youtu.be") {
-      const id = url.pathname.split("/").filter(Boolean)[0];
-      return id || null;
-    }
-    if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
-      if (url.searchParams.get("v")) return url.searchParams.get("v");
-      const parts = url.pathname.split("/").filter(Boolean);
-      // /live/VIDEOID , /embed/VIDEOID , /shorts/VIDEOID
-      if (["live", "embed", "shorts"].includes(parts[0]) && parts[1]) return parts[1];
-    }
-  } catch {
-    /* not a valid URL — fall through */
-  }
-  return null;
-}
 
 export default function FocusTimer(p) {
   const t = p.focusTimer;
@@ -93,13 +38,11 @@ export default function FocusTimer(p) {
   const [customError, setCustomError] = useState(false);
   useEffect(() => { setCustomDraft(t.radioCustomUrl || ""); }, [t.radioCustomUrl]);
 
-  const activePreset = RADIO_OPTIONS.find((r) => r.id === t.radioChoice);
-  const customVideoId = useMemo(() => extractYouTubeId(t.radioCustomUrl), [t.radioCustomUrl]);
-  const activeVideoId = t.radioChoice === "custom" ? customVideoId : activePreset?.videoId;
-  const activeLabel = t.radioChoice === "custom" ? "Custom radio" : activePreset?.label;
-  const activeEmbedSrc = activeVideoId
-    ? `https://www.youtube.com/embed/${activeVideoId}?autoplay=0&rel=0`
-    : null;
+  // NOTE: the actual playing <iframe> is NOT rendered here — it lives at the
+  // app root (see App.jsx) so it keeps playing no matter which page you're
+  // on or whether this settings panel is open. This page only shows the
+  // picker UI and reflects what's currently selected.
+  const { preset: activePreset, label: activeLabel, embedSrc: activeEmbedSrc } = getActiveRadio(t);
 
   const saveCustomUrl = () => {
     const id = extractYouTubeId(customDraft);
@@ -193,8 +136,8 @@ export default function FocusTimer(p) {
 
             {activeEmbedSrc ? (
               <p className="sb-radio-hint">
-                {t.radioChoice === "custom" ? "Playing your link" : activePreset?.hint}
-                {" — keeps playing in the background even after you close this panel. If it shows \"Video unavailable\", the stream itself has ended; paste a fresh link above."}
+                Now playing: {t.radioChoice === "custom" ? "your link" : activePreset?.label}
+                {" — keeps playing in the background across pages and even after you close this panel. If it shows \"Video unavailable\", the stream itself has ended; paste a fresh link above."}
               </p>
             ) : (t.radioChoice !== "none" && t.radioChoice !== "custom") ? (
               <p className="sb-radio-hint">Pick a station above, or paste your own link.</p>
@@ -207,23 +150,6 @@ export default function FocusTimer(p) {
                 </a>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Kept mounted regardless of settingsOpen — closing the gear panel
-            must NOT unmount this iframe, or the radio audio stops with it.
-            It only actually plays/renders once a station is chosen; when
-            the panel is closed we just tuck it out of view visually. */}
-        {activeEmbedSrc && (
-          <div className={`sb-radio-embed-wrap ${settingsOpen ? "" : "sb-radio-embed-tucked"}`}>
-            <iframe
-              key={activeEmbedSrc}
-              className="sb-radio-embed"
-              src={activeEmbedSrc}
-              title={activeLabel}
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-            />
           </div>
         )}
 
