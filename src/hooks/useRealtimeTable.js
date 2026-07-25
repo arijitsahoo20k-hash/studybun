@@ -14,6 +14,7 @@ export function useRealtimeTable(table, { orderBy = "created_at", ascending = fa
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const mounted = useRef(true);
+  const loadRef = useRef(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -37,6 +38,7 @@ export function useRealtimeTable(table, { orderBy = "created_at", ascending = fa
       setLoading(false);
     }
     load();
+    loadRef.current = load;
 
     const channel = supabase
       .channel(`rt:${table}:${userId}`)
@@ -103,7 +105,9 @@ export function useRealtimeTable(table, { orderBy = "created_at", ascending = fa
     [table]
   );
 
-  return { rows, loading, error, insert, update, remove, setRows };
+  const refetch = useCallback(() => loadRef.current?.(), []);
+
+  return { rows, loading, error, insert, update, remove, setRows, refetch };
 }
 
 /** Single-row-per-user table (profiles, user_settings, user_statistics). */
@@ -112,6 +116,7 @@ export function useDeviceRow(table, defaults = {}) {
   const userId = user?.id;
   const [row, setRow] = useState(null);
   const [loading, setLoading] = useState(true);
+  const loadRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -138,6 +143,7 @@ export function useDeviceRow(table, defaults = {}) {
       setLoading(false);
     }
     load();
+    loadRef.current = load;
 
     const channel = supabase
       .channel(`rt:${table}:row:${userId}`)
@@ -168,12 +174,14 @@ export function useDeviceRow(table, defaults = {}) {
     [table, userId]
   );
 
-  return { row, loading, save };
+  const refetch = useCallback(() => loadRef.current?.(), []);
+
+  return { row, loading, save, refetch };
 }
 
 /** chapter_progress is keyed by (subject, chapter) rather than id-first — a thin wrapper with upsert semantics. */
 export function useChapterProgress() {
-  const { rows, loading, insert, update } = useRealtimeTable("chapter_progress", { orderBy: "updated_at" });
+  const { rows, loading, insert, update, refetch } = useRealtimeTable("chapter_progress", { orderBy: "updated_at" });
 
   const map = {};
   rows.forEach((r) => { map[`${r.subject}::${r.chapter}`] = r; });
@@ -189,5 +197,5 @@ export function useChapterProgress() {
     [rows]
   );
 
-  return { map, rows, loading, upsert };
+  return { map, rows, loading, upsert, refetch };
 }

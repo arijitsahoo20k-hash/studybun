@@ -5,6 +5,43 @@ export default function GlobalStyle() {
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&family=Caveat:wght@600;700&display=swap');
 
+      /* ===== tap/focus reset =====
+         Android Chrome (incl. installed PWAs) paints two things this app never
+         styled: (1) a translucent blue rectangle on tap — the UA's default
+         -webkit-tap-highlight-color, and (2) a blue :focus outline that Chrome
+         also applies after a touch tap, not just after real keyboard/switch-
+         access navigation. Neither comes from this codebase (no MUI, no prior
+         outline/:focus rules existed) — both are browser defaults.
+         Fix: drop the tap flash everywhere, and swap the raw :focus outline
+         for :focus-visible — which only fires for keyboard/assistive-tech
+         focus, not mouse or touch — so accessibility is preserved rather than
+         removed. */
+      html { -webkit-tap-highlight-color: transparent; }
+      button, a, input, select, textarea, [tabindex], .sb-clickable {
+        -webkit-tap-highlight-color: transparent;
+      }
+      :focus { outline: none; }
+      :focus-visible {
+        outline: 2.5px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 6px;
+      }
+      .sb-btn:focus-visible, .sb-chip:focus-visible, .sb-icon-round:focus-visible,
+      .sb-sound-toggle:focus-visible, .sb-mini-action:focus-visible, .sb-radio-chip:focus-visible,
+      .sb-theme-chip:focus-visible, .sb-mascot-pick:focus-visible, .sb-theme-swatch:focus-visible,
+      .sb-cal-nav:focus-visible, .sb-cal-today:focus-visible, .sb-nav-item:focus-visible,
+      .sb-bottom-item:focus-visible {
+        outline-offset: 3px;
+        border-radius: 999px;
+      }
+      .sb-card:focus-visible, .sb-cal-cell:focus-visible, .sb-checkbox:focus-visible {
+        outline-offset: 1px;
+      }
+      .sb-input:focus-visible, select.sb-input:focus-visible {
+        outline: 2.5px solid var(--accent);
+        outline-offset: 0;
+      }
+
       .sb-app, .sb-onboard, .sb-loading {
         font-family: var(--font-body); color: var(--ink); background: var(--bg); min-height: 100vh;
         background-image: radial-gradient(var(--dot) 1.4px, transparent 1.4px);
@@ -490,6 +527,80 @@ export default function GlobalStyle() {
 
       .sb-penguin-peek:hover .sb-penguin-flipper { transform-box: fill-box; transform-origin: center; animation: sb-flipper-wave .5s ease; }
       @keyframes sb-flipper-wave { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+      /* ===== kawaii study calendar (Profile page) ===== */
+      .sb-cal { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+
+      .sb-cal-head { display: flex; align-items: center; gap: 8px; }
+      .sb-cal-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; flex: 1; text-align: center; letter-spacing: .2px; }
+      .sb-cal-nav {
+        width: 30px; height: 30px; border-radius: 999px; border: 2px solid var(--outline); background: var(--card);
+        color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer;
+        box-shadow: 2px 2px 0 var(--outline); transition: transform .12s ease, box-shadow .12s ease;
+      }
+      .sb-cal-nav:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--outline); }
+      .sb-cal-today {
+        border: 2px solid var(--outline); background: var(--soft); color: var(--ink); font-weight: 800; font-size: 11px;
+        border-radius: 999px; padding: 5px 10px; cursor: pointer; box-shadow: 2px 2px 0 var(--outline);
+      }
+      .sb-cal-today:hover { transform: translate(-1px, -1px); }
+
+      .sb-cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+      .sb-cal-wd { text-align: center; font-size: 10.5px; font-weight: 800; color: var(--muted); padding-bottom: 2px; }
+
+      .sb-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+      .sb-cal-cell {
+        position: relative; aspect-ratio: 1; border-radius: 14px; border: 2px solid transparent; background: var(--soft);
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+        cursor: pointer; padding: 2px 0; font-family: var(--font-body); transition: transform .12s ease, border-color .12s ease, background-color .12s ease;
+      }
+      .sb-cal-cell.empty { background: transparent; cursor: default; }
+      .sb-cal-cell:not(.empty):hover { transform: translateY(-1px) scale(1.05); border-color: var(--outline); }
+      .sb-cal-cell.has-data { background: var(--card); border-color: var(--outline); }
+      .sb-cal-cell.is-today { border-color: var(--accent); border-width: 2.5px; }
+      .sb-cal-cell.is-today .sb-cal-daynum { color: var(--accent); }
+      .sb-cal-cell.is-selected { background: var(--accent); border-color: var(--outline); box-shadow: 2px 2px 0 var(--outline); }
+      .sb-cal-cell.is-selected .sb-cal-daynum { color: #fff; }
+      .sb-cal-daynum { font-size: 12px; font-weight: 800; color: var(--ink); line-height: 1; }
+      .sb-cal-dots { display: flex; gap: 2px; }
+      .sb-cal-dot { width: 5px; height: 5px; border-radius: 999px; display: inline-block; }
+      .sb-cal-cell.is-selected .sb-cal-dot { background: #fff !important; opacity: .85; }
+
+      .sb-cal-legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 2px 2px 0; }
+      .sb-cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; color: var(--muted); }
+
+      .sb-cal-detail {
+        margin-top: 4px; background: var(--soft); border: 2.5px dashed var(--outline); border-radius: 18px;
+        padding: 14px; animation: sb-pop .22s ease;
+      }
+      .sb-cal-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+      .sb-cal-detail-date { font-family: var(--font-display); font-weight: 800; font-size: 13.5px; color: var(--ink); }
+      .sb-cal-empty { text-align: center; font-size: 12.5px; font-weight: 700; color: var(--muted); padding: 14px 4px; }
+
+      .sb-cal-section { margin-top: 10px; }
+      .sb-cal-section:first-of-type { margin-top: 2px; }
+      .sb-cal-section-title { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .3px; }
+      .sb-cal-items { display: flex; flex-direction: column; gap: 5px; }
+      .sb-cal-item {
+        display: flex; align-items: center; gap: 8px; background: var(--card); border: 1.5px solid var(--outline);
+        border-radius: 12px; padding: 6px 10px; font-size: 12px; font-weight: 700; color: var(--ink);
+      }
+      .sb-cal-item-flag { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+      .sb-cal-item-main { flex: 1; }
+      .sb-cal-item-sub { color: var(--muted); font-weight: 800; font-size: 11px; white-space: nowrap; }
+
+      @media (max-width: 720px) {
+        .sb-cal-daynum { font-size: 11px; }
+        .sb-cal-legend-item { font-size: 9.5px; }
+      }
+
+      /* ===== data backup card (Settings) ===== */
+      .sb-backup-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+      .sb-backup-checkbox {
+        display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 12.5px; font-weight: 700;
+        color: var(--muted); cursor: pointer;
+      }
+      .sb-backup-checkbox input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
     `}</style>
   );
 }

@@ -9,7 +9,9 @@ import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS } from "./data/syllabus";
 import { useDeviceRow, useRealtimeTable, useChapterProgress } from "./hooks/useRealtimeTable";
 import { useFocusTimer } from "./hooks/useFocusTimer";
 import { getActiveRadio } from "./lib/radio";
-import { isSupabaseConfigured } from "./lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
+import { useAuth } from "./lib/AuthContext";
+import { buildExportPayload, downloadJSON, readFileAsJSON, importPayload, totalImported } from "./lib/dataPortability";
 
 import Mascot from "./components/Mascot";
 import BuddyGuide from "./components/BuddyGuide";
@@ -58,7 +60,8 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 export const FEATURE_UNLOCK_STREAK = 6;
 
 export default function App() {
-  const { row: profile, loading: profileLoading, save: saveProfile } = useDeviceRow("profiles", {
+  const { user } = useAuth();
+  const { row: profile, loading: profileLoading, save: saveProfile, refetch: refetchProfile } = useDeviceRow("profiles", {
     name: "", exam: "JEE Main", exam_date: "2027-01-24", daily_goal: 6, theme: "Sakura Bloom", mascot: "bunny",
   });
 
@@ -493,6 +496,51 @@ export default function App() {
     showToast("Backlog item deleted", () => backlogItemsQ.insert(rest));
   };
 
+  /* ---------- lifetime data backup (Settings → Import/Export) ---------- */
+  const exportBackup = () => {
+    const payload = buildExportPayload(
+      {
+        study_sessions: sessions,
+        timer_sessions: timerSessions,
+        chapter_progress: chapters.rows,
+        question_logs: questions,
+        mock_tests: mocks,
+        revision_plans: revisions,
+        tasks,
+        backlog_items: backlogItems,
+        achievements: achievementsQ.rows,
+      },
+      profile
+    );
+    downloadJSON(payload, `studybun-backup-${todayStr()}.json`);
+    showToast("Backup downloaded 💾");
+  };
+
+  const importBackup = async (file, { applyProfile = true } = {}) => {
+    if (!user) { showToast("Sign in first, then import your backup"); return { ok: false }; }
+    try {
+      const payload = await readFileAsJSON(file);
+      const summary = await importPayload(supabase, user.id, payload, { applyProfile, saveProfile });
+      // Bulk writes above go straight through the Supabase client, bypassing
+      // each hook's own insert() (and thus its optimistic local update) — so
+      // pull fresh rows for every table that might have changed.
+      sessionsQ.refetch(); timerSessionsQ.refetch(); questionsQ.refetch(); mocksQ.refetch();
+      revisionsQ.refetch(); tasksQ.refetch(); backlogItemsQ.refetch(); achievementsQ.refetch();
+      chapters.refetch(); refetchProfile();
+      const total = totalImported(summary);
+      if (summary.errors.length) {
+        showToast(`Imported ${total} records, ${summary.errors.length} table(s) had issues`);
+        console.error("[StudyBun] import errors:", summary.errors);
+      } else {
+        showToast(`Imported ${total} records 🎉`);
+      }
+      return { ok: true, summary };
+    } catch (e) {
+      showToast(e.message || "Import failed");
+      return { ok: false, error: e.message };
+    }
+  };
+
   if (profileLoading || !profile) {
     return (
       <div style={cssVars}>
@@ -526,6 +574,7 @@ export default function App() {
     longestStreak, totalStudyDays, totalHours, masteredCount,
     featureUnlockStreak: FEATURE_UNLOCK_STREAK,
     focusTimer,
+    exportBackup, importBackup,
   };
 
   return (

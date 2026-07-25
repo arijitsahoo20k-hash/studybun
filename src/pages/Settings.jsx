@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Settings, Sparkles, Rabbit, LogOut, UserCircle, GraduationCap, CheckCircle2, Circle } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Settings, Sparkles, Rabbit, LogOut, UserCircle, GraduationCap, CheckCircle2, Circle, Download, Upload, DatabaseBackup } from "lucide-react";
 import { Card, SectionTitle, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { THEMES } from "../data/themes";
@@ -40,8 +40,51 @@ function SmartBuddyCard() {
   );
 }
 
+function DataBackupCard({ exportBackup, importBackup }) {
+  const fileInputRef = useRef(null);
+  const [applyProfile, setApplyProfile] = useState(true);
+  const [importing, setImporting] = useState(false);
+
+  const pickFile = () => fileInputRef.current?.click();
+
+  const onFileChosen = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file next time
+    if (!file) return;
+    const ok = window.confirm(
+      "Import this backup? Records in the file will be added to your account (existing data stays put — nothing gets deleted)."
+    );
+    if (!ok) return;
+    setImporting(true);
+    await importBackup(file, { applyProfile });
+    setImporting(false);
+  };
+
+  return (
+    <Card>
+      <SectionTitle icon={DatabaseBackup}>Data backup</SectionTitle>
+      <p className="sb-muted" style={{ fontSize: 12.5, marginTop: 2, marginBottom: 14 }}>
+        Export your entire study history — sessions, questions, mocks, tasks, revisions, backlog, and badges — as one
+        JSON file. Import it later to restore, or move it to another account. Importing only adds records; it never
+        deletes anything.
+      </p>
+      <div className="sb-backup-actions">
+        <Btn onClick={exportBackup}><Download size={15} style={{ marginRight: 6, verticalAlign: "-2px" }} />Export as JSON</Btn>
+        <Btn variant="ghost" onClick={pickFile} disabled={importing}>
+          <Upload size={15} style={{ marginRight: 6, verticalAlign: "-2px" }} />{importing ? "Importing…" : "Import JSON"}
+        </Btn>
+        <input ref={fileInputRef} type="file" accept="application/json,.json" style={{ display: "none" }} onChange={onFileChosen} />
+      </div>
+      <label className="sb-backup-checkbox">
+        <input type="checkbox" checked={applyProfile} onChange={(e) => setApplyProfile(e.target.checked)} />
+        Also restore name, exam date, theme & mascot from the file
+      </label>
+    </Card>
+  );
+}
+
 export default function SettingsPage(p) {
-  const { profile, saveProfile } = p;
+  const { profile, saveProfile, exportBackup, importBackup } = p;
   const { user, signOut } = useAuth();
   return (
     <div className="sb-page">
@@ -70,6 +113,8 @@ export default function SettingsPage(p) {
           </div>
         </div>
       </Card>
+
+      <DataBackupCard exportBackup={exportBackup} importBackup={importBackup} />
 
       <SmartBuddyCard />
 

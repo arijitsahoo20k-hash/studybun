@@ -1,6 +1,7 @@
 import React from "react";
-import { Card } from "../components/ui";
+import { Card, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
+import StudyCalendar from "../components/StudyCalendar";
 
 export default function ProfilePage(p) {
   const totalStudyHours = Math.floor(p.sessions.reduce((a, s) => a + Number(s.minutes || 0), 0) / 60);
@@ -19,6 +20,18 @@ export default function ProfilePage(p) {
         <Card><div className="sb-mini-stat"><div className="sb-mini-num">{p.totalQuestions}</div><div className="sb-muted">Questions solved</div></div></Card>
         <Card><div className="sb-mini-stat"><div className="sb-mini-num">{p.unlockedAchievements.length}</div><div className="sb-muted">Badges earned</div></div></Card>
       </div>
+
+      <Card washi>
+        <SectionTitle>🐾 My study calendar</SectionTitle>
+        <StudyCalendar
+          sessions={p.sessions}
+          timerSessions={p.timerSessions}
+          questions={p.questions}
+          mocks={p.mocks}
+          tasks={p.tasks}
+          revisions={p.revisions}
+        />
+      </Card>
     </div>
   );
 }
