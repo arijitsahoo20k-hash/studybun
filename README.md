@@ -22,7 +22,7 @@ npm install
    turn off "Confirm email" if you don't want new sign-ups to have to click a confirmation link
    first (fine for personal/local use; leave it on if others will sign up).
 
-## 3. Set up Gemini (for AI Insights)
+## 3. Set up Gemini (for AI Insights + the Smart Study Buddy)
 
 1. Grab a free API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 2. AI Insights are **only** ever called when you press "Generate AI Insights" in the app —
@@ -31,6 +31,14 @@ npm install
    model (e.g. `gemini-3.5-flash`, `gemini-3.1-pro-preview`, `gemini-2.5-flash`), or leave
    it blank and the app will automatically try a list of current models — Gemini 3.x down
    to 2.5 — until one works for your key.
+4. The **Smart Study Buddy** (the chat-style instructor mascot, see `src/services/buddyAI.js`)
+   uses its own separate pool of keys, configured by you — not typed in by whoever's using the
+   app. Set `VITE_GEMINI_BUDDY_API_KEYS` to a comma-separated list of keys to give it multiple
+   keys to rotate across (useful if you expect enough chat traffic to hit rate limits on one
+   key); if you leave it unset it falls back to reusing `VITE_GEMINI_API_KEY`. It tries Gemini
+   3.0-family models first, then falls back through 2.0/2.5 — see `src/services/geminiModels.js`.
+   Users can see key status (masked) and pick a model family preference under Settings, but
+   never enter or edit keys themselves.
 
 ## 4. Environment variables
 
@@ -38,13 +46,15 @@ npm install
 cp .env.example .env
 ```
 
-Fill in the three values:
+Fill in the values:
 
 ```
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-public-key
 VITE_GEMINI_API_KEY=your-gemini-key
-VITE_GEMINI_MODEL=              # optional — leave blank for auto model fallback
+VITE_GEMINI_MODEL=                        # optional — leave blank for auto model fallback
+VITE_GEMINI_BUDDY_API_KEYS=               # optional — comma-separated list, e.g. key_one,key_two
+VITE_GEMINI_BUDDY_MODEL_FAMILY=           # optional — "auto" | "gemini3" | "gemini2"
 ```
 
 Never commit `.env` — it's already in `.gitignore`.
@@ -61,7 +71,12 @@ mascot pick, theme pick), then straight into the dashboard.
 ## 6. Deploy
 
 `npm run build` produces a static `dist/` folder deployable to Vercel, Netlify, Cloudflare Pages,
-or any static host. Set the three `VITE_*` env vars in your host's dashboard the same way as `.env`.
+or any static host. Set the `VITE_*` env vars in your host's dashboard the same way as `.env`.
+
+> **Heads up:** any `VITE_*` variable is bundled into the client-side JS at build time — that's
+> how Vite env vars work. Treat this the same way you already treat `VITE_GEMINI_API_KEY`: fine
+> for a personal/small-audience deployment, but not a substitute for a real server-side secret if
+> you're shipping this to a large public audience and want to hide usage/cost from users entirely.
 
 ## Installable as an app (PWA)
 

@@ -305,6 +305,36 @@ export default function GlobalStyle() {
       .sb-buddy-avatar:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--outline); }
       .sb-buddy-dot { position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--card); animation: sb-buddy-pulse 1.4s ease-in-out infinite; }
       @keyframes sb-buddy-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: .65; } }
+      .sb-buddy-smart-dot { position: absolute; bottom: 1px; right: 1px; width: 11px; height: 11px; border-radius: 50%; background: #6fcf8f; border: 2px solid var(--card); }
+      .sb-buddy-bubble-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+      .sb-buddy-bubble-row .sb-buddy-action { margin-top: 0; }
+      .sb-buddy-action-ask { background: var(--accent); color: #fff; border-color: var(--outline); }
+
+      /* ===== Buddy smart chat panel ===== */
+      .sb-buddy-chat { width: 300px; max-width: calc(100vw - 32px); background: var(--card); border: 2.5px solid var(--outline); border-radius: 18px; box-shadow: 4px 4px 0 var(--outline); display: flex; flex-direction: column; overflow: hidden; animation: sb-pop .2s ease; }
+      .sb-buddy-chat-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 2px solid var(--outline); background: var(--soft); }
+      .sb-buddy-chat-title { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; color: var(--ink); }
+      .sb-buddy-chat-list { flex: 1; max-height: 320px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+      .sb-buddy-msg { font-size: 12.5px; line-height: 1.45; padding: 8px 11px; border-radius: 14px; max-width: 88%; font-weight: 600; word-wrap: break-word; }
+      .sb-buddy-msg-buddy { background: var(--soft); border: 1.5px solid var(--outline); color: var(--ink); align-self: flex-start; border-bottom-left-radius: 4px; }
+      .sb-buddy-msg-user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+      .sb-buddy-msg-loading { display: flex; align-items: center; gap: 6px; opacity: .75; }
+      .sb-buddy-msg-error { background: transparent; border: 1.5px dashed var(--accent); color: var(--accent); align-self: stretch; max-width: 100%; }
+      .sb-buddy-chat-input { display: flex; gap: 6px; padding: 10px; border-top: 2px solid var(--outline); }
+      .sb-buddy-chat-input textarea { flex: 1; resize: none; border: 1.5px solid var(--outline); border-radius: 12px; padding: 8px 10px; font-size: 12.5px; font-family: inherit; font-weight: 600; color: var(--ink); background: var(--bg); max-height: 90px; }
+      .sb-buddy-chat-input button { background: var(--accent); color: #fff; border: none; border-radius: 12px; width: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+      .sb-buddy-chat-input button:disabled { opacity: .5; cursor: not-allowed; }
+      .sb-buddy-chat-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 22px 16px; }
+      .sb-buddy-chat-empty p { font-size: 12.5px; font-weight: 700; color: var(--muted); margin: 0; }
+
+      /* ===== Smart Study Buddy key manager (Settings) ===== */
+      .sb-buddy-key-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 1.5px solid var(--outline); border-radius: 12px; margin-bottom: 8px; background: var(--soft); }
+      .sb-buddy-key-info { flex: 1; min-width: 0; }
+      .sb-buddy-key-label { font-size: 12.5px; font-weight: 800; color: var(--ink); }
+      .sb-buddy-key-toggle { border: 1.5px solid var(--outline); background: var(--card); border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer; color: var(--ink); }
+      .sb-buddy-key-del { border: none; background: none; color: var(--muted); cursor: pointer; display: flex; padding: 4px; }
+      .sb-buddy-key-del:hover { color: var(--accent); }
+      .sb-buddy-status-row { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; color: var(--ink); }
 
       /* ===== theme picker (compact chips, used in sidebar footer) ===== */
       .sb-theme-picker { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -354,6 +384,7 @@ export default function GlobalStyle() {
         .sb-bottom-item.active { color: var(--outline); }
         .sb-buddy { bottom: 78px; right: 14px; }
         .sb-buddy-bubble { max-width: 210px; }
+        .sb-buddy-chat { width: min(280px, calc(100vw - 28px)); }
       }
       @media (max-width: 560px) {
         .sb-chapter-card-open { grid-column: span 1; }

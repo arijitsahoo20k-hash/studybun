@@ -1,10 +1,44 @@
-import React from "react";
-import { Settings, Sparkles, Rabbit, LogOut, UserCircle } from "lucide-react";
+import React, { useState } from "react";
+import { Settings, Sparkles, Rabbit, LogOut, UserCircle, GraduationCap, CheckCircle2, Circle } from "lucide-react";
 import { Card, SectionTitle, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { THEMES } from "../data/themes";
 import { MASCOTS } from "../data/mascots";
 import { useAuth } from "../lib/AuthContext";
+import { hasUsableKeys, getModelPreference, setModelPreference } from "../services/buddyKeyManager";
+import { MODEL_FAMILIES } from "../services/geminiModels";
+
+function SmartBuddyCard() {
+  const [ready] = useState(() => hasUsableKeys());
+  const [modelPref, setModelPrefState] = useState(getModelPreference());
+
+  const onModelPref = (val) => { setModelPreference(val); setModelPrefState(val); };
+
+  return (
+    <Card>
+      <SectionTitle icon={GraduationCap}>Smart Study Buddy (AI)</SectionTitle>
+      <div className="sb-buddy-status-row">
+        {ready ? <CheckCircle2 size={16} color="#6fcf8f" /> : <Circle size={16} className="sb-muted" />}
+        <span>{ready ? "Smart chat is ready" : "Smart chat isn't set up yet"}</span>
+      </div>
+      <p className="sb-muted" style={{ fontSize: 12.5, marginTop: 6, marginBottom: 16 }}>
+        {ready
+          ? "Your buddy can chat as your instructor, grounded in your real study data."
+          : "The app owner needs to configure this — it's not something you set up here."}
+      </p>
+
+      <div>
+        <label>Model preference</label>
+        <select className="sb-input" value={modelPref} onChange={(e) => onModelPref(e.target.value)}>
+          {Object.entries(MODEL_FAMILIES).map(([id, f]) => <option key={id} value={id}>{f.label}</option>)}
+        </select>
+        <div className="sb-muted" style={{ fontSize: 11.5, marginTop: 4 }}>
+          Auto tries the newest Gemini models first, falling back automatically if one isn't available.
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export default function SettingsPage(p) {
   const { profile, saveProfile } = p;
@@ -36,6 +70,8 @@ export default function SettingsPage(p) {
           </div>
         </div>
       </Card>
+
+      <SmartBuddyCard />
 
       <Card>
         <SectionTitle icon={Rabbit}>Mascot</SectionTitle>
