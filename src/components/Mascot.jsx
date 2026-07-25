@@ -16,7 +16,7 @@ import Penguin from "./mascots/Penguin";
  */
 const SPECIES = { bunny: Bunny, cat: Cat, fox: Fox, bear: Bear, hamster: Hamster, penguin: Penguin };
 
-export default function Mascot({ species = "bunny", mood = "idle", size = 72, hop = false, peek = false }) {
+export default function Mascot({ species = "bunny", mood = "idle", size = 72, hop = false, peek = false, hopLoop = false }) {
   const Species = SPECIES[species] || Bunny;
-  return <Species mood={mood} size={size} hop={hop} peek={peek} />;
+  return <Species mood={mood} size={size} hop={hop} peek={peek} hopLoop={hopLoop} />;
 }

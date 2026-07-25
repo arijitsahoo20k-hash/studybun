@@ -112,9 +112,9 @@ export default function Auth() {
 
   return (
     <div className="sb-onboard-card">
-      <Mascot species="bunny" mood="happy" size={80} />
+      <Mascot species="bunny" mood="happy" size={80} hopLoop />
       <h1 className="sb-onboard-title">
-        {mode === MODES.SIGN_UP ? "Create your account" : mode === MODES.FORGOT ? "Reset your password" : "Welcome back 🌸"}
+        {mode === MODES.SIGN_UP ? <>Create your account <span className="sb-auth-emoji-wiggle">🌸</span></> : mode === MODES.FORGOT ? "Reset your password" : <>Welcome back <span className="sb-auth-emoji-wiggle">🌸</span></>}
       </h1>
       <p className="sb-onboard-sub">
         {mode === MODES.FORGOT

@@ -63,6 +63,7 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
 
   return (
     <div className="sb-cal">
+      <div className="sb-cal-left">
       <div className="sb-cal-head">
         <button type="button" className="sb-cal-nav" onClick={() => changeMonth(-1)} aria-label="Previous month"><ChevronLeft size={16} /></button>
         <div className="sb-cal-title">🗓️ {monthLabel}</div>
@@ -109,6 +110,7 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
         {CATS.map((c) => (
           <span key={c.key} className="sb-cal-legend-item"><span className="sb-cal-dot" style={{ background: c.color }} /> {c.label}</span>
         ))}
+      </div>
       </div>
 
       {selected && (

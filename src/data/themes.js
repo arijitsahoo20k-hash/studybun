@@ -58,16 +58,16 @@ export const THEMES = {
   "Panda Paper": {
     bg: "#F6F4EE", card: "#FFFFFC", outline: "#2E2C2A", ink: "#242220", muted: "#8D8983",
     accent: "#333130", accent2: "#F0AFC0", soft: "#EAE7DE",
-    palette: ["#D9D5C9", "#BDB8A9", "#333130", "#F0AFC0", "#9A968C", "#EAE7DE"],
+    palette: ["#D9D5C9", "#BDB8A9", "#C7C2B4", "#F0AFC0", "#9A968C", "#EAE7DE"],
     mascotFill: "#E9E6DD", mascotInner: "#FFFFFC", mascotBlush: "#F0AFC0",
     dot: "rgba(46,44,42,0.055)", emoji: "🐼",
   },
-  "Candlelit Scholar": {
-    bg: "#FBF3E2", card: "#FFFAEE", outline: "#5C3A28", ink: "#472C1D", muted: "#9C8067",
-    accent: "#D98A3D", accent2: "#8B3A3A", soft: "#F3DFAE",
-    palette: ["#F6C97A", "#D98A3D", "#8B3A3A", "#C9B38B", "#E8D9B5", "#F3DFAE"],
-    mascotFill: "#F0DFC0", mascotInner: "#FFF6E4", mascotBlush: "#E8956B",
-    dot: "rgba(92,58,40,0.06)", emoji: "🕯️", stitched: true,
+  "Mossy Blockland": {
+    bg: "#F2F7E6", card: "#FFFEF8", outline: "#3B2A18", ink: "#33421F", muted: "#748A5F",
+    accent: "#6FBF4F", accent2: "#B97A3D", soft: "#DDF0C4",
+    palette: ["#B8E0A0", "#8FCB7C", "#AEE3E0", "#D8B98A", "#C7C6BE", "#F6D98A"],
+    mascotFill: "#C8EAB0", mascotInner: "#F1FAE7", mascotBlush: "#F0A9BC",
+    dot: "rgba(59,42,24,0.07)", emoji: "🟩", blocky: true,
   },
 };
 

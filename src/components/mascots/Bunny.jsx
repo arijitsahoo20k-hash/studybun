@@ -17,14 +17,14 @@ const FACES = {
 const CLOSED_EYE = "M -4 0 Q 0 2.4 4 0";
 
 /** The original StudyBun mascot -- kept exactly as designed, everyone else now stands apart from it. */
-export default function Bunny({ mood = "idle", size = 72, hop = false, peek = false }) {
+export default function Bunny({ mood = "idle", size = 72, hop = false, peek = false, hopLoop = false }) {
   const face = FACES[mood] || FACES.idle;
   const blink = useBlink(mood);
   const eyePath = blink ? CLOSED_EYE : face.eye;
 
   return (
     <svg width={size} height={size} viewBox="-42 -50 84 92" style={{ overflow: "visible", flexShrink: 0 }}
-      className={`sb-bunny sb-species-bunny ${hop ? "sb-bunny-hop" : ""} ${peek ? "sb-bunny-peek" : ""}`}>
+      className={`sb-bunny sb-species-bunny ${hop ? "sb-bunny-hop" : ""} ${peek ? "sb-bunny-peek" : ""} ${hopLoop ? "sb-bunny-hop-loop" : ""}`}>
       <ellipse className="sb-ear sb-ear-l" cx="-14" cy="-30" rx="7" ry="21" fill="var(--accent2)" transform="rotate(-12 -14 -30)" {...OUTLINE} />
       <ellipse className="sb-ear sb-ear-r" cx="14" cy="-30" rx="7" ry="21" fill="var(--accent2)" transform="rotate(12 14 -30)" {...OUTLINE} />
       <ellipse cx="-14" cy="-28" rx="3.2" ry="13" fill="var(--soft)" transform="rotate(-12 -14 -28)" />

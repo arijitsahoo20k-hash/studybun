@@ -120,6 +120,15 @@ export default function GlobalStyle() {
       .sb-app[data-stitched="true"] .sb-card { border-style: dashed; border-width: 2.5px; }
       .sb-app[data-stitched="true"] .sb-chapter-card { border-style: dashed; }
 
+      /* blocky / pixel-jungle look for themes that opt in (e.g. Mossy Blockland) —
+         squared-off corners and chunkier borders so cards read like little blocks */
+      .sb-app[data-blocky="true"] .sb-card { border-radius: 6px; border-width: 3px; box-shadow: 5px 5px 0 var(--outline); }
+      .sb-app[data-blocky="true"] .sb-clickable:hover { box-shadow: 7px 7px 0 var(--outline); }
+      .sb-app[data-blocky="true"] .sb-icon-badge { border-radius: 5px; border-width: 2.5px; }
+      .sb-app[data-blocky="true"] .sb-btn { border-radius: 6px; }
+      .sb-app[data-blocky="true"] .sb-nav-item { border-radius: 6px; }
+      .sb-app[data-blocky="true"] .sb-chip { border-radius: 5px; }
+
       .sb-icon-badge { width: 26px; height: 26px; border-radius: 50%; background: var(--soft); border: 2px solid var(--outline); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--outline); }
 
       .sb-sidebar { padding: 22px 16px; display: flex; flex-direction: column; gap: 18px; border-right: 2.5px solid var(--outline); position: sticky; top: 0; height: 100vh; background: var(--card); z-index: 2; }
@@ -127,7 +136,7 @@ export default function GlobalStyle() {
       .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 18px; }
       .sb-brand-sub { font-size: 11px; color: var(--muted); font-weight: 700; }
       .sb-nav { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; }
-      .sb-nav .sb-nav-item { margin-left: 4px; }
+      .sb-nav .sb-nav-item { margin-left: -4px; }
       .sb-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 999px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; cursor: pointer; text-align: left; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
       .sb-nav-item:hover { background: var(--soft); border-color: var(--outline); transform: translateX(2px); }
       .sb-nav-item.active { background: var(--soft); border-color: var(--outline); box-shadow: 3px 3px 0 var(--outline); }
@@ -555,6 +564,7 @@ export default function GlobalStyle() {
       .sb-faq-item.open .sb-faq-chevron { transform: rotate(180deg); color: var(--accent); }
       .sb-faq-item.open .sb-faq-q { color: var(--accent); }
       .sb-faq-a { padding: 0 12px 11px; font-size: 11.5px; font-weight: 600; color: var(--muted); line-height: 1.5; animation: sb-pop .18s ease; }
+      .sb-faq-a p { margin: 0 0 9px; }
 
       @media (max-width: 900px) {
         .sb-auth-shell { flex-wrap: wrap; }
@@ -563,6 +573,63 @@ export default function GlobalStyle() {
       @media (max-width: 480px) {
         .sb-auth-features { grid-template-columns: 1fr; }
       }
+
+      /* ===== auth page delight: entrances, loops, and the scratch card ===== */
+      .sb-auth-shell .sb-onboard-card { animation: sb-auth-rise .5s cubic-bezier(.22,1,.36,1) both; }
+      .sb-auth-shell .sb-auth-info { animation: sb-auth-rise .5s cubic-bezier(.22,1,.36,1) .1s both; }
+      @keyframes sb-auth-rise {
+        0% { opacity: 0; transform: translateY(16px) scale(.97); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .sb-bunny-hop-loop { animation: sb-hop-loop 3.4s cubic-bezier(.34,1.56,.64,1) infinite; }
+      @keyframes sb-hop-loop {
+        0% { transform: translateY(0); }
+        4% { transform: translateY(-10px) scaleY(1.04); }
+        8% { transform: translateY(0) scaleY(.96); }
+        11% { transform: translateY(-3px); }
+        14%, 100% { transform: translateY(0); }
+      }
+
+      .sb-auth-emoji-wiggle { display: inline-block; animation: sb-emoji-wiggle 2.6s ease-in-out infinite; transform-origin: 70% 70%; }
+      @keyframes sb-emoji-wiggle {
+        0%, 80%, 100% { transform: rotate(0deg) scale(1); }
+        85% { transform: rotate(-12deg) scale(1.08); }
+        92% { transform: rotate(10deg) scale(1.08); }
+        96% { transform: rotate(-4deg) scale(1); }
+      }
+
+      .sb-auth-shell .sb-onboard-step .sb-btn-primary { position: relative; }
+      .sb-auth-shell .sb-onboard-step .sb-btn-primary::before {
+        content: ""; position: absolute; inset: -4px; border-radius: 999px; background: var(--accent);
+        opacity: .35; z-index: -1; animation: sb-cta-pulse 2.4s ease-in-out infinite;
+      }
+      @keyframes sb-cta-pulse {
+        0%, 100% { transform: scale(1); opacity: .3; }
+        50% { transform: scale(1.09); opacity: 0; }
+      }
+
+      .sb-auth-feature { animation: sb-auth-rise .45s cubic-bezier(.22,1,.36,1) both; }
+
+      /* scratch-and-tear reveal card, tucked inside the "how do I reach you" FAQ */
+      .sb-scratch-wrap {
+        position: relative; margin-top: 2px; height: 46px; border-radius: 10px; overflow: hidden;
+        background: var(--card); border: 1.5px solid var(--outline); transform: rotate(-1deg);
+        box-shadow: 2px 2px 0 var(--outline); touch-action: none;
+      }
+      .sb-scratch-wrap.revealed { animation: sb-scratch-tear .4s cubic-bezier(.34,1.56,.64,1); }
+      @keyframes sb-scratch-tear {
+        0% { transform: rotate(-1deg) scale(.97); }
+        55% { transform: rotate(1.5deg) scale(1.03); }
+        100% { transform: rotate(-1deg) scale(1); }
+      }
+      .sb-scratch-content { position: absolute; inset: 0; display: flex; align-items: center; gap: 7px; padding: 0 12px; color: var(--ink); }
+      .sb-scratch-placeholder { font-weight: 800; font-size: 12px; letter-spacing: 2px; color: var(--muted); }
+      .sb-scratch-email {
+        background: none; border: none; padding: 0; display: inline-flex; align-items: center; gap: 6px;
+        font-weight: 800; font-size: 12.5px; color: var(--accent); cursor: pointer; font-family: inherit; animation: sb-pop .25s ease;
+      }
+      .sb-scratch-canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
 
       @media (max-width: 900px) {
         .sb-app { grid-template-columns: 1fr; }
@@ -624,6 +691,7 @@ export default function GlobalStyle() {
 
       /* ===== kawaii study calendar (Profile page) ===== */
       .sb-cal { display: flex; flex-direction: column; gap: 10px; margin: 6px auto 0; width: 100%; max-width: 372px; }
+      .sb-cal-left { display: flex; flex-direction: column; gap: 10px; width: 100%; }
 
       .sb-cal-head { display: flex; align-items: center; gap: 8px; }
       .sb-cal-title { font-family: var(--font-display); font-weight: 800; font-size: 15px; flex: 1; text-align: center; letter-spacing: .2px; }
@@ -680,6 +748,7 @@ export default function GlobalStyle() {
         margin-top: 4px; background: var(--soft); border: 2.5px dashed var(--outline); border-radius: 18px;
         padding: 12px 14px; animation: sb-pop .22s ease;
       }
+      @keyframes sb-cal-slide-in { 0% { opacity: 0; transform: translateX(-8px); } 100% { opacity: 1; transform: translateX(0); } }
       .sb-cal-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
       .sb-cal-detail-date { font-family: var(--font-display); font-weight: 800; font-size: 13.5px; color: var(--ink); }
       .sb-cal-empty { text-align: center; font-size: 12.5px; font-weight: 700; color: var(--muted); padding: 14px 4px; }
@@ -695,6 +764,20 @@ export default function GlobalStyle() {
       .sb-cal-item-flag { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
       .sb-cal-item-main { flex: 1; }
       .sb-cal-item-sub { color: var(--muted); font-weight: 800; font-size: 11px; white-space: nowrap; }
+
+      /* Bigger + left-tucked, stats panel beside the calendar — desktop/tablet only, phones keep the original compact centered layout above */
+      @media (min-width: 721px) {
+        .sb-cal { flex-direction: row; align-items: flex-start; gap: 20px; margin: 6px 0 0; max-width: none; }
+        .sb-cal-left { max-width: 440px; flex-shrink: 0; }
+        .sb-cal-grid { gap: 5px; }
+        .sb-cal-cell { max-width: 54px; max-height: 54px; border-radius: 14px; gap: 2px; }
+        .sb-cal-daynum { font-size: 13.5px; }
+        .sb-cal-dot { width: 5px; height: 5px; }
+        .sb-cal-detail {
+          flex: 1; min-width: 240px; margin-top: 0; padding: 14px 16px; align-self: stretch;
+          max-height: 560px; overflow-y: auto; animation: sb-cal-slide-in .22s cubic-bezier(.34,1.56,.64,1);
+        }
+      }
 
       @media (max-width: 720px) {
         .sb-cal { max-width: 340px; }
