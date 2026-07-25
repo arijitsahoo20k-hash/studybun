@@ -48,7 +48,7 @@ export default function GlobalStyle() {
         background-size: 22px 22px; position: relative; transition: background-color .35s ease, color .35s ease;
       }
       .sb-app *, .sb-onboard *, .sb-loading * { box-sizing: border-box; }
-      .sb-app { display: grid; grid-template-columns: clamp(210px, 17vw, 264px) 1fr; position: relative; z-index: 1; }
+      .sb-app { display: grid; grid-template-columns: clamp(226px, 18.5vw, 284px) 1fr; position: relative; z-index: 1; }
 
       /* time-of-day ambient wash — subtly warms in the evening, cools in the morning */
       .sb-app::before {
@@ -131,12 +131,12 @@ export default function GlobalStyle() {
 
       .sb-icon-badge { width: 26px; height: 26px; border-radius: 50%; background: var(--soft); border: 2px solid var(--outline); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--outline); }
 
-      .sb-sidebar { padding: 22px 16px; display: flex; flex-direction: column; gap: 18px; border-right: 2.5px solid var(--outline); position: sticky; top: 0; height: 100vh; background: var(--card); z-index: 2; }
+      .sb-sidebar { padding: 22px 20px; display: flex; flex-direction: column; gap: 18px; border-right: 2.5px solid var(--outline); position: sticky; top: 0; height: 100vh; background: var(--card); z-index: 2; }
       .sb-brand { display: flex; align-items: center; gap: 10px; }
       .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 18px; }
       .sb-brand-sub { font-size: 11px; color: var(--muted); font-weight: 700; }
       .sb-nav { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; }
-      .sb-nav .sb-nav-item { margin-left: -4px; }
+      .sb-nav .sb-nav-item { margin-right: 7px; }
       .sb-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 999px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; cursor: pointer; text-align: left; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
       .sb-nav-item:hover { background: var(--soft); border-color: var(--outline); transform: translateX(2px); }
       .sb-nav-item.active { background: var(--soft); border-color: var(--outline); box-shadow: 3px 3px 0 var(--outline); }
