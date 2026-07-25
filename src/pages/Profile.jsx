@@ -21,7 +21,7 @@ export default function ProfilePage(p) {
         <Card><div className="sb-mini-stat"><div className="sb-mini-num">{p.unlockedAchievements.length}</div><div className="sb-muted">Badges earned</div></div></Card>
       </div>
 
-      <Card washi>
+      <Card className="sb-cal-card" washi>
         <SectionTitle>🐾 My study calendar</SectionTitle>
         <StudyCalendar
           sessions={p.sessions}

@@ -12,8 +12,8 @@ const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 /* Cute per-category dot legend — kept small & fixed so the grid stays calm. */
 const CATS = [
   { key: "study", label: "Study", emoji: "📖", color: "var(--accent)" },
-  { key: "questions", label: "Questions", emoji: "✏️", color: "var(--p2)" },
-  { key: "mock", label: "Mock test", emoji: "📝", color: "var(--p1)" },
+  { key: "questions", label: "Qs", emoji: "✏️", color: "var(--p2)" },
+  { key: "mock", label: "Mock", emoji: "📝", color: "var(--p1)" },
   { key: "tasks", label: "Tasks", emoji: "🎀", color: "var(--p3)" },
 ];
 
@@ -64,10 +64,10 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
   return (
     <div className="sb-cal">
       <div className="sb-cal-head">
-        <button type="button" className="sb-cal-nav" onClick={() => changeMonth(-1)} aria-label="Previous month"><ChevronLeft size={16} /></button>
-        <div className="sb-cal-title">🗓️ {monthLabel}</div>
-        <button type="button" className="sb-cal-nav" onClick={() => changeMonth(1)} aria-label="Next month"><ChevronRight size={16} /></button>
-        {selected !== today && <button type="button" className="sb-cal-today" onClick={goToday}>Today</button>}
+        <button type="button" className="sb-cal-nav" onClick={() => changeMonth(-1)} aria-label="Previous month"><ChevronLeft size={11} /></button>
+        <div className="sb-cal-title">🎀 {monthLabel}</div>
+        <button type="button" className="sb-cal-nav" onClick={() => changeMonth(1)} aria-label="Next month"><ChevronRight size={11} /></button>
+        {selected !== today && <button type="button" className="sb-cal-today" onClick={goToday}>✨ today</button>}
       </div>
 
       <div className="sb-cal-weekdays">
@@ -124,7 +124,7 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
 
           {day?.sessions.length > 0 && (
             <div className="sb-cal-section">
-              <div className="sb-cal-section-title"><BookOpen size={13} /> Study sessions</div>
+              <div className="sb-cal-section-title"><BookOpen size={11} /> Study sessions</div>
               <div className="sb-cal-items">
                 {day.sessions.map((s) => (
                   <div className="sb-cal-item" key={s.id}>
@@ -139,7 +139,7 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
 
           {day?.questionCount > 0 && (
             <div className="sb-cal-section">
-              <div className="sb-cal-section-title"><HelpCircle size={13} /> Questions solved</div>
+              <div className="sb-cal-section-title"><HelpCircle size={11} /> Questions solved</div>
               <div className="sb-cal-items">
                 {day.questions.map((q) => (
                   <div className="sb-cal-item" key={q.id}>
@@ -154,7 +154,7 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
 
           {day?.mocks.length > 0 && (
             <div className="sb-cal-section">
-              <div className="sb-cal-section-title"><ClipboardCheck size={13} /> Mock tests</div>
+              <div className="sb-cal-section-title"><ClipboardCheck size={11} /> Mock tests</div>
               <div className="sb-cal-items">
                 {day.mocks.map((mk) => (
                   <div className="sb-cal-item" key={mk.id}>
@@ -169,7 +169,7 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
 
           {day?.tasks.length > 0 && (
             <div className="sb-cal-section">
-              <div className="sb-cal-section-title"><ListChecks size={13} /> Tasks due</div>
+              <div className="sb-cal-section-title"><ListChecks size={11} /> Tasks due</div>
               <div className="sb-cal-items">
                 {day.tasks.map((t) => (
                   <div className="sb-cal-item" key={t.id}>
@@ -184,7 +184,7 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
 
           {day?.revisions.length > 0 && (
             <div className="sb-cal-section">
-              <div className="sb-cal-section-title"><RotateCcw size={13} /> Revisions due</div>
+              <div className="sb-cal-section-title"><RotateCcw size={11} /> Revisions due</div>
               <div className="sb-cal-items">
                 {day.revisions.map((r) => (
                   <div className="sb-cal-item" key={r.id}>
