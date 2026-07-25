@@ -14,13 +14,20 @@ const FACES = {
 
 const OUTLINE = { stroke: "var(--outline)", strokeWidth: 2.2, strokeLinejoin: "round" };
 
-/* Each species gets three layers so silhouettes actually differ, not just the ears:
-   back  -> drawn BEFORE the head circle (ears, background body bits)
-   front -> drawn AFTER the head circle but BEFORE the eyes (snout/muzzle/markings)
-   over  -> drawn LAST, on top of the whole face (whiskers, teeth, flippers) */
+/*
+ * Every species gets its own HEAD SILHOUETTE (not just different ears bolted onto
+ * the same circle), plus three drawing layers:
+ *   back  -> drawn BEFORE the head shape (ears, background body bits)
+ *   front -> drawn AFTER the head shape but BEFORE the eyes (snout/muzzle/markings)
+ *   over  -> drawn LAST, on top of the whole face (whiskers, teeth, flippers)
+ * `head` is the actual outline/fill replacing the old shared circle.
+ * `scale` (sx, sy) resizes the shared eyes/mouth/blush group to fit that silhouette.
+ */
 
 function Bunny() {
   return {
+    head: <circle cx="0" cy="0" r="26" fill="var(--card)" stroke="var(--outline)" strokeWidth="2.4" />,
+    scale: [1, 1],
     back: (
       <>
         <ellipse cx="-14" cy="-30" rx="7" ry="21" fill="var(--accent2)" transform="rotate(-12 -14 -30)" {...OUTLINE} />
@@ -36,27 +43,34 @@ function Bunny() {
 
 function Cat() {
   return {
+    /* rounded cheeks tapering to a single pointed chin -- a "heart" silhouette, not a circle */
+    head: (
+      <path
+        d="M -25 -3 Q -27 -22 0 -24 Q 27 -22 25 -3 Q 25 13 14 21 Q 0 29 -14 21 Q -25 13 -25 -3 Z"
+        fill="var(--card)" stroke="var(--outline)" strokeWidth="2.4" strokeLinejoin="round"
+      />
+    ),
+    scale: [1, 1],
     back: (
       <>
         <path d="M -22 -18 L -12 -34 L -4 -16 Z" fill="var(--accent2)" {...OUTLINE} />
         <path d="M 22 -18 L 12 -34 L 4 -16 Z" fill="var(--accent2)" {...OUTLINE} />
         <path d="M -19 -19 L -13 -29 L -8 -18 Z" fill="var(--soft)" />
         <path d="M 19 -19 L 13 -29 L 8 -18 Z" fill="var(--soft)" />
-        {/* fluffy cheek tufts give the head a wider, furrier silhouette than the bunny's */}
-        <path d="M -26 4 Q -33 6 -27 12 Q -25 8 -22 8 Z" fill="var(--accent2)" {...OUTLINE} />
-        <path d="M 26 4 Q 33 6 27 12 Q 25 8 22 8 Z" fill="var(--accent2)" {...OUTLINE} />
+        {/* fluffy cheek tufts, echoing the pointed-chin silhouette from the side */}
+        <path d="M -25 2 Q -34 5 -27 12 Q -24 8 -20 8 Z" fill="var(--accent2)" {...OUTLINE} />
+        <path d="M 25 2 Q 34 5 27 12 Q 24 8 20 8 Z" fill="var(--accent2)" {...OUTLINE} />
       </>
     ),
     front: (
-      /* small pink triangle nose sits above the mouth, distinct from the bunny's plain blush */
       <path d="M -2.6 1 L 2.6 1 L 0 4.5 Z" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1" strokeLinejoin="round" />
     ),
     over: (
       <>
-        <path d="M -6 6 L -17 3" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
-        <path d="M -6 9 L -17 10" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
-        <path d="M 6 6 L 17 3" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
-        <path d="M 6 9 L 17 10" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M -6 6 L -18 3" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M -6 9 L -18 10" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M 6 6 L 18 3" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M 6 9 L 18 10" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
       </>
     ),
   };
@@ -64,21 +78,29 @@ function Cat() {
 
 function Fox() {
   return {
+    /* narrow head that stretches into a long pointed muzzle -- reads as a triangle in silhouette */
+    head: (
+      <path
+        d="M -21 -6 Q -23 -25 0 -27 Q 23 -25 21 -6 Q 21 7 10 16 Q 3 31 0 36 Q -3 31 -10 16 Q -21 7 -21 -6 Z"
+        fill="var(--card)" stroke="var(--outline)" strokeWidth="2.4" strokeLinejoin="round"
+      />
+    ),
+    scale: [0.82, 1],
     back: (
       <>
-        <path d="M -24 -14 L -13 -36 L -3 -14 Z" fill="var(--accent2)" {...OUTLINE} />
-        <path d="M 24 -14 L 13 -36 L 3 -14 Z" fill="var(--accent2)" {...OUTLINE} />
-        <path d="M -18 -18 L -13 -30 L -8 -18 Z" fill="var(--soft)" />
-        <path d="M 18 -18 L 13 -30 L 8 -18 Z" fill="var(--soft)" />
+        <path d="M -21 -15 L -11 -37 L -2 -15 Z" fill="var(--accent2)" {...OUTLINE} />
+        <path d="M 21 -15 L 11 -37 L 2 -15 Z" fill="var(--accent2)" {...OUTLINE} />
+        <path d="M -16 -19 L -11 -31 L -6 -19 Z" fill="var(--soft)" />
+        <path d="M 16 -19 L 11 -31 L 6 -19 Z" fill="var(--soft)" />
         {/* darker forehead marking, unlike any other species */}
-        <path d="M -10 -22 Q 0 -28 10 -22 Q 6 -16 0 -15 Q -6 -16 -10 -22 Z" fill="var(--accent2)" opacity="0.55" />
+        <path d="M -9 -21 Q 0 -27 9 -21 Q 5 -15 0 -14 Q -5 -15 -9 -21 Z" fill="var(--accent2)" opacity="0.55" />
       </>
     ),
     front: (
       <>
-        {/* pointed white muzzle makes the fox's face silhouette read as a triangle, not a circle */}
-        <path d="M -11 10 Q 0 28 11 10 Q 6 20 0 21 Q -6 20 -11 10 Z" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" strokeLinejoin="round" />
-        <ellipse cx="0" cy="19" rx="2.6" ry="2" fill="var(--ink)" />
+        {/* long white muzzle that hugs the pointed chin, unlike the round bear/hamster snouts */}
+        <path d="M -9 11 Q 0 34 9 11 Q 5 23 0 24 Q -5 23 -9 11 Z" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" strokeLinejoin="round" />
+        <ellipse cx="0" cy="23" rx="2.4" ry="1.8" fill="var(--ink)" />
       </>
     ),
     over: null,
@@ -87,19 +109,22 @@ function Fox() {
 
 function Bear() {
   return {
+    /* big, wide, chubby head -- noticeably larger than every other species */
+    head: <ellipse cx="0" cy="0" rx="29" ry="27" fill="var(--card)" stroke="var(--outline)" strokeWidth="2.4" />,
+    scale: [1.1, 1.06],
     back: (
       <>
-        <circle cx="-19" cy="-22" r="10" fill="var(--accent2)" {...OUTLINE} />
-        <circle cx="19" cy="-22" r="10" fill="var(--accent2)" {...OUTLINE} />
-        <circle cx="-19" cy="-22" r="4.5" fill="var(--soft)" />
-        <circle cx="19" cy="-22" r="4.5" fill="var(--soft)" />
+        <circle cx="-22" cy="-23" r="11" fill="var(--accent2)" {...OUTLINE} />
+        <circle cx="22" cy="-23" r="11" fill="var(--accent2)" {...OUTLINE} />
+        <circle cx="-22" cy="-23" r="5" fill="var(--soft)" />
+        <circle cx="22" cy="-23" r="5" fill="var(--soft)" />
       </>
     ),
     front: (
-      /* big rounded muzzle patch, wider and lower than the fox's pointed one */
+      /* big rounded muzzle patch -- wider and lower than the fox's pointed one */
       <>
-        <ellipse cx="0" cy="14" rx="15" ry="11" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" />
-        <ellipse cx="0" cy="9" rx="4" ry="2.6" fill="var(--ink)" />
+        <ellipse cx="0" cy="15" rx="17" ry="12" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" />
+        <ellipse cx="0" cy="9" rx="4.4" ry="3" fill="var(--ink)" />
       </>
     ),
     over: null,
@@ -108,30 +133,33 @@ function Bear() {
 
 function Hamster() {
   return {
+    /* short, wide, squashed head -- the opposite proportions of the fox's long one */
+    head: <ellipse cx="0" cy="0" rx="30" ry="21" fill="var(--card)" stroke="var(--outline)" strokeWidth="2.4" />,
+    scale: [1.05, 0.8],
     back: (
       <>
-        <circle cx="-21" cy="-15" r="8" fill="var(--accent2)" {...OUTLINE} />
-        <circle cx="21" cy="-15" r="8" fill="var(--accent2)" {...OUTLINE} />
-        <circle cx="-21" cy="-15" r="3.6" fill="var(--soft)" />
-        <circle cx="21" cy="-15" r="3.6" fill="var(--soft)" />
+        <circle cx="-19" cy="-13" r="7.5" fill="var(--accent2)" {...OUTLINE} />
+        <circle cx="19" cy="-13" r="7.5" fill="var(--accent2)" {...OUTLINE} />
+        <circle cx="-19" cy="-13" r="3.2" fill="var(--soft)" />
+        <circle cx="19" cy="-13" r="3.2" fill="var(--soft)" />
       </>
     ),
     front: (
-      /* stuffed cheek pouches puff outward past the head outline, unlike the flat-cheeked bunny/cat */
+      /* stuffed cheek pouches puff outward past the wide head, unlike the flat-cheeked bunny/cat */
       <>
-        <ellipse cx="-24" cy="10" rx="10" ry="8" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" />
-        <ellipse cx="24" cy="10" rx="10" ry="8" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" />
+        <ellipse cx="-28" cy="8" rx="11" ry="9" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" />
+        <ellipse cx="28" cy="8" rx="11" ry="9" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" />
       </>
     ),
     over: (
       <>
-        <line x1="-3" y1="9" x2="-13" y2="7" stroke="var(--ink)" strokeWidth="0.8" opacity="0.5" />
-        <line x1="-3" y1="12" x2="-13" y2="13" stroke="var(--ink)" strokeWidth="0.8" opacity="0.5" />
-        <line x1="3" y1="9" x2="13" y2="7" stroke="var(--ink)" strokeWidth="0.8" opacity="0.5" />
-        <line x1="3" y1="12" x2="13" y2="13" stroke="var(--ink)" strokeWidth="0.8" opacity="0.5" />
+        <line x1="-3" y1="8" x2="-15" y2="6" stroke="var(--ink)" strokeWidth="0.8" opacity="0.5" />
+        <line x1="-3" y1="11" x2="-15" y2="12" stroke="var(--ink)" strokeWidth="0.8" opacity="0.5" />
+        <line x1="3" y1="8" x2="15" y2="6" stroke="var(--ink)" strokeWidth="0.8" opacity="0.5" />
+        <line x1="3" y1="11" x2="15" y2="12" stroke="var(--ink)" strokeWidth="0.8" opacity="0.5" />
         {/* little buck teeth, unique to the hamster */}
-        <rect x="-3" y="9" width="2.6" height="4" rx="0.6" fill="var(--card)" stroke="var(--outline)" strokeWidth="1" />
-        <rect x="0.4" y="9" width="2.6" height="4" rx="0.6" fill="var(--card)" stroke="var(--outline)" strokeWidth="1" />
+        <rect x="-3" y="8" width="2.6" height="4" rx="0.6" fill="var(--card)" stroke="var(--outline)" strokeWidth="1" />
+        <rect x="0.4" y="8" width="2.6" height="4" rx="0.6" fill="var(--card)" stroke="var(--outline)" strokeWidth="1" />
       </>
     ),
   };
@@ -139,20 +167,22 @@ function Hamster() {
 
 function Penguin() {
   return {
+    head: null, // penguin keeps its own two-tone body treatment, drawn specially below
+    scale: [1, 1],
     back: (
       <>
-        <ellipse cx="0" cy="2" rx="22" ry="24" fill="var(--accent)" opacity="0.16" />
-        <ellipse cx="0" cy="6" rx="15" ry="17" fill="var(--soft)" />
+        <ellipse cx="0" cy="0" rx="23" ry="27" fill="var(--accent)" opacity="0.16" />
+        <ellipse cx="0" cy="5" rx="16" ry="18" fill="var(--soft)" />
       </>
     ),
     front: (
       <>
         <path d="M -5 12 L 5 12 L 0 20 Z" fill="#FFC65C" />
-        {/* small flippers at the sides read very differently from any of the mammals' ears */}
-        <ellipse cx="-29" cy="8" rx="7" ry="15" fill="var(--ink)" opacity="0.85" transform="rotate(18 -29 8)" />
-        <ellipse cx="29" cy="8" rx="7" ry="15" fill="var(--ink)" opacity="0.85" transform="rotate(-18 29 8)" />
-        <ellipse cx="-8" cy="30" rx="5" ry="3" fill="#FFC65C" />
-        <ellipse cx="8" cy="30" rx="5" ry="3" fill="#FFC65C" />
+        {/* flippers at the sides read very differently from any of the mammals' ears */}
+        <ellipse cx="-30" cy="8" rx="7" ry="16" fill="var(--ink)" opacity="0.85" transform="rotate(20 -30 8)" />
+        <ellipse cx="30" cy="8" rx="7" ry="16" fill="var(--ink)" opacity="0.85" transform="rotate(-20 30 8)" />
+        <ellipse cx="-8" cy="31" rx="5" ry="3" fill="#FFC65C" />
+        <ellipse cx="8" cy="31" rx="5" ry="3" fill="#FFC65C" />
       </>
     ),
     over: null,
@@ -166,8 +196,9 @@ const CLOSED_EYE = "M -4 0 Q 0 2.4 4 0";
 export default function Mascot({ species = "bunny", mood = "idle", size = 72, hop = false, peek = false }) {
   const face = FACES[mood] || FACES.idle;
   const build = SPECIES[species] || Bunny;
-  const { back, front, over } = build();
+  const { head, scale, back, front, over } = build();
   const isPenguin = species === "penguin";
+  const [sx, sy] = scale;
 
   const [blink, setBlink] = useState(false);
   useEffect(() => {
@@ -191,31 +222,35 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
       className={`sb-bunny ${hop ? "sb-bunny-hop" : ""} ${peek ? "sb-bunny-peek" : ""}`}>
       {back}
 
-      <circle cx="0" cy="0" r="26" fill={isPenguin ? "var(--ink)" : "var(--card)"} stroke="var(--outline)" strokeWidth="2.4" opacity={isPenguin ? 0.08 : 1} />
-      <circle cx="0" cy="0" r="26" fill={isPenguin ? "var(--card)" : "none"} stroke="var(--outline)" strokeWidth="2.4" style={isPenguin ? { clipPath: "inset(0 0 40% 0)" } : {}} />
-      {isPenguin && <ellipse cx="0" cy="10" rx="18" ry="14" fill="var(--card)" />}
+      {isPenguin ? (
+        <>
+          <circle cx="0" cy="0" r="26" fill="var(--ink)" stroke="var(--outline)" strokeWidth="2.4" opacity="0.08" />
+          <circle cx="0" cy="0" r="26" fill="var(--card)" stroke="var(--outline)" strokeWidth="2.4" style={{ clipPath: "inset(0 0 40% 0)" }} />
+          <ellipse cx="0" cy="10" rx="18" ry="14" fill="var(--card)" />
+        </>
+      ) : head}
 
       {/* species-specific muzzle/snout/marking, unique per species */}
       {front}
 
-      {/* blush */}
-      <circle cx="-9" cy="8" r="4.2" fill="var(--accent)" opacity="0.4" />
-      <circle cx="9" cy="8" r="4.2" fill="var(--accent)" opacity="0.4" />
+      {/* shared blush + eyes + mouth, scaled per species to fit that head's proportions */}
+      <g transform={`scale(${sx} ${sy})`}>
+        <circle cx="-9" cy="8" r="4.2" fill="var(--accent)" opacity="0.4" />
+        <circle cx="9" cy="8" r="4.2" fill="var(--accent)" opacity="0.4" />
 
-      {/* eyes */}
-      <g transform="translate(-8,-3)"><path d={eyePath} stroke="var(--ink)" strokeWidth="2.4" fill="none" strokeLinecap="round" /></g>
-      <g transform="translate(8,-3)"><path d={eyePath} stroke="var(--ink)" strokeWidth="2.4" fill="none" strokeLinecap="round" /></g>
-      {face.brow && (
-        <>
-          <path d={face.brow} stroke="var(--ink)" strokeWidth="1.6" fill="none" strokeLinecap="round" transform="translate(-8,-3)" />
-          <path d={face.brow} stroke="var(--ink)" strokeWidth="1.6" fill="none" strokeLinecap="round" transform="translate(8,-3) scale(-1,1)" />
-        </>
-      )}
+        <g transform="translate(-8,-3)"><path d={eyePath} stroke="var(--ink)" strokeWidth="2.4" fill="none" strokeLinecap="round" /></g>
+        <g transform="translate(8,-3)"><path d={eyePath} stroke="var(--ink)" strokeWidth="2.4" fill="none" strokeLinecap="round" /></g>
+        {face.brow && (
+          <>
+            <path d={face.brow} stroke="var(--ink)" strokeWidth="1.6" fill="none" strokeLinecap="round" transform="translate(-8,-3)" />
+            <path d={face.brow} stroke="var(--ink)" strokeWidth="1.6" fill="none" strokeLinecap="round" transform="translate(8,-3) scale(-1,1)" />
+          </>
+        )}
 
-      {/* mouth */}
-      <path d={face.mouth} stroke="var(--ink)" strokeWidth="2" fill="none" strokeLinecap="round" transform="translate(0,4)" />
+        <path d={face.mouth} stroke="var(--ink)" strokeWidth="2" fill="none" strokeLinecap="round" transform="translate(0,4)" />
+      </g>
 
-      {/* accessories per mood */}
+      {/* accessories per mood (kept unscaled so text/icons don't distort) */}
       {face.zzz && <text x="18" y="-22" fontSize="11" fill="var(--muted)" fontFamily="var(--font-display)">z</text>}
       {face.sparkle && (
         <>
