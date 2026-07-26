@@ -33,17 +33,24 @@ export default function BuddyGuide(p) {
 
   const tip = buddyLine(p.page, {
     name: p.profile?.name,
+    species: p.mascot,
     streak: p.streak,
+    longestStreak: p.longestStreak,
     todayHours: p.todayHours,
     dailyGoal: p.profile?.daily_goal || 6,
     overdueRevisions: p.overdueRevisions.length,
     dueRevisions: p.dueRevisions.length,
+    upcomingRevisions: p.upcomingRevisions?.length || 0,
     backlogChapters: p.backlogChapters.length,
     totalQuestions: p.totalQuestions,
     todayQuestions: p.todayQuestions,
+    mocks: p.mocks,
     mocksCount: p.mocks.length,
     unlockedCount: p.unlockedAchievements.length,
     achievementDefsCount: p.achievementDefs.length,
+    overallPct: p.overallPct,
+    masteredCount: p.masteredCount,
+    weeklyData: p.weeklyData,
   });
 
   const urgent = p.mood === "reminder" || p.mood === "concerned";

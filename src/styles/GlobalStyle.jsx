@@ -476,7 +476,7 @@ export default function GlobalStyle() {
       .sb-buddy-chat-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 2px solid var(--outline); background: var(--soft); }
       .sb-buddy-chat-title { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; color: var(--ink); }
       .sb-buddy-chat-list { flex: 1; max-height: 320px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-      .sb-buddy-msg { font-size: 12.5px; line-height: 1.45; padding: 8px 11px; border-radius: 14px; max-width: 88%; font-weight: 600; word-wrap: break-word; }
+      .sb-buddy-msg { font-size: 12.5px; line-height: 1.45; padding: 8px 11px; border-radius: 14px; max-width: 88%; font-weight: 600; word-wrap: break-word; white-space: pre-wrap; }
       .sb-buddy-msg-buddy { background: var(--soft); border: 1.5px solid var(--outline); color: var(--ink); align-self: flex-start; border-bottom-left-radius: 4px; }
       .sb-buddy-msg-user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
       .sb-buddy-msg-loading { display: flex; align-items: center; gap: 6px; opacity: .75; }
