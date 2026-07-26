@@ -231,6 +231,17 @@ export default function AuthOnboardStyle() {
         .sb-flow-card { padding: 26px 20px 22px; border-radius: 24px; }
         .sb-ob-mascot-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
       }
+
+      /* ---------- back-to-explore pill (shown above the auth card) ---------- */
+      .sb-land-back-btn {
+        position: fixed; top: 16px; left: 16px; z-index: 50; display: inline-flex; align-items: center; gap: 6px;
+        background: var(--card); border: 2.5px solid var(--outline); border-radius: 999px; padding: 9px 16px;
+        font-family: var(--font-body); font-weight: 800; font-size: 12.5px; color: var(--ink); cursor: pointer;
+        box-shadow: 3px 3px 0 var(--outline); transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease;
+        animation: sb-flow-bubble-in .4s cubic-bezier(.34,1.56,.64,1) both;
+      }
+      .sb-land-back-btn:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 var(--outline); }
+      @media (max-width: 480px) { .sb-land-back-btn { top: 10px; left: 10px; padding: 8px 13px; font-size: 11.5px; } }
     `}</style>
   );
 }
