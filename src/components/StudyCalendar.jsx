@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, BookOpen, HelpCircle, ClipboardCheck, ListChecks, RotateCcw } from "lucide-react";
 import { SYLLABUS } from "../data/syllabus";
+import { todayIST, tsToISTDateStr, formatISTCalendarDate } from "../lib/dateIST";
 
 const pad = (n) => String(n).padStart(2, "0");
 const toKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
-const todayKey = () => { const t = new Date(); return toKey(t.getFullYear(), t.getMonth(), t.getDate()); };
+const todayKey = todayIST;
+const cursorFromKey = (key) => { const [y, m] = key.split("-").map(Number); return { y, m: m - 1 }; };
 const subjectColor = (subj) => SYLLABUS[subj]?.color || "var(--accent2)";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -18,7 +20,7 @@ const CATS = [
 ];
 
 export default function StudyCalendar({ sessions = [], timerSessions = [], questions = [], mocks = [], tasks = [], revisions = [] }) {
-  const [cursor, setCursor] = useState(() => { const t = new Date(); return { y: t.getFullYear(), m: t.getMonth() }; });
+  const [cursor, setCursor] = useState(() => cursorFromKey(todayKey()));
   const [selected, setSelected] = useState(todayKey());
 
   // ---- bucket every dated record by "YYYY-MM-DD" once, cheap even for a big history ----
@@ -28,7 +30,7 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
       sessions: [], timerMinutes: 0, questions: [], questionCount: 0, mocks: [], tasks: [], revisions: [],
     });
     sessions.forEach((s) => { if (s.session_date) bucket(s.session_date).sessions.push(s); });
-    timerSessions.forEach((s) => { if (s.created_at) bucket(String(s.created_at).slice(0, 10)).timerMinutes += Number(s.actual_minutes || 0); });
+    timerSessions.forEach((s) => { if (s.created_at) bucket(tsToISTDateStr(s.created_at)).timerMinutes += Number(s.actual_minutes || 0); });
     questions.forEach((q) => { if (q.log_date) { const b = bucket(q.log_date); b.questions.push(q); b.questionCount += Number(q.count || 0); } });
     mocks.forEach((m) => { if (m.mock_date) bucket(m.mock_date).mocks.push(m); });
     tasks.forEach((t) => { if (t.due_date) bucket(t.due_date).tasks.push(t); });
@@ -53,12 +55,11 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
     setCursor({ y: ny, m: nm });
   };
 
-  const goToday = () => { const t = new Date(); setCursor({ y: t.getFullYear(), m: t.getMonth() }); setSelected(todayKey()); };
+  const goToday = () => { setCursor(cursorFromKey(todayKey())); setSelected(todayKey()); };
 
   const day = byDate[selected];
   const studyMinutes = (day?.sessions.reduce((a, s) => a + Number(s.minutes || 0), 0) || 0) + (day?.timerMinutes || 0);
-  const selDate = selected ? new Date(selected + "T00:00:00") : null;
-  const selLabel = selDate ? selDate.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) : "";
+  const selLabel = selected ? formatISTCalendarDate(selected, { weekday: "long", month: "long", day: "numeric" }) : "";
   const hasAnything = day && (day.sessions.length || day.timerMinutes || day.questionCount || day.mocks.length || day.tasks.length || day.revisions.length);
 
   return (

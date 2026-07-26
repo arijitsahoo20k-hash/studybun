@@ -4,6 +4,7 @@ import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tool
 import { Card, ProgressRing, SectionTitle, EmptyState, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { SYLLABUS } from "../data/syllabus";
+import { todayIST, formatISTCalendarDate } from "../lib/dateIST";
 
 const MOTIVATIONAL = [
   "Small consistent hours beat rare long ones.",
@@ -17,7 +18,8 @@ export default function Dashboard(p) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const goalPct = (p.todayHours / (p.profile.daily_goal || 6)) * 100;
-  const line = MOTIVATIONAL[new Date().getDate() % MOTIVATIONAL.length];
+  const todayStr = todayIST();
+  const line = MOTIVATIONAL[Number(todayStr.slice(8, 10)) % MOTIVATIONAL.length];
   const mascotMood = p.todayHours > 0 ? "happy" : "sleepy";
 
   return (
@@ -26,7 +28,7 @@ export default function Dashboard(p) {
         <div>
           <div className="sb-hero-greet">{greeting}, {p.profile.name || "friend"} 🌸</div>
           <div className="sb-hero-line sb-quote">{line}</div>
-          <div className="sb-hero-meta">{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} · {p.profile.exam}</div>
+          <div className="sb-hero-meta">{formatISTCalendarDate(todayStr, { weekday: "long", month: "long", day: "numeric" })} · {p.profile.exam}</div>
         </div>
         <Mascot species={p.mascot} mood={mascotMood} size={84} />
       </Card>
@@ -44,8 +46,17 @@ export default function Dashboard(p) {
           </div>
         </Card>
         <Card>
-          <SectionTitle icon={Flame}>Streak</SectionTitle>
+          <div className="sb-section-title">
+            <span>
+              <span className={`sb-icon-badge sb-streak-flame${p.streakActiveToday ? " sb-streak-flame--lit" : ""}`}>
+                <Flame size={16} />
+              </span> Streak
+            </span>
+          </div>
           <div className="sb-countdown" style={{ color: "var(--outline)" }}>{p.streak}<span>day streak</span></div>
+          <div className="sb-muted" style={{ marginTop: 2 }}>
+            {p.streak === 0 ? "Log today to start one" : p.streakActiveToday ? "Today's logged 🔥" : "Study today to keep it lit"}
+          </div>
         </Card>
       </div>
 

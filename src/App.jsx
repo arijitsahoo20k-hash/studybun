@@ -1,17 +1,19 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
-  RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, User, Settings, Menu,
+  RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, Crown, User, Settings, Menu,
 } from "lucide-react";
 
 import { THEMES, themeVars, timeWash } from "./data/themes";
 import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS } from "./data/syllabus";
 import { useDeviceRow, useRealtimeTable, useChapterProgress } from "./hooks/useRealtimeTable";
 import { useFocusTimer } from "./hooks/useFocusTimer";
+import { useStudyPresence } from "./hooks/useStudyPresence";
 import { getActiveRadio } from "./lib/radio";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { useAuth } from "./lib/AuthContext";
 import { buildExportPayload, downloadJSON, readFileAsJSON, importPayload, totalImported } from "./lib/dataPortability";
+import { todayIST, toISTDateStr, tsToISTDateStr, daysFromNowIST, daysUntilIST, formatISTCalendarDate } from "./lib/dateIST";
 
 import Mascot from "./components/Mascot";
 import BuddyGuide from "./components/BuddyGuide";
@@ -30,6 +32,7 @@ import RevisionPage from "./pages/Revision";
 import PlannerPage from "./pages/Planner";
 import AnalyticsPage from "./pages/Analytics";
 import AchievementsPage from "./pages/Achievements";
+import LeaderboardPage from "./pages/Leaderboard";
 import ProfilePage from "./pages/Profile";
 import SettingsPage from "./pages/Settings";
 import AIInsightsPage from "./pages/AIInsights";
@@ -48,11 +51,14 @@ const NAV = [
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "ai", label: "AI Insights", icon: Sparkles },
   { id: "achievements", label: "Achievements", icon: Trophy },
+  { id: "leaderboard", label: "Leaderboard", icon: Crown },
   { id: "profile", label: "Profile", icon: User },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+// "Today" for the whole app is IST, not the device's local/UTC date — see
+// src/lib/dateIST.js for why the naive version silently broke around midnight.
+const todayStr = todayIST;
 
 // Study streak needed before the AI-powered features unlock. Keeps Smart
 // Buddy chat / AI Insights (both of which spend real Gemini quota) tied to
@@ -89,6 +95,11 @@ export default function App() {
   // rendered below outside the `page === "timer"` switch, never unmounts
   // when the user navigates to another page or the settings panel closes.
   const activeRadio = getActiveRadio(focusTimer);
+
+  // Lifted to the root (not inside the Leaderboard page) so presence stays
+  // accurate — and other users can see it — even while running the timer
+  // from a completely different page.
+  const studyingIds = useStudyPresence(focusTimer.running);
 
   const [page, setPage] = useState("dashboard");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -140,21 +151,43 @@ export default function App() {
 
   const todaySessions = sessions.filter((s) => s.session_date === todayStr());
   const todayManualMinutes = manualSessions.filter((s) => s.session_date === todayStr()).reduce((a, s) => a + Number(s.minutes || 0), 0);
-  const todayTimerMinutes = timerSessions.filter((ts) => (ts.created_at || "").slice(0, 10) === todayStr()).reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0);
+  const todayTimerMinutes = timerSessions.filter((ts) => tsToISTDateStr(ts.created_at) === todayStr()).reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0);
   const todayMinutes = todayManualMinutes + todayTimerMinutes;
   const todayHours = +(todayMinutes / 60).toFixed(1);
   const todayLoggedHours = +(todayManualMinutes / 60).toFixed(1);
   const todayTimerHours = +(todayTimerMinutes / 60).toFixed(1);
 
+  // What counts as a "genuine study day" here must exactly match the
+  // server-side rule in lb_calc_streak() (supabase/migration_leaderboard.sql)
+  // — otherwise Dashboard/Profile can show a streak the Leaderboard
+  // disagrees with. The rule: a manual session of >= 5 minutes, OR a
+  // *completed* focus-timer session of >= 10 minutes, OR at least one
+  // logged question set. Keep these two in sync if either ever changes.
+  const streakDays = useMemo(() => {
+    const days = new Set();
+    sessions.forEach((s) => { if (Number(s.minutes || 0) >= 5) days.add(s.session_date); });
+    timerSessions.forEach((ts) => {
+      if (ts.completed && Number(ts.actual_minutes || 0) >= 10) days.add(tsToISTDateStr(ts.created_at));
+    });
+    questions.forEach((q) => { if (Number(q.count || 0) >= 1) days.add(q.log_date); });
+    return days;
+  }, [sessions, timerSessions, questions]);
+
+  // A streak only breaks after a full missed day, not the instant "today"
+  // hasn't been logged yet (it might still be 9am!). So: if today has no
+  // qualifying day yet, start counting from yesterday instead of returning
+  // 0 outright. That means the number only drops to 0 once *both* today and
+  // yesterday have gone by with nothing logged — i.e. a real 2-day gap.
+  const streakActiveToday = useMemo(() => streakDays.has(todayStr()), [streakDays]);
+
   const streak = useMemo(() => {
-    const days = new Set([
-      ...sessions.map((s) => s.session_date),
-      ...timerSessions.map((ts) => (ts.created_at || "").slice(0, 10)),
-    ]);
-    let n = 0, d = new Date();
-    while (days.has(d.toISOString().slice(0, 10))) { n++; d.setDate(d.getDate() - 1); }
+    const days = streakDays;
+    let d = todayStr();
+    if (!days.has(d)) d = toISTDateStr(new Date(d).getTime() - 86400000);
+    let n = 0;
+    while (days.has(d)) { n++; d = toISTDateStr(new Date(d).getTime() - 86400000); }
     return n;
-  }, [sessions, timerSessions]);
+  }, [streakDays]);
 
   const backlogChapters = ALL_CHAPTERS.filter((c) => !["Completed", "Mastered"].includes(getChStatus(c.key).status));
   const completedCount = ALL_CHAPTERS.length - backlogChapters.length;
@@ -165,13 +198,7 @@ export default function App() {
   // deliberately based on *lifetime* records (longest streak ever hit, total
   // days logged) rather than the live `streak` above, so a badge earned once
   // stays earned even after a day gets missed and the current streak resets.
-  const sortedStudyDays = useMemo(
-    () => Array.from(new Set([
-      ...sessions.map((s) => s.session_date),
-      ...timerSessions.map((ts) => (ts.created_at || "").slice(0, 10)),
-    ])).sort(),
-    [sessions, timerSessions]
-  );
+  const sortedStudyDays = useMemo(() => Array.from(streakDays).sort(), [streakDays]);
   const totalStudyDays = sortedStudyDays.length;
   const totalManualMinutes = manualSessions.reduce((a, s) => a + Number(s.minutes || 0), 0);
   const totalTimerMinutes = timerSessions.reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0);
@@ -198,11 +225,11 @@ export default function App() {
   const weeklyData = useMemo(() => {
     const arr = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      const d = toISTDateStr(Date.now() - i * 86400000);
       const loggedMins = manualSessions.filter((s) => s.session_date === d).reduce((a, s) => a + Number(s.minutes || 0), 0);
-      const timerMins = timerSessions.filter((ts) => (ts.created_at || "").slice(0, 10) === d).reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0);
+      const timerMins = timerSessions.filter((ts) => tsToISTDateStr(ts.created_at) === d).reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0);
       arr.push({
-        day: new Date(d).toLocaleDateString(undefined, { weekday: "short" }),
+        day: formatISTCalendarDate(d, { weekday: "short" }),
         hours: +(loggedMins / 60).toFixed(1),
         timerHours: +(timerMins / 60).toFixed(1),
       });
@@ -219,7 +246,7 @@ export default function App() {
   const totalQuestions = questions.reduce((a, q) => a + Number(q.count || 0), 0);
   const todayQuestions = questions.filter((q) => q.log_date === todayStr()).reduce((a, q) => a + Number(q.count || 0), 0);
 
-  const daysToExam = profile ? Math.max(0, Math.ceil((new Date(profile.exam_date) - new Date()) / 86400000)) : 0;
+  const daysToExam = profile ? daysUntilIST(profile.exam_date) : 0;
 
   const dueRevisions = revisions.filter((r) => r.status === "Pending" && r.due_date <= todayStr());
   const upcomingRevisions = revisions.filter((r) => r.status === "Pending" && r.due_date > todayStr());
@@ -408,7 +435,7 @@ export default function App() {
     const prior = getChStatus(c.key);
     const priorSnapshot = { status: prior.status, last_revised: prior.last_revised, next_revision: prior.next_revision };
     await chapters.upsert(c.subject, c.name, { status: "Completed", last_revised: null, next_revision: null });
-    const due = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+    const due = daysFromNowIST(3);
     const newRevision = await revisionsQ.insert({ subject: c.subject, chapter: c.name, due_date: due, revision_number: 1, status: "Pending" });
     fireCelebrate();
     showToast(`${c.name} completed! First revision scheduled 🌸`, () => {
@@ -563,12 +590,13 @@ export default function App() {
 
   const pageProps = {
     profile, saveProfile, mascot,
+    userId: user?.id, studyingIds,
     sessions, timerSessions, addSession, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
     questions, addQuestions, mocks, addMock, revisions, completeRevision, addRevision, deleteRevision,
     tasks, addTask, toggleTask, updateTask, deleteTask, backlogChapters, todayHours, todayMinutes,
     todayLoggedHours, todayTimerHours, totalLoggedHours, totalTimerHours,
     backlogItems, addBacklogItem, updateBacklogItem, setBacklogStatus, toggleSessionItem, deleteBacklogItem,
-    streak, weeklyData, subjectPie, totalQuestions, todayQuestions, daysToExam,
+    streak, streakActiveToday, weeklyData, subjectPie, totalQuestions, todayQuestions, daysToExam,
     dueRevisions, upcomingRevisions, overdueRevisions, overallPct, completedCount,
     unlockedAchievements, achievementDefs, achievementRows: achievementsQ.rows, setPage, showToast, fireCelebrate,
     longestStreak, totalStudyDays, totalHours, masteredCount,
@@ -647,6 +675,7 @@ export default function App() {
         {page === "analytics" && <AnalyticsPage {...pageProps} />}
         {page === "ai" && <AIInsightsPage {...pageProps} />}
         {page === "achievements" && <AchievementsPage {...pageProps} />}
+        {page === "leaderboard" && <LeaderboardPage {...pageProps} />}
         {page === "profile" && <ProfilePage {...pageProps} />}
         {page === "settings" && <SettingsPage {...pageProps} />}
       </main>

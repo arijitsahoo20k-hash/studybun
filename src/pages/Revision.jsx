@@ -7,15 +7,16 @@ import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { SYLLABUS } from "../data/syllabus";
 import { generateRevisionSuggestions } from "../services/gemini";
+import { todayIST, daysAgoIST, toISTDateStr, formatISTCalendarDate } from "../lib/dateIST";
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = todayIST;
 
 const dayLabel = (d) => {
   const today = todayISO();
-  const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const y = daysAgoIST(1);
   if (d === today) return "today";
   if (d === y) return "yesterday";
-  return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatISTCalendarDate(d, { month: "short", day: "numeric" });
 };
 
 /** Which "shelf" a revision belongs on for the due-date chip. */
@@ -112,13 +113,8 @@ function AIRevisionRecommendations(p) {
 
 /** Next 7 days at a glance — a dot lights up on any day with a pending revision due. */
 function WeekStrip({ revisions }) {
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return d;
-  });
-  const iso = (d) => d.toISOString().slice(0, 10);
-  const countFor = (d) => revisions.filter((r) => r.status === "Pending" && r.due_date === iso(d)).length;
+  const days = Array.from({ length: 7 }, (_, i) => toISTDateStr(Date.now() + i * 86400000));
+  const countFor = (d) => revisions.filter((r) => r.status === "Pending" && r.due_date === d).length;
 
   return (
     <Card>
@@ -128,7 +124,7 @@ function WeekStrip({ revisions }) {
           const c = countFor(d);
           return (
             <div key={i} className={`sb-week-day ${i === 0 ? "is-today" : ""}`}>
-              <span>{d.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2)}</span>
+              <span>{formatISTCalendarDate(d, { weekday: "short" }).slice(0, 2)}</span>
               <span className={`sb-week-dot ${c > 0 ? "has-revision" : ""}`} title={c > 0 ? `${c} due` : "nothing due"} />
               <span>{c > 0 ? c : ""}</span>
             </div>

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { FolderClock, Plus, X, Star, Trash2, Archive, Pencil, RotateCcw } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
+import { todayIST, formatISTCalendarDate, formatISTTimestamp } from "../lib/dateIST";
 
 const SUBJECTS = ["Physics", "Chemistry", "Maths", "Other"];
 const CATEGORIES = ["Full Chapter", "Lecture", "Notes", "Questions", "DPP", "Module", "Revision", "Mock Analysis", "Custom"];
@@ -9,8 +10,9 @@ const REASONS = ["Procrastination", "Illness", "Busy Schedule", "Difficult Topic
 const SORTS = ["Recently added", "Nearest deadline", "Oldest first", "Subject"];
 const FILTERS = ["All", "Pending", "In Progress", "Completed"];
 
-const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : null);
-const isOverdue = (d) => !!d && new Date(d) < new Date(new Date().toDateString());
+const fmtDate = (d) => (d ? formatISTCalendarDate(d, { month: "short", day: "numeric" }) : null);
+const fmtCompletedAt = (iso) => (iso ? formatISTTimestamp(iso, { month: "short", day: "numeric" }) : null);
+const isOverdue = (d) => !!d && d < todayIST();
 
 const emptyDraft = () => ({
   title: "", subject: "Physics", category: "Full Chapter", deadline: "",
@@ -264,7 +266,7 @@ export default function BacklogPage(p) {
                   <div className="sb-chapter-tags">
                     <span className="sb-tag">{b.subject}</span>
                     <span className="sb-tag">{b.category}</span>
-                    {b.completed_at && <span className="sb-tag">done {fmtDate(b.completed_at)}</span>}
+                    {b.completed_at && <span className="sb-tag">done {fmtCompletedAt(b.completed_at)}</span>}
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <Btn variant="soft" onClick={() => p.setBacklogStatus(b, "Not Started")}><RotateCcw size={14} /> Reopen</Btn>

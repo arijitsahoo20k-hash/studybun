@@ -2,14 +2,15 @@ import React, { useMemo, useState } from "react";
 import { BookOpen, Clock3, ClipboardList, Plus } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
 import { SYLLABUS } from "../data/syllabus";
+import { todayIST, daysAgoIST, formatISTCalendarDate } from "../lib/dateIST";
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = todayIST;
 const dayLabel = (d) => {
   const today = todayStr();
-  const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const y = daysAgoIST(1);
   if (d === today) return "Today";
   if (d === y) return "Yesterday";
-  return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatISTCalendarDate(d, { month: "short", day: "numeric" });
 };
 
 export default function StudyTracker(p) {

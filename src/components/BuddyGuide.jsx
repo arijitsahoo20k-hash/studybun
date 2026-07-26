@@ -48,7 +48,7 @@ export default function BuddyGuide(p) {
 
   const urgent = p.mood === "reminder" || p.mood === "concerned";
   const unlockAt = p.featureUnlockStreak ?? 6;
-  const streakLocked = (p.streak || 0) <= unlockAt;
+  const streakLocked = (p.streak || 0) < unlockAt;
   const chatLocked = streakLocked || !smartReady;
 
   useEffect(() => {
@@ -122,8 +122,8 @@ export default function BuddyGuide(p) {
           {streakLocked ? (
             <div className="sb-buddy-chat-empty">
               <Lock size={22} />
-              <p>Smart chat unlocks at a {unlockAt + 1}-day streak — you're on day {p.streak || 0}.</p>
-              <div style={{ width: "100%", maxWidth: 200 }}><ProgressBar pct={((p.streak || 0) / (unlockAt + 1)) * 100} paw={false} /></div>
+              <p>Smart chat unlocks at a {unlockAt}-day streak — you're on day {p.streak || 0}.</p>
+              <div style={{ width: "100%", maxWidth: 200 }}><ProgressBar pct={((p.streak || 0) / unlockAt) * 100} paw={false} /></div>
               <p style={{ fontSize: 11, opacity: 0.8 }}>Keeps AI usage tied to real, daily study — not spammed for fun.</p>
             </div>
           ) : !smartReady ? (

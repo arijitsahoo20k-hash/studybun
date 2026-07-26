@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Settings, Sparkles, Rabbit, LogOut, UserCircle, GraduationCap, CheckCircle2, Circle, Download, Upload, DatabaseBackup } from "lucide-react";
+import { Settings, Sparkles, Rabbit, LogOut, UserCircle, GraduationCap, CheckCircle2, Circle, Download, Upload, DatabaseBackup, BookOpen } from "lucide-react";
 import { Card, SectionTitle, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { THEMES } from "../data/themes";
@@ -7,6 +7,7 @@ import { MASCOTS } from "../data/mascots";
 import { useAuth } from "../lib/AuthContext";
 import { hasUsableKeys, getModelPreference, setModelPreference } from "../services/buddyKeyManager";
 import { MODEL_FAMILIES } from "../services/geminiModels";
+import FeatureGuideGrid from "./settings/FeatureGuideGrid";
 
 function SmartBuddyCard() {
   const [ready] = useState(() => hasUsableKeys());
@@ -88,6 +89,7 @@ const TABS = [
   { id: "look", emoji: "🎀", label: "Mascot & theme", sub: "Make it yours" },
   { id: "buddy", emoji: "🧠", label: "AI study buddy", sub: "Smart chat setup" },
   { id: "data", emoji: "💾", label: "Data & backup", sub: "Export / import" },
+  { id: "guide", emoji: "📖", label: "How it works", sub: "Every feature, explained" },
 ];
 
 export default function SettingsPage(p) {
@@ -178,6 +180,16 @@ export default function SettingsPage(p) {
           {tab === "buddy" && <SmartBuddyCard />}
 
           {tab === "data" && <DataBackupCard exportBackup={exportBackup} importBackup={importBackup} />}
+
+          {tab === "guide" && (
+            <Card>
+              <SectionTitle icon={BookOpen}>How StudyBun works</SectionTitle>
+              <p className="sb-muted" style={{ fontSize: 12.5, marginTop: -4, marginBottom: 14 }}>
+                Tap any feature to see exactly what it does and how it syncs.
+              </p>
+              <FeatureGuideGrid />
+            </Card>
+          )}
         </div>
       </div>
     </div>

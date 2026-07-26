@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Trophy, Lock, CheckCircle2, Info } from "lucide-react";
 import { Card, SectionTitle, ProgressBar } from "../components/ui";
+import { formatISTTimestamp } from "../lib/dateIST";
 
 const TIER_ORDER = ["Bronze", "Silver", "Gold", "Platinum", "Legendary", "Special"];
 
@@ -15,7 +16,7 @@ const TIER_INFO = {
 
 function fmtDate(iso) {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return formatISTTimestamp(iso, { day: "numeric", month: "short", year: "numeric" });
 }
 
 export default function AchievementsPage(p) {

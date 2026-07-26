@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { ClipboardList, TrendingUp, Plus } from "lucide-react";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
+import { formatISTCalendarDate } from "../lib/dateIST";
 
-const dayLabel = (d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const dayLabel = (d) => formatISTCalendarDate(d, { month: "short", day: "numeric" });
 
 export default function MocksPage(p) {
   const [form, setForm] = useState({ exam_name: "", total_marks: 300, physics_marks: 0, chemistry_marks: 0, math_marks: 0, attempted: 0, correct: 0, incorrect: 0 });

@@ -1,8 +1,9 @@
 import React from "react";
 import { CalendarDays } from "lucide-react";
+import { daysUntilIST } from "../../../lib/dateIST";
 
 export default function ExamStep({ form, setForm }) {
-  const daysLeft = Math.max(0, Math.ceil((new Date(form.exam_date) - new Date()) / 86400000));
+  const daysLeft = form.exam_date ? daysUntilIST(form.exam_date) : NaN;
 
   return (
     <>

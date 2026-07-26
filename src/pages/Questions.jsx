@@ -3,8 +3,7 @@ import { HelpCircle, BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
 import { SYLLABUS } from "../data/syllabus";
-
-const todayStr = () => new Date().toISOString().slice(0, 10);
+import { daysAgoIST } from "../lib/dateIST";
 
 export default function QuestionsPage(p) {
   const [subject, setSubject] = useState("Physics");
@@ -18,7 +17,7 @@ export default function QuestionsPage(p) {
     return Object.entries(m).map(([name, value]) => ({ name, value }));
   }, [p.questions]);
 
-  const weekAgo = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+  const weekAgo = daysAgoIST(6);
   const activeDays = new Set(p.questions.map((q) => q.log_date)).size;
 
   return (
