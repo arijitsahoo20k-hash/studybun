@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from "react";
-import { ClipboardList, TrendingUp, Plus, Sparkles, RefreshCw, AlertTriangle, Scale } from "lucide-react";
+import { ClipboardList, TrendingUp, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X } from "lucide-react";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
-import { formatISTCalendarDate } from "../lib/dateIST";
+import { formatISTCalendarDate, todayIST } from "../lib/dateIST";
 import { generateMockComparison } from "../services/groqMockCompare";
 
 const dayLabel = (d) => formatISTCalendarDate(d, { month: "short", day: "numeric" });
@@ -13,8 +13,9 @@ const MAINS_TOTAL_MARKS = 300;
 const MAINS_QUESTIONS_PER_SUBJECT = 25;
 const mainsMarksFor = (correct, incorrect) => num(correct) * 4 - num(incorrect) * 1;
 
-const DEFAULT_FORM = {
+const emptyForm = () => ({
   exam_name: "",
+  mock_date: todayIST(),
   // JEE Main inputs — just counts, marks are auto-calculated
   physics_correct: 0, physics_incorrect: 0,
   chemistry_correct: 0, chemistry_incorrect: 0,
@@ -23,7 +24,7 @@ const DEFAULT_FORM = {
   total_marks: 360,
   physics_marks: 0, chemistry_marks: 0, math_marks: 0,
   attempted: 0, correct: 0, incorrect: 0,
-};
+});
 
 const totalOf = (m) => num(m.physics_marks) + num(m.chemistry_marks) + num(m.math_marks);
 const defaultTotalFor = (m) => (m.exam_type === "JEE Advanced" ? (num(m.total_marks) || 360) : MAINS_TOTAL_MARKS);
@@ -42,7 +43,8 @@ const toAIRow = (m) => ({
 
 export default function MocksPage(p) {
   const [examType, setExamType] = useState("JEE Main");
-  const [form, setForm] = useState(DEFAULT_FORM);
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
   const [aiResult, setAiResult] = useState(null);
@@ -73,12 +75,34 @@ export default function MocksPage(p) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.mocks]);
 
+  const startEdit = (m) => {
+    setEditingId(m.id);
+    setExamType(m.exam_type || "JEE Main");
+    setForm({
+      exam_name: m.exam_name || "",
+      mock_date: m.mock_date || todayIST(),
+      physics_correct: num(m.physics_correct), physics_incorrect: num(m.physics_incorrect),
+      chemistry_correct: num(m.chemistry_correct), chemistry_incorrect: num(m.chemistry_incorrect),
+      math_correct: num(m.math_correct), math_incorrect: num(m.math_incorrect),
+      total_marks: num(m.total_marks) || (m.exam_type === "JEE Advanced" ? 360 : MAINS_TOTAL_MARKS),
+      physics_marks: num(m.physics_marks), chemistry_marks: num(m.chemistry_marks), math_marks: num(m.math_marks),
+      attempted: num(m.attempted), correct: num(m.correct), incorrect: num(m.incorrect),
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setExamType("JEE Main");
+    setForm(emptyForm());
+  };
+
   const handleSave = () => {
     if (!form.exam_name) return;
     let payload;
     if (examType === "JEE Main") {
       payload = {
         exam_name: form.exam_name,
+        mock_date: form.mock_date || todayIST(),
         exam_type: "JEE Main",
         total_marks: MAINS_TOTAL_MARKS,
         physics_marks: mainsPreview.physics,
@@ -95,6 +119,7 @@ export default function MocksPage(p) {
     } else {
       payload = {
         exam_name: form.exam_name,
+        mock_date: form.mock_date || todayIST(),
         exam_type: "JEE Advanced",
         total_marks: num(form.total_marks) || 360,
         physics_marks: num(form.physics_marks),
@@ -105,8 +130,14 @@ export default function MocksPage(p) {
         incorrect: num(form.incorrect),
       };
     }
-    p.addMock(payload);
-    setForm({ ...DEFAULT_FORM, total_marks: form.total_marks });
+
+    if (editingId) {
+      p.updateMock(editingId, payload);
+      cancelEdit();
+    } else {
+      p.addMock(payload);
+      setForm({ ...emptyForm(), total_marks: form.total_marks });
+    }
   };
 
   const runAIComparison = async () => {
@@ -128,7 +159,12 @@ export default function MocksPage(p) {
   return (
     <div className="sb-page">
       <Card>
-        <SectionTitle icon={ClipboardList}>Add mock test</SectionTitle>
+        <SectionTitle
+          icon={ClipboardList}
+          right={editingId && <button className="sb-icon-btn" title="Cancel edit" onClick={cancelEdit}><X size={16} /></button>}
+        >
+          {editingId ? "Edit mock test" : "Add mock test"}
+        </SectionTitle>
 
         <div className="sb-chip-row" style={{ marginBottom: 14 }}>
           {["JEE Main", "JEE Advanced"].map((e) => (
@@ -138,6 +174,7 @@ export default function MocksPage(p) {
 
         <div className="sb-form-grid">
           <div><label>Exam name</label><input className="sb-input" value={form.exam_name} onChange={(ev) => set("exam_name", ev.target.value)} placeholder="e.g. Allen Mock 12" /></div>
+          <div><label>Test date</label><input type="date" className="sb-input" value={form.mock_date} onChange={(ev) => set("mock_date", ev.target.value)} max={todayIST()} /></div>
           {examType === "JEE Advanced" && (
             <div><label>Total marks</label><input type="number" className="sb-input" value={form.total_marks} onChange={(ev) => set("total_marks", +ev.target.value)} /></div>
           )}
@@ -175,7 +212,10 @@ export default function MocksPage(p) {
           </>
         )}
 
-        <Btn onClick={handleSave}><Plus size={16} /> Save mock</Btn>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Btn onClick={handleSave}>{editingId ? <><Pencil size={16} /> Update mock</> : <><Plus size={16} /> Save mock</>}</Btn>
+          {editingId && <Btn variant="soft" onClick={cancelEdit}>Cancel</Btn>}
+        </div>
       </Card>
 
       <Card>
@@ -264,7 +304,11 @@ export default function MocksPage(p) {
               <b>{m.exam_name}</b> <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }}>{m.exam_type || "JEE Main"}</span>
               <div className="sb-muted">{dayLabel(m.mock_date)}</div>
             </div>
-            <div className="sb-mock-score">{totalOf(m)}<span>/{m.total_marks}</span></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div className="sb-mock-score">{totalOf(m)}<span>/{m.total_marks}</span></div>
+              <button className="sb-icon-btn" title="Edit" onClick={() => startEdit(m)}><Pencil size={15} /></button>
+              <button className="sb-icon-btn danger" title="Delete" onClick={() => p.deleteMock(m.id)}><Trash2 size={15} /></button>
+            </div>
           </div>
         ))}
       </Card>

@@ -453,6 +453,20 @@ export default function App() {
     fireCelebrate();
     showToast("Mock added — great effort showing up for it.", row && (() => mocksQ.remove(row.id)));
   };
+  const updateMock = async (id, patch) => {
+    const prior = mocks.find((m) => m.id === id);
+    if (!prior) return;
+    await mocksQ.update(id, patch);
+    const { id: _oldId, user_id: _userId, created_at: _createdAt, ...rest } = prior;
+    showToast("Mock updated ✏️", () => mocksQ.update(id, rest));
+  };
+  const deleteMock = async (id) => {
+    const row = mocks.find((m) => m.id === id);
+    if (!row) return;
+    await mocksQ.remove(id);
+    const { id: _oldId, user_id: _userId, created_at: _createdAt, ...rest } = row;
+    showToast("Mock deleted", () => mocksQ.insert(rest));
+  };
   const completeRevision = async (id) => {
     const priorStatus = revisions.find((r) => r.id === id)?.status || "Pending";
     await revisionsQ.update(id, { status: "Completed" });
@@ -592,7 +606,7 @@ export default function App() {
     profile, saveProfile, mascot,
     userId: user?.id, studyingIds,
     sessions, timerSessions, addSession, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
-    questions, addQuestions, mocks, addMock, revisions, completeRevision, addRevision, deleteRevision,
+    questions, addQuestions, mocks, addMock, updateMock, deleteMock, revisions, completeRevision, addRevision, deleteRevision,
     tasks, addTask, toggleTask, updateTask, deleteTask, backlogChapters, todayHours, todayMinutes,
     todayLoggedHours, todayTimerHours, totalLoggedHours, totalTimerHours,
     backlogItems, addBacklogItem, updateBacklogItem, setBacklogStatus, toggleSessionItem, deleteBacklogItem,
