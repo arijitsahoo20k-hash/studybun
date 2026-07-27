@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { ClipboardList, TrendingUp, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X } from "lucide-react";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
@@ -48,6 +48,7 @@ export default function MocksPage(p) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
   const [aiResult, setAiResult] = useState(null);
+  const formRef = useRef(null);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -88,6 +89,9 @@ export default function MocksPage(p) {
       physics_marks: num(m.physics_marks), chemistry_marks: num(m.chemistry_marks), math_marks: num(m.math_marks),
       attempted: num(m.attempted), correct: num(m.correct), incorrect: num(m.incorrect),
     });
+    // The form lives at the top of the page — jump to it so it's obvious
+    // something happened (otherwise the pencil click looks like it did nothing).
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const cancelEdit = () => {
@@ -158,7 +162,8 @@ export default function MocksPage(p) {
 
   return (
     <div className="sb-page">
-      <Card>
+      <div ref={formRef}>
+      <Card style={editingId ? { borderColor: "var(--accent)", boxShadow: "0 0 0 3px var(--soft)" } : undefined}>
         <SectionTitle
           icon={ClipboardList}
           right={editingId && <button className="sb-icon-btn" title="Cancel edit" onClick={cancelEdit}><X size={16} /></button>}
@@ -217,6 +222,7 @@ export default function MocksPage(p) {
           {editingId && <Btn variant="soft" onClick={cancelEdit}>Cancel</Btn>}
         </div>
       </Card>
+      </div>
 
       <Card>
         <SectionTitle icon={TrendingUp}>Score trend</SectionTitle>
