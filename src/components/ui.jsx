@@ -1,6 +1,7 @@
 import React from "react";
 import Mascot from "./Mascot";
 import { THEMES } from "../data/themes";
+import { MOTIFS } from "./decor/Motifs";
 
 export const Card = ({ children, className = "", style, onClick, washi = false }) => (
   <div className={`sb-card ${className}`} style={style} onClick={onClick}>
@@ -61,21 +62,48 @@ export const SectionTitle = ({ icon: Icon, children, right }) => (
   </div>
 );
 
-/* Small floating emoji layer that drifts behind every page, themed per the
-   active palette — purely decorative, mirrors the prototype's cozy backdrop. */
+/* Small illustrated layer that drifts behind every page. Each theme supplies
+   its own `decor` list (see src/data/themes.js) of 2-4 motif keys resolved
+   against the MOTIFS library in ./decor/Motifs — actual different artwork
+   per theme (a strawberry, a paw print, a pixel tree...), not one repeated
+   emoji recolored. Position, rotation and depth below are fixed per slot
+   (no Math.random) so the backdrop never reshuffles on an unrelated
+   re-render, only when the theme itself changes. */
 const DECOR_POS = [
-  { top: "8%", left: "3%", size: 34 }, { top: "64%", left: "2%", size: 26 },
-  { top: "16%", right: "4%", size: 30 }, { top: "58%", right: "5%", size: 36 },
-  { bottom: "8%", left: "10%", size: 26 }, { bottom: "12%", right: "12%", size: 24 },
+  { top: "6%", left: "3%", size: 40, rot: -12, depth: "far" },
+  { top: "28%", left: "1.5%", size: 26, rot: 8, depth: "near" },
+  { top: "62%", left: "3.5%", size: 32, rot: -6, depth: "far" },
+  { bottom: "6%", left: "9%", size: 24, rot: 14, depth: "near" },
+  { top: "12%", right: "3%", size: 30, rot: 10, depth: "near" },
+  { top: "42%", right: "1.5%", size: 38, rot: -9, depth: "far" },
+  { top: "72%", right: "4.5%", size: 26, rot: 6, depth: "near" },
+  { bottom: "10%", right: "11%", size: 34, rot: -14, depth: "far" },
 ];
 
 export function DecorLayer({ theme }) {
   if (!theme) return null;
+  const motifKeys = theme.decor && theme.decor.length ? theme.decor : ["sparkleStar"];
   return (
     <div className="sb-decor-layer">
-      {DECOR_POS.map((pos, i) => (
-        <span key={i} className="sb-decor" style={{ ...pos, animationDelay: `${i * 0.6}s`, fontSize: pos.size }}>{theme.emoji}</span>
-      ))}
+      {DECOR_POS.map((pos, i) => {
+        const Motif = MOTIFS[motifKeys[i % motifKeys.length]] || MOTIFS.sparkleStar;
+        const { size, rot, depth, ...place } = pos;
+        return (
+          <span
+            key={i}
+            className={`sb-decor sb-decor-${depth}`}
+            style={{
+              ...place,
+              width: size,
+              height: size,
+              animationDelay: `${i * 0.6}s`,
+              "--sb-decor-rot": `${rot}deg`,
+            }}
+          >
+            <Motif />
+          </span>
+        );
+      })}
     </div>
   );
 }

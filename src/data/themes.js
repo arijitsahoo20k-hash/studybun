@@ -5,6 +5,7 @@ export const THEMES = {
     palette: ["#FFD3E0", "#C3DDC0", "#FFC9AE", "#E3D5F5", "#C7E0EE", "#FFE8A3"],
     mascotFill: "#FFD3E0", mascotInner: "#FFEFF3", mascotBlush: "#F3A9C4",
     dot: "rgba(91,74,84,0.05)", emoji: "🌸",
+    decor: ["blossom", "blossomSprig", "blossom", "sparkleStar"],
   },
   "Strawberry Milk": {
     bg: "#FFF6F3", card: "#FFFDFB", outline: "#7A3B41", ink: "#5C2E33", muted: "#9A6A6E",
@@ -12,6 +13,7 @@ export const THEMES = {
     palette: ["#FFB3B8", "#CDEBD6", "#FFE0A3", "#FFD6E5", "#F6C6CE", "#FFF0C2"],
     mascotFill: "#FFC1C6", mascotInner: "#FFE7E9", mascotBlush: "#F08A92",
     dot: "rgba(122,59,65,0.06)", emoji: "🍓",
+    decor: ["strawberry", "milkDrop", "strawberry", "sparkleStar"],
   },
   "Blueberry Dream": {
     bg: "#F2F5FF", card: "#FFFFFF", outline: "#3F4A73", ink: "#333F63", muted: "#7F89AD",
@@ -19,6 +21,7 @@ export const THEMES = {
     palette: ["#C3CFF5", "#D9CBF2", "#C8E4F5", "#FFEAB8", "#B9C6F0", "#E2D6F7"],
     mascotFill: "#C3CFF5", mascotInner: "#EAEEFF", mascotBlush: "#B39CE0",
     dot: "rgba(63,74,115,0.06)", emoji: "🫐",
+    decor: ["berryCluster", "sparkleStar", "berryCluster", "sparkleStar"],
   },
   "Tulip Garden": {
     bg: "#FFF9F2", card: "#FFFFFB", outline: "#6B4A33", ink: "#573B26", muted: "#9C8168",
@@ -26,6 +29,7 @@ export const THEMES = {
     palette: ["#FFC2D1", "#FFE08A", "#BFDCAE", "#CFE6EE", "#FFD4A8", "#F6E5C2"],
     mascotFill: "#FFE0A3", mascotInner: "#FFF3D6", mascotBlush: "#F5A3B0",
     dot: "rgba(107,74,51,0.06)", emoji: "🌷",
+    decor: ["tulip", "blossomSprig", "tulip", "sparkleStar"],
   },
   "Cloud Paradise": {
     bg: "#F5FAFF", card: "#FFFFFF", outline: "#4A5C6E", ink: "#3D4C5C", muted: "#84939F",
@@ -33,6 +37,7 @@ export const THEMES = {
     palette: ["#CDE7F7", "#D6D9F5", "#FFE1C7", "#D3EFE0", "#E3ECF7", "#F0E6FA"],
     mascotFill: "#E9F1FB", mascotInner: "#FFFFFF", mascotBlush: "#B9CDE5",
     dot: "rgba(74,92,110,0.05)", emoji: "☁️",
+    decor: ["cloud", "sparkleStar", "cloud", "bubbleCluster"],
   },
   "Bubblegum Pop": {
     bg: "#FFF3FA", card: "#FFFFFF", outline: "#6B3F5C", ink: "#54324A", muted: "#9C7A94",
@@ -40,6 +45,7 @@ export const THEMES = {
     palette: ["#FFC2E0", "#B8ECF5", "#FFF1A8", "#D9C6F5", "#FFD1D1", "#FCE1F0"],
     mascotFill: "#FFD1E6", mascotInner: "#FFF0F7", mascotBlush: "#FF8FBB",
     dot: "rgba(107,63,92,0.06)", emoji: "🍬",
+    decor: ["bubbleCluster", "lollipop", "bubbleCluster", "sparkleStar"],
   },
   "Matcha Garden": {
     bg: "#FBF8EF", card: "#FFFFFB", outline: "#3F5236", ink: "#33452B", muted: "#77886C",
@@ -47,6 +53,7 @@ export const THEMES = {
     palette: ["#C8DFC0", "#C7E0EE", "#E4D3AE", "#F5D6E0", "#B8D4AE", "#DCEBD1"],
     mascotFill: "#DCEBD1", mascotInner: "#F1F7EC", mascotBlush: "#F0A9BC",
     dot: "rgba(63,82,54,0.06)", emoji: "🍃",
+    decor: ["matchaLeaf", "teacup", "matchaLeaf", "sparkleStar"],
   },
   "Teddy Cafe": {
     bg: "#FBF1E4", card: "#FFFAF0", outline: "#5A3A28", ink: "#4A3120", muted: "#8C7360",
@@ -54,6 +61,7 @@ export const THEMES = {
     palette: ["#E8C79E", "#D8B08C", "#F3E3C8", "#F0C8C2", "#E0BC96", "#F6D9B0"],
     mascotFill: "#E8C79E", mascotInner: "#F8ECD9", mascotBlush: "#E39A8C",
     dot: "rgba(90,58,40,0.06)", emoji: "🧸", stitched: true,
+    decor: ["pawPrint", "coffeeCup", "pawPrint", "blossomSprig"],
   },
   "Panda Paper": {
     bg: "#F6F4EE", card: "#FFFFFC", outline: "#2E2C2A", ink: "#242220", muted: "#8D8983",
@@ -61,6 +69,7 @@ export const THEMES = {
     palette: ["#D9D5C9", "#BDB8A9", "#C7C2B4", "#F0AFC0", "#9A968C", "#EAE7DE"],
     mascotFill: "#E9E6DD", mascotInner: "#FFFFFC", mascotBlush: "#F0AFC0",
     dot: "rgba(46,44,42,0.055)", emoji: "🐼",
+    decor: ["bambooStalk", "pawPrint", "bambooStalk", "sparkleStar"],
   },
   "Mossy Blockland": {
     bg: "#F2F7E6", card: "#FFFEF8", outline: "#3B2A18", ink: "#33421F", muted: "#748A5F",
@@ -68,6 +77,7 @@ export const THEMES = {
     palette: ["#B8E0A0", "#8FCB7C", "#AEE3E0", "#D8B98A", "#C7C6BE", "#F6D98A"],
     mascotFill: "#C8EAB0", mascotInner: "#F1FAE7", mascotBlush: "#F0A9BC",
     dot: "rgba(59,42,24,0.07)", emoji: "🟩", blocky: true,
+    decor: ["pixelTree", "pixelBlock", "pixelTree", "pixelBlock"],
   },
 };
 

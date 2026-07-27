@@ -74,8 +74,23 @@ export default function GlobalStyle() {
 
       /* ===== decorative floating layer ===== */
       .sb-decor-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-      .sb-decor { position: absolute; opacity: .5; animation: sb-bob 6s ease-in-out infinite; filter: saturate(1.1); }
-      @keyframes sb-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+      .sb-decor {
+        position: absolute; display: block; opacity: .5; animation: sb-bob 6s ease-in-out infinite;
+        filter: saturate(1.1); transform: rotate(var(--sb-decor-rot, 0deg));
+      }
+      /* two loose depth bands so the backdrop reads as layered illustration
+         rather than a flat ring of identical icons: "far" pieces sit larger,
+         softer and slightly blurred; "near" pieces are crisper and a touch
+         bolder, closer to the foreground content. */
+      .sb-decor-far { opacity: .32; filter: saturate(1) blur(.4px); animation-duration: 7.5s; }
+      .sb-decor-near { opacity: .55; animation-duration: 5.2s; }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-decor { animation: none; }
+      }
+      @keyframes sb-bob {
+        0%, 100% { transform: rotate(var(--sb-decor-rot, 0deg)) translateY(0); }
+        50% { transform: rotate(var(--sb-decor-rot, 0deg)) translateY(-10px); }
+      }
 
       /* ===== mascot micro-animations ===== */
       .sb-bunny-hop { animation: sb-hop .55s cubic-bezier(.34,1.56,.64,1); }
