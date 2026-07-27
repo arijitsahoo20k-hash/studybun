@@ -30,7 +30,7 @@ export default function Dashboard(p) {
           <div className="sb-hero-line sb-quote">{line}</div>
           <div className="sb-hero-meta">{formatISTCalendarDate(todayStr, { weekday: "long", month: "long", day: "numeric" })} · {p.profile.exam}</div>
         </div>
-        <Mascot species={p.mascot} mood={mascotMood} size={84} />
+        <Mascot species={p.mascot} mood={mascotMood} size={84} pettable />
       </Card>
 
       <div className="sb-grid-3">

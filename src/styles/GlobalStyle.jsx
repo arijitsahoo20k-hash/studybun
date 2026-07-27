@@ -610,6 +610,30 @@ export default function GlobalStyle() {
         14%, 100% { transform: translateY(0); }
       }
 
+      /* Pet the mascot: a little squish-bounce plus hearts/sparkles that
+         float up and fade. Wrapper-level so it works on every species. */
+      .sb-mascot-pet-wrap {
+        position: relative; display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: 999px;
+      }
+      .sb-mascot-pet-wrap > span:first-child { display: inline-flex; transform-origin: 50% 78%; }
+      .sb-mascot-pet-squish { animation: sb-pet-squish .5s cubic-bezier(.34,1.56,.64,1); }
+      @keyframes sb-pet-squish {
+        0% { transform: scale(1, 1); }
+        30% { transform: scale(1.14, 0.85) translateY(3px); }
+        55% { transform: scale(0.92, 1.1) translateY(-2px); }
+        100% { transform: scale(1, 1); }
+      }
+      .sb-mascot-pet-bit {
+        position: absolute; left: 50%; top: 38%; font-size: 14px; line-height: 1; pointer-events: none;
+        transform: translate(-50%, 0); animation: sb-pet-bit-float .85s ease-out forwards;
+      }
+      @keyframes sb-pet-bit-float {
+        0% { opacity: 0; transform: translate(-50%, 0) scale(.5); }
+        18% { opacity: 1; transform: translate(calc(-50% + var(--dx) * 0.3), -10px) scale(1.05); }
+        100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), -46px) scale(.9); }
+      }
+
       .sb-auth-emoji-wiggle { display: inline-block; animation: sb-emoji-wiggle 2.6s ease-in-out infinite; transform-origin: 70% 70%; }
       @keyframes sb-emoji-wiggle {
         0%, 80%, 100% { transform: rotate(0deg) scale(1); }

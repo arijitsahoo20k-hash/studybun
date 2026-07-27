@@ -154,7 +154,7 @@ export default function FocusTimer(p) {
         )}
 
         <div className="sb-timer-display">
-          <Mascot species={p.mascot} mood={t.running ? "studying" : "idle"} size={90} />
+          <Mascot species={p.mascot} mood={t.running ? "studying" : "idle"} size={90} pettable />
           <div className="sb-timer-time">{mm}:{ss}</div>
         </div>
         <ProgressBar pct={t.pct} />
