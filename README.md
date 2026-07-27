@@ -1,6 +1,7 @@
 # StudyBun 🐰🌸
 
-Your cozy JEE study companion — real Supabase persistence + realtime sync, a multi-mascot system, and Gemini-powered AI Insights.
+Your cozy JEE study companion — real Supabase persistence + realtime sync, a multi-mascot system, Gemini-powered
+AI Insights, and a Groq-powered Smart AI Comparison between your JEE Main and JEE Advanced mocks.
 
 ## 1. Install
 
@@ -40,6 +41,28 @@ npm install
    Users can see key status (masked) and pick a model family preference under Settings, but
    never enter or edit keys themselves.
 
+## 3b. Set up Groq (optional — for Smart AI Comparison on Mock Tests)
+
+1. Grab a free API key at [console.groq.com/keys](https://console.groq.com/keys) — Groq's free
+   tier is generous and works well for this.
+2. On the **Mock Tests** page, once you've logged at least one JEE Main and one JEE Advanced mock,
+   a "Compare with AI" button sends both score histories to Groq and returns a plain-language
+   comparison (stronger paper, subject-by-subject gaps, trend, what to focus on). See
+   `src/services/groqMockCompare.js`. Like AI Insights, this is **only** ever called when you
+   press the button — never on load, never in the background.
+3. Like the Smart Study Buddy, this uses its own key pool configured by you (not typed in by
+   whoever's using the app). Set `VITE_GROQ_API_KEYS` to a comma-separated list to rotate across
+   multiple free-tier keys if you expect enough usage to hit rate limits on one; if you leave it
+   unset it falls back to a single `VITE_GROQ_API_KEY`. Model defaults to trying
+   `llama-3.3-70b-versatile`, then `llama-3.1-8b-instant`, then `gemma2-9b-it` — set
+   `VITE_GROQ_MODEL` to pin a specific one instead.
+4. Mock Tests also now has an exam-type toggle: pick **JEE Main** and just enter each subject's
+   correct/incorrect count out of 25 — marks (+4/-1) and the 300 total are calculated for you. Pick
+   **JEE Advanced** and enter each subject's marks directly, since Advanced's marking scheme varies
+   per question. A comparison chart plots both papers' scores (as % of each mock's total) on one
+   graph once you've logged mocks from both. If you already ran `schema.sql` before this feature
+   existed, run `supabase/migration_mock_exam_type.sql` once to add the new columns.
+
 ## 4. Environment variables
 
 ```bash
@@ -55,6 +78,8 @@ VITE_GEMINI_API_KEY=your-gemini-key
 VITE_GEMINI_MODEL=                        # optional — leave blank for auto model fallback
 VITE_GEMINI_BUDDY_API_KEYS=               # optional — comma-separated list, e.g. key_one,key_two
 VITE_GEMINI_BUDDY_MODEL_FAMILY=           # optional — "auto" | "gemini3" | "gemini2"
+VITE_GROQ_API_KEYS=                       # optional — comma-separated list, e.g. key_one,key_two (Smart AI Comparison)
+VITE_GROQ_MODEL=                          # optional — leave blank for auto model fallback
 ```
 
 Never commit `.env` — it's already in `.gitignore`.

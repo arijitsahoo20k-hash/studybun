@@ -152,10 +152,20 @@ create table if not exists mock_tests (
   mock_date date not null default current_date,
   exam_name text not null,
   provider text,
+  exam_type text not null default 'JEE Main' check (exam_type in ('JEE Main', 'JEE Advanced')),
   total_marks numeric default 300,
   physics_marks numeric default 0,
   chemistry_marks numeric default 0,
   math_marks numeric default 0,
+  -- Per-subject raw counts. For JEE Main these drive the auto +4/-1 marks
+  -- calculation (25 questions/subject); for JEE Advanced they're optional
+  -- since Advanced's marking scheme varies question-to-question.
+  physics_correct numeric,
+  physics_incorrect numeric,
+  chemistry_correct numeric,
+  chemistry_incorrect numeric,
+  math_correct numeric,
+  math_incorrect numeric,
   attempted numeric,
   correct numeric,
   incorrect numeric,
