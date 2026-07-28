@@ -92,6 +92,7 @@ export function themeVars(theme) {
     "--p1": theme.palette[0], "--p2": theme.palette[1], "--p3": theme.palette[2],
     "--p4": theme.palette[3], "--p5": theme.palette[4], "--p6": theme.palette[5],
     "--font-display": "'Baloo 2', system-ui, sans-serif", "--font-body": "'Nunito', system-ui, sans-serif",
+    "--font-hand": "'Caveat', cursive",
   };
 }
 

@@ -11,6 +11,7 @@ const OUTLINE = { stroke: "var(--outline)", strokeWidth: 2.2, strokeLinejoin: "r
 const MOOD = {
   idle: { eye: "dot", mouth: "M -6 15 Q 0 19 6 15" },
   happy: { eye: "arc", mouth: "M -8 14 Q 0 24 8 14" },
+  sad: { eye: "worry", mouth: "M -6 21 Q 0 16 6 21", brow: true, tear: true },
   sleepy: { eye: "line", mouth: "M -4 16.5 Q 0 17.5 4 16.5", zzz: true },
   thinking: { eye: "dot", mouth: "M -4 16 Q -1 14.5 3 16", brow: true, paw: true },
   celebrate: { eye: "arc", mouth: "M -9 14 Q 0 26 9 14", sparkle: true, armsUp: true },
@@ -24,7 +25,12 @@ function Eye({ state, mirror }) {
   if (state === "arc") return <path d={`M ${-4.4 * flip} 0.6 Q 0 ${-4.2} ${4.4 * flip} 0.6`} stroke="var(--ink)" strokeWidth="2.2" fill="none" strokeLinecap="round" />;
   if (state === "line") return <path d={`M ${-4 * flip} 0 Q 0 1 ${4 * flip} 0`} stroke="var(--ink)" strokeWidth="2" fill="none" strokeLinecap="round" />;
   if (state === "worry") return <path d={`M ${-3.6 * flip} 1 Q 0 -2 ${3.6 * flip} 1`} stroke="var(--ink)" strokeWidth="2.1" fill="none" strokeLinecap="round" />;
-  return <circle cx="0" cy="0" r="2.6" fill="var(--ink)" />;
+  return (
+    <>
+      <circle cx="0" cy="0" r="3.4" fill="var(--ink)" />
+      <circle cx={-1.1 * flip} cy="-1.1" r="1.1" fill="#fff" />
+    </>
+  );
 }
 
 export default function Bear({ mood = "idle", size = 72, hop = false, peek = false }) {
@@ -59,8 +65,8 @@ export default function Bear({ mood = "idle", size = 72, hop = false, peek = fal
       <ellipse cx="0" cy="15" rx="17" ry="12" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" />
       <ellipse cx="0" cy="9" rx="4.4" ry="3" fill="var(--ink)" />
 
-      <circle cx="-17" cy="0" r="4" fill="var(--accent)" opacity="0.3" />
-      <circle cx="17" cy="0" r="4" fill="var(--accent)" opacity="0.3" />
+      <circle cx="-17" cy="0" r="4.8" fill="var(--accent)" opacity="0.35" />
+      <circle cx="17" cy="0" r="4.8" fill="var(--accent)" opacity="0.35" />
 
       <g transform="translate(-11,-9)">
         <Eye state={eyeState} mirror={false} />
@@ -81,6 +87,14 @@ export default function Bear({ mood = "idle", size = 72, hop = false, peek = fal
       )}
       {m.paw && <ellipse cx="14" cy="8" rx="5" ry="4.5" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" transform="rotate(20 14 8)" />}
       {m.zzz && <text x="20" y="-24" fontSize="11" fill="var(--muted)" fontFamily="var(--font-display)">z</text>}
+      {m.tear && (
+        <g transform="translate(-19,-2)">
+          <g className="sb-mascot-tear">
+            <path d="M 0 0 C 2.2 3 4 5.2 4 7.4 A 4 4 0 1 1 -4 7.4 C -4 5.2 -2.2 3 0 0 Z" fill="#8FCBEA" stroke="var(--outline)" strokeWidth="1" strokeLinejoin="round" />
+            <ellipse cx="-1.3" cy="5.4" rx="1" ry="1.4" fill="#fff" opacity="0.85" />
+          </g>
+        </g>
+      )}
       {m.sparkle && (
         <>
           <text x="-34" y="-20" fontSize="11">✨</text>

@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
   RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, Crown, User, Settings, Menu,
+  NotebookPen,
 } from "lucide-react";
 
 import { THEMES, themeVars, timeWash } from "./data/themes";
@@ -13,11 +14,11 @@ import { getActiveRadio } from "./lib/radio";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { useAuth } from "./lib/AuthContext";
 import { buildExportPayload, downloadJSON, readFileAsJSON, importPayload, totalImported } from "./lib/dataPortability";
-import { todayIST, toISTDateStr, tsToISTDateStr, daysFromNowIST, daysUntilIST, formatISTCalendarDate } from "./lib/dateIST";
+import { todayIST, toISTDateStr, tsToISTDateStr, daysFromNowIST, daysUntilIST, formatISTCalendarDate, istHour } from "./lib/dateIST";
 
 import Mascot from "./components/Mascot";
 import BuddyGuide from "./components/BuddyGuide";
-import { reactionMood, mascotTheme, MASCOTS } from "./data/mascots";
+import { reactionMood, mascotEnergy, mascotTheme, MASCOTS } from "./data/mascots";
 import PWAPrompt from "./components/PWAPrompt";
 import { Confetti, LoadingScreen, DecorLayer } from "./components/ui";
 import Onboarding from "./pages/onboarding";
@@ -26,6 +27,7 @@ import StudyTracker from "./pages/StudyTracker";
 import FocusTimer from "./pages/FocusTimer";
 import SyllabusPage from "./pages/Syllabus";
 import BacklogPage from "./pages/Backlog";
+import GoalsPage from "./pages/Goals";
 import QuestionsPage from "./pages/Questions";
 import MocksPage from "./pages/Mocks";
 import RevisionPage from "./pages/Revision";
@@ -44,6 +46,7 @@ const NAV = [
   { id: "timer", label: "Focus Timer", icon: Timer },
   { id: "syllabus", label: "Syllabus", icon: Library },
   { id: "backlog", label: "Backlog", icon: FolderClock },
+  { id: "goals", label: "Goals", icon: NotebookPen },
   { id: "questions", label: "Question Practice", icon: HelpCircle },
   { id: "mocks", label: "Mock Tests", icon: ClipboardList },
   { id: "revision", label: "Revision Planner", icon: RotateCcw },
@@ -79,6 +82,7 @@ export default function App() {
   const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true });
   const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date" });
   const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at" });
+  const goalsQ = useRealtimeTable("goals", { orderBy: "created_at", ascending: true });
   const achievementsQ = useRealtimeTable("achievements", { orderBy: "unlocked_at" });
 
   // Lives here (not inside FocusTimer) so switching pages never resets it.
@@ -140,6 +144,7 @@ export default function App() {
   const revisions = revisionsQ.rows;
   const tasks = tasksQ.rows;
   const backlogItems = backlogItemsQ.rows;
+  const goals = goalsQ.rows;
 
   const getChStatus = (key) => chapters.map[key] || { ...DEFAULT_CHAPTER_PROGRESS, subject: key.split("::")[0], chapter: key.split("::")[1] };
 
@@ -257,7 +262,13 @@ export default function App() {
     streak: streak >= 3,
     revisionOverdue: overdueRevisions.length > 0,
     noStudyToday: todayHours === 0,
+    hour: istHour(),
   });
+  // Shared "how alive should the mascot look" value -- same numbers that
+  // picked the mood also pick how energetically it plays that mood, so a
+  // mascot at 5.9/6h feels visibly more energetic than one at 0.5/6h even
+  // though both are technically "happy".
+  const buddyEnergy = mascotEnergy({ mood: buddyMood, todayHours, dailyGoal: profile?.daily_goal || 6 });
 
   const lectureSessions = sessions.filter((s) => s.session_type === "Lecture").length;
   const finishedGoalToday = todayHours >= (profile?.daily_goal || 6);
@@ -537,6 +548,33 @@ export default function App() {
     showToast("Backlog item deleted", () => backlogItemsQ.insert(rest));
   };
 
+  const addGoal = async (item) => {
+    const row = await goalsQ.insert({ status: "Active", starred: false, ...item });
+    showToast("New page written 📝", row && (() => goalsQ.remove(row.id)));
+  };
+  const updateGoal = async (id, patch) => {
+    await goalsQ.update(id, { ...patch, updated_at: new Date().toISOString() });
+  };
+  const completeGoal = async (goal) => {
+    const wasCompleted = goal.status === "Completed";
+    const patch = wasCompleted
+      ? { status: "Active", completed_at: null }
+      : { status: "Completed", completed_at: new Date().toISOString() };
+    await goalsQ.update(goal.id, { ...patch, updated_at: new Date().toISOString() });
+    if (!wasCompleted) fireCelebrate();
+    showToast(
+      wasCompleted ? "Goal reopened" : `${goal.title} — done! ✂️`,
+      () => goalsQ.update(goal.id, { status: goal.status, completed_at: goal.completed_at || null })
+    );
+  };
+  const deleteGoal = async (id) => {
+    const row = goals.find((g) => g.id === id);
+    if (!row) return;
+    await goalsQ.remove(id);
+    const { id: _oldId, user_id: _userId, created_at: _createdAt, ...rest } = row;
+    showToast("Page torn out", () => goalsQ.insert(rest));
+  };
+
   /* ---------- lifetime data backup (Settings → Import/Export) ---------- */
   const exportBackup = () => {
     const payload = buildExportPayload(
@@ -549,6 +587,7 @@ export default function App() {
         revision_plans: revisions,
         tasks,
         backlog_items: backlogItems,
+        goals,
         achievements: achievementsQ.rows,
       },
       profile
@@ -566,7 +605,7 @@ export default function App() {
       // each hook's own insert() (and thus its optimistic local update) — so
       // pull fresh rows for every table that might have changed.
       sessionsQ.refetch(); timerSessionsQ.refetch(); questionsQ.refetch(); mocksQ.refetch();
-      revisionsQ.refetch(); tasksQ.refetch(); backlogItemsQ.refetch(); achievementsQ.refetch();
+      revisionsQ.refetch(); tasksQ.refetch(); backlogItemsQ.refetch(); goalsQ.refetch(); achievementsQ.refetch();
       chapters.refetch(); refetchProfile();
       const total = totalImported(summary);
       if (summary.errors.length) {
@@ -610,11 +649,13 @@ export default function App() {
     tasks, addTask, toggleTask, updateTask, deleteTask, backlogChapters, todayHours, todayMinutes,
     todayLoggedHours, todayTimerHours, totalLoggedHours, totalTimerHours,
     backlogItems, addBacklogItem, updateBacklogItem, setBacklogStatus, toggleSessionItem, deleteBacklogItem,
+    goals, addGoal, updateGoal, completeGoal, deleteGoal,
     streak, streakActiveToday, weeklyData, subjectPie, totalQuestions, todayQuestions, daysToExam,
     dueRevisions, upcomingRevisions, overdueRevisions, overallPct, completedCount,
     unlockedAchievements, achievementDefs, achievementRows: achievementsQ.rows, setPage, showToast, fireCelebrate,
     longestStreak, totalStudyDays, totalHours, masteredCount,
     featureUnlockStreak: FEATURE_UNLOCK_STREAK,
+    mascotMood: buddyMood, mascotEnergy: buddyEnergy,
     focusTimer,
     exportBackup, importBackup,
   };
@@ -682,6 +723,7 @@ export default function App() {
         {page === "timer" && <FocusTimer {...pageProps} />}
         {page === "syllabus" && <SyllabusPage {...pageProps} />}
         {page === "backlog" && <BacklogPage {...pageProps} />}
+        {page === "goals" && <GoalsPage {...pageProps} />}
         {page === "questions" && <QuestionsPage {...pageProps} />}
         {page === "mocks" && <MocksPage {...pageProps} />}
         {page === "revision" && <RevisionPage {...pageProps} />}
@@ -694,7 +736,7 @@ export default function App() {
         {page === "settings" && <SettingsPage {...pageProps} />}
       </main>
 
-      <BuddyGuide {...pageProps} page={page} mood={buddyMood} hopping={hopping} />
+      <BuddyGuide {...pageProps} page={page} mood={buddyMood} energy={buddyEnergy} hopping={hopping} />
     </div>
   );
 }

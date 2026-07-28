@@ -196,7 +196,7 @@ export default function BuddyGuide(p) {
         onClick={() => { if (!open) { setOpen(true); } else if (chatOpen) { setChatOpen(false); } else { setOpen(false); } }}
         aria-label="Open study buddy"
       >
-        <Mascot species={p.mascot} mood={p.mood} size={52} hop={p.hopping} />
+        <Mascot species={p.mascot} mood={p.mood} energy={p.energy} size={52} hop={p.hopping} />
         {urgent && !open && <span className="sb-buddy-dot" />}
         {smartReady && !streakLocked && <span className="sb-buddy-smart-dot" title="Smart mode ready" />}
       </button>

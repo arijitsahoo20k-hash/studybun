@@ -649,6 +649,42 @@ export default function GlobalStyle() {
         100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), -46px) scale(.9); }
       }
 
+      /* A hand-drawn tear (not an emoji -- kept in the same flat-vector
+         style as everything else) that gently drips in a loop wherever a
+         species renders it. Positioned via a plain SVG transform on the
+         parent <g> so this animation (a separate inner <g>) never fights
+         over the same transform. */
+      .sb-mascot-tear { animation: sb-tear-drip 1.9s ease-in-out infinite; transform-origin: 50% 0%; }
+      @keyframes sb-tear-drip {
+        0%, 100% { transform: translateY(0) scaleY(1); opacity: 0.92; }
+        55% { transform: translateY(3px) scaleY(1.1); opacity: 1; }
+      }
+
+ -- a cloud bubble
+         with two trailing dots, like a classic thought balloon, floating
+         above whatever it's a sibling of. */
+      .sb-thought-wrap {
+        position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%);
+        display: flex; flex-direction: column; align-items: center; margin-bottom: 6px;
+        z-index: 6; cursor: pointer; pointer-events: auto;
+      }
+      .sb-thought-cloud {
+        position: relative; max-width: 176px; min-width: 96px; text-align: center;
+        background: var(--card); border: 2px solid var(--outline); border-radius: 20px;
+        padding: 9px 14px; font-size: 12.5px; font-weight: 700; line-height: 1.32; color: var(--ink);
+        box-shadow: 3px 3px 0 var(--outline);
+      }
+      /* soft cloud fluff bumps along the top edge */
+      .sb-thought-cloud::before, .sb-thought-cloud::after {
+        content: ""; position: absolute; top: -7px; width: 14px; height: 14px; border-radius: 50%;
+        background: var(--card); border: 2px solid var(--outline);
+      }
+      .sb-thought-cloud::before { left: 16px; }
+      .sb-thought-cloud::after { right: 22px; width: 10px; height: 10px; top: -5px; }
+      .sb-thought-dot { border-radius: 50%; background: var(--card); border: 2px solid var(--outline); margin-top: 3px; }
+      .sb-thought-dot-1 { width: 10px; height: 10px; margin-left: -22px; }
+      .sb-thought-dot-2 { width: 6px; height: 6px; margin-left: -34px; margin-top: 2px; }
+
       .sb-auth-emoji-wiggle { display: inline-block; animation: sb-emoji-wiggle 2.6s ease-in-out infinite; transform-origin: 70% 70%; }
       @keyframes sb-emoji-wiggle {
         0%, 80%, 100% { transform: rotate(0deg) scale(1); }
@@ -839,6 +875,180 @@ export default function GlobalStyle() {
         color: var(--muted); cursor: pointer;
       }
       .sb-backup-checkbox input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+
+      /* ===== Goals journal ===== */
+      .sb-goal-journal-page { align-items: center; perspective: 1800px; }
+
+      .sb-spiral {
+        position: absolute; left: -9px; top: 22px; bottom: 22px; width: 20px;
+        display: flex; flex-direction: column; justify-content: space-between; z-index: 3; pointer-events: none;
+      }
+      .sb-spiral span {
+        width: 20px; height: 12px; border-radius: 999px; border: 3px solid var(--outline);
+        background: linear-gradient(135deg, var(--card), var(--soft));
+        box-shadow: 1px 1px 0 rgba(0,0,0,.08);
+      }
+
+      /* ---- cover ---- */
+      .sb-goal-cover {
+        position: relative; width: min(420px, 84vw); aspect-ratio: 3 / 4; margin: 18px auto;
+        background: var(--card); border: 2.5px solid var(--outline); border-radius: 22px;
+        box-shadow: 7px 7px 0 var(--outline); cursor: pointer; overflow: visible;
+      }
+      .sb-goal-cover-face {
+        position: relative; height: 100%; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; gap: 6px; padding: 28px 22px; text-align: center;
+        background-image: radial-gradient(var(--dot) 1.4px, transparent 1.4px); background-size: 20px 20px;
+        border-radius: 19px; overflow: hidden;
+      }
+      .sb-goal-cover-mascot { margin-bottom: 6px; filter: drop-shadow(3px 4px 0 rgba(0,0,0,.06)); }
+      .sb-goal-cover-title {
+        font-family: var(--font-hand); font-size: 46px; line-height: 1; color: var(--ink); font-weight: 700;
+        text-shadow: 2px 2px 0 var(--soft); margin: 0;
+      }
+      .sb-goal-cover-sub { font-family: var(--font-body); font-weight: 700; font-size: 12.5px; color: var(--muted); margin: 2px 0 10px; }
+      .sb-goal-cover-stats {
+        display: flex; gap: 8px; align-items: center; font-family: var(--font-body); font-weight: 800;
+        font-size: 11.5px; color: var(--ink); background: var(--soft); border: 2px solid var(--outline);
+        border-radius: 999px; padding: 6px 14px;
+      }
+      .sb-goal-cover-sparkle { position: absolute; width: 26px; height: 26px; opacity: .8; }
+      .sb-goal-cover-sparkle-1 { top: 16px; right: 22px; }
+      .sb-goal-cover-sparkle-2 { bottom: 26px; left: 20px; transform: scale(.7) rotate(20deg); }
+
+      /* ---- open book shell ---- */
+      .sb-journal-shell {
+        position: relative; width: min(460px, 92vw); margin: 10px auto 0; padding-left: 14px;
+      }
+      .sb-journal-close {
+        display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-body); font-weight: 800;
+        font-size: 12.5px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 4px 2px 10px;
+      }
+      .sb-journal-close:hover { color: var(--ink); }
+      .sb-spiral-book { left: 4px; top: 46px; }
+
+      .sb-journal-stage {
+        position: relative; aspect-ratio: 3 / 4; border-radius: 20px; border: 2.5px solid var(--outline);
+        box-shadow: 6px 6px 0 var(--outline); background: var(--card); overflow: hidden;
+      }
+      .sb-journal-page {
+        position: absolute; inset: 0; backface-visibility: hidden;
+        background-image: radial-gradient(var(--dot) 1.4px, transparent 1.4px), repeating-linear-gradient(
+          to bottom, transparent 0, transparent 33px, var(--soft) 34px
+        );
+        background-size: 20px 20px, 100% 34px; background-position: 0 0, 0 54px;
+      }
+      .sb-journal-page-inner {
+        position: relative; height: 100%; display: flex; flex-direction: column; gap: 10px;
+        padding: 20px 20px 16px; overflow-y: auto;
+      }
+
+      .sb-goal-page-head { display: flex; align-items: center; justify-content: space-between; }
+      .sb-goal-page-num { font-family: var(--font-body); font-weight: 800; font-size: 10.5px; color: var(--muted); letter-spacing: .04em; }
+      .sb-goal-star-btn {
+        width: 32px; height: 32px; border-radius: 999px; border: 2px solid var(--outline); background: var(--card);
+        color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer;
+        transition: transform .15s cubic-bezier(.34,1.56,.64,1);
+      }
+      .sb-goal-star-btn:hover { transform: scale(1.08) rotate(-6deg); }
+      .sb-goal-star-btn.is-starred { color: #E8A93A; background: var(--soft); }
+
+      .sb-goal-title-wrap { position: relative; margin-top: 4px; }
+      .sb-goal-title {
+        font-family: var(--font-hand); font-size: 32px; line-height: 1.15; color: var(--ink); font-weight: 700;
+        margin: 0; word-break: break-word; overflow-wrap: break-word;
+      }
+      .sb-goal-title.is-done { color: var(--muted); }
+      .sb-strike-svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+      .sb-strike-path { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+      .sb-strike-pencil {
+        position: absolute; left: 0; top: 0; font-size: 20px; opacity: 0; pointer-events: none;
+        transform-origin: 70% 90%; will-change: transform;
+      }
+
+      .sb-goal-deadline-chip {
+        display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; font-family: var(--font-body);
+        font-weight: 800; font-size: 11px; color: var(--ink); background: var(--p1); border: 2px solid var(--outline);
+        border-radius: 6px; padding: 4px 9px; transform: rotate(-2deg); box-shadow: 1px 2px 2px rgba(0,0,0,.1);
+      }
+      .sb-goal-deadline-chip.is-overdue { background: #FFC9C9; }
+
+      .sb-goal-notes {
+        font-family: var(--font-body); font-size: 13px; color: var(--muted); line-height: 1.55; margin: 0;
+        white-space: pre-wrap;
+      }
+
+      .sb-goal-page-foot { margin-top: auto; display: flex; align-items: center; gap: 8px; padding-top: 10px; }
+      .sb-goal-complete-btn, .sb-goal-reopen-btn {
+        font-family: var(--font-body); font-weight: 800; font-size: 12.5px; display: inline-flex; align-items: center;
+        gap: 6px; border: 2.5px solid var(--outline); border-radius: 999px; padding: 8px 16px; cursor: pointer;
+        background: var(--accent); color: #fff; box-shadow: 2px 2px 0 var(--outline);
+        transition: transform .12s ease, box-shadow .12s ease;
+      }
+      .sb-goal-complete-btn:hover, .sb-goal-reopen-btn:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--outline); }
+      .sb-goal-complete-btn:disabled { opacity: .6; cursor: default; transform: none; }
+      .sb-goal-reopen-btn { background: var(--card); color: var(--ink); }
+      .sb-goal-delete-btn {
+        margin-left: auto; width: 32px; height: 32px; border-radius: 999px; border: 2px solid var(--outline);
+        background: var(--card); color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer;
+      }
+      .sb-goal-delete-btn:hover { color: #C64545; }
+
+      .sb-goal-stamp {
+        position: absolute; right: 16px; bottom: 62px; font-family: var(--font-display); font-weight: 800;
+        font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: #C64545; border: 3px solid #C64545;
+        border-radius: 8px; padding: 5px 12px; transform: rotate(-9deg); opacity: 0; pointer-events: none;
+      }
+      .sb-goal-stamp span { margin-left: 4px; }
+
+      .sb-goal-spark {
+        position: absolute; font-size: 14px; color: var(--accent2); opacity: 0; pointer-events: none;
+      }
+
+      /* ---- blank / new-goal page ---- */
+      .sb-journal-blank-hint {
+        display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-body); font-weight: 800;
+        font-size: 12.5px; color: var(--muted); border-bottom: 2px dashed var(--outline); padding-bottom: 8px;
+      }
+      .sb-goal-input-title {
+        font-family: var(--font-hand); font-size: 26px; color: var(--ink); border: none; border-bottom: 2px solid var(--outline);
+        background: transparent; padding: 6px 2px; outline: none; width: 100%;
+      }
+      .sb-goal-input-title::placeholder { color: var(--muted); opacity: .6; }
+      .sb-goal-form-row { display: flex; align-items: center; gap: 10px; font-family: var(--font-body); font-weight: 700; font-size: 12px; color: var(--muted); }
+      .sb-goal-form-row span { font-weight: 600; opacity: .8; }
+      .sb-goal-input-small {
+        border: 2px solid var(--outline); border-radius: 10px; padding: 6px 10px; font-family: var(--font-body);
+        font-weight: 700; font-size: 12.5px; background: var(--card); color: var(--ink);
+      }
+      .sb-goal-input-notes {
+        font-family: var(--font-body); font-size: 13px; color: var(--ink); border: 2px solid var(--outline);
+        border-radius: 12px; padding: 10px 12px; background: var(--card); resize: vertical; outline: none;
+      }
+
+      /* ---- nav ---- */
+      .sb-journal-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
+      .sb-journal-arrow {
+        width: 38px; height: 38px; border-radius: 999px; border: 2.5px solid var(--outline); background: var(--card);
+        color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer;
+        box-shadow: 2px 2px 0 var(--outline); transition: transform .12s ease;
+      }
+      .sb-journal-arrow:hover:not(:disabled) { transform: translate(-1px,-1px); }
+      .sb-journal-arrow:disabled { opacity: .35; cursor: default; }
+      .sb-journal-ribbon {
+        font-family: var(--font-display); font-weight: 800; font-size: 12.5px; color: var(--ink); background: var(--soft);
+        border: 2px solid var(--outline); border-radius: 999px; padding: 6px 14px;
+      }
+      .sb-journal-jump-new {
+        display: flex; align-items: center; gap: 6px; margin: 12px auto 0; font-family: var(--font-body); font-weight: 800;
+        font-size: 12px; color: var(--muted); background: none; border: none; cursor: pointer;
+      }
+      .sb-journal-jump-new:hover { color: var(--ink); }
+
+      @media (max-width: 560px) {
+        .sb-goal-title { font-size: 26px; }
+        .sb-goal-cover-title { font-size: 38px; }
+      }
     `}</style>
   );
 }

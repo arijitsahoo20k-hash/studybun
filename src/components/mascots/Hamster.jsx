@@ -11,6 +11,7 @@ const OUTLINE = { stroke: "var(--outline)", strokeWidth: 2.2, strokeLinejoin: "r
 const MOOD = {
   idle: { eye: "dot", mouth: "M -4 12 Q 0 14 4 12", cheek: 1 },
   happy: { eye: "arc", mouth: "M -5 11 Q 0 17 5 11", cheek: 1.15 },
+  sad: { eye: "worry", mouth: "M -4 15.5 Q 0 12 4 15.5", cheek: 0.55, tear: true },
   sleepy: { eye: "line", mouth: "M -3 13 Q 0 13.6 3 13", zzz: true, cheek: 0.85 },
   thinking: { eye: "dot", mouth: "M -3 13 Q -0.5 12 2.5 13", brow: true, cheek: 1 },
   celebrate: { eye: "arc", mouth: "M -6 10.5 Q 0 18 6 10.5", sparkle: true, cheek: 1.3 },
@@ -24,11 +25,11 @@ function Eye({ state, mirror }) {
   if (state === "arc") return <path d={`M ${-3 * flip} 0.5 Q 0 ${-2.6} ${3 * flip} 0.5`} stroke="var(--ink)" strokeWidth="1.8" fill="none" strokeLinecap="round" />;
   if (state === "line") return <path d={`M ${-2.6 * flip} 0 Q 0 0.7 ${2.6 * flip} 0`} stroke="var(--ink)" strokeWidth="1.6" fill="none" strokeLinecap="round" />;
   if (state === "worry") return <path d={`M ${-2.4 * flip} 0.8 Q 0 -1.4 ${2.4 * flip} 0.8`} stroke="var(--ink)" strokeWidth="1.7" fill="none" strokeLinecap="round" />;
-  const r = state === "wide" ? 2.4 : 1.9;
+  const r = state === "wide" ? 3.1 : 2.6;
   return (
     <>
       <circle cx="0" cy="0" r={r} fill="var(--ink)" />
-      <circle cx={-0.6 * flip} cy="-0.6" r="0.6" fill="var(--card)" />
+      <circle cx={-0.85 * flip} cy="-0.85" r="0.85" fill="var(--card)" />
     </>
   );
 }
@@ -58,8 +59,8 @@ export default function Hamster({ mood = "idle", size = 72, hop = false, peek = 
       {/* short, wide, squashed head */}
       <ellipse cx="0" cy="0" rx="30" ry="21" fill="var(--card)" stroke="var(--outline)" strokeWidth="2.4" />
 
-      <circle cx="-13" cy="4" r="3.2" fill="var(--accent)" opacity="0.32" />
-      <circle cx="13" cy="4" r="3.2" fill="var(--accent)" opacity="0.32" />
+      <circle cx="-13" cy="4" r="4" fill="var(--accent)" opacity="0.38" />
+      <circle cx="13" cy="4" r="4" fill="var(--accent)" opacity="0.38" />
 
       <g transform="translate(-8,-3)">
         <Eye state={eyeState} mirror={false} />
@@ -84,6 +85,14 @@ export default function Hamster({ mood = "idle", size = 72, hop = false, peek = 
         </g>
       )}
       {m.zzz && <text x="18" y="-20" fontSize="11" fill="var(--muted)" fontFamily="var(--font-display)">z</text>}
+      {m.tear && (
+        <g transform="translate(-13,1) scale(0.8)">
+          <g className="sb-mascot-tear">
+            <path d="M 0 0 C 2.2 3 4 5.2 4 7.4 A 4 4 0 1 1 -4 7.4 C -4 5.2 -2.2 3 0 0 Z" fill="#8FCBEA" stroke="var(--outline)" strokeWidth="1" strokeLinejoin="round" />
+            <ellipse cx="-1.3" cy="5.4" rx="1" ry="1.4" fill="#fff" opacity="0.85" />
+          </g>
+        </g>
+      )}
       {m.sparkle && (
         <>
           <text x="-32" y="-16" fontSize="11">✨</text>

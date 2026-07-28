@@ -1,4 +1,6 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from "react";
+import { motion, useAnimationControls } from "framer-motion";
+import gsap from "gsap";
 import Bunny from "./mascots/Bunny";
 import Cat from "./mascots/Cat";
 import Fox from "./mascots/Fox";
@@ -13,26 +15,146 @@ import Penguin from "./mascots/Penguin";
  * None of them share a face-parts table; this file only routes to the
  * right one and keeps the same {species, mood, size, hop, peek} API every
  * page in the app already calls.
+ *
+ * Animation layering: the species' own CSS (ear wiggle, tail sway, cheek
+ * puff, hop/waddle) stays exactly as designed -- it's bespoke per animal
+ * and already respects prefers-reduced-motion. This file adds two more
+ * layers on top, on two *different* elements so they never fight over the
+ * same transform:
+ *   - an outer <span>, driven by GSAP: a slow ambient idle drift, plus a
+ *     one-shot sparkle flourish whenever mood flips to "celebrate".
+ *   - an inner <motion.span>, driven by Framer Motion: a spring pop-in on
+ *     mount, and (when pettable) a springy hover/tap/squish response.
  */
 const SPECIES = { bunny: Bunny, cat: Cat, fox: Fox, bear: Bear, hamster: Hamster, penguin: Penguin };
 
 // A handful of hearts/sparkles per pet, each with its own tiny random drift
 // so a burst never looks identical twice.
 const PET_BITS = ["💗", "✨", "💕", "⭐"];
+const CELEBRATE_BITS = ["✨", "🎉", "⭐", "💫"];
+
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
+// Fallback "how alive should this look" value for callers that don't pass an
+// explicit `energy` (most of the app). Pages that know the real numbers
+// (Dashboard, BuddyGuide) pass a precise value from data/mascots.js's
+// mascotEnergy() instead -- this is just a sensible default per mood so the
+// rest of the app still feels responsive without every call site changing.
+const DEFAULT_ENERGY = {
+  idle: 0.5, happy: 0.7, sad: 0.12, sleepy: 0.3, thinking: 0.5,
+  celebrate: 1, concerned: 0.4, studying: 0.65, reminder: 0.55,
+};
 
 /**
  * pettable: when true, tapping the mascot doesn't navigate/toggle anything --
- * it just reacts. A quick squish-bounce plays on the species wrapper (works
+ * it just reacts. A quick spring squish plays on the species wrapper (works
  * for every species without touching their individual SVGs) and a small
  * burst of hearts/sparkles floats up and fades. Species stay dumb about this;
  * it's purely a wrapper-level delight moment for ambient/idle placements
  * (Dashboard hero, Focus Timer) -- not for spots where tapping the mascot
  * already does something else (BuddyGuide avatar, onboarding picker, etc).
  */
-export default function Mascot({ species = "bunny", mood = "idle", size = 72, hop = false, peek = false, hopLoop = false, pettable = false, onPet }) {
+export default function Mascot({ species = "bunny", mood = "idle", size = 72, hop = false, peek = false, hopLoop = false, pettable = false, onPet, energy }) {
   const Species = SPECIES[species] || Bunny;
   const [bursts, setBursts] = useState([]);
+  const [celebrateBits, setCelebrateBits] = useState([]);
   const idRef = useRef(0);
+  const outerRef = useRef(null);
+  const prevMoodRef = useRef(mood);
+  const reduced = useMemo(prefersReducedMotion, []);
+  const squishControls = useAnimationControls();
+  const liveliness = energy ?? DEFAULT_ENERGY[mood] ?? 0.5;
+  const sad = mood === "sad";
+
+  // Spring pop-in on first mount, then settle. Skipped under
+  // prefers-reduced-motion, which just shows the mascot in place.
+  useEffect(() => {
+    if (reduced) {
+      squishControls.set({ opacity: 1, scale: 1 });
+      return;
+    }
+    squishControls.start({ opacity: 1, scale: 1, transition: { type: "spring", stiffness: 300, damping: 16 } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Ambient idle drift -- a slow GSAP loop on the *outer* wrapper, randomized
+  // per instance so a row of mascots never bobs in unison. Skipped whenever
+  // the species itself already owns a bounce (hop / hopLoop), so the two
+  // never stack into a double-bounce, and skipped entirely for reduced motion.
+  //
+  // This is where "energetic when you study, sad when you don't" actually
+  // shows up as motion, not just a face: `liveliness` (0-1) speeds the loop
+  // up and makes it bouncier as the day goes better. A neglected "sad"
+  // mascot doesn't just get a smaller version of the happy bounce -- it gets
+  // a different motion entirely: a slow downward slump instead of an upward
+  // bob, like a shoulders-down sigh repeating on a long, heavy beat.
+  useEffect(() => {
+    if (reduced || hop || hopLoop || !outerRef.current) return;
+    const el = outerRef.current;
+    const tween = sad
+      ? gsap.to(el, {
+          y: 3.2,
+          rotate: -2.6,
+          duration: 3.2 + Math.random() * 1.2,
+          delay: Math.random() * 0.6,
+          ease: "sine.inOut",
+          yoyo: true,
+          repeat: -1,
+        })
+      : gsap.to(el, {
+          y: -(2.2 + liveliness * 4.5),
+          rotate: 1 + liveliness * 2,
+          duration: Math.max(1, 2.9 - liveliness * 1.7) + Math.random() * 0.5,
+          delay: Math.random() * 0.7,
+          ease: "sine.inOut",
+          yoyo: true,
+          repeat: -1,
+        });
+    return () => tween.kill();
+  }, [reduced, hop, hopLoop, sad, liveliness]);
+
+  // Celebrate flourish -- fires once whenever mood transitions *into*
+  // "celebrate" (not on every re-render while it stays celebrate), using a
+  // GSAP timeline to fan a few sparkles out and fade them, independent of
+  // the tap-driven pet burst below.
+  useEffect(() => {
+    const prevMood = prevMoodRef.current;
+    prevMoodRef.current = mood;
+    if (mood === "celebrate" && prevMood !== "celebrate" && !reduced) {
+      const id = idRef.current++;
+      setCelebrateBits(
+        Array.from({ length: 5 }, (_, i) => ({
+          key: `c-${id}-${i}`,
+          glyph: CELEBRATE_BITS[Math.floor(Math.random() * CELEBRATE_BITS.length)],
+          angle: (i / 5) * 360 + Math.random() * 24,
+        }))
+      );
+    }
+  }, [mood, reduced]);
+
+  useLayoutEffect(() => {
+    if (!celebrateBits.length || !outerRef.current) return;
+    const nodes = outerRef.current.querySelectorAll("[data-celebrate-bit]");
+    if (!nodes.length) return;
+    const tl = gsap.timeline({ onComplete: () => setCelebrateBits([]) });
+    tl.fromTo(
+      nodes,
+      { opacity: 0, scale: 0.4, x: 0, y: 0 },
+      {
+        opacity: 1,
+        scale: 1,
+        x: (i) => Math.cos((celebrateBits[i].angle * Math.PI) / 180) * 30,
+        y: (i) => Math.sin((celebrateBits[i].angle * Math.PI) / 180) * 30 - 10,
+        duration: 0.5,
+        stagger: 0.04,
+        ease: "back.out(2)",
+      }
+    ).to(nodes, { opacity: 0, y: "-=14", duration: 0.5 }, "+=0.35");
+    return () => tl.kill();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [celebrateBits]);
 
   const pet = () => {
     if (!pettable) return;
@@ -45,26 +167,61 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
     }));
     setBursts((cur) => [...cur, { id, bits }]);
     setTimeout(() => setBursts((cur) => cur.filter((b) => b.id !== id)), 900);
+    if (!reduced) {
+      squishControls.start({
+        scale: [1, 1.16, 0.9, 1.04, 1],
+        transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
+      });
+    }
     onPet?.();
   };
 
   const body = <Species mood={mood} size={size} hop={hop} peek={peek} hopLoop={hopLoop} />;
 
-  if (!pettable) return body;
+  const inner = (
+    <motion.span
+      style={{ display: "inline-flex", transformOrigin: "50% 78%" }}
+      initial={reduced ? false : { opacity: 0, scale: 0.5 }}
+      animate={squishControls}
+      whileHover={pettable && !reduced ? { scale: 1.06 } : undefined}
+      whileTap={pettable && !reduced ? { scale: 0.92 } : undefined}
+    >
+      {body}
+    </motion.span>
+  );
+
+  const wrapperProps = pettable
+    ? {
+        role: "button",
+        tabIndex: 0,
+        "aria-label": "Pet your study buddy",
+        onClick: pet,
+        onKeyDown: (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            pet();
+          }
+        },
+      }
+    : {};
 
   return (
     <span
-      className="sb-mascot-pet-wrap"
-      role="button"
-      tabIndex={0}
-      aria-label="Pet your study buddy"
-      onClick={pet}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pet(); } }}
-      style={{ width: size, height: size }}
+      ref={outerRef}
+      className={pettable ? "sb-mascot-pet-wrap" : undefined}
+      style={{ display: "inline-flex", position: "relative", width: size, height: size, alignItems: "center", justifyContent: "center" }}
+      {...wrapperProps}
     >
-      <span className={bursts.length ? "sb-mascot-pet-squish" : ""} key={bursts.length ? bursts[bursts.length - 1].id : "still"}>
-        {body}
-      </span>
+      {inner}
+      {celebrateBits.map((bit) => (
+        <span
+          key={bit.key}
+          data-celebrate-bit
+          style={{ position: "absolute", left: "50%", top: "38%", fontSize: 13, lineHeight: 1, pointerEvents: "none", transform: "translate(-50%, 0)" }}
+        >
+          {bit.glyph}
+        </span>
+      ))}
       {bursts.map((b) =>
         b.bits.map((bit) => (
           <span

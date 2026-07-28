@@ -9,6 +9,7 @@ import useBlink from "./useBlink";
 const MOOD = {
   idle: { eye: "dot", mouth: "flat", flippers: "down" },
   happy: { eye: "arc", mouth: "smile", flippers: "out" },
+  sad: { eye: "worry", mouth: "frown", flippers: "in", lean: true, tear: true },
   sleepy: { eye: "closed", mouth: "flat", flippers: "down", zzz: true, lean: true },
   thinking: { eye: "dot", mouth: "flat", flippers: "chin", brow: true },
   celebrate: { eye: "arc", mouth: "grin", flippers: "up", sparkle: true },
@@ -22,6 +23,7 @@ const MOUTHS = {
   smile: "M -5 -1 Q 0 4 5 -1",
   grin: "M -6 -1 Q 0 6 6 -1",
   wobble: "M -4 1 Q 0 -1.5 4 1",
+  frown: "M -5 3 Q 0 -2 5 3",
 };
 
 function Eye({ state, mirror }) {
@@ -29,11 +31,11 @@ function Eye({ state, mirror }) {
   if (state === "arc") return <path d={`M ${-2.6 * flip} 0.4 Q 0 ${-2.4} ${2.6 * flip} 0.4`} stroke="var(--card)" strokeWidth="1.8" fill="none" strokeLinecap="round" />;
   if (state === "closed") return <path d={`M ${-2.4 * flip} 0 Q 0 0.8 ${2.4 * flip} 0`} stroke="var(--card)" strokeWidth="1.6" fill="none" strokeLinecap="round" />;
   if (state === "worry") return <path d={`M ${-2.2 * flip} 0.6 Q 0 -1.2 ${2.2 * flip} 0.6`} stroke="var(--ink)" strokeWidth="1.6" fill="none" strokeLinecap="round" />;
-  const r = state === "wide" ? 2.6 : 2.1;
+  const r = state === "wide" ? 3.3 : 2.8;
   return (
     <>
       <circle cx="0" cy="0" r={r} fill="var(--ink)" />
-      <circle cx={-0.6 * flip} cy="-0.6" r="0.6" fill="#fff" />
+      <circle cx={-0.85 * flip} cy="-0.85" r="0.85" fill="#fff" />
     </>
   );
 }
@@ -54,6 +56,8 @@ export default function Penguin({ mood = "idle", size = 72, hop = false, peek = 
       <ellipse cx="0" cy="0" rx="23" ry="27" fill="var(--accent)" opacity="0.16" />
       <ellipse cx="0" cy="0" rx="26" ry="30" fill="var(--ink)" />
       <ellipse cx="0" cy="5" rx="17" ry="19" fill="var(--card)" />
+      <circle cx="-11" cy="9" r="3.6" fill="var(--accent)" opacity="0.3" />
+      <circle cx="11" cy="9" r="3.6" fill="var(--accent)" opacity="0.3" />
 
       {/* flippers -- the one body part that swings with mood, standing in for arms/paws/tail */}
       <ellipse className="sb-penguin-flipper" cx="-30" cy="8" rx="7" ry="16" fill="var(--ink)" transform={flipL} />
@@ -83,6 +87,14 @@ export default function Penguin({ mood = "idle", size = 72, hop = false, peek = 
         </g>
       )}
       {m.zzz && <text x="18" y="-24" fontSize="11" fill="var(--muted)" fontFamily="var(--font-display)">z</text>}
+      {m.tear && (
+        <g transform="translate(-14,1)">
+          <g className="sb-mascot-tear">
+            <path d="M 0 0 C 2.2 3 4 5.2 4 7.4 A 4 4 0 1 1 -4 7.4 C -4 5.2 -2.2 3 0 0 Z" fill="#8FCBEA" stroke="var(--outline)" strokeWidth="1" strokeLinejoin="round" />
+            <ellipse cx="-1.3" cy="5.4" rx="1" ry="1.4" fill="#fff" opacity="0.85" />
+          </g>
+        </g>
+      )}
       {m.sparkle && (
         <>
           <text x="-32" y="-20" fontSize="11">✨</text>

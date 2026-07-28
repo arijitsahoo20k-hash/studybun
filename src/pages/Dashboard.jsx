@@ -3,6 +3,7 @@ import { Target, Clock3, Flame, TrendingUp, BookOpen, FolderClock, RotateCcw, He
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Card, ProgressRing, SectionTitle, EmptyState, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
+import ThoughtBubble from "../components/ThoughtBubble";
 import { SYLLABUS } from "../data/syllabus";
 import { todayIST, formatISTCalendarDate } from "../lib/dateIST";
 
@@ -20,7 +21,11 @@ export default function Dashboard(p) {
   const goalPct = (p.todayHours / (p.profile.daily_goal || 6)) * 100;
   const todayStr = todayIST();
   const line = MOTIVATIONAL[Number(todayStr.slice(8, 10)) % MOTIVATIONAL.length];
-  const mascotMood = p.todayHours > 0 ? "happy" : "sleepy";
+  // Grounded in real numbers (streak, revisions, backlog, goal progress,
+  // time of day) via the same engine BuddyGuide uses -- so the hero mascot
+  // and the floating buddy always agree on how the day is actually going.
+  const mascotMood = p.mascotMood || "idle";
+  const mascotEnergyLevel = p.mascotEnergy;
 
   return (
     <div className="sb-page">
@@ -30,7 +35,10 @@ export default function Dashboard(p) {
           <div className="sb-hero-line sb-quote">{line}</div>
           <div className="sb-hero-meta">{formatISTCalendarDate(todayStr, { weekday: "long", month: "long", day: "numeric" })} · {p.profile.exam}</div>
         </div>
-        <Mascot species={p.mascot} mood={mascotMood} size={84} pettable />
+        <div style={{ position: "relative", display: "inline-flex" }}>
+          <ThoughtBubble mood={mascotMood} streak={p.streak} todayHours={p.todayHours} dailyGoal={p.profile?.daily_goal || 6} />
+          <Mascot species={p.mascot} mood={mascotMood} energy={mascotEnergyLevel} size={84} pettable />
+        </div>
       </Card>
 
       <div className="sb-grid-3">

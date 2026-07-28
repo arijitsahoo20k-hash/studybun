@@ -9,14 +9,15 @@ const OUTLINE = { stroke: "var(--outline)", strokeWidth: 2.2, strokeLinejoin: "r
  * that changes shape with mood, and a quill instead of a book for studying.
  */
 const MOOD = {
-  idle: { eye: "M -6.4 0.4 Q -1.4 -3 4 -0.6", mouth: "M -4.5 12 Q 0 15 4.5 12", tail: "curl" },
-  happy: { eye: "M -6.6 2 Q 0 -6.4 6.6 2", mouth: "M -6 11 Q 0 20 6 11", tail: "wag" },
-  sleepy: { eye: "M -5.4 0.8 Q 0 1.8 5.4 0.8", mouth: "M -3.5 13 Q 0 14 3.5 13", zzz: true, tail: "wrap" },
-  thinking: { eye: "M -6.4 0.4 Q -1.4 -3 4 -0.6", mouth: "M -3 13 Q 0 11.6 3 13", brow: true, tail: "tap" },
-  celebrate: { eye: "M -6.8 2.6 Q 0 -7.2 6.8 2.6", mouth: "M -7 11 Q 0 22 7 11", sparkle: true, tail: "poof" },
-  concerned: { eye: "M -4.6 1.4 Q 0 -2 4.6 1.4", pupil: true, mouth: "M -5 15.5 Q 0 12 5 15.5", earsBack: true, tail: "droop" },
-  studying: { eye: "M -6.4 0.4 Q -1.4 -3 4 -0.6", mouth: "M -3.5 12.5 Q 0 14 3.5 12.5", quill: true, tail: "curl" },
-  reminder: { eye: "M -4.8 0 Q 0 -2.6 4.8 0", pupil: true, mouth: "M -4 13 Q 0 11 4 13", earPerk: true, bell: true, tail: "up" },
+  idle: { eye: "M -6.4 0.4 Q -1.4 -3 4 -0.6", mouth: "M -4.5 9 Q 0 12 4.5 9", tail: "curl" },
+  happy: { eye: "M -6.6 2 Q 0 -6.4 6.6 2", mouth: "M -6 8 Q 0 17 6 8", tail: "wag" },
+  sad: { eye: "M -4.6 1.8 Q 0 -0.6 4.6 1.8", pupil: true, mouth: "M -5.5 14 Q 0 10 5.5 14", earsBack: true, tail: "droop", tear: true },
+  sleepy: { eye: "M -5.4 0.8 Q 0 1.8 5.4 0.8", mouth: "M -3.5 10 Q 0 11 3.5 10", zzz: true, tail: "wrap" },
+  thinking: { eye: "M -6.4 0.4 Q -1.4 -3 4 -0.6", mouth: "M -3 10 Q 0 8.6 3 10", brow: true, tail: "tap" },
+  celebrate: { eye: "M -6.8 2.6 Q 0 -7.2 6.8 2.6", mouth: "M -7 8 Q 0 19 7 8", sparkle: true, tail: "poof" },
+  concerned: { eye: "M -4.6 1.4 Q 0 -2 4.6 1.4", pupil: true, mouth: "M -5 12.5 Q 0 9 5 12.5", earsBack: true, tail: "droop" },
+  studying: { eye: "M -6.4 0.4 Q -1.4 -3 4 -0.6", mouth: "M -3.5 9.5 Q 0 11 3.5 9.5", quill: true, tail: "curl" },
+  reminder: { eye: "M -4.8 0 Q 0 -2.6 4.8 0", pupil: true, mouth: "M -4 10 Q 0 8 4 10", earPerk: true, bell: true, tail: "up" },
 };
 
 const TAILS = {
@@ -53,39 +54,57 @@ export default function Fox({ mood = "idle", size = 72, hop = false, peek = fals
         <path d="M 16 -19 L 11 -31 L 6 -19 Z" fill="var(--soft)" />
       </g>
 
-      {/* narrow head stretching into a long pointed muzzle */}
+      {/* narrow head with a shorter, cuter muzzle */}
       <path
-        d="M -21 -6 Q -23 -25 0 -27 Q 23 -25 21 -6 Q 21 7 10 16 Q 3 31 0 36 Q -3 31 -10 16 Q -21 7 -21 -6 Z"
+        d="M -21 -6 Q -23 -25 0 -27 Q 23 -25 21 -6 Q 21 6 9 13 Q 3 25 0 29 Q -3 25 -9 13 Q -21 6 -21 -6 Z"
         fill="var(--card)" stroke="var(--outline)" strokeWidth="2.4" strokeLinejoin="round"
       />
       {/* mask-like marking across the eyes, unique to fox */}
       <path d="M -9 -21 Q 0 -27 9 -21 Q 5 -15 0 -14 Q -5 -15 -9 -21 Z" fill="var(--accent2)" opacity="0.55" />
-      {/* long white muzzle patch hugging the pointed chin */}
-      <path d="M -9 11 Q 0 34 9 11 Q 5 23 0 24 Q -5 23 -9 11 Z" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" strokeLinejoin="round" />
-      <ellipse cx="0" cy="23" rx="2.4" ry="1.8" fill="var(--ink)" />
+      {/* white muzzle patch hugging the chin */}
+      <path d="M -9 9 Q 0 27 9 9 Q 5 19 0 20 Q -5 19 -9 9 Z" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" strokeLinejoin="round" />
+      <ellipse cx="0" cy="19.5" rx="2.4" ry="1.8" fill="var(--ink)" />
 
-      <circle cx="-8" cy="4" r="3.4" fill="var(--accent)" opacity="0.3" />
-      <circle cx="8" cy="4" r="3.4" fill="var(--accent)" opacity="0.3" />
+      <circle cx="-8" cy="4" r="4" fill="var(--accent)" opacity="0.35" />
+      <circle cx="8" cy="4" r="4" fill="var(--accent)" opacity="0.35" />
 
       <g transform="translate(-7,-6)">
         <path d={eyePath} stroke="var(--ink)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
-        {m.pupil && !blink && <ellipse cx="-1" cy="0.6" rx="1.5" ry="2.1" fill="var(--ink)" />}
+        {m.pupil && !blink && (
+          <>
+            <ellipse cx="-1" cy="0.6" rx="1.5" ry="2.1" fill="var(--ink)" />
+            <circle cx="-1.6" cy="-0.4" r="0.6" fill="#fff" />
+          </>
+        )}
         {m.brow && <path d="M -3 -7 Q 3 -9 6 -6" stroke="var(--ink)" strokeWidth="1.5" fill="none" strokeLinecap="round" />}
       </g>
       <g transform="translate(7,-6) scale(-1,1)">
         <path d={eyePath} stroke="var(--ink)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
-        {m.pupil && !blink && <ellipse cx="-1" cy="0.6" rx="1.5" ry="2.1" fill="var(--ink)" />}
+        {m.pupil && !blink && (
+          <>
+            <ellipse cx="-1" cy="0.6" rx="1.5" ry="2.1" fill="var(--ink)" />
+            <circle cx="-1.6" cy="-0.4" r="0.6" fill="#fff" />
+          </>
+        )}
       </g>
 
       <path d={m.mouth} stroke="var(--ink)" strokeWidth="1.8" fill="none" strokeLinecap="round" />
 
       {m.quill && (
-        <g transform="translate(11,20) rotate(35)">
+        <g transform="translate(11,16) rotate(35)">
           <rect x="0" y="0" width="2" height="16" fill="var(--outline)" rx="1" />
           <path d="M 1 0 L -2.5 -5 L 4.5 -5 Z" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1" />
         </g>
       )}
       {m.zzz && <text x="18" y="-24" fontSize="11" fill="var(--muted)" fontFamily="var(--font-display)">z</text>}
+      {m.tear && (
+        <g transform="translate(-13,1)">
+          <g className="sb-mascot-tear">
+            <path d="M 0 0 C 2.2 3 4 5.2 4 7.4 A 4 4 0 1 1 -4 7.4 C -4 5.2 -2.2 3 0 0 Z" fill="#8FCBEA" stroke="var(--outline)" strokeWidth="1" strokeLinejoin="round" />
+            <ellipse cx="-1.3" cy="5.4" rx="1" ry="1.4" fill="#fff" opacity="0.85" />
+          </g>
+        </g>
+      )}
       {m.sparkle && (
         <>
           <text x="-30" y="-22" fontSize="11">✨</text>

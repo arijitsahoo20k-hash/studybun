@@ -28,6 +28,11 @@ export const toISTDateStr = (input) => {
 // the purposes of this app" check should go through.
 export const todayIST = () => toISTDateStr();
 
+// Current hour in IST, 0-23. Used for mood logic that should feel different
+// at 8am ("plenty of day left") vs 9pm ("today is nearly over") regardless
+// of the device's own timezone.
+export const istHour = () => new Date(Date.now() + IST_OFFSET_MS).getUTCHours();
+
 // IST date string N days ago (0 = today, 1 = yesterday, ...).
 export const daysAgoIST = (n) => toISTDateStr(Date.now() - n * 86400000);
 

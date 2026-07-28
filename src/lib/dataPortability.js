@@ -19,6 +19,7 @@ export const EXPORT_TABLES = [
   { key: "revision_plans", label: "Revision plans" },
   { key: "tasks", label: "Tasks" },
   { key: "backlog_items", label: "Backlog items" },
+  { key: "goals", label: "Goals" },
   { key: "achievements", label: "Achievements", conflict: "user_id,achievement_key" },
 ];
 
