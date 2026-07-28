@@ -221,14 +221,25 @@ export function useFocusTimer({ onComplete } = {}) {
     document.title = `${mm}:${ss} · ${mode} — StudyBun`;
   }, [secondsLeft, running, mode]);
 
+  const elapsedSeconds = startedMinutes > 0 ? Math.max(0, startedMinutes * 60 - secondsLeft) : 0;
+  // A session is "in progress" (and other modes should be blocked) once it's
+  // running, paused with some real progress, or sitting at the "what did you
+  // study" step waiting to be logged/discarded.
+  const sessionActive = running || askDone || elapsedSeconds > 0;
+  // Guard against losing a real chunk of a session (>5 min) to an accidental
+  // mode tap — same threshold as the manual Save button below.
+  const canSave = !askDone && elapsedSeconds >= 300;
+
   const changeMode = useCallback((m) => {
+    if (m === mode) return;
+    if (running || askDone || elapsedSeconds > 0) return; // blocked — finish, save, or reset first
     setModeRaw(m);
     setRunning(false);
     endAtRef.current = null;
     finishedRef.current = false;
     setSecondsLeft((modeMinutes[m] ?? 25) * 60);
     stopDroneOsc(audioCtxRef.current, droneRef);
-  }, [modeMinutes]);
+  }, [mode, modeMinutes, running, askDone, elapsedSeconds]);
 
   const setCustomMinutes = useCallback((m, mins) => {
     const clamped = Math.max(1, Math.min(240, Math.round(mins) || 1));
@@ -269,6 +280,26 @@ export function useFocusTimer({ onComplete } = {}) {
     stopDroneOsc(audioCtxRef.current, droneRef);
   }, [mode, modeMinutes]);
 
+  // Ends the session early (e.g. a 40-min timer wrapped up in 30) without
+  // forcing the user to sit through the rest of the countdown. Only counts
+  // once real progress (5+ min) has been made — reuses the same "what did
+  // you study" logging step that a natural finish triggers, but credits the
+  // actual elapsed time instead of the full planned duration.
+  const saveEarly = useCallback(() => {
+    const elapsed = Math.max(0, startedMinutes * 60 - secondsLeft);
+    const elapsedMinutes = Math.round(elapsed / 60);
+    if (elapsedMinutes < 5) return false;
+    finishedRef.current = true;
+    setRunning(false);
+    endAtRef.current = null;
+    stopDroneOsc(audioCtxRef.current, droneRef);
+    setStartedMinutes(elapsedMinutes);
+    setSecondsLeft(0);
+    setAskDone(true);
+    if (soundOn) playEndChime(makeCtx(audioCtxRef));
+    return true;
+  }, [startedMinutes, secondsLeft, soundOn]);
+
   const resetForNewSession = useCallback(() => {
     setAskDone(false);
     setSecondsLeft((modeMinutes[mode] ?? 25) * 60);
@@ -288,8 +319,8 @@ export function useFocusTimer({ onComplete } = {}) {
 
   return {
     modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
-    secondsLeft, total, pct,
-    changeMode, setCustomMinutes, start, pause, reset, resetForNewSession,
+    secondsLeft, total, pct, elapsedSeconds, canSave, sessionActive,
+    changeMode, setCustomMinutes, start, pause, reset, resetForNewSession, saveEarly,
     toggleSound, setRadioChoice, setRadioCustomUrl,
   };
 }

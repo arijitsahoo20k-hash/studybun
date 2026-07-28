@@ -28,6 +28,64 @@ export const SYLLABUS = {
   },
 };
 
+// ---------- Historical PYQ-based chapter weightage (out of 10) ----------
+// Rough, stable-ish estimates of how often each chapter shows up across
+// recent JEE Main + Advanced papers, so a brand-new chapter isn't seeded
+// with a meaningless flat "5" — priority/backlog signals start out
+// reflecting real exam patterns instead of pure vibes. Students can still
+// hand-edit any chapter's weightage on the Syllabus page; this is only the
+// *default* used the first time a chapter's progress row is created.
+export const CHAPTER_WEIGHTAGE = {
+  // Physics — Mechanics I
+  "Units and Measurement": 3, "Mathematical Tools": 3, "Motion in 1 Dimension": 5,
+  "Motion in 2 Dimensions": 6, "Laws of Motion & Friction": 6, "Work, Power, and Energy": 6,
+  "Center of Mass & Collision": 6, "Rotational Motion": 8, "Gravitation": 5,
+  // Physics — Mechanics II & Thermal
+  "Mechanical Properties of Solids": 3, "Mechanical Properties of Fluids": 4,
+  "Oscillations (SHM)": 5, "Waves and Sound": 5, "Thermal Properties & Calorimetry": 4,
+  "Thermodynamics": 6, "Kinetic Theory of Gases": 4,
+  // Physics — Electromagnetism
+  "Electric Charges and Fields": 6, "Electrostatic Potential & Capacitance": 6,
+  "Current Electricity": 7, "Moving Charges and Magnetism": 6, "Magnetism and Matter": 4,
+  "Electromagnetic Induction": 6, "Alternating Current": 5,
+  // Physics — Optics & Modern Physics
+  "Electromagnetic Waves": 3, "Ray Optics and Optical Instruments": 6, "Wave Optics": 4,
+  "Dual Nature of Radiation and Matter": 5, "Atomic Physics": 5, "Nuclear Physics": 4,
+  "Semiconductor Electronics": 6,
+  // Chemistry — Physical
+  "Some Basic Concepts (Mole Concept)": 6, "Structure of Atom": 5, "States of Matter": 4,
+  "Chemical Thermodynamics": 7, "Chemical Equilibrium": 6, "Ionic Equilibrium": 6,
+  "Redox Reactions": 4, "Solutions & Colligative Properties": 5, "Electrochemistry": 6,
+  "Chemical Kinetics": 6, "Surface Chemistry": 3,
+  // Chemistry — Inorganic
+  "Classification & Periodicity": 5, "Chemical Bonding & Molecular Structure": 8,
+  "Hydrogen": 2, "s-Block Elements": 4, "p-Block Elements": 7, "d- and f-Block Elements": 6,
+  "Coordination Compounds": 7, "Isolation of Metals": 3, "Environmental Chemistry": 2,
+  // Chemistry — Organic
+  "Purification & Characterisation": 2, "GOC & Isomerism": 7, "Hydrocarbons": 5,
+  "Haloalkanes and Haloarenes": 5, "Alcohols, Phenols, and Ethers": 5,
+  "Aldehydes, Ketones, Carboxylic Acids": 6, "Nitrogen Compounds (Amines)": 5,
+  "Biomolecules": 3, "Polymers": 3, "Chemistry in Everyday Life": 2,
+  // Maths — Algebra
+  "Sets, Relations, and Functions": 4, "Complex Numbers & Quadratic Equations": 6,
+  "Matrices and Determinants": 6, "Permutations and Combinations": 5,
+  "Mathematical Induction": 2, "Binomial Theorem": 4, "Sequences and Series": 5,
+  "Statistics and Probability": 6,
+  // Maths — Trigonometry
+  "Trigonometric Ratios and Identities": 4, "Trigonometric Equations": 4,
+  "Inverse Trigonometric Functions": 3, "Heights & Distances / Triangles": 3,
+  // Maths — Coordinate Geometry
+  "Straight Lines": 5, "Circles": 5, "Parabola": 5, "Ellipse": 4, "Hyperbola": 4,
+  // Maths — Calculus
+  "Limits, Continuity, Differentiability": 6, "Differentiation": 5,
+  "Applications of Derivatives": 6, "Indefinite Integration": 5, "Definite Integration": 7,
+  "Area Under Curves": 5, "Differential Equations": 5,
+  // Maths — Vector & 3D
+  "Vector Algebra": 4, "Three-Dimensional Geometry": 5,
+};
+
+export const weightageFor = (chapterName) => CHAPTER_WEIGHTAGE[chapterName] ?? 5;
+
 export const ALL_CHAPTERS = (() => {
   const list = [];
   Object.entries(SYLLABUS).forEach(([subject, data]) => {
@@ -50,3 +108,12 @@ export const DEFAULT_CHAPTER_PROGRESS = {
   notes_pending: 1,
   favorite: false,
 };
+
+// Same defaults, but with weightage seeded from real historical PYQ data for
+// the given chapter instead of a flat placeholder. Used both for the
+// not-yet-saved fallback shown in the UI and for the very first row written
+// for a chapter (see useChapterProgress.upsert).
+export const defaultChapterProgressFor = (chapterName) => ({
+  ...DEFAULT_CHAPTER_PROGRESS,
+  weightage: weightageFor(chapterName),
+});

@@ -6,8 +6,8 @@ import {
 } from "lucide-react";
 
 import { THEMES, themeVars, timeWash } from "./data/themes";
-import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS } from "./data/syllabus";
-import { useDeviceRow, useRealtimeTable, useChapterProgress } from "./hooks/useRealtimeTable";
+import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS, defaultChapterProgressFor } from "./data/syllabus";
+import { useDeviceRow, useRealtimeTable, useChapterProgress, useMockAnalysis } from "./hooks/useRealtimeTable";
 import { useFocusTimer } from "./hooks/useFocusTimer";
 import { useStudyPresence } from "./hooks/useStudyPresence";
 import { getActiveRadio } from "./lib/radio";
@@ -79,6 +79,7 @@ export default function App() {
   const chapters = useChapterProgress();
   const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date" });
   const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date" });
+  const mockAnalysis = useMockAnalysis();
   const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true });
   const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date" });
   const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at" });
@@ -146,7 +147,10 @@ export default function App() {
   const backlogItems = backlogItemsQ.rows;
   const goals = goalsQ.rows;
 
-  const getChStatus = (key) => chapters.map[key] || { ...DEFAULT_CHAPTER_PROGRESS, subject: key.split("::")[0], chapter: key.split("::")[1] };
+  const getChStatus = (key) => {
+    const [subject, chapter] = key.split("::");
+    return chapters.map[key] || { ...defaultChapterProgressFor(chapter), subject, chapter };
+  };
 
   // A study_sessions row logged from the "what did you study?" card after a
   // focus-timer session is tagged platform: "Focus Timer" so its minutes
@@ -478,6 +482,15 @@ export default function App() {
     const { id: _oldId, user_id: _userId, created_at: _createdAt, ...rest } = row;
     showToast("Mock deleted", () => mocksQ.insert(rest));
   };
+
+  // Mistake-tagging on mock review — this is what turns "how many did I get
+  // wrong" into "why did I get them wrong", which is what actually drives
+  // Backlog/AI Insights priority instead of just session counts.
+  const saveMockAnalysis = async (mockId, patch) => {
+    const row = await mockAnalysis.upsert(mockId, patch);
+    if (row) showToast("Mistake breakdown saved 🔍");
+    return row;
+  };
   const completeRevision = async (id) => {
     const priorStatus = revisions.find((r) => r.id === id)?.status || "Pending";
     await revisionsQ.update(id, { status: "Completed" });
@@ -647,7 +660,9 @@ export default function App() {
     profile, saveProfile, mascot,
     userId: user?.id, studyingIds,
     sessions, timerSessions, addSession, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
-    questions, addQuestions, mocks, addMock, updateMock, deleteMock, revisions, completeRevision, addRevision, deleteRevision,
+    questions, addQuestions, mocks, addMock, updateMock, deleteMock,
+    mockAnalysisMap: mockAnalysis.map, saveMockAnalysis,
+    revisions, completeRevision, addRevision, deleteRevision,
     tasks, addTask, toggleTask, updateTask, deleteTask, backlogChapters, todayHours, todayMinutes,
     todayLoggedHours, todayTimerHours, totalLoggedHours, totalTimerHours,
     backlogItems, addBacklogItem, updateBacklogItem, setBacklogStatus, toggleSessionItem, deleteBacklogItem,

@@ -64,6 +64,7 @@ export default function SyllabusPage(p) {
                             <span className={`sb-tag priority-${st.priority?.toLowerCase()}`}>{st.priority}</span>
                             <span className="sb-tag">{st.difficulty}</span>
                             <span className="sb-tag">W:{st.weightage}/10</span>
+                            {st.personal_notes && <span className="sb-tag" title="Has quick-revision notes">📝 notes</span>}
                           </div>
                         </div>
                         <button className={`sb-star ${st.favorite ? "active" : ""}`} onClick={(e) => { e.stopPropagation(); p.setChapterField(openSubject, c, { favorite: !st.favorite }); }}>
@@ -118,8 +119,14 @@ export default function SyllabusPage(p) {
                               <input type="date" className="sb-input small" value={st.deadline || ""} onChange={(e) => p.setChapterField(openSubject, c, { deadline: e.target.value })} />
                             </div>
                           </div>
-                          <label className="sb-muted small" style={{ display: "block", marginTop: 8 }}>Personal notes</label>
-                          <textarea className="sb-input" rows={2} value={st.personal_notes || ""} onChange={(e) => p.setChapterField(openSubject, c, { personal_notes: e.target.value })} />
+                          <label className="sb-muted small" style={{ display: "block", marginTop: 8 }}>Quick-revision notes / formula sheet</label>
+                          <textarea
+                            className="sb-input"
+                            rows={4}
+                            placeholder="Formulas, tricky points, silly-mistake reminders — whatever you'd want the night before a mock..."
+                            value={st.personal_notes || ""}
+                            onChange={(e) => p.setChapterField(openSubject, c, { personal_notes: e.target.value })}
+                          />
                         </div>
                       )}
                     </div>

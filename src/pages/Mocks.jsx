@@ -1,9 +1,27 @@
 import React, { useState, useMemo, useRef } from "react";
-import { ClipboardList, TrendingUp, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X } from "lucide-react";
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { ClipboardList, TrendingUp, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X, Search, Clock, Target } from "lucide-react";
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
 import { formatISTCalendarDate, todayIST } from "../lib/dateIST";
 import { generateMockComparison } from "../services/groqMockCompare";
+import { ALL_CHAPTERS } from "../data/syllabus";
+
+// ---------- Mistake-tagging (mock review) ----------
+// The categories that actually change what a student should do next:
+// silly/calculation mistakes -> practice speed & accuracy, concept gaps ->
+// re-study the chapter, time pressure -> pacing work, guesswork -> honesty
+// check on what's actually understood.
+const MISTAKE_TYPES = [
+  { key: "silly_mistakes", label: "Silly mistakes" },
+  { key: "concept_errors", label: "Concept gaps" },
+  { key: "calculation_errors", label: "Calculation errors" },
+  { key: "time_management_errors", label: "Time pressure" },
+  { key: "guess_work", label: "Guesswork" },
+];
+const emptyAnalysis = () => ({
+  silly_mistakes: 0, concept_errors: 0, calculation_errors: 0, time_management_errors: 0, guess_work: 0,
+  linked_chapters: [], revision_needed: false,
+});
 
 const dayLabel = (d) => formatISTCalendarDate(d, { month: "short", day: "numeric" });
 const num = (v) => Number(v) || 0;
@@ -24,6 +42,8 @@ const emptyForm = () => ({
   total_marks: 360,
   physics_marks: 0, chemistry_marks: 0, math_marks: 0,
   attempted: 0, correct: 0, incorrect: 0,
+  // Optional per-subject time spent (minutes) — powers the pacing insight.
+  physics_minutes: "", chemistry_minutes: "", math_minutes: "",
 });
 
 const totalOf = (m) => num(m.physics_marks) + num(m.chemistry_marks) + num(m.math_marks);
@@ -49,8 +69,35 @@ export default function MocksPage(p) {
   const [aiError, setAiError] = useState(null);
   const [aiResult, setAiResult] = useState(null);
   const formRef = useRef(null);
+  const [reviewOpenId, setReviewOpenId] = useState(null);
+  const [reviewDraft, setReviewDraft] = useState(emptyAnalysis());
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const toggleReview = (mockId) => {
+    if (reviewOpenId === mockId) { setReviewOpenId(null); return; }
+    const existing = p.mockAnalysisMap?.[mockId];
+    setReviewDraft(existing ? {
+      silly_mistakes: existing.silly_mistakes || 0,
+      concept_errors: existing.concept_errors || 0,
+      calculation_errors: existing.calculation_errors || 0,
+      time_management_errors: existing.time_management_errors || 0,
+      guess_work: existing.guess_work || 0,
+      linked_chapters: existing.linked_chapters || [],
+      revision_needed: !!existing.revision_needed,
+    } : emptyAnalysis());
+    setReviewOpenId(mockId);
+  };
+  const toggleLinkedChapter = (name) => {
+    setReviewDraft((d) => ({
+      ...d,
+      linked_chapters: d.linked_chapters.includes(name) ? d.linked_chapters.filter((c) => c !== name) : [...d.linked_chapters, name],
+    }));
+  };
+  const saveReview = async (mockId) => {
+    await p.saveMockAnalysis(mockId, reviewDraft);
+    setReviewOpenId(null);
+  };
 
   const mainsPreview = {
     physics: mainsMarksFor(form.physics_correct, form.physics_incorrect),
@@ -63,6 +110,50 @@ export default function MocksPage(p) {
 
   const mainsMocks = p.mocks.filter((m) => (m.exam_type || "JEE Main") === "JEE Main");
   const advancedMocks = p.mocks.filter((m) => m.exam_type === "JEE Advanced");
+
+  const pacingMocks = p.mocks.filter((m) => num(m.physics_minutes) + num(m.chemistry_minutes) + num(m.math_minutes) > 0);
+  const pacingData = useMemo(() => {
+    if (pacingMocks.length === 0) return null;
+    const totals = { physics: 0, chemistry: 0, math: 0 };
+    const marks = { physics: 0, chemistry: 0, math: 0 };
+    pacingMocks.forEach((m) => {
+      totals.physics += num(m.physics_minutes); totals.chemistry += num(m.chemistry_minutes); totals.math += num(m.math_minutes);
+      marks.physics += num(m.physics_marks); marks.chemistry += num(m.chemistry_marks); marks.math += num(m.math_marks);
+    });
+    const totalMins = totals.physics + totals.chemistry + totals.math;
+    const totalMarks = marks.physics + marks.chemistry + marks.math;
+    if (totalMins === 0 || totalMarks === 0) return null;
+    const subjects = ["physics", "chemistry", "math"];
+    const rows = subjects.map((s) => ({
+      name: s[0].toUpperCase() + s.slice(1),
+      "Time share %": Math.round((totals[s] / totalMins) * 100),
+      "Score share %": Math.round((marks[s] / totalMarks) * 100),
+    }));
+    // Biggest mismatch = highest-leverage pacing fix, e.g. spending lots of
+    // time on a subject that isn't returning marks proportionally.
+    const withGap = rows.map((r) => ({ ...r, gap: r["Time share %"] - r["Score share %"] }));
+    const worst = withGap.reduce((a, b) => (Math.abs(b.gap) > Math.abs(a.gap) ? b : a));
+    return { rows, worst, mockCount: pacingMocks.length };
+  }, [pacingMocks]);
+
+  const mistakeSummary = useMemo(() => {
+    const rows = Object.values(p.mockAnalysisMap || {});
+    if (rows.length === 0) return null;
+    const totals = { silly_mistakes: 0, concept_errors: 0, calculation_errors: 0, time_management_errors: 0, guess_work: 0 };
+    const chapterCounts = {};
+    rows.forEach((r) => {
+      MISTAKE_TYPES.forEach(({ key }) => { totals[key] += num(r[key]); });
+      (r.linked_chapters || []).forEach((c) => { chapterCounts[c] = (chapterCounts[c] || 0) + 1; });
+    });
+    const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
+    if (grandTotal === 0) return { reviewedCount: rows.length, grandTotal: 0, breakdown: [], topChapters: [] };
+    const breakdown = MISTAKE_TYPES.map(({ key, label }) => ({ label, count: totals[key], pct: Math.round((totals[key] / grandTotal) * 100) }))
+      .filter((b) => b.count > 0)
+      .sort((a, b) => b.count - a.count);
+    const topChapters = Object.entries(chapterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    return { reviewedCount: rows.length, grandTotal, breakdown, topChapters };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.mockAnalysisMap]);
 
   const cmpData = useMemo(() => {
     const mSorted = [...mainsMocks].reverse();
@@ -88,6 +179,7 @@ export default function MocksPage(p) {
       total_marks: num(m.total_marks) || (m.exam_type === "JEE Advanced" ? 360 : MAINS_TOTAL_MARKS),
       physics_marks: num(m.physics_marks), chemistry_marks: num(m.chemistry_marks), math_marks: num(m.math_marks),
       attempted: num(m.attempted), correct: num(m.correct), incorrect: num(m.incorrect),
+      physics_minutes: m.physics_minutes ?? "", chemistry_minutes: m.chemistry_minutes ?? "", math_minutes: m.math_minutes ?? "",
     });
     // The form lives at the top of the page — jump to it so it's obvious
     // something happened (otherwise the pencil click looks like it did nothing).
@@ -119,6 +211,9 @@ export default function MocksPage(p) {
         correct: num(form.physics_correct) + num(form.chemistry_correct) + num(form.math_correct),
         incorrect: num(form.physics_incorrect) + num(form.chemistry_incorrect) + num(form.math_incorrect),
         negative_marks: num(form.physics_incorrect) + num(form.chemistry_incorrect) + num(form.math_incorrect),
+        physics_minutes: form.physics_minutes === "" ? null : num(form.physics_minutes),
+        chemistry_minutes: form.chemistry_minutes === "" ? null : num(form.chemistry_minutes),
+        math_minutes: form.math_minutes === "" ? null : num(form.math_minutes),
       };
     } else {
       payload = {
@@ -132,6 +227,9 @@ export default function MocksPage(p) {
         attempted: num(form.attempted),
         correct: num(form.correct),
         incorrect: num(form.incorrect),
+        physics_minutes: form.physics_minutes === "" ? null : num(form.physics_minutes),
+        chemistry_minutes: form.chemistry_minutes === "" ? null : num(form.chemistry_minutes),
+        math_minutes: form.math_minutes === "" ? null : num(form.math_minutes),
       };
     }
 
@@ -217,6 +315,16 @@ export default function MocksPage(p) {
           </>
         )}
 
+        <div style={{ marginBottom: 12 }}>
+          <label className="sb-muted small" style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={13} /> Time spent per subject (minutes, optional)</label>
+          <div className="sb-form-grid dense" style={{ marginTop: 6 }}>
+            {[["physics_minutes", "Physics"], ["chemistry_minutes", "Chemistry"], ["math_minutes", "Math"]].map(([k, label]) => (
+              <div key={k}><label>{label} mins</label><input type="number" min={0} className="sb-input" value={form[k]} onChange={(ev) => set(k, ev.target.value === "" ? "" : +ev.target.value)} /></div>
+            ))}
+          </div>
+          <p className="sb-muted" style={{ fontSize: 11.5, marginTop: 4 }}>Fill this in to unlock a pacing check — how your time split compares to your score split.</p>
+        </div>
+
         <div style={{ display: "flex", gap: 10 }}>
           <Btn onClick={handleSave}>{editingId ? <><Pencil size={16} /> Update mock</> : <><Plus size={16} /> Save mock</>}</Btn>
           {editingId && <Btn variant="soft" onClick={cancelEdit}>Cancel</Btn>}
@@ -262,6 +370,33 @@ export default function MocksPage(p) {
       </Card>
 
       <Card>
+        <SectionTitle icon={Clock}>Pacing check</SectionTitle>
+        {pacingData ? (
+          <>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={pacingData.rows}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
+                <XAxis dataKey="name" stroke="var(--muted)" fontSize={12} />
+                <YAxis stroke="var(--muted)" fontSize={12} unit="%" />
+                <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="Time share %" fill="var(--accent)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Score share %" fill="var(--p3, #8b5cf6)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <p className="sb-muted" style={{ fontSize: 12, marginTop: 8 }}>
+              Averaged across {pacingData.mockCount} mock{pacingData.mockCount === 1 ? "" : "s"} with time logged.{" "}
+              {Math.abs(pacingData.worst.gap) >= 8 ? (
+                <>Biggest mismatch: <b>{pacingData.worst.name}</b> is {pacingData.worst.gap > 0 ? "eating more time than it returns in marks" : "returning more marks than the time you give it"} ({pacingData.worst["Time share %"]}% of time vs {pacingData.worst["Score share %"]}% of score).</>
+              ) : "Your time split roughly matches your score split — pacing looks balanced."}
+            </p>
+          </>
+        ) : (
+          <EmptyState mascot={p.mascot} mood="idle" text="No pacing data yet." sub="Fill in the optional per-subject minutes when logging a mock to see how your time split compares to your score split." />
+        )}
+      </Card>
+
+      <Card>
         <SectionTitle icon={Sparkles}>Smart AI Comparison</SectionTitle>
         <p className="sb-muted" style={{ fontSize: 12, marginBottom: 10 }}>
           Sends your real Main and Advanced mock scores to a free-tier AI model and asks it to compare them — which paper you're
@@ -302,21 +437,102 @@ export default function MocksPage(p) {
         )}
       </Card>
 
+      {mistakeSummary && mistakeSummary.grandTotal > 0 && (
+        <Card>
+          <SectionTitle icon={Target}>Mistake patterns</SectionTitle>
+          <p className="sb-muted" style={{ fontSize: 12, marginBottom: 10 }}>
+            From {mistakeSummary.reviewedCount} reviewed mock{mistakeSummary.reviewedCount === 1 ? "" : "s"}. This is what actually
+            tells you what to do next — a concept gap needs re-studying the chapter, a calculation error just needs more practice.
+          </p>
+          {mistakeSummary.breakdown.map((b) => (
+            <div key={b.label} style={{ marginBottom: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 3 }}>
+                <span>{b.label}</span><span className="sb-muted">{b.count} ({b.pct}%)</span>
+              </div>
+              <div style={{ height: 6, borderRadius: 4, background: "var(--soft)", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${b.pct}%`, background: "var(--accent)", borderRadius: 4 }} />
+              </div>
+            </div>
+          ))}
+          {mistakeSummary.topChapters.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div className="sb-muted small" style={{ marginBottom: 6 }}>Most flagged chapters</div>
+              <div className="sb-chip-row">
+                {mistakeSummary.topChapters.map(([name, count]) => (
+                  <span key={name} className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }}>{name} ×{count}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
       <Card>
         <SectionTitle icon={ClipboardList}>History</SectionTitle>
-        {p.mocks.length === 0 ? <EmptyState mascot={p.mascot} mood="idle" text="Nothing here yet." /> : p.mocks.map((m) => (
-          <div key={m.id} className="sb-mock-row">
-            <div>
-              <b>{m.exam_name}</b> <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }}>{m.exam_type || "JEE Main"}</span>
-              <div className="sb-muted">{dayLabel(m.mock_date)}</div>
+        {p.mocks.length === 0 ? <EmptyState mascot={p.mascot} mood="idle" text="Nothing here yet." /> : p.mocks.map((m) => {
+          const analysis = p.mockAnalysisMap?.[m.id];
+          const isReviewOpen = reviewOpenId === m.id;
+          return (
+          <div key={m.id} className="sb-mock-block" style={{ marginBottom: 10 }}>
+            <div className="sb-mock-row">
+              <div>
+                <b>{m.exam_name}</b> <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }}>{m.exam_type || "JEE Main"}</span>
+                {analysis && <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }} title="Mistakes reviewed">🔍 reviewed</span>}
+                <div className="sb-muted">{dayLabel(m.mock_date)}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="sb-mock-score">{totalOf(m)}<span>/{m.total_marks}</span></div>
+                <button className="sb-icon-btn" title={isReviewOpen ? "Close review" : "Review mistakes"} onClick={() => toggleReview(m.id)}><Search size={15} /></button>
+                <button className="sb-icon-btn" title="Edit" onClick={() => startEdit(m)}><Pencil size={15} /></button>
+                <button className="sb-icon-btn danger" title="Delete" onClick={() => p.deleteMock(m.id)}><Trash2 size={15} /></button>
+              </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div className="sb-mock-score">{totalOf(m)}<span>/{m.total_marks}</span></div>
-              <button className="sb-icon-btn" title="Edit" onClick={() => startEdit(m)}><Pencil size={15} /></button>
-              <button className="sb-icon-btn danger" title="Delete" onClick={() => p.deleteMock(m.id)}><Trash2 size={15} /></button>
-            </div>
+
+            {isReviewOpen && (
+              <div className="sb-chapter-detail" style={{ marginTop: 8 }}>
+                <div className="sb-muted small" style={{ marginBottom: 8 }}>
+                  Tag why you lost marks on this mock — this is what feeds AI Insights and Backlog priority with real error data instead of just counts.
+                </div>
+                <div className="sb-form-grid dense">
+                  {MISTAKE_TYPES.map(({ key, label }) => (
+                    <div key={key}>
+                      <label>{label}</label>
+                      <input
+                        type="number" min={0} className="sb-input small"
+                        value={reviewDraft[key]}
+                        onChange={(e) => setReviewDraft((d) => ({ ...d, [key]: +e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <label className="sb-muted small" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}>
+                  <input type="checkbox" checked={reviewDraft.revision_needed} onChange={(e) => setReviewDraft((d) => ({ ...d, revision_needed: e.target.checked }))} />
+                  Flag for revision
+                </label>
+
+                <div className="sb-muted small" style={{ marginTop: 10, marginBottom: 6 }}>Link to chapters (optional)</div>
+                <div className="sb-chip-row">
+                  {ALL_CHAPTERS.map((c) => (
+                    <button
+                      key={c.key} type="button"
+                      className={`sb-chip small ${reviewDraft.linked_chapters.includes(c.name) ? "active" : ""}`}
+                      onClick={() => toggleLinkedChapter(c.name)}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                  <Btn onClick={() => saveReview(m.id)}>Save mistake breakdown</Btn>
+                  <Btn variant="soft" onClick={() => setReviewOpenId(null)}>Cancel</Btn>
+                </div>
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
       </Card>
     </div>
   );

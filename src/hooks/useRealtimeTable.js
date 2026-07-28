@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
+import { weightageFor } from "../data/syllabus";
 
 /**
  * Keeps a Supabase table's rows (scoped to the signed-in user) in sync in
@@ -179,6 +180,26 @@ export function useDeviceRow(table, defaults = {}) {
   return { row, loading, save, refetch };
 }
 
+/** mock_analysis is 1:1 with a mock_tests row (keyed by mock_id) — a thin wrapper with upsert semantics. */
+export function useMockAnalysis() {
+  const { rows, loading, insert, update, remove, refetch } = useRealtimeTable("mock_analysis", { orderBy: "created_at" });
+
+  const map = {};
+  rows.forEach((r) => { map[r.mock_id] = r; });
+
+  const upsert = useCallback(
+    async (mockId, patch) => {
+      const existing = map[mockId];
+      if (existing) return update(existing.id, patch);
+      return insert({ mock_id: mockId, ...patch });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows]
+  );
+
+  return { map, rows, loading, upsert, remove, refetch };
+}
+
 /** chapter_progress is keyed by (subject, chapter) rather than id-first — a thin wrapper with upsert semantics. */
 export function useChapterProgress() {
   const { rows, loading, insert, update, refetch } = useRealtimeTable("chapter_progress", { orderBy: "updated_at" });
@@ -191,7 +212,10 @@ export function useChapterProgress() {
       const key = `${subject}::${chapter}`;
       const existing = map[key];
       if (existing) return update(existing.id, { ...patch, updated_at: new Date().toISOString() });
-      return insert({ subject, chapter, ...patch });
+      // First time this chapter gets a row: seed weightage from real
+      // historical PYQ data unless the caller already specified one.
+      const seededWeightage = patch.weightage != null ? {} : { weightage: weightageFor(chapter) };
+      return insert({ subject, chapter, ...seededWeightage, ...patch });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rows]

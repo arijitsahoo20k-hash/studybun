@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
-  Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle,
+  Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock,
 } from "lucide-react";
 import { Card, Btn, ProgressBar, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
@@ -33,6 +33,7 @@ export default function FocusTimer(p) {
     p.addSession({ subject, chapter, session_type: t.mode === "Pomodoro" ? "Practice" : t.mode, minutes: t.startedMinutes, platform: "Focus Timer" });
     t.resetForNewSession();
   };
+  const discardSession = () => t.resetForNewSession();
 
   const [customDraft, setCustomDraft] = useState(t.radioCustomUrl || "");
   const [customError, setCustomError] = useState(false);
@@ -57,11 +58,22 @@ export default function FocusTimer(p) {
       <Card className="sb-timer-card">
         <div className="sb-timer-topbar">
           <div className="sb-chip-row">
-            {MODE_ORDER.map((m) => (
-              <button key={m} className={`sb-chip ${t.mode === m ? "active" : ""}`} onClick={() => t.changeMode(m)}>
-                {m} <span className="sb-chip-mins">{t.modeMinutes[m]}m</span>
-              </button>
-            ))}
+            {MODE_ORDER.map((m) => {
+              const blocked = t.sessionActive && m !== t.mode;
+              return (
+                <button
+                  key={m}
+                  className={`sb-chip ${t.mode === m ? "active" : ""}`}
+                  onClick={() => t.changeMode(m)}
+                  disabled={blocked}
+                  title={blocked ? "Finish, save, or reset your current session to switch modes" : undefined}
+                  style={blocked ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
+                >
+                  {m === t.mode && blocked ? <Lock size={11} style={{ marginRight: 3, verticalAlign: -1 }} /> : null}
+                  {m} <span className="sb-chip-mins">{t.modeMinutes[m]}m</span>
+                </button>
+              );
+            })}
           </div>
           <div className="sb-timer-actions">
             <button className="sb-icon-round" title="Set a custom time for this mode" onClick={() => setEditingDuration((v) => !v)}>
@@ -72,6 +84,13 @@ export default function FocusTimer(p) {
             </button>
           </div>
         </div>
+
+        {t.sessionActive && !t.askDone && (
+          <p className="sb-muted" style={{ fontSize: 11.5, margin: "6px 2px 0" }}>
+            <Lock size={11} style={{ verticalAlign: -1, marginRight: 3 }} />
+            Other modes are locked until you save or reset this session — so a stray tap can't wipe your progress.
+          </p>
+        )}
 
         {editingDuration && (
           <div className="sb-duration-pop">
@@ -160,6 +179,18 @@ export default function FocusTimer(p) {
         <ProgressBar pct={t.pct} />
         <div className="sb-timer-controls">
           {!t.running ? <Btn onClick={t.start}><Play size={16} /> Start</Btn> : <Btn variant="soft" onClick={t.pause}><Pause size={16} /> Pause</Btn>}
+          {!t.askDone && (
+            <span title={t.canSave ? `Save ${Math.round(t.elapsedSeconds / 60)} min so far and finish this session` : "Runs for 5+ min before you can save early"}>
+              <Btn
+                variant="soft"
+                onClick={t.saveEarly}
+                disabled={!t.canSave}
+                style={!t.canSave ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+              >
+                <Save size={16} /> Save{t.canSave ? ` (${Math.round(t.elapsedSeconds / 60)}m)` : ""}
+              </Btn>
+            </span>
+          )}
           <Btn variant="ghost" onClick={t.reset}><RefreshCw size={16} /> Reset</Btn>
         </div>
       </Card>
@@ -180,7 +211,10 @@ export default function FocusTimer(p) {
               </select>
             </div>
           </div>
-          <Btn onClick={logAndReset}><CheckCircle2 size={16} /> Save session</Btn>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Btn onClick={logAndReset}><CheckCircle2 size={16} /> Save session</Btn>
+            <Btn variant="ghost" onClick={discardSession}><X size={16} /> Discard, don't log</Btn>
+          </div>
         </Card>
       )}
     </div>
