@@ -127,6 +127,21 @@ create table if not exists backlog_items (
 );
 create index if not exists idx_backlog_items_user on backlog_items(user_id, status);
 
+-- ---------- GOALS (journal) ----------
+create table if not exists goals (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  deadline date,
+  starred boolean not null default false,
+  notes text,
+  status text not null default 'Active', -- Active, Completed
+  completed_at timestamptz,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create index if not exists idx_goals_user on goals(user_id, status);
+
 -- ---------- QUESTION LOGS ----------
 create table if not exists question_logs (
   id uuid primary key default uuid_generate_v4(),
@@ -304,7 +319,7 @@ begin
   for t in
     select unnest(array[
       'profiles','user_settings','study_sessions','timer_sessions',
-      'syllabus_subjects','syllabus_chapters','chapter_progress','backlog_items',
+      'syllabus_subjects','syllabus_chapters','chapter_progress','backlog_items','goals',
       'question_logs','mock_tests','mock_analysis','revision_plans','revision_logs',
       'tasks','achievements','notifications','ai_insights_history','user_statistics'
     ])
@@ -330,6 +345,7 @@ create policy "public read mascots" on mascots for select using (true);
 alter publication supabase_realtime add table study_sessions;
 alter publication supabase_realtime add table chapter_progress;
 alter publication supabase_realtime add table backlog_items;
+alter publication supabase_realtime add table goals;
 alter publication supabase_realtime add table question_logs;
 alter publication supabase_realtime add table mock_tests;
 alter publication supabase_realtime add table revision_plans;
