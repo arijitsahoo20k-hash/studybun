@@ -664,7 +664,7 @@ export default function GlobalStyle() {
          with two trailing dots, like a classic thought balloon, floating
          above whatever it's a sibling of. */
       .sb-thought-wrap {
-        position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%);
+        position: absolute; left: 50%; bottom: 100%;
         display: flex; flex-direction: column; align-items: center; margin-bottom: 6px;
         z-index: 6; cursor: pointer; pointer-events: auto;
       }

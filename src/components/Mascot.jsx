@@ -183,18 +183,24 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
     burstTimeoutsRef.current.push(burstTimeout);
     // Guard against overlapping triggers (rapid re-taps, mobile "ghost
     // clicks" firing a synthetic click right after the real tap): if a
-    // squish is already mid-flight, let it finish instead of restarting it,
-    // which is what was leaving the mascot stuck at a small intermediate
-    // frame instead of settling back to its normal size.
+    // squish is already mid-flight, let it finish instead of restarting it.
+    // The bounce itself never dips below scale 1 (pop up to 1.22, settle
+    // back to 1) -- earlier versions dipped down to 0.9 mid-sequence, and
+    // if that got interrupted anywhere the mascot could freeze on that
+    // smaller value. With every keyframe at or above 1, there's no small
+    // value left for an interruption to ever get stuck on.
     if (!reduced && !squishingRef.current) {
       squishingRef.current = true;
       squishControls
         .start({
-          scale: [1, 1.16, 0.9, 1.04, 1],
-          transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
+          scale: [1, 1.22, 1.08, 1],
+          transition: { duration: 0.45, ease: [0.34, 1.56, 0.64, 1] },
         })
         .then(() => {
           squishingRef.current = false;
+          // Belt-and-suspenders: force the resting value back explicitly
+          // in case anything left it somewhere mid-sequence.
+          squishControls.set({ scale: 1 });
         });
     }
     onPet?.();
