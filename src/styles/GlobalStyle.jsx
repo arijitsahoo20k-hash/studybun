@@ -135,6 +135,24 @@ export default function GlobalStyle() {
       .sb-app[data-stitched="true"] .sb-card { border-style: dashed; border-width: 2.5px; }
       .sb-app[data-stitched="true"] .sb-chapter-card { border-style: dashed; }
 
+      /* sketchy / chalk-drawn look for themes that opt in (e.g. Chalkdust
+         Geometry) — the border itself is roughened with an SVG turbulence
+         filter (defined below via SketchyFilterDefs) so straight card edges
+         read as a slightly wobbly hand-drawn chalk line instead of a clean
+         vector stroke. Corners get a touch of asymmetric radius on top so
+         the wobble doesn't look perfectly uniform. */
+      .sb-app[data-sketchy="true"] .sb-card {
+        filter: url(#sb-sketchy-rough);
+        border-radius: 22px 26px 20px 27px;
+        border-style: solid;
+      }
+      .sb-app[data-sketchy="true"] .sb-chapter-card { filter: url(#sb-sketchy-rough); }
+      .sb-app[data-sketchy="true"] .sb-btn,
+      .sb-app[data-sketchy="true"] .sb-chip,
+      .sb-app[data-sketchy="true"] .sb-icon-badge {
+        filter: url(#sb-sketchy-rough-sm);
+      }
+
       /* blocky / pixel-jungle look for themes that opt in (e.g. Mossy Blockland) —
          squared-off corners and chunkier borders so cards read like little blocks */
       .sb-app[data-blocky="true"] .sb-card { border-radius: 6px; border-width: 3px; box-shadow: 5px 5px 0 var(--outline); }
@@ -1025,5 +1043,25 @@ export default function GlobalStyle() {
         .sb-goal-cover-title { font-size: 38px; }
       }
     `}</style>
+  );
+}
+
+/** SVG turbulence filters that power the "sketchy" chalk-drawn card border
+ *  variant (see .sb-app[data-sketchy="true"] rules in the <style> above).
+ *  Rendered once, absolutely hidden — elements opt in via `filter: url(#id)`.
+ *  Two sizes: a slightly stronger wobble for big cards, a subtler one for
+ *  small chips/badges so the distortion doesn't overwhelm tiny shapes. */
+export function SketchyFilterDefs() {
+  return (
+    <svg width="0" height="0" style={{ position: "absolute", overflow: "hidden" }} aria-hidden="true">
+      <filter id="sb-sketchy-rough" x="-6%" y="-6%" width="112%" height="112%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.03" numOctaves="2" seed="7" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="4.2" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+      <filter id="sb-sketchy-rough-sm" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.05 0.08" numOctaves="2" seed="4" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </svg>
   );
 }

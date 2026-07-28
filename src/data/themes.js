@@ -79,6 +79,30 @@ export const THEMES = {
     dot: "rgba(59,42,24,0.07)", emoji: "🟩", blocky: true,
     decor: ["pixelTree", "pixelBlock", "pixelTree", "pixelBlock"],
   },
+  "Comet Lab": {
+    bg: "#F2FAFB", card: "#FFFFFE", outline: "#2C4A52", ink: "#22383E", muted: "#6E8A90",
+    accent: "#4FC1D6", accent2: "#B98CE8", soft: "#D6F0F2",
+    palette: ["#A8E6E0", "#CBB6F0", "#FFD8A0", "#FFB3C6", "#9FD7E8", "#D6F0F2"],
+    mascotFill: "#C7EDF0", mascotInner: "#F1FCFD", mascotBlush: "#B98CE8",
+    dot: "rgba(44,74,82,0.06)", emoji: "🧪",
+    decor: ["beaker", "orbitRing", "dnaTwist", "sparkleStar"],
+  },
+  "Chalkdust Geometry": {
+    bg: "#F4F1EC", card: "#FFFEFB", outline: "#3A3F3C", ink: "#2E332F", muted: "#7C8580",
+    accent: "#FF9F6B", accent2: "#7FC9A8", soft: "#E7E2D6",
+    palette: ["#FFCFA8", "#A9DFC4", "#FFE68A", "#C9B8F0", "#F0A8B8", "#E7E2D6"],
+    mascotFill: "#E9E4D8", mascotInner: "#FBF9F3", mascotBlush: "#FF9F6B",
+    dot: "rgba(58,63,60,0.07)", emoji: "✏️", sketchy: true,
+    decor: ["compassTool", "protractorArc", "chalkStar", "equalsDoodle"],
+  },
+  "Petri Garden": {
+    bg: "#F6FAF2", card: "#FFFFFC", outline: "#3E5636", ink: "#33452B", muted: "#7C8F70",
+    accent: "#6FAE5C", accent2: "#F2A6C4", soft: "#DCEFCE",
+    palette: ["#B8E0A0", "#F2A6C4", "#FFE9A8", "#A8D8D0", "#C9E0B0", "#DCEFCE"],
+    mascotFill: "#CDE9B8", mascotInner: "#F1FAE9", mascotBlush: "#F2A6C4",
+    dot: "rgba(62,86,54,0.06)", emoji: "🔬",
+    decor: ["petriDish", "leafSpecimen", "microscopeSlide", "sparkleStar"],
+  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the

@@ -350,6 +350,137 @@ export function PixelBlock() {
   );
 }
 
+/* ---------- lab / space (Comet Lab) ---------- */
+
+export function Beaker() {
+  return (
+    <Svg>
+      <path d="M18 6 L18 18 L8 38 C6 42 9 45 13 45 L35 45 C39 45 42 42 40 38 L30 18 L30 6"
+        fill={SOFT} stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
+      <path d="M15 6 L33 6" stroke={OUTLINE} strokeWidth="1.8" {...strokeCap} />
+      <path d="M12 34 L36 34 L39 39 C40 42 38 44 35 44 L13 44 C10 44 8 42 9 39 Z"
+        fill={ACCENT} stroke={OUTLINE} strokeWidth="1.4" {...strokeCap} />
+      <circle cx="20" cy="26" r="1.8" fill={ACCENT2} />
+      <circle cx="26" cy="30" r="1.3" fill={ACCENT2} />
+      <circle cx="23" cy="22" r="1.1" fill={ACCENT2} />
+    </Svg>
+  );
+}
+
+export function OrbitRing() {
+  return (
+    <Svg>
+      <circle cx="24" cy="24" r="6.5" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.5" />
+      <ellipse cx="24" cy="24" rx="20" ry="8" fill="none" stroke={ACCENT} strokeWidth="1.6"
+        strokeDasharray="2.5 3.5" {...strokeCap} transform="rotate(-18 24 24)" />
+      <circle cx="41" cy="19" r="2.6" fill={SOFT} stroke={OUTLINE} strokeWidth="1.2" />
+    </Svg>
+  );
+}
+
+export function DnaTwist() {
+  return (
+    <Svg>
+      <path d="M14 4 C14 14 34 20 34 24 C34 28 14 34 14 44" fill="none" stroke={ACCENT}
+        strokeWidth="2" {...strokeCap} />
+      <path d="M34 4 C34 14 14 20 14 24 C14 28 34 34 34 44" fill="none" stroke={ACCENT2}
+        strokeWidth="2" {...strokeCap} />
+      {[8, 16, 24, 32, 40].map((y) => (
+        <path key={y} d={`M${14 + Math.abs(24 - y) * 0.05} ${y} L${34 - Math.abs(24 - y) * 0.05} ${y}`}
+          stroke={OUTLINE} strokeWidth="1.1" opacity="0.55" {...strokeCap} />
+      ))}
+    </Svg>
+  );
+}
+
+/* ---------- math / chalkboard (Chalkdust Geometry) ---------- */
+
+export function CompassTool() {
+  return (
+    <Svg>
+      <path d="M24 6 L10 42" stroke={OUTLINE} strokeWidth="2" {...strokeCap} />
+      <path d="M24 6 L38 42" stroke={OUTLINE} strokeWidth="2" {...strokeCap} />
+      <circle cx="24" cy="6" r="3.2" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.4" />
+      <path d="M14 30 L34 30" stroke={ACCENT2} strokeWidth="1.6" {...strokeCap} />
+      <path d="M10 42 L6 44 M38 42 L42 44" stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
+    </Svg>
+  );
+}
+
+export function ProtractorArc() {
+  return (
+    <Svg>
+      <path d="M6 30 A18 18 0 0 1 42 30" fill={SOFT} stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
+      <path d="M6 30 L42 30" stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
+      {[30, 60, 90, 120, 150].map((deg) => {
+        const r = (deg * Math.PI) / 180;
+        const x1 = 24 - Math.cos(r) * 18, y1 = 30 - Math.sin(r) * 18;
+        const x2 = 24 - Math.cos(r) * 14, y2 = 30 - Math.sin(r) * 14;
+        return <path key={deg} d={`M${x1} ${y1} L${x2} ${y2}`} stroke={ACCENT} strokeWidth="1.3" {...strokeCap} />;
+      })}
+    </Svg>
+  );
+}
+
+export function ChalkStar() {
+  return (
+    <Svg>
+      <path d="M24 8 L27 21 L24 24 L21 21 Z M24 40 L21 27 L24 24 L27 27 Z M8 24 L21 21 L24 24 L21 27 Z M40 24 L27 27 L24 24 L27 21 Z"
+        fill={ACCENT} stroke={OUTLINE} strokeWidth="1.1" {...strokeCap} strokeDasharray="1.5 1.5" />
+      <path d="M14 14 L17.5 17.5 M34 14 L30.5 17.5 M14 34 L17.5 30.5 M34 34 L30.5 30.5"
+        stroke={ACCENT2} strokeWidth="1.4" {...strokeCap} strokeDasharray="1.2 2" />
+    </Svg>
+  );
+}
+
+export function EqualsDoodle() {
+  return (
+    <Svg>
+      <path d="M10 18 Q24 15 38 18" fill="none" stroke={ACCENT} strokeWidth="3.2" {...strokeCap} strokeDasharray="0.1 6" />
+      <path d="M10 30 Q24 27 38 30" fill="none" stroke={ACCENT} strokeWidth="3.2" {...strokeCap} strokeDasharray="0.1 6" />
+      <circle cx="8" cy="18" r="2" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1" />
+      <circle cx="40" cy="30" r="2" fill={SOFT} stroke={OUTLINE} strokeWidth="1" />
+    </Svg>
+  );
+}
+
+/* ---------- biology / lab-life (Petri Garden) ---------- */
+
+export function PetriDish() {
+  return (
+    <Svg>
+      <ellipse cx="24" cy="26" rx="19" ry="16" fill={SOFT} stroke={OUTLINE} strokeWidth="1.6" />
+      <ellipse cx="24" cy="24" rx="19" ry="16" fill="none" stroke={OUTLINE} strokeWidth="1.4" opacity="0.5" />
+      {[[16, 20, 3], [30, 18, 2.4], [22, 30, 3.6], [33, 29, 2]].map(([x, y, r], i) => (
+        <circle key={i} cx={x} cy={y} r={r} fill={i % 2 ? ACCENT2 : ACCENT} stroke={OUTLINE} strokeWidth="1" opacity="0.85" />
+      ))}
+    </Svg>
+  );
+}
+
+export function LeafSpecimen() {
+  return (
+    <Svg>
+      <path d="M24 42 L24 20" stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
+      <path d="M24 20 C10 18 8 4 12 4 C28 4 34 16 24 20 Z" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.4" {...strokeCap} />
+      <path d="M13 6 C18 9 21 14 23 19" fill="none" stroke={SOFT} strokeWidth="1" opacity="0.8" />
+      <rect x="4" y="40" width="40" height="4" rx="1.5" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.2" opacity="0.7" />
+    </Svg>
+  );
+}
+
+export function MicroscopeSlide() {
+  return (
+    <Svg>
+      <path d="M20 44 L28 44 M24 44 L24 34" stroke={OUTLINE} strokeWidth="2" {...strokeCap} />
+      <path d="M24 34 C24 26 16 24 16 16" fill="none" stroke={OUTLINE} strokeWidth="2.2" {...strokeCap} />
+      <rect x="9" y="10" width="16" height="7" rx="2" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.4" transform="rotate(-28 17 13.5)" />
+      <circle cx="16" cy="16" r="3.6" fill={SOFT} stroke={OUTLINE} strokeWidth="1.3" />
+      <rect x="30" y="6" width="12" height="5" rx="1" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.2" opacity="0.85" />
+    </Svg>
+  );
+}
+
 export const MOTIFS = {
   blossom: Blossom,
   blossomSprig: BlossomSprig,
@@ -368,4 +499,14 @@ export const MOTIFS = {
   bambooStalk: BambooStalk,
   pixelTree: PixelTree,
   pixelBlock: PixelBlock,
+  beaker: Beaker,
+  orbitRing: OrbitRing,
+  dnaTwist: DnaTwist,
+  compassTool: CompassTool,
+  protractorArc: ProtractorArc,
+  chalkStar: ChalkStar,
+  equalsDoodle: EqualsDoodle,
+  petriDish: PetriDish,
+  leafSpecimen: LeafSpecimen,
+  microscopeSlide: MicroscopeSlide,
 };

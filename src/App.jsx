@@ -38,7 +38,7 @@ import LeaderboardPage from "./pages/Leaderboard";
 import ProfilePage from "./pages/Profile";
 import SettingsPage from "./pages/Settings";
 import AIInsightsPage from "./pages/AIInsights";
-import GlobalStyle from "./styles/GlobalStyle";
+import GlobalStyle, { SketchyFilterDefs } from "./styles/GlobalStyle";
 
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -625,6 +625,7 @@ export default function App() {
     return (
       <div style={cssVars}>
         <GlobalStyle />
+        <SketchyFilterDefs />
         <DecorLayer theme={theme} />
         <LoadingScreen message="Preparing your study desk..." />
       </div>
@@ -635,6 +636,7 @@ export default function App() {
     return (
       <div style={cssVars}>
         <GlobalStyle />
+        <SketchyFilterDefs />
         <DecorLayer theme={theme} />
         <Onboarding profile={profile} onSave={async (form) => { await saveProfile(form); }} />
       </div>
@@ -661,8 +663,9 @@ export default function App() {
   };
 
   return (
-    <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"}>
+    <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-sketchy={theme.sketchy ? "true" : "false"}>
       <GlobalStyle />
+      <SketchyFilterDefs />
       <DecorLayer theme={theme} />
       <PWAPrompt />
       {celebrateType && <Confetti type={celebrateType} theme={theme} />}
