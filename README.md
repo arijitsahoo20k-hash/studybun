@@ -18,6 +18,9 @@ npm install
    Security scoped to `auth.uid()`, and adds the live-updating tables to the Realtime publication.
    (Already ran the old device-id version of this schema before? Use
    `supabase/migration_to_auth.sql` instead — see the comment at the top of that file first.)
+   If you ran `schema.sql` before the task-completion streak rule or streak-freeze tokens
+   existed, also run `supabase/migration_streak_tasks.sql` and `supabase/migration_streak_freeze.sql`
+   once each, in that order, to add them.
 3. Go to **Settings → API** and copy your **Project URL** and **anon public key**.
 4. Email/password auth is on by default. Optional: in **Authentication → Providers → Email**,
    turn off "Confirm email" if you don't want new sign-ups to have to click a confirmation link

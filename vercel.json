@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    { "path": "/api/cron/notify?slot=morning", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/notify?slot=afternoon", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/notify?slot=evening", "schedule": "30 14 * * *" }
+  ],
+  "functions": {
+    "api/cron/notify.js": { "maxDuration": 60 },
+    "api/push/subscribe.js": { "maxDuration": 10 },
+    "api/push/unsubscribe.js": { "maxDuration": 10 },
+    "api/push/test.js": { "maxDuration": 30 }
+  }
+}

@@ -8,6 +8,14 @@ export default defineConfig({
     VitePWA({
       registerType: "prompt",
       injectRegister: false,
+      // injectManifest (not the default generateSW) so we can ship a custom
+      // service worker (src/sw.js) that handles Web Push `push` and
+      // `notificationclick` events for the Smart Notification system,
+      // while vite-plugin-pwa still injects the app-shell precache list
+      // into it at build time via self.__WB_MANIFEST.
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.js",
       includeAssets: ["favicon-32.png", "apple-touch-icon.png"],
       manifest: {
         name: "StudyBun · Your Cozy JEE Study Companion",
@@ -27,10 +35,10 @@ export default defineConfig({
           { src: "maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
-      workbox: {
+      injectManifest: {
         // Only the built app-shell (JS/CSS/HTML/icons) is precached here.
-        // Supabase and Gemini calls go to their own origins and are never
-        // touched by this service worker, so app data always stays live.
+        // Supabase, Gemini, and Groq calls go to their own origins and are
+        // never touched by this service worker, so app data always stays live.
         globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
       },
       devOptions: {
