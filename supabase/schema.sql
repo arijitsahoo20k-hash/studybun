@@ -188,6 +188,11 @@ create table if not exists mock_tests (
   percentile numeric,
   rank numeric,
   duration_minutes numeric,
+  -- Optional per-subject time spent, for pacing insights (e.g. "you spent
+  -- 55% of your time on Math but it's your strongest subject").
+  physics_minutes numeric,
+  chemistry_minutes numeric,
+  math_minutes numeric,
   notes text,
   created_at timestamptz default now()
 );
@@ -197,7 +202,7 @@ create index if not exists idx_mock_tests_user on mock_tests(user_id, mock_date)
 create table if not exists mock_analysis (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  mock_id uuid references mock_tests(id) on delete cascade,
+  mock_id uuid references mock_tests(id) on delete cascade unique,
   silly_mistakes numeric default 0,
   concept_errors numeric default 0,
   calculation_errors numeric default 0,
@@ -348,6 +353,7 @@ alter publication supabase_realtime add table backlog_items;
 alter publication supabase_realtime add table goals;
 alter publication supabase_realtime add table question_logs;
 alter publication supabase_realtime add table mock_tests;
+alter publication supabase_realtime add table mock_analysis;
 alter publication supabase_realtime add table revision_plans;
 alter publication supabase_realtime add table tasks;
 alter publication supabase_realtime add table achievements;
