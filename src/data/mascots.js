@@ -84,67 +84,6 @@ export function mascotEnergy({ mood, todayHours = 0, dailyGoal = 6 }) {
 }
 
 /**
- * First-person "how I'm feeling about today" lines -- distinct from
- * buddyLine() below, which gives second-person advice ("you should...").
- * These are just feelings, meant to surface every so often in a thought
- * bubble so the mascot reads as something that's actually paying attention
- * to the day, not a static icon. Grounded in the same mood (and, for a few
- * lines, the same streak/hours numbers) that already drives its face and
- * energy -- never generic filler unrelated to how the day is actually going.
- */
-const THOUGHTS = {
-  celebrate: (c) => [
-    "I'm so proud of you right now. Look at that!",
-    c.streak >= 3 ? `${c.streak} days in a row?! I'm doing a happy dance.` : "You did it! I could burst with joy.",
-    "Today's a good day. A really good day.",
-    "This is exactly the kind of day I love seeing.",
-  ],
-  happy: (c) => [
-    c.todayHours > 0 ? `${c.todayHours}h in already -- I can feel the momentum.` : "I can feel today going somewhere good.",
-    "You're on a roll. I'm cheering you on from right here.",
-    "I like where today is headed.",
-    "Keep going -- I'm right here with you.",
-  ],
-  studying: () => [
-    "I love it when we settle in and focus together.",
-    "Shh, focus mode. I'll just sit quietly and keep you company.",
-    "This is my favorite part of the day, honestly.",
-  ],
-  thinking: () => ["Let me think that through for a second...", "Turning your numbers over in my head..."],
-  concerned: () => [
-    "That backlog's been growing. Want to chip away at it together?",
-    "I noticed a few chapters piling up. We can catch up, no rush.",
-  ],
-  reminder: () => [
-    "Psst -- a revision's waiting on you. I don't want you to lose it.",
-    "That revision's been sitting a little while now. Shall we?",
-  ],
-  sleepy: () => [
-    "Mmm, quiet morning. Plenty of day left though -- I'll be here.",
-    "*yawn* Still waking up over here. Ready whenever you are.",
-    "Taking it slow so far today. No judgment, just noting it.",
-  ],
-  sad: (c) => [
-    "It's been quiet today... I miss our study sessions.",
-    "I've been waiting for you. No pressure -- just missed you.",
-    "A little bit of today would mean a lot to me.",
-    c.streak > 0 ? "I don't want that streak to slip away. Even 10 minutes counts." : "Even a short session would turn my day around.",
-  ],
-  idle: () => ["Just here, keeping you company.", "Whenever you're ready, I'm ready."],
-};
-
-/**
- * Picks a random first-person thought for the given mood, grounded in real
- * numbers where the line calls for it. `exclude` lets the caller avoid
- * repeating the line it just showed.
- */
-export function mascotThought(mood, ctx = {}, exclude) {
-  const pool = (THOUGHTS[mood] || THOUGHTS.idle)(ctx);
-  const options = pool.length > 1 ? pool.filter((l) => l !== exclude) : pool;
-  return options[Math.floor(Math.random() * options.length)];
-}
-
-/**
  * Deterministic pick from a list, seeded by a string built from the actual
  * stats in play. Same numbers -> same pick (no flicker on unrelated
  * re-renders); different numbers -> a different line from the pool. This is

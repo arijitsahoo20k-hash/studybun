@@ -24,11 +24,12 @@ import Penguin from "./mascots/Penguin";
  *   - an outer <span>, driven by GSAP: a slow ambient idle drift, plus a
  *     one-shot sparkle flourish whenever mood flips to "celebrate".
  *   - an inner <motion.span>, driven by Framer Motion: a spring pop-in on
- *     mount, a hover lift, and (when pettable) a squish played imperatively
- *     via squishControls in `pet()`. Tap feedback deliberately does NOT
- *     also use a declarative `whileTap` on this same value -- the two
- *     racing over the same scale was what used to leave the mascot stuck
- *     rendering a small in-between frame instead of settling back to size.
+ *     mount, and (when pettable) a squish played imperatively via
+ *     squishControls in `pet()`. This is deliberately the ONLY thing that
+ *     ever touches this element's scale -- a prior version also had a
+ *     declarative `whileHover`/`whileTap` on the same value, and Framer's
+ *     gesture layer racing against the imperative controls is what used to
+ *     leave the mascot stuck rendering a shrunk in-between frame.
  */
 const SPECIES = { bunny: Bunny, cat: Cat, fox: Fox, bear: Bear, hamster: Hamster, penguin: Penguin };
 
@@ -213,7 +214,6 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
       style={{ display: "inline-flex", transformOrigin: "50% 78%" }}
       initial={reduced ? false : { opacity: 0, scale: 0.5 }}
       animate={squishControls}
-      whileHover={pettable && !reduced ? { scale: 1.06 } : undefined}
     >
       {body}
     </motion.span>

@@ -3,7 +3,6 @@ import { Target, Clock3, Flame, TrendingUp, BookOpen, FolderClock, RotateCcw, He
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Card, ProgressRing, SectionTitle, EmptyState, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
-import ThoughtBubble from "../components/ThoughtBubble";
 import { SYLLABUS } from "../data/syllabus";
 import { todayIST, formatISTCalendarDate } from "../lib/dateIST";
 
@@ -36,7 +35,6 @@ export default function Dashboard(p) {
           <div className="sb-hero-meta">{formatISTCalendarDate(todayStr, { weekday: "long", month: "long", day: "numeric" })} · {p.profile.exam}</div>
         </div>
         <div style={{ position: "relative", display: "inline-flex" }}>
-          <ThoughtBubble mood={mascotMood} streak={p.streak} todayHours={p.todayHours} dailyGoal={p.profile?.daily_goal || 6} />
           <Mascot species={p.mascot} mood={mascotMood} energy={mascotEnergyLevel} size={84} pettable />
         </div>
       </Card>
