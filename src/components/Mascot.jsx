@@ -24,7 +24,11 @@ import Penguin from "./mascots/Penguin";
  *   - an outer <span>, driven by GSAP: a slow ambient idle drift, plus a
  *     one-shot sparkle flourish whenever mood flips to "celebrate".
  *   - an inner <motion.span>, driven by Framer Motion: a spring pop-in on
- *     mount, and (when pettable) a springy hover/tap/squish response.
+ *     mount, a hover lift, and (when pettable) a squish played imperatively
+ *     via squishControls in `pet()`. Tap feedback deliberately does NOT
+ *     also use a declarative `whileTap` on this same value -- the two
+ *     racing over the same scale was what used to leave the mascot stuck
+ *     rendering a small in-between frame instead of settling back to size.
  */
 const SPECIES = { bunny: Bunny, cat: Cat, fox: Fox, bear: Bear, hamster: Hamster, penguin: Penguin };
 
@@ -62,6 +66,7 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
   const [celebrateBits, setCelebrateBits] = useState([]);
   const idRef = useRef(0);
   const outerRef = useRef(null);
+  const burstTimeoutsRef = useRef([]);
   const prevMoodRef = useRef(mood);
   const reduced = useMemo(prefersReducedMotion, []);
   const squishControls = useAnimationControls();
@@ -77,6 +82,12 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
     }
     squishControls.start({ opacity: 1, scale: 1, transition: { type: "spring", stiffness: 300, damping: 16 } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      burstTimeoutsRef.current.forEach(clearTimeout);
+    };
   }, []);
 
   // Ambient idle drift -- a slow GSAP loop on the *outer* wrapper, randomized
@@ -156,6 +167,8 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [celebrateBits]);
 
+  const squishingRef = useRef(false);
+
   const pet = () => {
     if (!pettable) return;
     const id = idRef.current++;
@@ -166,12 +179,23 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
       delay: i * 55,
     }));
     setBursts((cur) => [...cur, { id, bits }]);
-    setTimeout(() => setBursts((cur) => cur.filter((b) => b.id !== id)), 900);
-    if (!reduced) {
-      squishControls.start({
-        scale: [1, 1.16, 0.9, 1.04, 1],
-        transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
-      });
+    const burstTimeout = setTimeout(() => setBursts((cur) => cur.filter((b) => b.id !== id)), 900);
+    burstTimeoutsRef.current.push(burstTimeout);
+    // Guard against overlapping triggers (rapid re-taps, mobile "ghost
+    // clicks" firing a synthetic click right after the real tap): if a
+    // squish is already mid-flight, let it finish instead of restarting it,
+    // which is what was leaving the mascot stuck at a small intermediate
+    // frame instead of settling back to its normal size.
+    if (!reduced && !squishingRef.current) {
+      squishingRef.current = true;
+      squishControls
+        .start({
+          scale: [1, 1.16, 0.9, 1.04, 1],
+          transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
+        })
+        .then(() => {
+          squishingRef.current = false;
+        });
     }
     onPet?.();
   };
@@ -184,7 +208,6 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
       initial={reduced ? false : { opacity: 0, scale: 0.5 }}
       animate={squishControls}
       whileHover={pettable && !reduced ? { scale: 1.06 } : undefined}
-      whileTap={pettable && !reduced ? { scale: 0.92 } : undefined}
     >
       {body}
     </motion.span>

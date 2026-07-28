@@ -660,7 +660,7 @@ export default function GlobalStyle() {
         55% { transform: translateY(3px) scaleY(1.1); opacity: 1; }
       }
 
- -- a cloud bubble
+      /* A gentle thought bubble -- a cloud bubble
          with two trailing dots, like a classic thought balloon, floating
          above whatever it's a sibling of. */
       .sb-thought-wrap {
@@ -668,20 +668,37 @@ export default function GlobalStyle() {
         display: flex; flex-direction: column; align-items: center; margin-bottom: 6px;
         z-index: 6; cursor: pointer; pointer-events: auto;
       }
+      /* The cloud is a ring of puff circles sitting BEHIND the text box,
+         poking out past its edges on every side, all sharing the same
+         fill/border as the box. Because the box paints on top, its opaque
+         fill covers whichever part of each puff falls inside it -- only the
+         slivers that stick out past the box's own edge stay visible, so the
+         puffs read as one merged scalloped cloud instead of separate circles
+         glued to a rectangle. The single drop-shadow on the shell (rather
+         than a box-shadow on the rectangle alone) then traces that whole
+         combined silhouette, not just the rectangle underneath it. */
+      .sb-thought-cloud-shell {
+        position: relative;
+        filter: drop-shadow(3px 3px 0 var(--outline));
+      }
       .sb-thought-cloud {
-        position: relative; max-width: 176px; min-width: 96px; text-align: center;
-        background: var(--card); border: 2px solid var(--outline); border-radius: 20px;
-        padding: 9px 14px; font-size: 12.5px; font-weight: 700; line-height: 1.32; color: var(--ink);
-        box-shadow: 3px 3px 0 var(--outline);
+        position: relative; z-index: 2;
+        max-width: 176px; min-width: 96px; text-align: center;
+        background: var(--card); border: 2.2px solid var(--outline); border-radius: 22px;
+        padding: 10px 16px; font-size: 12.5px; font-weight: 700; line-height: 1.32; color: var(--ink);
       }
-      /* soft cloud fluff bumps along the top edge */
-      .sb-thought-cloud::before, .sb-thought-cloud::after {
-        content: ""; position: absolute; top: -7px; width: 14px; height: 14px; border-radius: 50%;
-        background: var(--card); border: 2px solid var(--outline);
+      .sb-thought-puff {
+        position: absolute; z-index: 1; border-radius: 50%;
+        background: var(--card); border: 2.2px solid var(--outline);
       }
-      .sb-thought-cloud::before { left: 16px; }
-      .sb-thought-cloud::after { right: 22px; width: 10px; height: 10px; top: -5px; }
-      .sb-thought-dot { border-radius: 50%; background: var(--card); border: 2px solid var(--outline); margin-top: 3px; }
+      .sb-thought-puff-1 { width: 22px; height: 22px; top: -10px; left: 10%; }
+      .sb-thought-puff-2 { width: 15px; height: 15px; top: -13px; left: 34%; }
+      .sb-thought-puff-3 { width: 20px; height: 20px; top: -11px; right: 14%; }
+      .sb-thought-puff-4 { width: 13px; height: 13px; bottom: -6px; left: 22%; }
+      .sb-thought-puff-5 { width: 16px; height: 16px; bottom: -7px; right: 20%; }
+      .sb-thought-puff-6 { width: 13px; height: 13px; top: 32%; left: -6px; }
+      .sb-thought-puff-7 { width: 13px; height: 13px; top: 32%; right: -6px; }
+      .sb-thought-dot { border-radius: 50%; background: var(--card); border: 2px solid var(--outline); margin-top: 5px; }
       .sb-thought-dot-1 { width: 10px; height: 10px; margin-left: -22px; }
       .sb-thought-dot-2 { width: 6px; height: 6px; margin-left: -34px; margin-top: 2px; }
 

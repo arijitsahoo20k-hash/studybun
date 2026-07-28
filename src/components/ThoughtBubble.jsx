@@ -55,7 +55,16 @@ export default function ThoughtBubble({ mood = "idle", streak = 0, todayHours = 
           onClick={() => setLine(null)}
           role="status"
         >
-          <div className="sb-thought-cloud">{line}</div>
+          <div className="sb-thought-cloud-shell">
+            <span className="sb-thought-puff sb-thought-puff-1" />
+            <span className="sb-thought-puff sb-thought-puff-2" />
+            <span className="sb-thought-puff sb-thought-puff-3" />
+            <span className="sb-thought-puff sb-thought-puff-4" />
+            <span className="sb-thought-puff sb-thought-puff-5" />
+            <span className="sb-thought-puff sb-thought-puff-6" />
+            <span className="sb-thought-puff sb-thought-puff-7" />
+            <div className="sb-thought-cloud">{line}</div>
+          </div>
           <span className="sb-thought-dot sb-thought-dot-1" />
           <span className="sb-thought-dot sb-thought-dot-2" />
         </motion.div>
