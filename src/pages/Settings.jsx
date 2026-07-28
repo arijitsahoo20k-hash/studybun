@@ -8,6 +8,7 @@ import { useAuth } from "../lib/AuthContext";
 import { hasUsableKeys, getModelPreference, setModelPreference } from "../services/buddyKeyManager";
 import { MODEL_FAMILIES } from "../services/geminiModels";
 import FeatureGuideGrid from "./settings/FeatureGuideGrid";
+import SmartNotificationsCard from "../components/SmartNotificationsCard";
 
 function SmartBuddyCard() {
   const [ready] = useState(() => hasUsableKeys());
@@ -88,6 +89,7 @@ const TABS = [
   { id: "profile", emoji: "👤", label: "Profile & account", sub: "You, your goals" },
   { id: "look", emoji: "🎀", label: "Mascot & theme", sub: "Make it yours" },
   { id: "buddy", emoji: "🧠", label: "AI study buddy", sub: "Smart chat setup" },
+  { id: "notify", emoji: "🔔", label: "Smart notifications", sub: "3x/day AI pushes" },
   { id: "data", emoji: "💾", label: "Data & backup", sub: "Export / import" },
   { id: "guide", emoji: "📖", label: "How it works", sub: "Every feature, explained" },
 ];
@@ -178,6 +180,8 @@ export default function SettingsPage(p) {
           )}
 
           {tab === "buddy" && <SmartBuddyCard />}
+
+          {tab === "notify" && <SmartNotificationsCard />}
 
           {tab === "data" && <DataBackupCard exportBackup={exportBackup} importBackup={importBackup} />}
 

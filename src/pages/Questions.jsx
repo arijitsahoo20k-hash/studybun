@@ -45,6 +45,13 @@ export default function QuestionsPage(p) {
         <div className="sb-quick-actions">
           {quicks.map((n) => <Btn key={n} variant="soft" onClick={() => p.addQuestions({ subject, difficulty, question_type: source, count: n })}>+{n}</Btn>)}
         </div>
+        {bySubject.length > 0 && (
+          <div className="sb-chip-row" style={{ marginTop: 10 }}>
+            {bySubject.map((s) => (
+              <span key={s.name} className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }}>{s.name} ×{s.value}</span>
+            ))}
+          </div>
+        )}
       </Card>
 
       <Card>

@@ -72,6 +72,7 @@ export default function App() {
   const { user } = useAuth();
   const { row: profile, loading: profileLoading, save: saveProfile, refetch: refetchProfile } = useDeviceRow("profiles", {
     name: "", exam: "JEE Main", exam_date: "2027-01-24", daily_goal: 6, theme: "Sakura Bloom", mascot: "bunny",
+    streak_freeze_tokens: 1, streak_freeze_granted_days: 0,
   });
 
   const sessionsQ = useRealtimeTable("study_sessions", { orderBy: "session_date" });
@@ -85,6 +86,10 @@ export default function App() {
   const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at" });
   const goalsQ = useRealtimeTable("goals", { orderBy: "created_at", ascending: true });
   const achievementsQ = useRealtimeTable("achievements", { orderBy: "unlocked_at" });
+  // Streak-freeze tokens: see supabase/migration_streak_freeze.sql. A frozen
+  // date is treated exactly like a genuine study day (folded into
+  // streakDays below), so a missed day doesn't reset the streak to 0.
+  const streakFreezesQ = useRealtimeTable("streak_freezes", { orderBy: "frozen_date" });
 
   // Lives here (not inside FocusTimer) so switching pages never resets it.
   // Every completed session is logged to timer_sessions automatically —
@@ -107,6 +112,33 @@ export default function App() {
   const studyingIds = useStudyPresence(focusTimer.running);
 
   const [page, setPage] = useState("dashboard");
+
+  // StudyBun's push notifications deep-link to a page id (dashboard,
+  // planner, revision, backlog, analytics, goals) via the service worker
+  // (src/sw.js). Two delivery paths land here:
+  //  1. Cold start / new tab: the SW opens "<origin>/?page=revision".
+  //  2. App already open: the SW postMessages the existing tab instead of
+  //     force-navigating it (see notificationclick in sw.js).
+  useEffect(() => {
+    const validPages = new Set(NAV.map((n) => n.id));
+    const applyPage = (id) => { if (validPages.has(id)) setPage(id); };
+
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get("page");
+    if (fromUrl) {
+      applyPage(fromUrl);
+      params.delete("page");
+      const rest = params.toString();
+      window.history.replaceState({}, "", rest ? `?${rest}` : window.location.pathname);
+    }
+
+    const onMessage = (event) => {
+      if (event.data?.type === "studybun-notification-click") applyPage(event.data.page);
+    };
+    navigator.serviceWorker?.addEventListener?.("message", onMessage);
+    return () => navigator.serviceWorker?.removeEventListener?.("message", onMessage);
+  }, []);
+
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toast, setToast] = useState(null); // { message, undo? }
   const [celebrateType, setCelebrateType] = useState(null); // null | "confetti" | "petals"
@@ -166,12 +198,36 @@ export default function App() {
   const todayLoggedHours = +(todayManualMinutes / 60).toFixed(1);
   const todayTimerHours = +(todayTimerMinutes / 60).toFixed(1);
 
+  // A day also qualifies if the user planned tasks for it (Daily Planner)
+  // and cleared every single one — finishing your whole plan for the day is
+  // just as real a signal of "showing up" as logging minutes, and it means
+  // someone who plans light but finishes everything isn't locked out of a
+  // streak just because they didn't hit a timer. Requires at least one task
+  // due that day (an empty day doesn't vacuously count), and every task due
+  // that day — not just the one just toggled — has to be Completed.
+  const taskDayCompletion = useMemo(() => {
+    const byDay = new Map();
+    tasks.forEach((t) => {
+      if (!t.due_date) return;
+      const bucket = byDay.get(t.due_date) || { total: 0, completed: 0 };
+      bucket.total += 1;
+      if (t.status === "Completed") bucket.completed += 1;
+      byDay.set(t.due_date, bucket);
+    });
+    const days = new Set();
+    byDay.forEach((v, day) => { if (v.total > 0 && v.completed === v.total) days.add(day); });
+    return days;
+  }, [tasks]);
+
   // What counts as a "genuine study day" here must exactly match the
-  // server-side rule in lb_calc_streak() (supabase/migration_leaderboard.sql)
+  // server-side rule in lb_calc_streak() (supabase/migration_leaderboard.sql,
+  // supabase/migration_streak_tasks.sql, supabase/migration_streak_freeze.sql)
   // — otherwise Dashboard/Profile can show a streak the Leaderboard
   // disagrees with. The rule: a manual session of >= 5 minutes, OR a
   // *completed* focus-timer session of >= 10 minutes, OR at least one
-  // logged question set. Keep these two in sync if either ever changes.
+  // logged question set, OR every planned task for the day completed, OR
+  // a streak-freeze token spent on that date. Keep these in sync if any of
+  // them ever changes.
   const streakDays = useMemo(() => {
     const days = new Set();
     sessions.forEach((s) => { if (Number(s.minutes || 0) >= 5) days.add(s.session_date); });
@@ -179,8 +235,10 @@ export default function App() {
       if (ts.completed && Number(ts.actual_minutes || 0) >= 10) days.add(tsToISTDateStr(ts.created_at));
     });
     questions.forEach((q) => { if (Number(q.count || 0) >= 1) days.add(q.log_date); });
+    taskDayCompletion.forEach((d) => days.add(d));
+    streakFreezesQ.rows.forEach((r) => days.add(r.frozen_date));
     return days;
-  }, [sessions, timerSessions, questions]);
+  }, [sessions, timerSessions, questions, taskDayCompletion, streakFreezesQ.rows]);
 
   // A streak only breaks after a full missed day, not the instant "today"
   // hasn't been logged yet (it might still be 9am!). So: if today has no
@@ -393,7 +451,8 @@ export default function App() {
   // like achievements just got unlocked, when really the data just caught
   // up — that's what was causing the celebration to fire on every reload.
   const dataReady = !sessionsQ.loading && !timerSessionsQ.loading && !questionsQ.loading &&
-    !mocksQ.loading && !revisionsQ.loading && !tasksQ.loading && !backlogItemsQ.loading && !achievementsQ.loading;
+    !mocksQ.loading && !revisionsQ.loading && !tasksQ.loading && !backlogItemsQ.loading && !achievementsQ.loading &&
+    !streakFreezesQ.loading;
 
   // Persist newly unlocked achievements once data has actually settled —
   // inserting against a still-loading (empty) achievementsQ.rows would just
@@ -426,6 +485,48 @@ export default function App() {
     prevUnlockedCount.current = unlockedAchievements.length;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataReady, unlockedAchievements.length]);
+
+  // Streak-freeze tokens (supabase/migration_streak_freeze.sql). Two jobs:
+  //
+  // 1. Earn: every time lifetime study days changes, ask the server to
+  //    check whether a new 7-day chunk has been crossed and hand out a
+  //    token if so (capped at 2 held). Cheap and idempotent — no-ops most
+  //    of the time.
+  useEffect(() => {
+    if (!dataReady || !user) return;
+    supabase.rpc("sb_recompute_streak_freeze_grants").then(({ error }) => {
+      if (!error) refetchProfile();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataReady, user?.id, totalStudyDays]);
+
+  // 2. Spend: the streak only actually breaks once *two* consecutive days
+  //    (today + yesterday) have nothing logged — see streakDays/streak
+  //    above. So the moment to step in is when yesterday is the lone gap:
+  //    the day before it still qualifies, meaning a real streak is at risk
+  //    of dying tomorrow. Auto-spend a token now to cover yesterday, before
+  //    that happens, rather than asking the person to notice and act.
+  //    appliedFreezeDates just prevents firing the RPC repeatedly for the
+  //    same date within one session; the unique constraint in the DB is
+  //    what actually stops a date from ever being frozen (and charged)
+  //    twice, even across reloads or tabs.
+  const appliedFreezeDates = useRef(new Set());
+  useEffect(() => {
+    if (!dataReady || !user || !profile) return;
+    const tokens = profile.streak_freeze_tokens || 0;
+    if (tokens <= 0) return;
+    const y = toISTDateStr(Date.now() - 86400000);
+    const dayBefore = toISTDateStr(Date.now() - 2 * 86400000);
+    if (streakDays.has(y) || !streakDays.has(dayBefore)) return;
+    if (appliedFreezeDates.current.has(y)) return;
+    appliedFreezeDates.current.add(y);
+    supabase.rpc("sb_apply_streak_freeze", { p_frozen_date: y }).then(({ data, error }) => {
+      if (error || !data) { appliedFreezeDates.current.delete(y); return; }
+      refetchProfile();
+      showToast("❄️ Streak freeze used — yesterday's gap is covered, your streak lives on.");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataReady, user?.id, profile?.streak_freeze_tokens, streakDays]);
 
   /* ---------- actions ---------- */
   const addSession = async (payload) => {
@@ -514,8 +615,25 @@ export default function App() {
   };
   const toggleTask = async (t) => {
     const nextStatus = t.status === "Pending" ? "Completed" : "Pending";
+
+    // Finishing the last pending task of the day can, on its own, complete
+    // today's streak day (see taskDayCompletion in the derived-stats block
+    // above) even with zero minutes logged. That's worth a bigger reaction
+    // than a routine checkbox — but only the first time it happens today,
+    // so ticking off tasks after the streak is already locked in doesn't
+    // spam confetti on every click.
+    const todaysTasks = tasks.filter((x) => x.due_date === todayStr());
+    const completesTodaysPlan = nextStatus === "Completed" && todaysTasks.length > 0 &&
+      todaysTasks.every((x) => x.id === t.id || x.status === "Completed");
+
     await tasksQ.update(t.id, { status: nextStatus });
-    showToast(nextStatus === "Completed" ? "Task done ✅" : "Task reopened", () => tasksQ.update(t.id, { status: t.status }));
+
+    if (completesTodaysPlan && !streakActiveToday) {
+      fireCelebrate();
+      showToast("Whole day's plan cleared — streak day locked in! 🔥", () => tasksQ.update(t.id, { status: t.status }));
+    } else {
+      showToast(nextStatus === "Completed" ? "Task done ✅" : "Task reopened", () => tasksQ.update(t.id, { status: t.status }));
+    }
   };
   const updateTask = async (id, patch) => {
     const row = tasks.find((t) => t.id === id);

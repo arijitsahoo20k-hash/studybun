@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { CheckSquare, CheckCircle2, X, Plus, Pencil, Check } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
 import { SYLLABUS } from "../data/syllabus";
+import { todayIST } from "../lib/dateIST";
 
 const SUBJECT_OPTIONS = [...Object.keys(SYLLABUS), "Personal"];
 const PRIORITY_OPTIONS = ["Low", "Medium", "High"];
@@ -44,6 +45,14 @@ export default function PlannerPage(p) {
   const pending = p.tasks.filter((t) => t.status === "Pending");
   const done = p.tasks.filter((t) => t.status === "Completed");
 
+  // Clearing every task due today locks in the streak for the day on its
+  // own (see taskDayCompletion in App.jsx) — surface that live so finishing
+  // the last task feels like it's actually worth something, not just a
+  // checkbox tick.
+  const todaysTasks = p.tasks.filter((t) => t.due_date === todayIST());
+  const todaysPending = todaysTasks.filter((t) => t.status === "Pending").length;
+  const showStreakNudge = !p.streakActiveToday && todaysTasks.length > 0 && todaysPending > 0;
+
   const saveEdit = (id, patch) => {
     p.updateTask(id, patch);
     setEditingId(null);
@@ -63,6 +72,11 @@ export default function PlannerPage(p) {
 
       <Card>
         <SectionTitle icon={CheckSquare}>Pending ({pending.length})</SectionTitle>
+        {showStreakNudge && (
+          <div className="sb-muted" style={{ marginBottom: 10 }}>
+            🔥 {todaysPending} task{todaysPending === 1 ? "" : "s"} left today — clear them all and today's streak is locked in, even without logging a session.
+          </div>
+        )}
         {pending.length === 0 ? <EmptyState mascot={p.mascot} mood="happy" text="All clear for today." /> : pending.map((t) => (
           editingId === t.id ? (
             <EditTaskRow key={t.id} task={t} onSave={(patch) => saveEdit(t.id, patch)} onCancel={() => setEditingId(null)} />

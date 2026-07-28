@@ -213,12 +213,24 @@ export default function GlobalStyle() {
       .sb-grid-4 > .sb-card:nth-child(4) .sb-icon-badge { background: var(--p4); }
 
       /* Streak flame: bright + animated once today is logged, dull/static
-         while the number shown is still just carried over from yesterday. */
+         while the number shown is still just carried over from yesterday.
+         Tiers (sb-flame-tier-1..5, set from streak length in Dashboard.jsx)
+         escalate the lit look so a 3-day flame and a 90-day flame don't
+         read as the same thing — color/glow/flicker speed all ramp up,
+         topping out at a shimmering "legendary" look past 90 days. */
       .sb-streak-flame { background: var(--soft) !important; color: var(--muted) !important; opacity: .6; transition: opacity .3s ease, background .3s ease, color .3s ease, box-shadow .3s ease; }
-      .sb-streak-flame--lit { background: #FFD9A8 !important; color: #E8622C !important; opacity: 1; box-shadow: 0 0 0 3px rgba(232, 98, 44, .18); animation: sb-flame-glow 1.6s ease-in-out infinite; }
-      .sb-streak-flame--lit svg { animation: sb-flame-flicker 1.6s ease-in-out infinite; }
-      @keyframes sb-flame-glow { 0%, 100% { box-shadow: 0 0 0 3px rgba(232, 98, 44, .18), 0 0 6px 1px rgba(232, 98, 44, .35); } 50% { box-shadow: 0 0 0 5px rgba(232, 98, 44, .1), 0 0 14px 4px rgba(232, 98, 44, .55); } }
+      .sb-streak-flame--lit { background: var(--flame-bg, #FFD9A8) !important; color: var(--flame-fg, #E8622C) !important; opacity: 1; box-shadow: 0 0 0 3px var(--flame-ring, rgba(232, 98, 44, .18)); animation: sb-flame-glow 1.6s ease-in-out infinite; }
+      .sb-streak-flame--lit svg { animation: sb-flame-flicker var(--flame-speed, 1.6s) ease-in-out infinite; }
+      @keyframes sb-flame-glow { 0%, 100% { box-shadow: 0 0 0 3px var(--flame-ring, rgba(232, 98, 44, .18)), 0 0 6px 1px var(--flame-ring, rgba(232, 98, 44, .35)); } 50% { box-shadow: 0 0 0 5px var(--flame-ring, rgba(232, 98, 44, .1)), 0 0 14px 4px var(--flame-ring, rgba(232, 98, 44, .55)); } }
       @keyframes sb-flame-flicker { 0%, 100% { transform: scale(1) rotate(0deg); } 25% { transform: scale(1.08) rotate(-3deg); } 50% { transform: scale(0.96) rotate(2deg); } 75% { transform: scale(1.05) rotate(-1deg); } }
+      @keyframes sb-flame-shimmer { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+
+      /* tier 1 (streak 1-2 days): the original ember look above, no override needed */
+      .sb-flame-tier-2.sb-streak-flame--lit { --flame-bg: #FFC98A; --flame-fg: #D9491A; --flame-ring: rgba(217, 73, 26, .22); --flame-speed: 1.4s; }
+      .sb-flame-tier-3.sb-streak-flame--lit { --flame-bg: #FF9F6B; --flame-fg: #B8280A; --flame-ring: rgba(184, 40, 10, .3); --flame-speed: 1.1s; }
+      .sb-flame-tier-4.sb-streak-flame--lit { --flame-bg: #BFE3FF; --flame-fg: #1272C9; --flame-ring: rgba(18, 114, 201, .32); --flame-speed: .9s; }
+      .sb-flame-tier-5.sb-streak-flame--lit { --flame-bg: #FFE066; --flame-fg: #B8860B; --flame-ring: rgba(184, 134, 11, .38); --flame-speed: .8s; }
+      .sb-flame-tier-5.sb-streak-flame--lit svg { animation: sb-flame-flicker var(--flame-speed) ease-in-out infinite, sb-flame-shimmer 4s linear infinite; }
 
       .sb-section-title { display: flex; align-items: center; justify-content: space-between; font-family: var(--font-display); font-weight: 700; font-size: 15px; margin-bottom: 14px; gap: 10px; flex-wrap: wrap; }
       .sb-section-title > span:first-child { display: flex; align-items: center; gap: 8px; color: var(--ink); }

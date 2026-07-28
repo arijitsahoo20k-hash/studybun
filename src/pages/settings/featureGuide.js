@@ -20,10 +20,12 @@ export const FEATURE_GUIDE = [
     label: "Streak system",
     blurb: "Tracks consecutive study days, with a grace period so it doesn't punish you for not having studied yet today.",
     details: [
-      "A day counts toward your streak once you log a study session of at least 5 minutes, a completed focus-timer session of at least 10 minutes, or at least one question set on it — the same rule the Leaderboard uses, so the two numbers never disagree.",
+      "A day counts toward your streak once you log a study session of at least 5 minutes, a completed focus-timer session of at least 10 minutes, log at least one question set, or clear every task you planned for that day in the Daily Planner — the same rule the Leaderboard uses, so the numbers never disagree.",
       "The streak number only drops to 0 after a full 2-day gap — if you studied yesterday but haven't yet today, it still shows yesterday's count instead of zeroing out the instant a new day starts.",
       "The flame icon glows and flickers once you've logged something today; it stays dull while the number shown is still just carried over from yesterday, waiting on you.",
+      "Clearing a full day's plan in the Daily Planner counts on its own, even with zero minutes logged elsewhere — but only if you had at least one task due that day and every single one of them ends up Completed, not just some of them.",
       "\"Longest streak\" (used for achievements) is a separate lifetime record — it doesn't reset when your current streak breaks, so a badge you earned stays earned.",
+      "Streak freeze: you start with 1 token and earn another for every 7 genuine study days (capped at 2 held). If you miss a single day, the app silently spends a token to cover it so your streak keeps running — it only kicks in for a lone missed day, not a longer gap, and each calendar date can only ever be frozen once.",
     ],
   },
   {

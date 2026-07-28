@@ -14,6 +14,24 @@ const MOTIVATIONAL = [
   "A slow day is still a day you didn't quit.",
 ];
 
+// The streak flame escalates in look the longer the streak runs — a 3-day
+// flame and a 90-day flame shouldn't look identical. Tier styling itself
+// lives in GlobalStyle.jsx (.sb-flame-tier-N); this just picks the tier and
+// its label from the streak length. Thresholds loosely track the existing
+// streak achievement badges (3/7/30/90 days) so hitting a new flame look
+// and unlocking a badge tend to land on the same day.
+const FLAME_TIERS = [
+  { min: 90, label: "Legendary blue flame 💎" },
+  { min: 30, label: "Blazing hot 🔵" },
+  { min: 7, label: "On fire 🔥" },
+  { min: 3, label: "Warming up" },
+  { min: 0, label: "" },
+];
+const flameTierFor = (streak) => {
+  const idx = FLAME_TIERS.findIndex((t) => streak >= t.min);
+  return { tier: FLAME_TIERS.length - idx, label: FLAME_TIERS[idx].label };
+};
+
 export default function Dashboard(p) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -54,15 +72,23 @@ export default function Dashboard(p) {
         <Card>
           <div className="sb-section-title">
             <span>
-              <span className={`sb-icon-badge sb-streak-flame${p.streakActiveToday ? " sb-streak-flame--lit" : ""}`}>
+              <span className={`sb-icon-badge sb-streak-flame sb-flame-tier-${flameTierFor(p.streak).tier}${p.streakActiveToday ? " sb-streak-flame--lit" : ""}`}>
                 <Flame size={16} />
               </span> Streak
             </span>
+            {flameTierFor(p.streak).label && (
+              <span className="sb-chip" style={{ fontSize: 11, cursor: "default", boxShadow: "none" }}>{flameTierFor(p.streak).label}</span>
+            )}
           </div>
           <div className="sb-countdown" style={{ color: "var(--outline)" }}>{p.streak}<span>day streak</span></div>
           <div className="sb-muted" style={{ marginTop: 2 }}>
-            {p.streak === 0 ? "Log today to start one" : p.streakActiveToday ? "Today's logged 🔥" : "Study today to keep it lit"}
+            {p.streak === 0 ? "Log today or clear your plan to start one" : p.streakActiveToday ? "Today's logged 🔥" : "Study or clear today's plan to keep it lit"}
           </div>
+          {p.profile.streak_freeze_tokens > 0 && (
+            <div className="sb-muted" style={{ marginTop: 2, fontSize: 12 }}>
+              ❄️ {p.profile.streak_freeze_tokens} freeze {p.profile.streak_freeze_tokens === 1 ? "token" : "tokens"} — covers a missed day automatically
+            </div>
+          )}
         </Card>
       </div>
 
