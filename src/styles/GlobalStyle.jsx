@@ -136,21 +136,36 @@ export default function GlobalStyle() {
       .sb-app[data-stitched="true"] .sb-chapter-card { border-style: dashed; }
 
       /* sketchy / chalk-drawn look for themes that opt in (e.g. Chalkdust
-         Geometry) — the border itself is roughened with an SVG turbulence
-         filter (defined below via SketchyFilterDefs) so straight card edges
-         read as a slightly wobbly hand-drawn chalk line instead of a clean
-         vector stroke. Corners get a touch of asymmetric radius on top so
-         the wobble doesn't look perfectly uniform. */
-      .sb-app[data-sketchy="true"] .sb-card {
-        filter: url(#sb-sketchy-rough);
+         Geometry). IMPORTANT: the SVG turbulence filter must NOT be applied
+         to the card itself — filtering an element filters its children too,
+         which blurred all the text/icons inside and read as a rendering
+         bug rather than a hand-drawn border. Instead we draw the wobbly
+         border on a ::before pseudo-element stacked on top of the card
+         (transparent fill, border only) and filter *that* in isolation, so
+         real content stays perfectly crisp. */
+      .sb-app[data-sketchy="true"] .sb-card,
+      .sb-app[data-sketchy="true"] .sb-chapter-card {
+        position: relative;
+        border-color: transparent;
         border-radius: 22px 26px 20px 27px;
-        border-style: solid;
       }
-      .sb-app[data-sketchy="true"] .sb-chapter-card { filter: url(#sb-sketchy-rough); }
+      .sb-app[data-sketchy="true"] .sb-card::before,
+      .sb-app[data-sketchy="true"] .sb-chapter-card::before {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        border: inherit; border-style: solid; border-color: var(--outline);
+        border-radius: inherit; filter: url(#sb-sketchy-rough); z-index: 2;
+      }
       .sb-app[data-sketchy="true"] .sb-btn,
       .sb-app[data-sketchy="true"] .sb-chip,
       .sb-app[data-sketchy="true"] .sb-icon-badge {
-        filter: url(#sb-sketchy-rough-sm);
+        position: relative; border-color: transparent;
+      }
+      .sb-app[data-sketchy="true"] .sb-btn::before,
+      .sb-app[data-sketchy="true"] .sb-chip::before,
+      .sb-app[data-sketchy="true"] .sb-icon-badge::before {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        border: inherit; border-style: solid; border-color: var(--outline);
+        border-radius: inherit; filter: url(#sb-sketchy-rough-sm); z-index: 2;
       }
 
       /* blocky / pixel-jungle look for themes that opt in (e.g. Mossy Blockland) —
@@ -1055,12 +1070,12 @@ export function SketchyFilterDefs() {
   return (
     <svg width="0" height="0" style={{ position: "absolute", overflow: "hidden" }} aria-hidden="true">
       <filter id="sb-sketchy-rough" x="-6%" y="-6%" width="112%" height="112%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.03" numOctaves="2" seed="7" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="4.2" xChannelSelector="R" yChannelSelector="G" />
+        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.022" numOctaves="2" seed="7" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
       </filter>
       <filter id="sb-sketchy-rough-sm" x="-10%" y="-10%" width="120%" height="120%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.05 0.08" numOctaves="2" seed="4" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8" xChannelSelector="R" yChannelSelector="G" />
+        <feTurbulence type="fractalNoise" baseFrequency="0.04 0.06" numOctaves="2" seed="4" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.3" xChannelSelector="R" yChannelSelector="G" />
       </filter>
     </svg>
   );
