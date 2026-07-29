@@ -168,7 +168,7 @@ export default function GlobalStyle() {
       .sb-nav { position: relative; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; }
       .sb-nav .sb-nav-item { margin-right: 7px; }
       .sb-nav-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 999px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; cursor: pointer; text-align: left; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
-      .sb-nav-item:hover { background: var(--soft); border-color: var(--outline); transform: translateX(2px); }
+      .sb-nav-item:hover:not(.active) { background: var(--soft); border-color: var(--outline); transform: translateX(2px); }
       .sb-nav-item.active { border-color: transparent; font-weight: 800; }
       /* The pill itself is a sibling absolutely filling the active button --
          positioned imperatively via refs in App.jsx (see positionNavPill),
