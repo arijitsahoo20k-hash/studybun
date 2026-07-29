@@ -1,6 +1,6 @@
 import React from "react";
-import { Target, Clock3, Flame, TrendingUp, BookOpen, FolderClock, RotateCcw, HelpCircle, Sparkles, Timer, Plus } from "lucide-react";
-import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Target, Clock3, Flame, TrendingUp, BookOpen, Sparkles, Timer, Plus } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Card, ProgressRing, SectionTitle, EmptyState, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { SYLLABUS } from "../data/syllabus";
@@ -44,100 +44,101 @@ export default function Dashboard(p) {
   const mascotMood = p.mascotMood || "idle";
   const mascotEnergyLevel = p.mascotEnergy;
 
+  // Subject split as horizontal bars, sorted by time spent, sharing the
+  // same per-subject colors as the rest of the app (SYLLABUS).
+  const subjectTotal = p.subjectPie.reduce((a, s) => a + s.value, 0) || 1;
+  const subjectRows = [...p.subjectPie].sort((a, b) => b.value - a.value);
+
+  const backlogOpen = p.backlogItems.filter((b) => b.status !== "Completed").length;
+  const revisionsDue = p.dueRevisions.length + p.overdueRevisions.length;
+
   return (
     <div className="sb-page">
-      <Card className="sb-hero" washi>
-        <div>
-          <div className="sb-hero-greet">{greeting}, {p.profile.name || "friend"} 🌸</div>
-          <div className="sb-hero-line sb-quote">{line}</div>
-          <div className="sb-hero-meta">{formatISTCalendarDate(todayStr, { weekday: "long", month: "long", day: "numeric" })} · {p.profile.exam}</div>
-        </div>
-        <div style={{ position: "relative", display: "inline-flex" }}>
-          <Mascot species={p.mascot} mood={mascotMood} energy={mascotEnergyLevel} size={84} pettable />
-        </div>
-      </Card>
-
-      <div className="sb-grid-3">
-        <Card>
-          <SectionTitle icon={Target}>Countdown to {p.profile.exam}</SectionTitle>
-          <div className="sb-countdown sb-countdown-hero">{p.daysToExam}<span>days left</span></div>
-        </Card>
-        <Card>
-          <SectionTitle icon={Clock3}>Today's goal</SectionTitle>
-          <div className="sb-goal-row">
-            <ProgressRing pct={goalPct} />
-            <div><div className="sb-goal-num">{p.todayHours}h <span>/ {p.profile.daily_goal}h</span></div><div className="sb-muted">{p.todayLoggedHours}h logged · {p.todayTimerHours}h focus timer</div></div>
-          </div>
-        </Card>
-        <Card>
-          <div className="sb-section-title">
-            <span>
-              <span className={`sb-icon-badge sb-streak-flame sb-flame-tier-${flameTierFor(p.streak).tier}${p.streakActiveToday ? " sb-streak-flame--lit" : ""}`}>
-                <Flame size={16} />
-              </span> Streak
-            </span>
-            {flameTierFor(p.streak).label && (
-              <span className="sb-chip" style={{ fontSize: 11, cursor: "default", boxShadow: "none" }}>{flameTierFor(p.streak).label}</span>
-            )}
-          </div>
-          <div className="sb-countdown" style={{ color: "var(--outline)" }}>{p.streak}<span>day streak</span></div>
-          <div className="sb-muted" style={{ marginTop: 2 }}>
-            {p.streak === 0 ? "Log today or clear your plan to start one" : p.streakActiveToday ? "Today's logged 🔥" : "Study or clear today's plan to keep it lit"}
-          </div>
-          {p.profile.streak_freeze_tokens > 0 && (
-            <div className="sb-muted" style={{ marginTop: 2, fontSize: 12 }}>
-              ❄️ {p.profile.streak_freeze_tokens} freeze {p.profile.streak_freeze_tokens === 1 ? "token" : "tokens"} — covers a missed day automatically
+      <div className="sb-dash-layout">
+        <div className="sb-dash-main">
+          <Card className="sb-hero" plastic>
+            <div>
+              <div className="sb-hero-greet">{greeting}, {p.profile.name || "friend"} 🌸</div>
+              <div className="sb-hero-meta">{formatISTCalendarDate(todayStr, { weekday: "long", month: "long", day: "numeric" })} · {p.profile.exam}</div>
             </div>
-          )}
-        </Card>
+            <div style={{ position: "relative", display: "inline-flex" }}>
+              <Mascot species={p.mascot} mood={mascotMood} energy={mascotEnergyLevel} size={84} pettable />
+            </div>
+          </Card>
+
+          <div className="sb-grid-3">
+            <Card plastic>
+              <SectionTitle icon={Target}>Countdown</SectionTitle>
+              <div className="sb-countdown sb-countdown-hero">{p.daysToExam}<span>days left</span></div>
+            </Card>
+            <Card plastic>
+              <SectionTitle icon={Clock3}>Today</SectionTitle>
+              <div className="sb-goal-row">
+                <ProgressRing pct={goalPct} size={44} stroke={6} paw={false} />
+                <div><div className="sb-goal-num">{p.todayHours}h <span>/ {p.profile.daily_goal}h</span></div></div>
+              </div>
+            </Card>
+            <Card plastic style={{ background: "var(--soft)" }}>
+              <SectionTitle icon={Flame}>Streak</SectionTitle>
+              <div className="sb-countdown" style={{ color: "var(--outline)" }}>{p.streak} 🔥<span>day streak</span></div>
+            </Card>
+          </div>
+
+          <div className="sb-grid-2">
+            <Card plastic>
+              <SectionTitle icon={TrendingUp}>Weekly hours</SectionTitle>
+              <ResponsiveContainer width="100%" height={190}>
+                <LineChart data={p.weeklyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
+                  <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />
+                  <YAxis stroke="var(--muted)" fontSize={12} />
+                  <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} />
+                  <Legend wrapperStyle={{ fontSize: 11.5 }} />
+                  <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--outline)" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+            <Card plastic>
+              <SectionTitle icon={BookOpen}>Subject split</SectionTitle>
+              {subjectRows.length ? (
+                <div className="sb-subject-split">
+                  {subjectRows.map((s) => {
+                    const pct = Math.round((s.value / subjectTotal) * 100);
+                    return (
+                      <div className="sb-subject-row" key={s.name}>
+                        <div className="sb-subject-row-top"><span>{s.name}</span><span>{pct}%</span></div>
+                        <div className="sb-subject-track">
+                          <div className="sb-subject-fill" style={{ width: `${pct}%`, background: SYLLABUS[s.name]?.color || "var(--accent)" }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : <EmptyState mascot={p.mascot} mood="idle" text="No study logged yet." sub="Log your first session and I'll chart it here." />}
+            </Card>
+          </div>
+        </div>
+
+        <div className="sb-pinboard">
+          <div className="sb-pinboard-title">pinboard</div>
+          <div className="sb-pin-note sb-pin-quote sb-plastic">"{line}"</div>
+          <div className="sb-pin-note sb-plastic sb-clickable" style={{ background: "var(--p2)" }} onClick={() => p.setPage("backlog")}>
+            <div className="sb-pin-label">backlog</div>
+            <div className="sb-pin-value">{backlogOpen} open</div>
+          </div>
+          <div className="sb-pin-note sb-plastic sb-clickable" style={{ background: "var(--p5)" }} onClick={() => p.setPage("revision")}>
+            <div className="sb-pin-label">revisions</div>
+            <div className="sb-pin-value">{revisionsDue} due</div>
+          </div>
+          <div className="sb-pin-note sb-plastic sb-clickable" style={{ background: "var(--p1)" }} onClick={() => p.setPage("questions")}>
+            <div className="sb-pin-label">questions</div>
+            <div className="sb-pin-value">{p.todayQuestions} solved</div>
+          </div>
+        </div>
       </div>
 
-      <div className="sb-grid-2">
-        <Card>
-          <SectionTitle icon={TrendingUp}>Weekly study hours</SectionTitle>
-          <ResponsiveContainer width="100%" height={190}>
-            <LineChart data={p.weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
-              <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />
-              <YAxis stroke="var(--muted)" fontSize={12} />
-              <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} />
-              <Legend wrapperStyle={{ fontSize: 11.5 }} />
-              <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
-              <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--outline)" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-        <Card>
-          <SectionTitle icon={BookOpen}>Subject distribution</SectionTitle>
-          {p.subjectPie.length ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={p.subjectPie} dataKey="value" nameKey="name" innerRadius={45} outerRadius={70} paddingAngle={4}>
-                  {p.subjectPie.map((e, i) => <Cell key={i} fill={SYLLABUS[e.name]?.color || "var(--accent)"} />)}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : <EmptyState mascot={p.mascot} mood="idle" text="No study logged yet." sub="Log your first session and I'll chart it here." />}
-        </Card>
-      </div>
-
-      <div className="sb-grid-3">
-        <Card onClick={() => p.setPage("backlog")} className="sb-clickable">
-          <SectionTitle icon={FolderClock}>Backlog</SectionTitle>
-          <div className="sb-stat-big">{p.backlogItems.filter((b) => b.status !== "Completed").length} <span>items open</span></div>
-        </Card>
-        <Card onClick={() => p.setPage("revision")} className="sb-clickable">
-          <SectionTitle icon={RotateCcw}>Revisions due</SectionTitle>
-          <div className="sb-stat-big">{p.dueRevisions.length + p.overdueRevisions.length} <span>waiting on you</span></div>
-        </Card>
-        <Card onClick={() => p.setPage("questions")} className="sb-clickable">
-          <SectionTitle icon={HelpCircle}>Questions today</SectionTitle>
-          <div className="sb-stat-big">{p.todayQuestions} <span>solved</span></div>
-        </Card>
-      </div>
-
-      <Card>
+      <Card plastic>
         <SectionTitle icon={Sparkles}>Quick actions</SectionTitle>
         <div className="sb-quick-actions">
           <Btn onClick={() => p.setPage("timer")}><Timer size={16} /> Start Focus Timer</Btn>

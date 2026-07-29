@@ -3,8 +3,8 @@ import Mascot from "./Mascot";
 import { THEMES } from "../data/themes";
 import { MOTIFS } from "./decor/Motifs";
 
-export const Card = ({ children, className = "", style, onClick, washi = false }) => (
-  <div className={`sb-card ${className}`} style={style} onClick={onClick}>
+export const Card = ({ children, className = "", style, onClick, washi = false, plastic = false }) => (
+  <div className={`sb-card ${plastic ? "sb-plastic" : ""} ${className}`} style={style} onClick={onClick}>
     {washi && <span className="sb-washi" aria-hidden="true" />}
     {children}
   </div>

@@ -127,6 +127,24 @@ export default function GlobalStyle() {
       .sb-clickable:nth-child(even):hover { transform: translate(-2px, -2px) rotate(1deg); }
       .sb-card-active { background: var(--soft); }
 
+      /* ===== plastic sticker gloss (dashboard cards only) =====
+         A single ::before pseudo-element per card -- no extra DOM node, no
+         filter/blur, no backdrop-filter. Two static gradients (a soft
+         top-left specular blob + a diagonal sheen) painted once; nothing
+         animates, so this costs nothing on scroll or re-render. */
+      /* No overflow:hidden here on purpose -- pinboard notes rely on their
+         ::after cork-pin dot poking out above the box, and each element
+         already clips its own ::before background to its own border-radius
+         without needing overflow:hidden on the parent. */
+      .sb-plastic { position: relative; }
+      .sb-plastic::before {
+        content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+        border-radius: inherit;
+        background:
+          radial-gradient(120px 70px at 18% 0%, rgba(255,255,255,.55), rgba(255,255,255,0) 70%),
+          linear-gradient(155deg, rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 45%);
+      }
+
       /* washi-tape corner accent */
       .sb-washi { position: absolute; top: -11px; left: 26px; width: 58px; height: 22px; background: var(--p1); opacity: .88; transform: rotate(-6deg); border-radius: 3px; box-shadow: 1px 2px 3px rgba(0,0,0,.15); z-index: 2; }
       .sb-washi::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 2px, transparent 2px 6px); }
@@ -192,6 +210,44 @@ export default function GlobalStyle() {
       .sb-grid-3 > .sb-card:nth-child(2) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(2) .sb-icon-badge { background: var(--p2); }
       .sb-grid-3 > .sb-card:nth-child(3) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(3) .sb-icon-badge { background: var(--p3); }
       .sb-grid-4 > .sb-card:nth-child(4) .sb-icon-badge { background: var(--p4); }
+
+      /* ===== dashboard two-column layout: main stack + pinboard ===== */
+      .sb-dash-layout { display: grid; grid-template-columns: 2.3fr 1fr; gap: 18px; align-items: stretch; }
+      .sb-dash-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+      @media (max-width: 880px) { .sb-dash-layout { grid-template-columns: 1fr; } }
+
+      .sb-pinboard {
+        background: color-mix(in srgb, var(--accent2) 55%, #a9825a 45%);
+        border: 3px solid var(--outline); border-radius: 20px; padding: 16px;
+        box-shadow: 6px 6px 0 var(--outline); position: relative;
+        display: flex; flex-direction: column;
+      }
+      .sb-pinboard-title { font-family: var(--font-hand); font-size: 15px; font-weight: 700; color: var(--ink); text-align: center; margin-bottom: 14px; }
+      .sb-pin-note {
+        border: 2px solid var(--outline); border-radius: 12px; padding: 11px 13px;
+        box-shadow: 4px 4px 0 var(--outline); position: relative; margin-bottom: 20px;
+        transition: transform .15s ease, box-shadow .15s ease;
+      }
+      .sb-pin-note:last-child { margin-bottom: 0; }
+      .sb-pin-note::after {
+        content: ""; position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+        width: 10px; height: 10px; border-radius: 50%; background: var(--outline); border: 1.5px solid var(--outline);
+      }
+      .sb-pin-note.sb-clickable:hover { box-shadow: 6px 6px 0 var(--outline); }
+      .sb-pin-note:nth-of-type(odd) { transform: rotate(2.5deg); }
+      .sb-pin-note:nth-of-type(even) { transform: rotate(-2.5deg); }
+      .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(2.5deg) translate(-2px, -3px); }
+      .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-2.5deg) translate(-2px, -3px); }
+      .sb-pin-quote { background: var(--card); font-family: var(--font-hand); font-size: 14px; font-weight: 700; color: var(--muted); }
+      .sb-pin-label { font-family: var(--font-hand); font-size: 14px; font-weight: 700; color: var(--ink); }
+      .sb-pin-value { font-family: var(--font-display); font-size: 19px; font-weight: 800; margin-top: 2px; }
+
+      .sb-subject-split { margin-top: 4px; }
+      .sb-subject-row { margin-bottom: 10px; }
+      .sb-subject-row:last-child { margin-bottom: 0; }
+      .sb-subject-row-top { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; margin-bottom: 4px; text-transform: capitalize; }
+      .sb-subject-track { height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; border: 1.5px solid var(--outline); }
+      .sb-subject-fill { height: 100%; border-radius: 4px; }
 
       /* Streak flame: bright + animated once today is logged, dull/static
          while the number shown is still just carried over from yesterday.
