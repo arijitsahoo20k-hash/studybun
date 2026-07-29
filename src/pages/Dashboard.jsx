@@ -105,7 +105,7 @@ export default function Dashboard(p) {
           <div className="sb-grid-2">
             <Card paper>
               <SectionTitle icon={TrendingUp}>Weekly study hours</SectionTitle>
-              <ResponsiveContainer width="100%" height={190}>
+              <ResponsiveContainer width="100%" height={window.innerWidth >= 1200 ? 260 : 190}>
                 <LineChart data={p.weeklyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
                   <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />

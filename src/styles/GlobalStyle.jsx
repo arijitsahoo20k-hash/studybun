@@ -220,7 +220,7 @@ export default function GlobalStyle() {
       }
       .sb-pinboard-title { font-family: var(--font-hand); font-size: 19px; font-weight: 700; color: var(--ink); text-align: center; margin-bottom: 22px; }
       .sb-pin-note {
-        border: 2.5px solid var(--outline); border-radius: 14px; padding: 16px 18px;
+        border: 2.5px solid var(--outline); border-radius: 14px; padding: 18px 20px;
         box-shadow: 4px 4px 0 var(--outline); position: relative; margin: 0 6px 34px;
         transition: transform .15s ease, box-shadow .15s ease;
         color: var(--pin-ink, var(--ink));
@@ -236,9 +236,31 @@ export default function GlobalStyle() {
       .sb-pin-note:nth-of-type(even) { transform: rotate(-2.2deg); }
       .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(2.2deg) translate(-2px, -3px); }
       .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-2.2deg) translate(-2px, -3px); }
-      .sb-pin-quote { background: var(--card); font-family: var(--font-hand); font-size: 17px; line-height: 1.35; font-weight: 700; }
-      .sb-pin-label { font-family: var(--font-hand); font-size: 16px; font-weight: 700; opacity: .85; }
-      .sb-pin-value { font-family: var(--font-display); font-size: 25px; font-weight: 800; margin-top: 3px; }
+      .sb-pin-quote { background: var(--card); font-family: var(--font-hand); font-size: 20px; line-height: 1.4; font-weight: 700; }
+      .sb-pin-label { font-family: var(--font-hand); font-size: 19px; font-weight: 700; opacity: .85; }
+      .sb-pin-value { font-family: var(--font-display); font-size: 29px; font-weight: 800; margin-top: 4px; }
+
+      /* ===== bigger cards on wide/PC screens =====
+         On large monitors the dashboard's fixed-size cards left a big empty
+         gap below the grid. Scaling up padding, radius and the numbers
+         inside them (rather than just stretching height) makes each card
+         read as genuinely bigger and lets the whole layout fill more of
+         the viewport. */
+      @media (min-width: 1200px) {
+        .sb-page { max-width: clamp(680px, 92vw, 1680px); }
+        .sb-card { padding: 28px; border-radius: 28px; }
+        .sb-grid-3, .sb-grid-2 { gap: 24px; }
+        .sb-hero { padding: 32px; }
+        .sb-hero-greet { font-size: 27px; }
+        .sb-hero-line { font-size: 15.5px; max-width: 480px; }
+        .sb-countdown-hero { font-size: 72px; }
+        .sb-goal-num { font-size: 30px; }
+        .sb-pinboard { padding: 28px 24px; }
+      }
+      @media (min-width: 1500px) {
+        .sb-card { padding: 32px; }
+        .sb-countdown-hero { font-size: 80px; }
+      }
 
       .sb-subject-split { margin-top: 4px; }
       .sb-subject-row { margin-bottom: 10px; }
