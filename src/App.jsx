@@ -172,18 +172,55 @@ export default function App() {
 
   const positionNavPill = (pillEl, itemEl, instant) => {
     if (!pillEl || !itemEl) return;
-    if (instant) pillEl.style.transition = "none";
-    pillEl.style.width = `${itemEl.offsetWidth}px`;
-    pillEl.style.height = `${itemEl.offsetHeight}px`;
-    pillEl.style.transform = `translate(${itemEl.offsetLeft}px, ${itemEl.offsetTop}px)`;
+    const targetW = itemEl.offsetWidth;
+    const targetH = itemEl.offsetHeight;
+    const targetX = itemEl.offsetLeft;
+    const targetY = itemEl.offsetTop;
+
     if (instant) {
+      pillEl.style.transition = "none";
+      pillEl.style.width = `${targetW}px`;
+      pillEl.style.height = `${targetH}px`;
+      pillEl.style.transform = `translate(${targetX}px, ${targetY}px)`;
       // Force a reflow so the "transition: none" above actually applies
       // before we hand control back to the stylesheet's transition on the
       // next frame (otherwise the browser can coalesce both style writes
       // into one frame and animate from the old position anyway).
       void pillEl.offsetHeight;
       requestAnimationFrame(() => { pillEl.style.transition = ""; });
+      pillEl.__sbW = targetW; pillEl.__sbH = targetH; pillEl.__sbX = targetX; pillEl.__sbY = targetY;
+      return;
     }
+
+    // Animate purely via `transform` (translate + scale) instead of
+    // transitioning width/height directly. Transitioning width/height forces
+    // a real layout+paint pass on the main thread every frame -- cheap
+    // enough to hide at 60Hz but enough to drop frames at 120Hz+ once
+    // anything else is competing for the main thread. `transform` alone can
+    // run entirely on the compositor thread, so it stays smooth regardless
+    // of refresh rate. This is the standard FLIP technique: snap the box to
+    // its FINAL width/height instantly (cheap, done once, not animated),
+    // start its transform at a scaled-down stand-in for the OLD box, then
+    // let the transition animate the scale/translate back to identity --
+    // same visual slide-and-resize, GPU-only.
+    const prevW = pillEl.__sbW || targetW;
+    const prevH = pillEl.__sbH || targetH;
+    const prevX = pillEl.__sbX ?? targetX;
+    const prevY = pillEl.__sbY ?? targetY;
+
+    pillEl.style.transition = "none";
+    pillEl.style.width = `${targetW}px`;
+    pillEl.style.height = `${targetH}px`;
+    const scaleX = targetW ? prevW / targetW : 1;
+    const scaleY = targetH ? prevH / targetH : 1;
+    pillEl.style.transform = `translate(${prevX}px, ${prevY}px) scale(${scaleX}, ${scaleY})`;
+    void pillEl.offsetHeight; // force the "from" state to actually paint first
+    pillEl.style.transition = "";
+    requestAnimationFrame(() => {
+      pillEl.style.transform = `translate(${targetX}px, ${targetY}px) scale(1, 1)`;
+    });
+
+    pillEl.__sbW = targetW; pillEl.__sbH = targetH; pillEl.__sbX = targetX; pillEl.__sbY = targetY;
   };
 
   useLayoutEffect(() => {
