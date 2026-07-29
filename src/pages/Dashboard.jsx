@@ -1,6 +1,6 @@
 import React from "react";
 import { Target, Clock3, Flame, TrendingUp, BookOpen } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Card, ProgressRing, SectionTitle, EmptyState } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { SYLLABUS } from "../data/syllabus";
@@ -44,7 +44,7 @@ export default function Dashboard(p) {
   const mascotMood = p.mascotMood || "idle";
   const mascotEnergyLevel = p.mascotEnergy;
 
-  // Subject split as horizontal bars, sorted by time spent, sharing the
+  // Subject split as a donut + legend, sorted by time spent, sharing the
   // same per-subject colors as the rest of the app (SYLLABUS).
   const subjectTotal = p.subjectPie.reduce((a, s) => a + s.value, 0) || 1;
   const subjectRows = [...p.subjectPie].sort((a, b) => b.value - a.value);
@@ -120,18 +120,52 @@ export default function Dashboard(p) {
             <Card paper>
               <SectionTitle icon={BookOpen}>Subject split</SectionTitle>
               {subjectRows.length ? (
-                <div className="sb-subject-split">
-                  {subjectRows.map((s) => {
-                    const pct = Math.round((s.value / subjectTotal) * 100);
-                    return (
-                      <div className="sb-subject-row" key={s.name}>
-                        <div className="sb-subject-row-top"><span>{s.name}</span><span>{pct}%</span></div>
-                        <div className="sb-subject-track">
-                          <div className="sb-subject-fill" style={{ width: `${pct}%`, background: SYLLABUS[s.name]?.color || "var(--accent)" }} />
+                <div className="sb-subject-donut-wrap">
+                  <div className="sb-subject-donut">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={subjectRows}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius="64%"
+                          outerRadius="100%"
+                          paddingAngle={4}
+                          cornerRadius={6}
+                          stroke="var(--card)"
+                          strokeWidth={3}
+                          isAnimationActive={true}
+                        >
+                          {subjectRows.map((s) => (
+                            <Cell key={s.name} fill={SYLLABUS[s.name]?.color || "var(--accent)"} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }}
+                          formatter={(value, name) => [`${value}h`, name]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="sb-subject-donut-center">
+                      <div className="sb-subject-donut-total">{Math.round(subjectTotal)}h</div>
+                      <div className="sb-subject-donut-label">total</div>
+                    </div>
+                  </div>
+                  <div className="sb-subject-legend">
+                    {subjectRows.map((s) => {
+                      const pct = Math.round((s.value / subjectTotal) * 100);
+                      return (
+                        <div className="sb-subject-legend-row" key={s.name}>
+                          <span className="sb-subject-dot" style={{ background: SYLLABUS[s.name]?.color || "var(--accent)" }} />
+                          <span className="sb-subject-legend-name">{s.name}</span>
+                          <span className="sb-subject-legend-meta">
+                            <span className="sb-subject-legend-pct">{pct}%</span>
+                            <span className="sb-subject-legend-hrs">{Math.round(s.value)}h</span>
+                          </span>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               ) : <EmptyState mascot={p.mascot} mood="idle" text="No study logged yet." sub="Log your first session and I'll chart it here." />}
             </Card>

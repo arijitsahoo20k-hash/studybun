@@ -216,14 +216,15 @@ export default function GlobalStyle() {
         background: color-mix(in srgb, var(--accent2) 55%, #a9825a 45%);
         border: 3px solid var(--outline); border-radius: 22px; padding: 22px 20px;
         box-shadow: 6px 6px 0 var(--outline); position: relative;
-        display: flex; flex-direction: column; min-width: 0;
+        display: flex; flex-direction: column; min-width: 0; height: 100%;
       }
-      .sb-pinboard-title { font-family: var(--font-hand); font-size: 19px; font-weight: 700; color: var(--ink); text-align: center; margin-bottom: 22px; }
+      .sb-pinboard-title { font-family: var(--font-hand); font-size: 19px; font-weight: 700; color: var(--ink); text-align: center; margin-bottom: 22px; flex: 0 0 auto; }
       .sb-pin-note {
         border: 2.5px solid var(--outline); border-radius: 14px; padding: 18px 20px;
         box-shadow: 4px 4px 0 var(--outline); position: relative; margin: 0 6px 34px;
         transition: transform .15s ease, box-shadow .15s ease;
         color: var(--pin-ink, var(--ink));
+        flex: 1 1 0; display: flex; flex-direction: column; justify-content: center; min-height: 0;
       }
       .sb-pin-note:last-child { margin-bottom: 6px; }
       .sb-pin-note::after {
@@ -236,7 +237,7 @@ export default function GlobalStyle() {
       .sb-pin-note:nth-of-type(even) { transform: rotate(-2.2deg); }
       .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(2.2deg) translate(-2px, -3px); }
       .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-2.2deg) translate(-2px, -3px); }
-      .sb-pin-quote { background: var(--card); font-family: var(--font-hand); font-size: 20px; line-height: 1.4; font-weight: 700; }
+      .sb-pin-quote { background: var(--card); font-family: var(--font-hand); font-size: 20px; line-height: 1.4; font-weight: 700; flex: 1.4 1 0; }
       .sb-pin-label { font-family: var(--font-hand); font-size: 19px; font-weight: 700; opacity: .85; }
       .sb-pin-value { font-family: var(--font-display); font-size: 29px; font-weight: 800; margin-top: 4px; }
 
@@ -247,8 +248,10 @@ export default function GlobalStyle() {
          read as genuinely bigger and lets the whole layout fill more of
          the viewport. */
       @media (min-width: 1200px) {
-        .sb-page { max-width: clamp(680px, 92vw, 1680px); }
+        .sb-page { max-width: clamp(680px, 92vw, 1680px); gap: 24px; }
         .sb-card { padding: 28px; border-radius: 28px; }
+        .sb-dash-layout { gap: 28px; }
+        .sb-dash-main { gap: 24px; }
         .sb-grid-3, .sb-grid-2 { gap: 24px; }
         .sb-hero { padding: 32px; }
         .sb-hero-greet { font-size: 27px; }
@@ -262,12 +265,35 @@ export default function GlobalStyle() {
         .sb-countdown-hero { font-size: 80px; }
       }
 
-      .sb-subject-split { margin-top: 4px; }
-      .sb-subject-row { margin-bottom: 10px; }
-      .sb-subject-row:last-child { margin-bottom: 0; }
-      .sb-subject-row-top { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; margin-bottom: 4px; text-transform: capitalize; }
-      .sb-subject-track { height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; border: 1.5px solid var(--outline); }
-      .sb-subject-fill { height: 100%; border-radius: 4px; }
+      /* ===== subject split: donut chart + legend =====
+         Replaces the old plain horizontal bar list with a recharts donut
+         (matches the weekly-hours line chart already on this page) plus a
+         compact legend, so the card reads as a proper data viz rather than
+         a stack of progress bars. */
+      .sb-subject-donut-wrap { display: flex; align-items: center; gap: 22px; margin-top: 6px; }
+      .sb-subject-donut { position: relative; flex: 0 0 168px; width: 168px; height: 168px; }
+      .sb-subject-donut-center {
+        position: absolute; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; pointer-events: none; text-align: center;
+      }
+      .sb-subject-donut-total { font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--ink); text-shadow: 1.5px 1.5px 0 var(--soft); }
+      .sb-subject-donut-label { font-size: 10.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-top: 1px; }
+      .sb-subject-legend { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+      .sb-subject-legend-row { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 800; }
+      .sb-subject-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid var(--outline); }
+      .sb-subject-legend-name { flex: 1; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .sb-subject-legend-meta { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; }
+      .sb-subject-legend-pct { color: var(--ink); font-family: var(--font-display); font-weight: 800; font-size: 14px; }
+      .sb-subject-legend-hrs { color: var(--muted); font-size: 11px; font-weight: 700; }
+      @media (max-width: 520px) {
+        .sb-subject-donut-wrap { flex-direction: column; align-items: stretch; }
+        .sb-subject-donut { align-self: center; }
+      }
+      @media (min-width: 1200px) {
+        .sb-subject-donut { flex-basis: 192px; width: 192px; height: 192px; }
+        .sb-subject-donut-total { font-size: 25px; }
+        .sb-subject-legend-row { font-size: 14px; }
+      }
 
       /* Streak flame: bright + animated once today is logged, dull/static
          while the number shown is still just carried over from yesterday.
