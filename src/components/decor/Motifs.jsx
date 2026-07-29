@@ -393,90 +393,84 @@ export function DnaTwist() {
   );
 }
 
-/* ---------- math / chalkboard (Chalkdust Geometry) ---------- */
+/* ---------- night sky / dreamy (Moonlit Mochi) ---------- */
 
-export function CompassTool() {
+export function CrescentMoon() {
   return (
     <Svg>
-      <path d="M24 6 L10 42" stroke={OUTLINE} strokeWidth="2" {...strokeCap} />
-      <path d="M24 6 L38 42" stroke={OUTLINE} strokeWidth="2" {...strokeCap} />
-      <circle cx="24" cy="6" r="3.2" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.4" />
-      <path d="M14 30 L34 30" stroke={ACCENT2} strokeWidth="1.6" {...strokeCap} />
-      <path d="M10 42 L6 44 M38 42 L42 44" stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
+      <path
+        d="M30 6 C20 6 12 14 12 24 C12 34 20 42 30 42 C24 42 19 34 19 24 C19 14 24 6 30 6 Z"
+        fill={ACCENT2}
+        stroke={OUTLINE}
+        strokeWidth="1.5"
+        {...strokeCap}
+      />
+      {/* sleepy closed-eye smile, kawaii */}
+      <path d="M16 22 q2 2 4 0 M22 22 q2 2 4 0" fill="none" stroke={OUTLINE} strokeWidth="1.3" {...strokeCap} />
+      <path d="M17 27 q3 2 6 0" fill="none" stroke={OUTLINE} strokeWidth="1.2" {...strokeCap} />
+      <circle cx="14" cy="25" r="1.6" fill={ACCENT} opacity="0.7" />
+      <path d="M38 10 L39.3 13.3 L42.6 14.6 L39.3 15.9 L38 19.2 L36.7 15.9 L33.4 14.6 L36.7 13.3 Z" fill={SOFT} stroke={OUTLINE} strokeWidth="1" />
+      <path d="M40 30 L40.8 32 L42.8 32.8 L40.8 33.6 L40 35.6 L39.2 33.6 L37.2 32.8 L39.2 32 Z" fill={ACCENT} stroke={OUTLINE} strokeWidth="0.9" />
     </Svg>
   );
 }
 
-export function ProtractorArc() {
+export function ShootingStar() {
   return (
     <Svg>
-      <path d="M6 30 A18 18 0 0 1 42 30" fill={SOFT} stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
-      <path d="M6 30 L42 30" stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
-      {[30, 60, 90, 120, 150].map((deg) => {
-        const r = (deg * Math.PI) / 180;
-        const x1 = 24 - Math.cos(r) * 18, y1 = 30 - Math.sin(r) * 18;
-        const x2 = 24 - Math.cos(r) * 14, y2 = 30 - Math.sin(r) * 14;
-        return <path key={deg} d={`M${x1} ${y1} L${x2} ${y2}`} stroke={ACCENT} strokeWidth="1.3" {...strokeCap} />;
-      })}
+      <path d="M6 38 C14 30 22 22 30 14" fill="none" stroke={ACCENT2} strokeWidth="2.2" strokeLinecap="round" opacity="0.6" />
+      <path d="M10 34 C16 28 22 22 28 16" fill="none" stroke={SOFT} strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+      <path
+        d="M34 6 L36.6 12.4 L43 15 L36.6 17.6 L34 24 L31.4 17.6 L25 15 L31.4 12.4 Z"
+        fill={ACCENT}
+        stroke={OUTLINE}
+        strokeWidth="1.3"
+        {...strokeCap}
+      />
+      <circle cx="12" cy="36" r="2.2" fill={SOFT} stroke={OUTLINE} strokeWidth="1" />
     </Svg>
   );
 }
 
-export function ChalkStar() {
+/* ---------- pastel galaxy / candy (Cosmic Candy) ---------- */
+
+export function CandyPlanet() {
   return (
     <Svg>
-      <path d="M24 8 L27 21 L24 24 L21 21 Z M24 40 L21 27 L24 24 L27 27 Z M8 24 L21 21 L24 24 L21 27 Z M40 24 L27 27 L24 24 L27 21 Z"
-        fill={ACCENT} stroke={OUTLINE} strokeWidth="1.1" {...strokeCap} strokeDasharray="1.5 1.5" />
-      <path d="M14 14 L17.5 17.5 M34 14 L30.5 17.5 M14 34 L17.5 30.5 M34 34 L30.5 30.5"
-        stroke={ACCENT2} strokeWidth="1.4" {...strokeCap} strokeDasharray="1.2 2" />
+      {/* candy-stripe ring behind the planet */}
+      <ellipse cx="24" cy="27" rx="21" ry="7" fill="none" stroke={ACCENT2} strokeWidth="2.4" {...strokeCap} transform="rotate(-10 24 27)" opacity="0.85" />
+      <circle cx="22" cy="22" r="13.5" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.6" />
+      <path d="M11 17 C15 15 29 15 33 17" fill="none" stroke={SOFT} strokeWidth="1.3" opacity="0.7" {...strokeCap} />
+      <path d="M9 24 C15 22 29 22 35 24" fill="none" stroke={SOFT} strokeWidth="1.3" opacity="0.55" {...strokeCap} />
+      {/* cute closed-eye blush face */}
+      <path d="M16 21 q1.6 1.6 3.2 0 M23 21 q1.6 1.6 3.2 0" fill="none" stroke={OUTLINE} strokeWidth="1.3" {...strokeCap} />
+      <path d="M17.5 26 q2.5 1.6 5 0" fill="none" stroke={OUTLINE} strokeWidth="1.1" {...strokeCap} />
+      <circle cx="15.5" cy="24" r="1.7" fill={SOFT} opacity="0.75" />
+      <circle cx="27" cy="24" r="1.7" fill={SOFT} opacity="0.75" />
+      {/* ring arc in front */}
+      <path d="M4 25 C10 30 38 30 44 25" fill="none" stroke={ACCENT2} strokeWidth="2.6" {...strokeCap} transform="rotate(-10 24 27)" />
+      <circle cx="7" cy="10" r="1.6" fill={SOFT} />
+      <circle cx="40" cy="12" r="1.2" fill={ACCENT2} />
     </Svg>
   );
 }
 
-export function EqualsDoodle() {
+export function TwinkleStar() {
   return (
     <Svg>
-      <path d="M10 18 Q24 15 38 18" fill="none" stroke={ACCENT} strokeWidth="3.2" {...strokeCap} strokeDasharray="0.1 6" />
-      <path d="M10 30 Q24 27 38 30" fill="none" stroke={ACCENT} strokeWidth="3.2" {...strokeCap} strokeDasharray="0.1 6" />
-      <circle cx="8" cy="18" r="2" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1" />
-      <circle cx="40" cy="30" r="2" fill={SOFT} stroke={OUTLINE} strokeWidth="1" />
-    </Svg>
-  );
-}
-
-/* ---------- biology / lab-life (Petri Garden) ---------- */
-
-export function PetriDish() {
-  return (
-    <Svg>
-      <ellipse cx="24" cy="26" rx="19" ry="16" fill={SOFT} stroke={OUTLINE} strokeWidth="1.6" />
-      <ellipse cx="24" cy="24" rx="19" ry="16" fill="none" stroke={OUTLINE} strokeWidth="1.4" opacity="0.5" />
-      {[[16, 20, 3], [30, 18, 2.4], [22, 30, 3.6], [33, 29, 2]].map(([x, y, r], i) => (
-        <circle key={i} cx={x} cy={y} r={r} fill={i % 2 ? ACCENT2 : ACCENT} stroke={OUTLINE} strokeWidth="1" opacity="0.85" />
-      ))}
-    </Svg>
-  );
-}
-
-export function LeafSpecimen() {
-  return (
-    <Svg>
-      <path d="M24 42 L24 20" stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
-      <path d="M24 20 C10 18 8 4 12 4 C28 4 34 16 24 20 Z" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.4" {...strokeCap} />
-      <path d="M13 6 C18 9 21 14 23 19" fill="none" stroke={SOFT} strokeWidth="1" opacity="0.8" />
-      <rect x="4" y="40" width="40" height="4" rx="1.5" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.2" opacity="0.7" />
-    </Svg>
-  );
-}
-
-export function MicroscopeSlide() {
-  return (
-    <Svg>
-      <path d="M20 44 L28 44 M24 44 L24 34" stroke={OUTLINE} strokeWidth="2" {...strokeCap} />
-      <path d="M24 34 C24 26 16 24 16 16" fill="none" stroke={OUTLINE} strokeWidth="2.2" {...strokeCap} />
-      <rect x="9" y="10" width="16" height="7" rx="2" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.4" transform="rotate(-28 17 13.5)" />
-      <circle cx="16" cy="16" r="3.6" fill={SOFT} stroke={OUTLINE} strokeWidth="1.3" />
-      <rect x="30" y="6" width="12" height="5" rx="1" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.2" opacity="0.85" />
+      <path
+        d="M24 6 C25 15 26 20 34 21 C26 22 25 27 24 36 C23 27 22 22 14 21 C22 20 23 15 24 6 Z"
+        fill={ACCENT}
+        stroke={OUTLINE}
+        strokeWidth="1.4"
+        {...strokeCap}
+      />
+      {/* tiny kawaii face on the star */}
+      <path d="M20.5 20.5 q1 1 2 0 M25.5 20.5 q1 1 2 0" fill="none" stroke={OUTLINE} strokeWidth="1" {...strokeCap} />
+      <circle cx="19.5" cy="22.5" r="1.1" fill={SOFT} opacity="0.7" />
+      <circle cx="28.5" cy="22.5" r="1.1" fill={SOFT} opacity="0.7" />
+      <path d="M9 10 L10.4 13.4 L13.8 14.8 L10.4 16.2 L9 19.6 L7.6 16.2 L4.2 14.8 L7.6 13.4 Z" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1" />
+      <path d="M39 30 L40 32.4 L42.4 33.4 L40 34.4 L39 36.8 L38 34.4 L35.6 33.4 L38 32.4 Z" fill={SOFT} stroke={OUTLINE} strokeWidth="0.9" />
     </Svg>
   );
 }
@@ -502,11 +496,8 @@ export const MOTIFS = {
   beaker: Beaker,
   orbitRing: OrbitRing,
   dnaTwist: DnaTwist,
-  compassTool: CompassTool,
-  protractorArc: ProtractorArc,
-  chalkStar: ChalkStar,
-  equalsDoodle: EqualsDoodle,
-  petriDish: PetriDish,
-  leafSpecimen: LeafSpecimen,
-  microscopeSlide: MicroscopeSlide,
+  crescentMoon: CrescentMoon,
+  shootingStar: ShootingStar,
+  candyPlanet: CandyPlanet,
+  twinkleStar: TwinkleStar,
 };

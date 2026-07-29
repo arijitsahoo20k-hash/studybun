@@ -87,21 +87,21 @@ export const THEMES = {
     dot: "rgba(44,74,82,0.06)", emoji: "🧪",
     decor: ["beaker", "orbitRing", "dnaTwist", "sparkleStar"],
   },
-  "Chalkdust Geometry": {
-    bg: "#F4F1EC", card: "#FFFEFB", outline: "#3A3F3C", ink: "#2E332F", muted: "#7C8580",
-    accent: "#FF9F6B", accent2: "#7FC9A8", soft: "#E7E2D6",
-    palette: ["#FFCFA8", "#A9DFC4", "#FFE68A", "#C9B8F0", "#F0A8B8", "#E7E2D6"],
-    mascotFill: "#E9E4D8", mascotInner: "#FBF9F3", mascotBlush: "#FF9F6B",
-    dot: "rgba(58,63,60,0.07)", emoji: "✏️", sketchy: true,
-    decor: ["compassTool", "protractorArc", "chalkStar", "equalsDoodle"],
+  "Moonlit Mochi": {
+    bg: "#1E1B38", card: "#282353", outline: "#FFE3F5", ink: "#FFF6FC", muted: "#B6A9DE",
+    accent: "#FF9AD8", accent2: "#8FE3FF", soft: "#372C63",
+    palette: ["#FF9AD8", "#8FE3FF", "#FFE9A8", "#C9A8FF", "#8CFFC7", "#372C63"],
+    mascotFill: "#3A2F66", mascotInner: "#4A3D80", mascotBlush: "#FF9AD8",
+    dot: "rgba(255,227,245,0.09)", emoji: "🌙", dark: true,
+    decor: ["crescentMoon", "shootingStar", "cloud", "sparkleStar"],
   },
-  "Petri Garden": {
-    bg: "#F6FAF2", card: "#FFFFFC", outline: "#3E5636", ink: "#33452B", muted: "#7C8F70",
-    accent: "#6FAE5C", accent2: "#F2A6C4", soft: "#DCEFCE",
-    palette: ["#B8E0A0", "#F2A6C4", "#FFE9A8", "#A8D8D0", "#C9E0B0", "#DCEFCE"],
-    mascotFill: "#CDE9B8", mascotInner: "#F1FAE9", mascotBlush: "#F2A6C4",
-    dot: "rgba(62,86,54,0.06)", emoji: "🔬",
-    decor: ["petriDish", "leafSpecimen", "microscopeSlide", "sparkleStar"],
+  "Cosmic Candy": {
+    bg: "#1C1B38", card: "#26244A", outline: "#FFD9F0", ink: "#FFF4FA", muted: "#ACA3D9",
+    accent: "#FF9FDC", accent2: "#9FE0FF", soft: "#332F5E",
+    palette: ["#FF9FDC", "#9FE0FF", "#FFE9A0", "#C6A8FF", "#A0F5D2", "#332F5E"],
+    mascotFill: "#2E2B57", mascotInner: "#3A3670", mascotBlush: "#FF9FDC",
+    dot: "rgba(255,217,240,0.09)", emoji: "🪐", dark: true,
+    decor: ["candyPlanet", "twinkleStar", "sparkleStar", "twinkleStar"],
   },
 };
 

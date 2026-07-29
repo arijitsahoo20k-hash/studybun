@@ -135,39 +135,6 @@ export default function GlobalStyle() {
       .sb-app[data-stitched="true"] .sb-card { border-style: dashed; border-width: 2.5px; }
       .sb-app[data-stitched="true"] .sb-chapter-card { border-style: dashed; }
 
-      /* sketchy / chalk-drawn look for themes that opt in (e.g. Chalkdust
-         Geometry). IMPORTANT: the SVG turbulence filter must NOT be applied
-         to the card itself — filtering an element filters its children too,
-         which blurred all the text/icons inside and read as a rendering
-         bug rather than a hand-drawn border. Instead we draw the wobbly
-         border on a ::before pseudo-element stacked on top of the card
-         (transparent fill, border only) and filter *that* in isolation, so
-         real content stays perfectly crisp. */
-      .sb-app[data-sketchy="true"] .sb-card,
-      .sb-app[data-sketchy="true"] .sb-chapter-card {
-        position: relative;
-        border-color: transparent;
-        border-radius: 22px 26px 20px 27px;
-      }
-      .sb-app[data-sketchy="true"] .sb-card::before,
-      .sb-app[data-sketchy="true"] .sb-chapter-card::before {
-        content: ""; position: absolute; inset: 0; pointer-events: none;
-        border: inherit; border-style: solid; border-color: var(--outline);
-        border-radius: inherit; filter: url(#sb-sketchy-rough); z-index: 2;
-      }
-      .sb-app[data-sketchy="true"] .sb-btn,
-      .sb-app[data-sketchy="true"] .sb-chip,
-      .sb-app[data-sketchy="true"] .sb-icon-badge {
-        position: relative; border-color: transparent;
-      }
-      .sb-app[data-sketchy="true"] .sb-btn::before,
-      .sb-app[data-sketchy="true"] .sb-chip::before,
-      .sb-app[data-sketchy="true"] .sb-icon-badge::before {
-        content: ""; position: absolute; inset: 0; pointer-events: none;
-        border: inherit; border-style: solid; border-color: var(--outline);
-        border-radius: inherit; filter: url(#sb-sketchy-rough-sm); z-index: 2;
-      }
-
       /* blocky / pixel-jungle look for themes that opt in (e.g. Mossy Blockland) —
          squared-off corners and chunkier borders so cards read like little blocks */
       .sb-app[data-blocky="true"] .sb-card { border-radius: 6px; border-width: 3px; box-shadow: 5px 5px 0 var(--outline); }
@@ -1083,26 +1050,94 @@ export default function GlobalStyle() {
         .sb-goal-title { font-size: 26px; }
         .sb-goal-cover-title { font-size: 38px; }
       }
+
+      /* ================================================================
+         ===== depth pass =====
+         Everything above draws the flat "paper sticker" language (solid
+         fill + thick outline + hard offset shadow). The rules below layer
+         a second, soft, blurred ambient shadow *underneath* that hard
+         offset shadow -- so surfaces keep their sticker identity but read
+         as genuinely lifted off the page -- plus a subtle glossy sheen
+         (a top-side highlight blended with soft-light, low-opacity, and
+         pointer-events:none so it never interferes with clicks) on the
+         rounded/circular surfaces, for a puffy, glassy, "real 3D material"
+         feel. Both tricks use only neutral black/white so they read
+         correctly on every theme, light or dark, without per-theme cases. */
+
+      .sb-card, .sb-chapter-card {
+        box-shadow: 5px 5px 0 var(--outline), 0 16px 28px -16px rgba(0,0,0,.28), 0 3px 7px rgba(0,0,0,.06);
+        isolation: isolate;
+      }
+      .sb-card::after, .sb-chapter-card::after {
+        content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+        background: linear-gradient(165deg, rgba(255,255,255,.32) 0%, rgba(255,255,255,0) 46%);
+        mix-blend-mode: soft-light; opacity: .9; z-index: 3;
+      }
+      .sb-clickable:hover { box-shadow: 7px 7px 0 var(--outline), 0 22px 34px -16px rgba(0,0,0,.32), 0 4px 9px rgba(0,0,0,.07); }
+      .sb-app[data-blocky="true"] .sb-card { box-shadow: 5px 5px 0 var(--outline), 0 14px 24px -14px rgba(0,0,0,.26); }
+      .sb-app[data-blocky="true"] .sb-clickable:hover { box-shadow: 7px 7px 0 var(--outline), 0 18px 28px -14px rgba(0,0,0,.3); }
+
+      .sb-icon-badge {
+        position: relative; overflow: hidden;
+        background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--soft) 100%, white 42%), var(--soft) 78%);
+        box-shadow: inset 0 2px 2px rgba(255,255,255,.55), inset 0 -3px 4px rgba(0,0,0,.16), 2px 2px 0 var(--outline);
+      }
+      .sb-grid-3 > .sb-card:nth-child(1) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(1) .sb-icon-badge { background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--p1) 100%, white 42%), var(--p1) 78%); }
+      .sb-grid-3 > .sb-card:nth-child(2) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(2) .sb-icon-badge { background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--p2) 100%, white 42%), var(--p2) 78%); }
+      .sb-grid-3 > .sb-card:nth-child(3) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(3) .sb-icon-badge { background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--p3) 100%, white 42%), var(--p3) 78%); }
+      .sb-grid-4 > .sb-card:nth-child(4) .sb-icon-badge { background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--p4) 100%, white 42%), var(--p4) 78%); }
+
+      .sb-btn-primary {
+        position: relative; overflow: hidden;
+        background: linear-gradient(160deg, color-mix(in srgb, var(--outline) 100%, white 20%), var(--outline) 70%);
+        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), inset 0 -2px 4px rgba(0,0,0,.15), 3px 3px 0 var(--accent2), 0 12px 22px -12px rgba(0,0,0,.4);
+      }
+      .sb-btn-primary:hover { box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), inset 0 -2px 4px rgba(0,0,0,.15), 4px 4px 0 var(--accent2), 0 16px 26px -12px rgba(0,0,0,.44); }
+      .sb-btn-soft {
+        position: relative; overflow: hidden;
+        background: linear-gradient(160deg, color-mix(in srgb, var(--soft) 100%, white 22%), var(--soft) 72%);
+        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), inset 0 -2px 3px rgba(0,0,0,.08), 3px 3px 0 var(--outline), 0 10px 18px -12px rgba(0,0,0,.24);
+      }
+      .sb-btn-soft:hover { box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), inset 0 -2px 3px rgba(0,0,0,.08), 4px 4px 0 var(--outline), 0 14px 22px -12px rgba(0,0,0,.28); }
+      .sb-btn:active { filter: brightness(.95); }
+
+      .sb-chip {
+        position: relative; overflow: hidden;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 2px 2px 0 var(--outline), 0 7px 14px -9px rgba(0,0,0,.22);
+      }
+      .sb-chip:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 3px 3px 0 var(--outline), 0 9px 16px -8px rgba(0,0,0,.26); }
+      .sb-chip.active { box-shadow: inset 0 1px 2px rgba(0,0,0,.12), 2px 2px 0 var(--outline); }
+
+      .sb-nav-pill {
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 3px 3px 0 var(--outline), 0 9px 16px -10px rgba(0,0,0,.26);
+      }
+
+      .sb-washi { box-shadow: 1px 2px 3px rgba(0,0,0,.15), 0 7px 12px -7px rgba(0,0,0,.22); }
+
+      .sb-pwa-banner { box-shadow: 4px 4px 0 var(--outline), 0 16px 26px -14px rgba(0,0,0,.3); }
+
+      .sb-journal-arrow, .sb-goal-star-btn, .sb-goal-delete-btn {
+        position: relative; overflow: hidden; background-color: var(--card);
+        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.5), inset 0 -2px 3px rgba(0,0,0,.1), 2px 2px 0 var(--outline);
+      }
+      .sb-goal-complete-btn, .sb-goal-reopen-btn {
+        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.35), inset 0 -2px 3px rgba(0,0,0,.12), 2px 2px 0 var(--outline);
+      }
+      .sb-goal-complete-btn:hover, .sb-goal-reopen-btn:hover { box-shadow: inset 0 1.5px 0 rgba(255,255,255,.35), inset 0 -2px 3px rgba(0,0,0,.12), 3px 3px 0 var(--outline); }
+
+      /* recessed / inset surfaces -- the visual counterpart to the raised
+         cards & buttons above. Alternating raised and recessed materials
+         is what makes a flat-color UI actually parse as three-dimensional. */
+      .sb-input, textarea.sb-input, select.sb-input {
+        box-shadow: inset 0 2px 5px rgba(0,0,0,.12), inset 0 -1px 0 rgba(255,255,255,.3);
+      }
+      .sb-progress-track { box-shadow: inset 0 2px 5px rgba(0,0,0,.15); overflow: hidden; }
+      .sb-progress-fill { position: relative; }
+      .sb-progress-fill::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        background: linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0) 55%);
+      }
     `}</style>
   );
 }
 
-/** SVG turbulence filters that power the "sketchy" chalk-drawn card border
- *  variant (see .sb-app[data-sketchy="true"] rules in the <style> above).
- *  Rendered once, absolutely hidden — elements opt in via `filter: url(#id)`.
- *  Two sizes: a slightly stronger wobble for big cards, a subtler one for
- *  small chips/badges so the distortion doesn't overwhelm tiny shapes. */
-export function SketchyFilterDefs() {
-  return (
-    <svg width="0" height="0" style={{ position: "absolute", overflow: "hidden" }} aria-hidden="true">
-      <filter id="sb-sketchy-rough" x="-6%" y="-6%" width="112%" height="112%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.022" numOctaves="2" seed="7" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
-      </filter>
-      <filter id="sb-sketchy-rough-sm" x="-10%" y="-10%" width="120%" height="120%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.04 0.06" numOctaves="2" seed="4" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.3" xChannelSelector="R" yChannelSelector="G" />
-      </filter>
-    </svg>
-  );
-}
