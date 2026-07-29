@@ -175,6 +175,7 @@ export default function GlobalStyle() {
       .sb-app[data-blocky="true"] .sb-icon-badge { border-radius: 5px; border-width: 2.5px; }
       .sb-app[data-blocky="true"] .sb-btn { border-radius: 6px; }
       .sb-app[data-blocky="true"] .sb-nav-item { border-radius: 6px; }
+      .sb-app[data-blocky="true"] .sb-nav-pill { border-radius: 6px; }
       .sb-app[data-blocky="true"] .sb-chip { border-radius: 5px; }
 
       .sb-icon-badge { width: 26px; height: 26px; border-radius: 50%; background: var(--soft); border: 2px solid var(--outline); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--outline); }
@@ -185,9 +186,17 @@ export default function GlobalStyle() {
       .sb-brand-sub { font-size: 11px; color: var(--muted); font-weight: 700; }
       .sb-nav { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; }
       .sb-nav .sb-nav-item { margin-right: 7px; }
-      .sb-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 999px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; cursor: pointer; text-align: left; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
+      .sb-nav-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 999px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; cursor: pointer; text-align: left; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
       .sb-nav-item:hover { background: var(--soft); border-color: var(--outline); transform: translateX(2px); }
-      .sb-nav-item.active { background: var(--soft); border-color: var(--outline); box-shadow: 3px 3px 0 var(--outline); }
+      .sb-nav-item.active { border-color: transparent; font-weight: 800; }
+      /* The pill itself is a sibling absolutely filling the active button --
+         shared layoutId (see App.jsx) means Framer Motion animates it sliding
+         from its old nav item to the new one instead of popping in place.
+         The reduced-motion fallback (a plain, non-motion span with the same
+         class) just appears with no transform. Icon + label sit in their own
+         stacking context above it so the pill never visually covers them. */
+      .sb-nav-pill { position: absolute; inset: 0; z-index: 0; border-radius: 999px; background: var(--soft); border: 2px solid var(--outline); box-shadow: 3px 3px 0 var(--outline); }
+      .sb-nav-item > svg, .sb-nav-item > span:not(.sb-nav-pill) { position: relative; z-index: 1; }
 
       .sb-sidebar-footer { border-top: 2px solid var(--soft); padding-top: 14px; }
       .sb-sidebar-footer-label { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
@@ -196,6 +205,11 @@ export default function GlobalStyle() {
       .sb-mobile-nav { display: none; }
 
       .sb-main { padding: clamp(20px, 2.6vw, 40px) clamp(20px, 4vw, 52px) 90px; overflow-y: auto; position: relative; z-index: 1; display: flex; justify-content: center; }
+      /* One page's worth of content, wrapped so AnimatePresence in App.jsx
+         has a single element to fade/slide in and out between nav switches.
+         Mirrors .sb-main's own centering so the swap is otherwise invisible
+         to layout -- .sb-page inside still owns the actual max-width. */
+      .sb-page-transition { display: flex; justify-content: center; width: 100%; }
       .sb-page { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: clamp(680px, 92vw, 1480px); }
 
       .sb-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }

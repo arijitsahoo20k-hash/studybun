@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
   RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, Crown, User, Settings, Menu,
@@ -59,6 +60,13 @@ const NAV = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
+// Mirrors the same check Mascot.jsx makes independently -- kept local here
+// too rather than shared, since it's a one-line read of the media query and
+// both call sites want it available at mount without an extra import.
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
 // "Today" for the whole app is IST, not the device's local/UTC date — see
 // src/lib/dateIST.js for why the naive version silently broke around midnight.
 const todayStr = todayIST;
@@ -112,6 +120,12 @@ export default function App() {
   const studyingIds = useStudyPresence(focusTimer.running);
 
   const [page, setPage] = useState("dashboard");
+  const reducedMotion = useMemo(prefersReducedMotion, []);
+  // <main> is the app's only scroll container, so without this a nav switch
+  // could land you mid-scroll on the new page if the old one had you scrolled
+  // down -- jarring on its own, and doubly so once page switches animate.
+  const mainRef = useRef(null);
+  useEffect(() => { if (mainRef.current) mainRef.current.scrollTop = 0; }, [page]);
 
   // StudyBun's push notifications deep-link to a page id (dashboard,
   // planner, revision, backlog, analytics, goals) via the service worker
@@ -836,6 +850,14 @@ export default function App() {
         <nav className="sb-nav">
           {NAV.map((n) => (
             <button key={n.id} className={`sb-nav-item ${page === n.id ? "active" : ""}`} onClick={() => setPage(n.id)}>
+              {page === n.id && !reducedMotion && (
+                <motion.span
+                  className="sb-nav-pill"
+                  layoutId="sb-nav-pill-desktop"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                />
+              )}
+              {page === n.id && reducedMotion && <span className="sb-nav-pill" />}
               <n.icon size={18} /><span>{n.label}</span>
             </button>
           ))}
@@ -847,29 +869,48 @@ export default function App() {
         <div className="sb-mobile-nav">
           {NAV.map((n) => (
             <button key={n.id} className={`sb-nav-item ${page === n.id ? "active" : ""}`} onClick={() => { setPage(n.id); setMobileNavOpen(false); }}>
+              {page === n.id && !reducedMotion && (
+                <motion.span
+                  className="sb-nav-pill"
+                  layoutId="sb-nav-pill-mobile"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                />
+              )}
+              {page === n.id && reducedMotion && <span className="sb-nav-pill" />}
               <n.icon size={18} /><span>{n.label}</span>
             </button>
           ))}
         </div>
       )}
 
-      <main className="sb-main">
-        {page === "dashboard" && <Dashboard {...pageProps} />}
-        {page === "study" && <StudyTracker {...pageProps} />}
-        {page === "timer" && <FocusTimer {...pageProps} />}
-        {page === "syllabus" && <SyllabusPage {...pageProps} />}
-        {page === "backlog" && <BacklogPage {...pageProps} />}
-        {page === "goals" && <GoalsPage {...pageProps} />}
-        {page === "questions" && <QuestionsPage {...pageProps} />}
-        {page === "mocks" && <MocksPage {...pageProps} />}
-        {page === "revision" && <RevisionPage {...pageProps} />}
-        {page === "planner" && <PlannerPage {...pageProps} />}
-        {page === "analytics" && <AnalyticsPage {...pageProps} />}
-        {page === "ai" && <AIInsightsPage {...pageProps} />}
-        {page === "achievements" && <AchievementsPage {...pageProps} />}
-        {page === "leaderboard" && <LeaderboardPage {...pageProps} />}
-        {page === "profile" && <ProfilePage {...pageProps} />}
-        {page === "settings" && <SettingsPage {...pageProps} />}
+      <main className="sb-main" ref={mainRef}>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={page}
+            className="sb-page-transition"
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reducedMotion ? undefined : { opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {page === "dashboard" && <Dashboard {...pageProps} />}
+            {page === "study" && <StudyTracker {...pageProps} />}
+            {page === "timer" && <FocusTimer {...pageProps} />}
+            {page === "syllabus" && <SyllabusPage {...pageProps} />}
+            {page === "backlog" && <BacklogPage {...pageProps} />}
+            {page === "goals" && <GoalsPage {...pageProps} />}
+            {page === "questions" && <QuestionsPage {...pageProps} />}
+            {page === "mocks" && <MocksPage {...pageProps} />}
+            {page === "revision" && <RevisionPage {...pageProps} />}
+            {page === "planner" && <PlannerPage {...pageProps} />}
+            {page === "analytics" && <AnalyticsPage {...pageProps} />}
+            {page === "ai" && <AIInsightsPage {...pageProps} />}
+            {page === "achievements" && <AchievementsPage {...pageProps} />}
+            {page === "leaderboard" && <LeaderboardPage {...pageProps} />}
+            {page === "profile" && <ProfilePage {...pageProps} />}
+            {page === "settings" && <SettingsPage {...pageProps} />}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <BuddyGuide {...pageProps} page={page} mood={buddyMood} energy={buddyEnergy} hopping={hopping} />
