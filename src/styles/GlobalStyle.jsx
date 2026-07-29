@@ -178,7 +178,7 @@ export default function GlobalStyle() {
          above it so the pill never visually covers them. Its box-shadow is
          set once, further down, alongside the other "glossy depth" surfaces
          (buttons, chips) rather than here, so there's a single definition. */
-      .sb-nav-pill { position: absolute; top: 0; left: 0; z-index: 0; border-radius: 999px; background: var(--soft); border: 2px solid var(--outline); pointer-events: none; will-change: transform; transition: transform .22s cubic-bezier(.22,1,.36,1), width .22s ease, height .22s ease; }
+      .sb-nav-pill { position: absolute; top: 0; left: 0; transform-origin: 0 0; z-index: 0; border-radius: 999px; background: var(--soft); border: 2px solid var(--outline); pointer-events: none; will-change: transform; transition: transform .22s cubic-bezier(.22,1,.36,1); }
       .sb-nav-item > svg, .sb-nav-item > span:not(.sb-nav-pill) { position: relative; z-index: 1; }
 
       .sb-sidebar-footer { border-top: 2px solid var(--soft); padding-top: 14px; }
