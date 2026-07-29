@@ -210,7 +210,19 @@ export default function GlobalStyle() {
       /* ===== dashboard two-column layout: main stack + pinboard ===== */
       .sb-dash-layout { display: grid; grid-template-columns: 2.1fr 1fr; gap: 20px; align-items: stretch; }
       .sb-dash-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-      @media (max-width: 880px) { .sb-dash-layout { grid-template-columns: 1fr; } }
+      @media (max-width: 880px) {
+        .sb-dash-layout { grid-template-columns: 1fr; }
+        /* Below this width the pinboard is no longer side-by-side with (and
+           stretched to the height of) the main column -- it stacks and its
+           own height becomes self-determined. The desktop notes rely on
+           flex: 1 1 0 + min-height: 0 to divide that *borrowed* stretched
+           height evenly, but that same "0 basis, 0 min-height" also tells
+           the browser the notes have ~no intrinsic content size, which
+           collapses the now-auto pinboard height and squeezes/overlaps the
+           notes. Once stacked, size each note to its own content instead. */
+        .sb-pinboard { height: auto; }
+        .sb-pin-note, .sb-pin-quote { flex: none; min-height: 0; }
+      }
 
       .sb-pinboard {
         background: color-mix(in srgb, var(--accent2) 55%, #a9825a 45%);
