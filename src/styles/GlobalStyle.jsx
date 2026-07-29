@@ -171,7 +171,7 @@ export default function GlobalStyle() {
       .sb-mobile-toggle { display: none; }
       .sb-mobile-nav { display: none; }
 
-      .sb-main { padding: clamp(20px, 2.6vw, 40px) clamp(20px, 4vw, 52px) 90px; overflow-y: auto; position: relative; z-index: 1; display: flex; justify-content: center; }
+      .sb-main { padding: clamp(20px, 2.6vw, 40px) clamp(20px, 4vw, 52px) 90px; overflow-y: auto; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; }
       /* One page's worth of content, wrapped so AnimatePresence in App.jsx
          has a single element to fade/slide in and out between nav switches.
          Mirrors .sb-main's own centering so the swap is otherwise invisible
