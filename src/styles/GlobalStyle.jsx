@@ -260,6 +260,23 @@ export default function GlobalStyle() {
         .sb-goal-num { font-size: 30px; }
         .sb-pinboard { padding: 28px 24px; }
       }
+      /* Tablet landscape (e.g. iPad Pro / Surface in landscape): the
+         >=1200px "big screen" sizing above is tuned for wide monitors
+         where the pinboard column has tons of spare height. On tablet
+         widths the column is narrower and shorter, so those same sizes
+         made each pin note stretch too tall and overflow past the main
+         column. Scale the pinboard back down here so the four notes
+         fill the available height exactly, with no leftover gap and no
+         overflow. */
+      @media (min-width: 1200px) and (max-width: 1499px) {
+        .sb-pinboard { padding: 20px 18px; }
+        .sb-pinboard-title { font-size: 17px; margin-bottom: 14px; }
+        .sb-pin-note { padding: 13px 15px; margin: 0 5px 18px; }
+        .sb-pin-note:last-child { margin-bottom: 5px; }
+        .sb-pin-quote { font-size: 16.5px; line-height: 1.35; }
+        .sb-pin-label { font-size: 16px; }
+        .sb-pin-value { font-size: 23px; margin-top: 3px; }
+      }
       @media (min-width: 1500px) {
         .sb-card { padding: 32px; }
         .sb-countdown-hero { font-size: 80px; }
@@ -1252,4 +1269,3 @@ export default function GlobalStyle() {
     `}</style>
   );
 }
-
