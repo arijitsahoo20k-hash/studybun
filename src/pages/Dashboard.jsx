@@ -60,7 +60,7 @@ export default function Dashboard(p) {
       <div className="sb-grid-3">
         <Card>
           <SectionTitle icon={Target}>Countdown to {p.profile.exam}</SectionTitle>
-          <div className="sb-countdown">{p.daysToExam}<span>days left</span></div>
+          <div className="sb-countdown sb-countdown-hero">{p.daysToExam}<span>days left</span></div>
         </Card>
         <Card>
           <SectionTitle icon={Clock3}>Today's goal</SectionTitle>

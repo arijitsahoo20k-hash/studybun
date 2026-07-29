@@ -219,7 +219,7 @@ export default function GlobalStyle() {
       .sb-countdown { font-family: var(--font-display); font-size: 38px; font-weight: 800; color: var(--ink); display: flex; align-items: baseline; gap: 8px; text-shadow: 2px 2px 0 var(--soft); }
       .sb-countdown span { font-size: 13px; font-family: var(--font-body); color: var(--muted); font-weight: 700; text-shadow: none; }
       @media (min-width: 720px) {
-        .sb-countdown { font-size: 46px; }
+        .sb-countdown-hero { font-size: 64px; }
       }
 
       .sb-goal-row { display: flex; align-items: center; gap: 16px; }
