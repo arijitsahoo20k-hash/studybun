@@ -188,8 +188,8 @@ export default function App() {
 
   useLayoutEffect(() => {
     positionNavPill(navPillRef.current, navItemRefs.current[page], reducedMotion || !navPillMounted.current);
-    navPillMounted.current = true;
-  }, [page, reducedMotion]);
+    if (navItemRefs.current[page]) navPillMounted.current = true;
+  }, [page, reducedMotion, profileLoading, profile]);
 
   useEffect(() => {
     const onResize = () => positionNavPill(navPillRef.current, navItemRefs.current[page], true);
