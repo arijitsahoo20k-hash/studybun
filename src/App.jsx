@@ -160,14 +160,10 @@ export default function App() {
   const toastTimer = useRef(null);
 
   // Sidebar nav highlight: a single pill sliding between nav items, moved
-  // with a plain CSS transform transition instead of framer-motion's
-  // layoutId (which re-measures every nav button's DOM rect on each
-  // animation frame). That measuring is cheap on a 60Hz display but shows
-  // up as visible stutter at 120Hz+ since the browser is trying to paint
-  // roughly twice as often around the same main-thread work. Positioning
-  // it imperatively via refs means the browser only does layout math once
-  // per page change, then the slide itself is a compositor-only transform
-  // animation.
+  // with a plain CSS transform transition via refs rather than a re-measuring
+  // approach (e.g. framer-motion's layoutId), so the browser only does layout
+  // math once per page change and the slide itself is a compositor-only
+  // transform animation -- no per-frame stutter at high refresh rates.
   const navItemRefs = useRef({});
   const navPillRef = useRef(null);
   const navPillMounted = useRef(false);
@@ -200,6 +196,32 @@ export default function App() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [page]);
+
+  // GlobalStyle's @font-face (Baloo 2 / Nunito) loads async and swaps in
+  // after first paint (display: swap). The pill above is measured from the
+  // nav button's live DOM rect, so if that swap changes button width/height
+  // even slightly, the pill is left sized and positioned for the old
+  // fallback-font metrics until the next page change or resize repositions
+  // it. Repositioning once fonts finish loading closes that gap. Reading
+  // page/mobileNavOpen via refs (instead of closing over the values at
+  // effect-creation time) keeps this correct even if the user has already
+  // navigated by the time the fonts.ready promise resolves.
+  const pageRef = useRef(page);
+  pageRef.current = page;
+  const mobileNavOpenRef = useRef(mobileNavOpen);
+  mobileNavOpenRef.current = mobileNavOpen;
+  useEffect(() => {
+    if (!document.fonts?.ready) return;
+    let cancelled = false;
+    document.fonts.ready.then(() => {
+      if (cancelled) return;
+      positionNavPill(navPillRef.current, navItemRefs.current[pageRef.current], true);
+      if (mobileNavOpenRef.current) {
+        positionNavPill(mobileNavPillRef.current, mobileNavItemRefs.current[pageRef.current], true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   useLayoutEffect(() => {
     if (mobileNavOpen) positionNavPill(mobileNavPillRef.current, mobileNavItemRefs.current[page], true);

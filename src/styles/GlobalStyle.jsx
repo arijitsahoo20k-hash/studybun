@@ -171,12 +171,14 @@ export default function GlobalStyle() {
       .sb-nav-item:hover { background: var(--soft); border-color: var(--outline); transform: translateX(2px); }
       .sb-nav-item.active { border-color: transparent; font-weight: 800; }
       /* The pill itself is a sibling absolutely filling the active button --
-         shared layoutId (see App.jsx) means Framer Motion animates it sliding
-         from its old nav item to the new one instead of popping in place.
-         The reduced-motion fallback (a plain, non-motion span with the same
-         class) just appears with no transform. Icon + label sit in their own
-         stacking context above it so the pill never visually covers them. */
-      .sb-nav-pill { position: absolute; top: 0; left: 0; z-index: 0; border-radius: 999px; background: var(--soft); border: 2px solid var(--outline); box-shadow: 3px 3px 0 var(--outline); pointer-events: none; will-change: transform; transition: transform .22s cubic-bezier(.22,1,.36,1), width .22s ease, height .22s ease; }
+         positioned imperatively via refs in App.jsx (see positionNavPill),
+         which slides it from its old nav item to the new one instead of
+         popping in place. reduced-motion / initial mount skip the transition
+         for an instant snap. Icon + label sit in their own stacking context
+         above it so the pill never visually covers them. Its box-shadow is
+         set once, further down, alongside the other "glossy depth" surfaces
+         (buttons, chips) rather than here, so there's a single definition. */
+      .sb-nav-pill { position: absolute; top: 0; left: 0; z-index: 0; border-radius: 999px; background: var(--soft); border: 2px solid var(--outline); pointer-events: none; will-change: transform; transition: transform .22s cubic-bezier(.22,1,.36,1), width .22s ease, height .22s ease; }
       .sb-nav-item > svg, .sb-nav-item > span:not(.sb-nav-pill) { position: relative; z-index: 1; }
 
       .sb-sidebar-footer { border-top: 2px solid var(--soft); padding-top: 14px; }
@@ -1275,6 +1277,10 @@ export default function GlobalStyle() {
       .sb-chip:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 3px 3px 0 var(--outline), 0 9px 16px -8px rgba(0,0,0,.26); }
       .sb-chip.active { box-shadow: inset 0 1px 2px rgba(0,0,0,.12), 2px 2px 0 var(--outline); }
 
+      /* Single definition of the nav pill's shadow (base rule is up in the
+         sidebar section, near .sb-sidebar/.sb-nav) -- kept here with the
+         rest of the glossy-depth surfaces so it stays visually consistent
+         with buttons/chips instead of drifting out of sync with them. */
       .sb-nav-pill {
         box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 3px 3px 0 var(--outline), 0 9px 16px -10px rgba(0,0,0,.26);
       }
