@@ -210,19 +210,7 @@ export default function GlobalStyle() {
       /* ===== dashboard two-column layout: main stack + pinboard ===== */
       .sb-dash-layout { display: grid; grid-template-columns: 2.1fr 1fr; gap: 20px; align-items: stretch; }
       .sb-dash-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-      @media (max-width: 880px) {
-        .sb-dash-layout { grid-template-columns: 1fr; }
-        /* Below this width the pinboard is no longer side-by-side with (and
-           stretched to the height of) the main column -- it stacks and its
-           own height becomes self-determined. The desktop notes rely on
-           flex: 1 1 0 + min-height: 0 to divide that *borrowed* stretched
-           height evenly, but that same "0 basis, 0 min-height" also tells
-           the browser the notes have ~no intrinsic content size, which
-           collapses the now-auto pinboard height and squeezes/overlaps the
-           notes. Once stacked, size each note to its own content instead. */
-        .sb-pinboard { height: auto; }
-        .sb-pin-note, .sb-pin-quote { flex: none; min-height: 0; }
-      }
+      @media (max-width: 880px) { .sb-dash-layout { grid-template-columns: 1fr; } }
 
       .sb-pinboard {
         background: color-mix(in srgb, var(--accent2) 55%, #a9825a 45%);
@@ -310,6 +298,22 @@ export default function GlobalStyle() {
         .sb-pin-quote { font-size: 14.5px; line-height: 1.3; }
         .sb-pin-label { font-size: 14px; }
         .sb-pin-value { font-size: 20px; margin-top: 2px; }
+      }
+      /* Pinboard collapse fix (<=880px, phone + tablet-portrait): below this
+         width .sb-dash-layout drops to one column, so the pinboard is no
+         longer stretched to the height of a tall sibling column -- its
+         height becomes self-determined. The base rules above use
+         flex: 1 1 0 / flex: 1.4 1 0 with min-height: 0 to divide a
+         *borrowed* stretched height evenly, but that same "0 basis, 0
+         min-height" also tells the browser the notes have ~no intrinsic
+         content size, which collapses the now-auto pinboard height and
+         squeezes/overlaps the notes (labels rendering on top of the pill
+         above them). This must come AFTER the base rules in source order --
+         same specificity, so whichever is later in the file wins whenever
+         both are active. */
+      @media (max-width: 880px) {
+        .sb-pinboard { height: auto; }
+        .sb-pin-note, .sb-pin-quote { flex: none; min-height: 0; }
       }
       @media (min-width: 1500px) {
         .sb-card { padding: 32px; }
