@@ -127,22 +127,18 @@ export default function GlobalStyle() {
       .sb-clickable:nth-child(even):hover { transform: translate(-2px, -2px) rotate(1deg); }
       .sb-card-active { background: var(--soft); }
 
-      /* ===== plastic sticker gloss (dashboard cards only) =====
-         A single ::before pseudo-element per card -- no extra DOM node, no
-         filter/blur, no backdrop-filter. Two static gradients (a soft
-         top-left specular blob + a diagonal sheen) painted once; nothing
-         animates, so this costs nothing on scroll or re-render. */
-      /* No overflow:hidden here on purpose -- pinboard notes rely on their
-         ::after cork-pin dot poking out above the box, and each element
-         already clips its own ::before background to its own border-radius
-         without needing overflow:hidden on the parent. */
-      .sb-plastic { position: relative; }
-      .sb-plastic::before {
+      /* ===== rough paper texture (dashboard cards only) =====
+         A single ::before pseudo-element per card -- no extra DOM node.
+         An SVG fractal-noise grain (baked once as a data-URI, tiled, and
+         blended with multiply) reads as rough paper fiber. It's a static
+         image the browser decodes once and reuses, not a per-frame
+         filter/blur, so it costs nothing extra on scroll or re-render. */
+      .sb-paper { position: relative; }
+      .sb-paper::before {
         content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-        border-radius: inherit;
-        background:
-          radial-gradient(120px 70px at 18% 0%, rgba(255,255,255,.55), rgba(255,255,255,0) 70%),
-          linear-gradient(155deg, rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 45%);
+        border-radius: inherit; opacity: .5; mix-blend-mode: multiply;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-size: 140px 140px;
       }
 
       /* washi-tape corner accent */
@@ -212,35 +208,37 @@ export default function GlobalStyle() {
       .sb-grid-4 > .sb-card:nth-child(4) .sb-icon-badge { background: var(--p4); }
 
       /* ===== dashboard two-column layout: main stack + pinboard ===== */
-      .sb-dash-layout { display: grid; grid-template-columns: 2.3fr 1fr; gap: 18px; align-items: stretch; }
+      .sb-dash-layout { display: grid; grid-template-columns: 2.1fr 1fr; gap: 20px; align-items: stretch; }
       .sb-dash-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
       @media (max-width: 880px) { .sb-dash-layout { grid-template-columns: 1fr; } }
 
       .sb-pinboard {
         background: color-mix(in srgb, var(--accent2) 55%, #a9825a 45%);
-        border: 3px solid var(--outline); border-radius: 20px; padding: 16px;
+        border: 3px solid var(--outline); border-radius: 22px; padding: 22px 20px;
         box-shadow: 6px 6px 0 var(--outline); position: relative;
-        display: flex; flex-direction: column;
+        display: flex; flex-direction: column; min-width: 0;
       }
-      .sb-pinboard-title { font-family: var(--font-hand); font-size: 15px; font-weight: 700; color: var(--ink); text-align: center; margin-bottom: 14px; }
+      .sb-pinboard-title { font-family: var(--font-hand); font-size: 19px; font-weight: 700; color: var(--ink); text-align: center; margin-bottom: 22px; }
       .sb-pin-note {
-        border: 2px solid var(--outline); border-radius: 12px; padding: 11px 13px;
-        box-shadow: 4px 4px 0 var(--outline); position: relative; margin-bottom: 20px;
+        border: 2.5px solid var(--outline); border-radius: 14px; padding: 16px 18px;
+        box-shadow: 4px 4px 0 var(--outline); position: relative; margin: 0 6px 34px;
         transition: transform .15s ease, box-shadow .15s ease;
+        color: var(--pin-ink, var(--ink));
       }
-      .sb-pin-note:last-child { margin-bottom: 0; }
+      .sb-pin-note:last-child { margin-bottom: 6px; }
       .sb-pin-note::after {
-        content: ""; position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
-        width: 10px; height: 10px; border-radius: 50%; background: var(--outline); border: 1.5px solid var(--outline);
+        content: ""; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+        width: 15px; height: 15px; border-radius: 50%; background: var(--outline);
+        box-shadow: 0 2px 2px rgba(0,0,0,.25);
       }
       .sb-pin-note.sb-clickable:hover { box-shadow: 6px 6px 0 var(--outline); }
-      .sb-pin-note:nth-of-type(odd) { transform: rotate(2.5deg); }
-      .sb-pin-note:nth-of-type(even) { transform: rotate(-2.5deg); }
-      .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(2.5deg) translate(-2px, -3px); }
-      .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-2.5deg) translate(-2px, -3px); }
-      .sb-pin-quote { background: var(--card); font-family: var(--font-hand); font-size: 14px; font-weight: 700; color: var(--muted); }
-      .sb-pin-label { font-family: var(--font-hand); font-size: 14px; font-weight: 700; color: var(--ink); }
-      .sb-pin-value { font-family: var(--font-display); font-size: 19px; font-weight: 800; margin-top: 2px; }
+      .sb-pin-note:nth-of-type(odd) { transform: rotate(2.2deg); }
+      .sb-pin-note:nth-of-type(even) { transform: rotate(-2.2deg); }
+      .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(2.2deg) translate(-2px, -3px); }
+      .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-2.2deg) translate(-2px, -3px); }
+      .sb-pin-quote { background: var(--card); font-family: var(--font-hand); font-size: 17px; line-height: 1.35; font-weight: 700; }
+      .sb-pin-label { font-family: var(--font-hand); font-size: 16px; font-weight: 700; opacity: .85; }
+      .sb-pin-value { font-family: var(--font-display); font-size: 25px; font-weight: 800; margin-top: 3px; }
 
       .sb-subject-split { margin-top: 4px; }
       .sb-subject-row { margin-bottom: 10px; }

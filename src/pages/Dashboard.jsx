@@ -1,7 +1,7 @@
 import React from "react";
-import { Target, Clock3, Flame, TrendingUp, BookOpen, Sparkles, Timer, Plus } from "lucide-react";
+import { Target, Clock3, Flame, TrendingUp, BookOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Card, ProgressRing, SectionTitle, EmptyState, Btn } from "../components/ui";
+import { Card, ProgressRing, SectionTitle, EmptyState } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { SYLLABUS } from "../data/syllabus";
 import { todayIST, formatISTCalendarDate } from "../lib/dateIST";
@@ -56,9 +56,10 @@ export default function Dashboard(p) {
     <div className="sb-page">
       <div className="sb-dash-layout">
         <div className="sb-dash-main">
-          <Card className="sb-hero" plastic>
+          <Card className="sb-hero" washi paper>
             <div>
               <div className="sb-hero-greet">{greeting}, {p.profile.name || "friend"} 🌸</div>
+              <div className="sb-hero-line sb-quote">{line}</div>
               <div className="sb-hero-meta">{formatISTCalendarDate(todayStr, { weekday: "long", month: "long", day: "numeric" })} · {p.profile.exam}</div>
             </div>
             <div style={{ position: "relative", display: "inline-flex" }}>
@@ -67,26 +68,43 @@ export default function Dashboard(p) {
           </Card>
 
           <div className="sb-grid-3">
-            <Card plastic>
-              <SectionTitle icon={Target}>Countdown</SectionTitle>
+            <Card paper>
+              <SectionTitle icon={Target}>Countdown to {p.profile.exam}</SectionTitle>
               <div className="sb-countdown sb-countdown-hero">{p.daysToExam}<span>days left</span></div>
             </Card>
-            <Card plastic>
-              <SectionTitle icon={Clock3}>Today</SectionTitle>
+            <Card paper>
+              <SectionTitle icon={Clock3}>Today's goal</SectionTitle>
               <div className="sb-goal-row">
-                <ProgressRing pct={goalPct} size={44} stroke={6} paw={false} />
-                <div><div className="sb-goal-num">{p.todayHours}h <span>/ {p.profile.daily_goal}h</span></div></div>
+                <ProgressRing pct={goalPct} />
+                <div><div className="sb-goal-num">{p.todayHours}h <span>/ {p.profile.daily_goal}h</span></div><div className="sb-muted">{p.todayLoggedHours}h logged · {p.todayTimerHours}h focus timer</div></div>
               </div>
             </Card>
-            <Card plastic style={{ background: "var(--soft)" }}>
-              <SectionTitle icon={Flame}>Streak</SectionTitle>
-              <div className="sb-countdown" style={{ color: "var(--outline)" }}>{p.streak} 🔥<span>day streak</span></div>
+            <Card paper>
+              <div className="sb-section-title">
+                <span>
+                  <span className={`sb-icon-badge sb-streak-flame sb-flame-tier-${flameTierFor(p.streak).tier}${p.streakActiveToday ? " sb-streak-flame--lit" : ""}`}>
+                    <Flame size={16} />
+                  </span> Streak
+                </span>
+                {flameTierFor(p.streak).label && (
+                  <span className="sb-chip" style={{ fontSize: 11, cursor: "default", boxShadow: "none" }}>{flameTierFor(p.streak).label}</span>
+                )}
+              </div>
+              <div className="sb-countdown" style={{ color: "var(--outline)" }}>{p.streak}<span>day streak</span></div>
+              <div className="sb-muted" style={{ marginTop: 2 }}>
+                {p.streak === 0 ? "Log today or clear your plan to start one" : p.streakActiveToday ? "Today's logged 🔥" : "Study or clear today's plan to keep it lit"}
+              </div>
+              {p.profile.streak_freeze_tokens > 0 && (
+                <div className="sb-muted" style={{ marginTop: 2, fontSize: 12 }}>
+                  ❄️ {p.profile.streak_freeze_tokens} freeze {p.profile.streak_freeze_tokens === 1 ? "token" : "tokens"} — covers a missed day automatically
+                </div>
+              )}
             </Card>
           </div>
 
           <div className="sb-grid-2">
-            <Card plastic>
-              <SectionTitle icon={TrendingUp}>Weekly hours</SectionTitle>
+            <Card paper>
+              <SectionTitle icon={TrendingUp}>Weekly study hours</SectionTitle>
               <ResponsiveContainer width="100%" height={190}>
                 <LineChart data={p.weeklyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
@@ -99,7 +117,7 @@ export default function Dashboard(p) {
                 </LineChart>
               </ResponsiveContainer>
             </Card>
-            <Card plastic>
+            <Card paper>
               <SectionTitle icon={BookOpen}>Subject split</SectionTitle>
               {subjectRows.length ? (
                 <div className="sb-subject-split">
@@ -122,33 +140,33 @@ export default function Dashboard(p) {
 
         <div className="sb-pinboard">
           <div className="sb-pinboard-title">pinboard</div>
-          <div className="sb-pin-note sb-pin-quote sb-plastic">"{line}"</div>
-          <div className="sb-pin-note sb-plastic sb-clickable" style={{ background: "var(--p2)" }} onClick={() => p.setPage("backlog")}>
+          <div className="sb-pin-note sb-pin-quote sb-paper" style={{ "--pin-ink": "var(--muted)" }}>"{line}"</div>
+          <div
+            className="sb-pin-note sb-paper sb-clickable"
+            style={{ background: "var(--p2)", "--pin-ink": "color-mix(in srgb, var(--p2) 30%, #16240f 70%)" }}
+            onClick={() => p.setPage("backlog")}
+          >
             <div className="sb-pin-label">backlog</div>
             <div className="sb-pin-value">{backlogOpen} open</div>
           </div>
-          <div className="sb-pin-note sb-plastic sb-clickable" style={{ background: "var(--p5)" }} onClick={() => p.setPage("revision")}>
+          <div
+            className="sb-pin-note sb-paper sb-clickable"
+            style={{ background: "var(--p5)", "--pin-ink": "color-mix(in srgb, var(--p5) 30%, #0f1f2b 70%)" }}
+            onClick={() => p.setPage("revision")}
+          >
             <div className="sb-pin-label">revisions</div>
             <div className="sb-pin-value">{revisionsDue} due</div>
           </div>
-          <div className="sb-pin-note sb-plastic sb-clickable" style={{ background: "var(--p1)" }} onClick={() => p.setPage("questions")}>
+          <div
+            className="sb-pin-note sb-paper sb-clickable"
+            style={{ background: "var(--p1)", "--pin-ink": "color-mix(in srgb, var(--p1) 30%, #3a0f1f 70%)" }}
+            onClick={() => p.setPage("questions")}
+          >
             <div className="sb-pin-label">questions</div>
             <div className="sb-pin-value">{p.todayQuestions} solved</div>
           </div>
         </div>
       </div>
-
-      <Card plastic>
-        <SectionTitle icon={Sparkles}>Quick actions</SectionTitle>
-        <div className="sb-quick-actions">
-          <Btn onClick={() => p.setPage("timer")}><Timer size={16} /> Start Focus Timer</Btn>
-          <Btn variant="soft" onClick={() => p.setPage("study")}><Plus size={16} /> Add Study Session</Btn>
-          <Btn variant="soft" onClick={() => p.setPage("mocks")}><Plus size={16} /> Add Mock</Btn>
-          <Btn variant="soft" onClick={() => p.setPage("questions")}><Plus size={16} /> Add Questions</Btn>
-          <Btn variant="soft" onClick={() => p.setPage("planner")}><Plus size={16} /> Add Task</Btn>
-          <Btn variant="soft" onClick={() => p.setPage("ai")}><Sparkles size={16} /> Generate AI Insights</Btn>
-        </div>
-      </Card>
     </div>
   );
 }
