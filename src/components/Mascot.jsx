@@ -61,7 +61,7 @@ const DEFAULT_ENERGY = {
  * (Dashboard hero, Focus Timer) -- not for spots where tapping the mascot
  * already does something else (BuddyGuide avatar, onboarding picker, etc).
  */
-export default function Mascot({ species = "bunny", mood = "idle", size = 72, hop = false, peek = false, hopLoop = false, pettable = false, onPet, energy }) {
+export default function Mascot({ species = "bunny", mood = "idle", size = 72, hop = false, peek = false, hopLoop = false, pettable = false, onPet, energy, ambient = true }) {
   const Species = SPECIES[species] || Bunny;
   const [bursts, setBursts] = useState([]);
   const [celebrateBits, setCelebrateBits] = useState([]);
@@ -93,8 +93,13 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
 
   // Ambient idle drift -- a slow GSAP loop on the *outer* wrapper, randomized
   // per instance so a row of mascots never bobs in unison. Skipped whenever
-  // the species itself already owns a bounce (hop / hopLoop), so the two
-  // never stack into a double-bounce, and skipped entirely for reduced motion.
+  // the species itself already owns a bounce (hop / hopLoop), whenever the
+  // caller passes ambient={false} (e.g. Leaderboard renders one Mascot per
+  // row -- spinning up a dozen-plus independent GSAP tweens at once, right
+  // as the page-transition is animating in, is exactly the kind of
+  // per-instance cost that adds up into visible jank on a list, for a sway
+  // that's barely perceptible at avatar size anyway), and entirely for
+  // reduced motion.
   //
   // This is where "energetic when you study, sad when you don't" actually
   // shows up as motion, not just a face: `liveliness` (0-1) speeds the loop
@@ -103,7 +108,7 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
   // a different motion entirely: a slow downward slump instead of an upward
   // bob, like a shoulders-down sigh repeating on a long, heavy beat.
   useEffect(() => {
-    if (reduced || hop || hopLoop || !outerRef.current) return;
+    if (reduced || hop || hopLoop || !ambient || !outerRef.current) return;
     const el = outerRef.current;
     const tween = sad
       ? gsap.to(el, {
@@ -125,7 +130,7 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
           repeat: -1,
         });
     return () => tween.kill();
-  }, [reduced, hop, hopLoop, sad, liveliness]);
+  }, [reduced, hop, hopLoop, ambient, sad, liveliness]);
 
   // Celebrate flourish -- fires once whenever mood transitions *into*
   // "celebrate" (not on every re-render while it stays celebrate), using a

@@ -2,7 +2,20 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
 import { clientsClaim } from "workbox-core";
 
-self.skipWaiting();
+// IMPORTANT: no unconditional self.skipWaiting() here. Calling it
+// automatically on install makes a new service worker jump straight past the
+// "waiting" state into activating -- which is also the exact state
+// vite-plugin-pwa's registerType: "prompt" watches for to flip `needRefresh`
+// and show the "new version available" banner (see PWAPrompt.jsx). With
+// auto-skipWaiting, the update had usually already installed itself by the
+// time the banner would've appeared, so it showed inconsistently (or not at
+// all) even though a hard refresh always picked up the new version -- the
+// new SW was already active, just never announced. Waiting for this message
+// (sent by updateServiceWorker(true) when the user clicks "Refresh") is what
+// makes the prompt-then-refresh flow actually work as designed.
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+});
 clientsClaim();
 cleanupOutdatedCaches();
 

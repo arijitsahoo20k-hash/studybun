@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef, startTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
@@ -849,7 +849,7 @@ export default function App() {
         <div className="sb-brand"><Mascot species={mascot} mood="happy" size={40} hop={hopping} peek /><div><div className="sb-brand-title">StudyBun</div><div className="sb-brand-sub">Cozy JEE companion</div></div></div>
         <nav className="sb-nav">
           {NAV.map((n) => (
-            <button key={n.id} className={`sb-nav-item ${page === n.id ? "active" : ""}`} onClick={() => setPage(n.id)}>
+            <button key={n.id} className={`sb-nav-item ${page === n.id ? "active" : ""}`} onClick={() => startTransition(() => setPage(n.id))}>
               {page === n.id && !reducedMotion && (
                 <motion.span
                   className="sb-nav-pill"
@@ -868,7 +868,7 @@ export default function App() {
       {mobileNavOpen && (
         <div className="sb-mobile-nav">
           {NAV.map((n) => (
-            <button key={n.id} className={`sb-nav-item ${page === n.id ? "active" : ""}`} onClick={() => { setPage(n.id); setMobileNavOpen(false); }}>
+            <button key={n.id} className={`sb-nav-item ${page === n.id ? "active" : ""}`} onClick={() => { startTransition(() => setPage(n.id)); setMobileNavOpen(false); }}>
               {page === n.id && !reducedMotion && (
                 <motion.span
                   className="sb-nav-pill"

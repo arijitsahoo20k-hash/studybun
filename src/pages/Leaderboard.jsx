@@ -12,7 +12,7 @@ function ScoreRow({ row, rank, isMe, isStudyingNow }) {
     <div className={`sb-lb-row ${isMe ? "me" : ""} ${medal ? `medal medal-${rank}` : ""}`} style={{ animationDelay: `${Math.min(rank, 14) * 0.03}s` }}>
       <div className="sb-lb-rank">{medal || `#${rank}`}</div>
       <div className="sb-lb-avatar-wrap">
-        <div className="sb-lb-avatar"><Mascot species={row.mascot} mood="happy" size={34} /></div>
+        <div className="sb-lb-avatar"><Mascot species={row.mascot} mood="happy" size={34} ambient={false} /></div>
         {isStudyingNow && <span className="sb-lb-online-dot" title="Studying right now" />}
       </div>
       <div className="sb-lb-who">
