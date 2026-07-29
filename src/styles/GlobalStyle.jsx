@@ -165,7 +165,7 @@ export default function GlobalStyle() {
       .sb-brand { display: flex; align-items: center; gap: 10px; }
       .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 18px; }
       .sb-brand-sub { font-size: 11px; color: var(--muted); font-weight: 700; }
-      .sb-nav { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; }
+      .sb-nav { position: relative; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; }
       .sb-nav .sb-nav-item { margin-right: 7px; }
       .sb-nav-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 999px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; cursor: pointer; text-align: left; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
       .sb-nav-item:hover { background: var(--soft); border-color: var(--outline); transform: translateX(2px); }
@@ -176,7 +176,7 @@ export default function GlobalStyle() {
          The reduced-motion fallback (a plain, non-motion span with the same
          class) just appears with no transform. Icon + label sit in their own
          stacking context above it so the pill never visually covers them. */
-      .sb-nav-pill { position: absolute; inset: 0; z-index: 0; border-radius: 999px; background: var(--soft); border: 2px solid var(--outline); box-shadow: 3px 3px 0 var(--outline); }
+      .sb-nav-pill { position: absolute; top: 0; left: 0; z-index: 0; border-radius: 999px; background: var(--soft); border: 2px solid var(--outline); box-shadow: 3px 3px 0 var(--outline); pointer-events: none; will-change: transform; transition: transform .22s cubic-bezier(.22,1,.36,1), width .22s ease, height .22s ease; }
       .sb-nav-item > svg, .sb-nav-item > span:not(.sb-nav-pill) { position: relative; z-index: 1; }
 
       .sb-sidebar-footer { border-top: 2px solid var(--soft); padding-top: 14px; }
@@ -220,16 +220,16 @@ export default function GlobalStyle() {
       }
       .sb-pinboard-title { font-family: var(--font-hand); font-size: 19px; font-weight: 700; color: var(--ink); text-align: center; margin-bottom: 22px; flex: 0 0 auto; }
       .sb-pin-note {
-        border: 2.5px solid var(--outline); border-radius: 14px; padding: 18px 20px;
-        box-shadow: 4px 4px 0 var(--outline); position: relative; margin: 0 6px 34px;
+        border: 2.5px solid var(--outline); border-radius: 14px; padding: 14px 16px;
+        box-shadow: 4px 4px 0 var(--outline); position: relative; margin: 0 6px 26px;
         transition: transform .15s ease, box-shadow .15s ease;
         color: var(--pin-ink, var(--ink));
         flex: 1 1 0; display: flex; flex-direction: column; justify-content: center; min-height: 0;
       }
       .sb-pin-note:last-child { margin-bottom: 6px; }
       .sb-pin-note::after {
-        content: ""; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
-        width: 15px; height: 15px; border-radius: 50%; background: var(--outline);
+        content: ""; position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+        width: 13px; height: 13px; border-radius: 50%; background: var(--outline);
         box-shadow: 0 2px 2px rgba(0,0,0,.25);
       }
       .sb-pin-note.sb-clickable:hover { box-shadow: 6px 6px 0 var(--outline); }
@@ -237,9 +237,9 @@ export default function GlobalStyle() {
       .sb-pin-note:nth-of-type(even) { transform: rotate(-2.2deg); }
       .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(2.2deg) translate(-2px, -3px); }
       .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-2.2deg) translate(-2px, -3px); }
-      .sb-pin-quote { background: var(--card); font-family: var(--font-hand); font-size: 20px; line-height: 1.4; font-weight: 700; flex: 1.4 1 0; }
-      .sb-pin-label { font-family: var(--font-hand); font-size: 19px; font-weight: 700; opacity: .85; }
-      .sb-pin-value { font-family: var(--font-display); font-size: 29px; font-weight: 800; margin-top: 4px; }
+      .sb-pin-quote { background: var(--card); font-family: var(--font-hand); font-size: 17px; line-height: 1.4; font-weight: 700; flex: 1.4 1 0; }
+      .sb-pin-label { font-family: var(--font-hand); font-size: 16.5px; font-weight: 700; opacity: .85; }
+      .sb-pin-value { font-family: var(--font-display); font-size: 24px; font-weight: 800; margin-top: 3px; }
 
       /* ===== bigger cards on wide/PC screens =====
          On large monitors the dashboard's fixed-size cards left a big empty
@@ -276,6 +276,28 @@ export default function GlobalStyle() {
         .sb-pin-quote { font-size: 16.5px; line-height: 1.35; }
         .sb-pin-label { font-size: 16px; }
         .sb-pin-value { font-size: 23px; margin-top: 3px; }
+      }
+      /* Mobile pinboard: the desktop look leans on a fairly strong alternating
+         rotate() per note plus generous margins to keep the rotated corners
+         clear of each other. At phone widths there isn't enough room for
+         that -- the rotation makes notes visually poke into their neighbours
+         and the board reads as a jumbled mess. Cut the rotation down to a
+         subtle tilt, tighten the shadow/margin math to match, and shrink the
+         text so a longer label can't wrap and grow a note taller than its
+         neighbour expects. */
+      @media (max-width: 640px) {
+        .sb-pinboard { padding: 16px 14px; }
+        .sb-pinboard-title { font-size: 15px; margin-bottom: 10px; }
+        .sb-pin-note { padding: 11px 13px; margin: 0 3px 14px; border-radius: 12px; }
+        .sb-pin-note:last-child { margin-bottom: 3px; }
+        .sb-pin-note::after { width: 10px; height: 10px; top: -6px; }
+        .sb-pin-note:nth-of-type(odd) { transform: rotate(1deg); }
+        .sb-pin-note:nth-of-type(even) { transform: rotate(-1deg); }
+        .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(1deg) translate(-1px, -2px); }
+        .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-1deg) translate(-1px, -2px); }
+        .sb-pin-quote { font-size: 14.5px; line-height: 1.3; }
+        .sb-pin-label { font-size: 14px; }
+        .sb-pin-value { font-size: 20px; margin-top: 2px; }
       }
       @media (min-width: 1500px) {
         .sb-card { padding: 32px; }

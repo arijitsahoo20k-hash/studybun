@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef, startTransition } from "react";
+import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, startTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
@@ -158,6 +158,52 @@ export default function App() {
   const [celebrateType, setCelebrateType] = useState(null); // null | "confetti" | "petals"
   const [hopping, setHopping] = useState(false);
   const toastTimer = useRef(null);
+
+  // Sidebar nav highlight: a single pill sliding between nav items, moved
+  // with a plain CSS transform transition instead of framer-motion's
+  // layoutId (which re-measures every nav button's DOM rect on each
+  // animation frame). That measuring is cheap on a 60Hz display but shows
+  // up as visible stutter at 120Hz+ since the browser is trying to paint
+  // roughly twice as often around the same main-thread work. Positioning
+  // it imperatively via refs means the browser only does layout math once
+  // per page change, then the slide itself is a compositor-only transform
+  // animation.
+  const navItemRefs = useRef({});
+  const navPillRef = useRef(null);
+  const navPillMounted = useRef(false);
+  const mobileNavItemRefs = useRef({});
+  const mobileNavPillRef = useRef(null);
+
+  const positionNavPill = (pillEl, itemEl, instant) => {
+    if (!pillEl || !itemEl) return;
+    if (instant) pillEl.style.transition = "none";
+    pillEl.style.width = `${itemEl.offsetWidth}px`;
+    pillEl.style.height = `${itemEl.offsetHeight}px`;
+    pillEl.style.transform = `translate(${itemEl.offsetLeft}px, ${itemEl.offsetTop}px)`;
+    if (instant) {
+      // Force a reflow so the "transition: none" above actually applies
+      // before we hand control back to the stylesheet's transition on the
+      // next frame (otherwise the browser can coalesce both style writes
+      // into one frame and animate from the old position anyway).
+      void pillEl.offsetHeight;
+      requestAnimationFrame(() => { pillEl.style.transition = ""; });
+    }
+  };
+
+  useLayoutEffect(() => {
+    positionNavPill(navPillRef.current, navItemRefs.current[page], reducedMotion || !navPillMounted.current);
+    navPillMounted.current = true;
+  }, [page, reducedMotion]);
+
+  useEffect(() => {
+    const onResize = () => positionNavPill(navPillRef.current, navItemRefs.current[page], true);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [page]);
+
+  useLayoutEffect(() => {
+    if (mobileNavOpen) positionNavPill(mobileNavPillRef.current, mobileNavItemRefs.current[page], true);
+  }, [page, mobileNavOpen]);
 
   // Pass an `undo` callback for any action that can't otherwise be reversed —
   // the toast then stays up longer and shows an Undo button.
@@ -845,16 +891,14 @@ export default function App() {
       <aside className="sb-sidebar">
         <div className="sb-brand"><Mascot species={mascot} mood="happy" size={40} hop={hopping} peek /><div><div className="sb-brand-title">StudyBun</div><div className="sb-brand-sub">Cozy JEE companion</div></div></div>
         <nav className="sb-nav">
+          <span ref={navPillRef} className="sb-nav-pill" aria-hidden="true" />
           {NAV.map((n) => (
-            <button key={n.id} className={`sb-nav-item ${page === n.id ? "active" : ""}`} onClick={() => startTransition(() => setPage(n.id))}>
-              {page === n.id && !reducedMotion && (
-                <motion.span
-                  className="sb-nav-pill"
-                  layoutId="sb-nav-pill-desktop"
-                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                />
-              )}
-              {page === n.id && reducedMotion && <span className="sb-nav-pill" />}
+            <button
+              key={n.id}
+              ref={(el) => { navItemRefs.current[n.id] = el; }}
+              className={`sb-nav-item ${page === n.id ? "active" : ""}`}
+              onClick={() => startTransition(() => setPage(n.id))}
+            >
               <n.icon size={18} /><span>{n.label}</span>
             </button>
           ))}
@@ -864,16 +908,14 @@ export default function App() {
       <button className="sb-mobile-toggle" onClick={() => setMobileNavOpen((v) => !v)}><Menu size={20} /></button>
       {mobileNavOpen && (
         <div className="sb-mobile-nav">
+          <span ref={mobileNavPillRef} className="sb-nav-pill" aria-hidden="true" />
           {NAV.map((n) => (
-            <button key={n.id} className={`sb-nav-item ${page === n.id ? "active" : ""}`} onClick={() => { startTransition(() => setPage(n.id)); setMobileNavOpen(false); }}>
-              {page === n.id && !reducedMotion && (
-                <motion.span
-                  className="sb-nav-pill"
-                  layoutId="sb-nav-pill-mobile"
-                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                />
-              )}
-              {page === n.id && reducedMotion && <span className="sb-nav-pill" />}
+            <button
+              key={n.id}
+              ref={(el) => { mobileNavItemRefs.current[n.id] = el; }}
+              className={`sb-nav-item ${page === n.id ? "active" : ""}`}
+              onClick={() => { startTransition(() => setPage(n.id)); setMobileNavOpen(false); }}
+            >
               <n.icon size={18} /><span>{n.label}</span>
             </button>
           ))}
