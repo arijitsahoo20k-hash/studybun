@@ -87,22 +87,6 @@ export const THEMES = {
     dot: "rgba(44,74,82,0.06)", emoji: "🧪",
     decor: ["beaker", "orbitRing", "dnaTwist", "sparkleStar"],
   },
-  "Moonlit Mochi": {
-    bg: "#1E1B38", card: "#282353", outline: "#FFE3F5", ink: "#FFF6FC", muted: "#B6A9DE",
-    accent: "#FF9AD8", accent2: "#8FE3FF", soft: "#372C63",
-    palette: ["#FF9AD8", "#8FE3FF", "#FFE9A8", "#C9A8FF", "#8CFFC7", "#372C63"],
-    mascotFill: "#3A2F66", mascotInner: "#4A3D80", mascotBlush: "#FF9AD8",
-    dot: "rgba(255,227,245,0.09)", emoji: "🌙", dark: true,
-    decor: ["crescentMoon", "shootingStar", "cloud", "sparkleStar"],
-  },
-  "Cosmic Candy": {
-    bg: "#1C1B38", card: "#26244A", outline: "#FFD9F0", ink: "#FFF4FA", muted: "#ACA3D9",
-    accent: "#FF9FDC", accent2: "#9FE0FF", soft: "#332F5E",
-    palette: ["#FF9FDC", "#9FE0FF", "#FFE9A0", "#C6A8FF", "#A0F5D2", "#332F5E"],
-    mascotFill: "#2E2B57", mascotInner: "#3A3670", mascotBlush: "#FF9FDC",
-    dot: "rgba(255,217,240,0.09)", emoji: "🪐", dark: true,
-    decor: ["candyPlanet", "twinkleStar", "sparkleStar", "twinkleStar"],
-  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the

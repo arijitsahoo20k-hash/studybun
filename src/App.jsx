@@ -881,14 +881,14 @@ export default function App() {
       )}
 
       <main className="sb-main" ref={mainRef}>
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={page}
             className="sb-page-transition"
-            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reducedMotion ? undefined : { opacity: 0, y: -8 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            initial={reducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reducedMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
           >
             {page === "dashboard" && <Dashboard {...pageProps} />}
             {page === "study" && <StudyTracker {...pageProps} />}

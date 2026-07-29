@@ -313,7 +313,7 @@ export default function GlobalStyle() {
       .sb-chapter-group { margin-bottom: 18px; }
       .sb-chapter-group-title { font-weight: 800; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
       .sb-chapter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
-      .sb-chapter-card { background: var(--bg); border: 2px solid var(--outline); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+      .sb-chapter-card { position: relative; background: var(--bg); border: 2px solid var(--outline); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
       .sb-chapter-card-open { grid-column: span 2; }
       .sb-chapter-card-top { display: flex; justify-content: space-between; align-items: flex-start; cursor: pointer; gap: 6px; }
       .sb-chapter-name { font-size: 12.5px; font-weight: 700; min-height: 32px; }
@@ -1064,14 +1064,21 @@ export default function GlobalStyle() {
          feel. Both tricks use only neutral black/white so they read
          correctly on every theme, light or dark, without per-theme cases. */
 
-      .sb-card, .sb-chapter-card {
+      .sb-card {
         box-shadow: 5px 5px 0 var(--outline), 0 16px 28px -16px rgba(0,0,0,.28), 0 3px 7px rgba(0,0,0,.06);
         isolation: isolate;
       }
-      .sb-card::after, .sb-chapter-card::after {
+      .sb-card::after {
         content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
         background: linear-gradient(165deg, rgba(255,255,255,.32) 0%, rgba(255,255,255,0) 46%);
         mix-blend-mode: soft-light; opacity: .9; z-index: 3;
+      }
+      /* Chapter cards can number in the dozens-to-hundreds on the Syllabus
+         page, so they get a cheap, single-layer shadow instead of the full
+         blend-mode sheen treatment above -- that combo was expensive enough
+         per-card to visibly lag the whole page when rendered at that count. */
+      .sb-chapter-card {
+        box-shadow: 3px 3px 0 var(--outline);
       }
       .sb-clickable:hover { box-shadow: 7px 7px 0 var(--outline), 0 22px 34px -16px rgba(0,0,0,.32), 0 4px 9px rgba(0,0,0,.07); }
       .sb-app[data-blocky="true"] .sb-card { box-shadow: 5px 5px 0 var(--outline), 0 14px 24px -14px rgba(0,0,0,.26); }
