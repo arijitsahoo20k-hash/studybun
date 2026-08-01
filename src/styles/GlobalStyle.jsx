@@ -159,6 +159,38 @@ export default function GlobalStyle() {
       .sb-app[data-blocky="true"] .sb-nav-pill { border-radius: 6px; }
       .sb-app[data-blocky="true"] .sb-chip { border-radius: 5px; }
 
+      /* Y2K chrome-pop look for themes that opt in (e.g. CD-ROM Dreams) —
+         faint CRT scanlines laid over the usual halftone dot backdrop, a
+         brighter mirror-sheen on every sticker card, a tiny twinkling
+         glint sparkle in each card's corner, and chrome bevel text on the
+         sidebar brand. All scoped to [data-y2k], so no other theme is
+         touched. */
+      .sb-app[data-y2k="true"] {
+        background-image:
+          radial-gradient(var(--dot) 1.6px, transparent 1.6px),
+          repeating-linear-gradient(180deg, rgba(0,0,0,.035) 0px, rgba(0,0,0,.035) 1px, transparent 1px, transparent 3px);
+        background-size: 22px 22px, 100% 4px;
+      }
+      .sb-app[data-y2k="true"] .sb-card::before {
+        content: ""; position: absolute; top: 10px; right: 14px; width: 16px; height: 16px;
+        pointer-events: none; z-index: 4;
+        background: radial-gradient(circle, #fff 0%, rgba(255,255,255,0) 70%);
+        clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+        animation: sb-y2k-glint 2.8s ease-in-out infinite;
+      }
+      @keyframes sb-y2k-glint {
+        0%, 100% { opacity: .2; transform: scale(.7) rotate(0deg); }
+        50% { opacity: 1; transform: scale(1.2) rotate(20deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-app[data-y2k="true"] .sb-card::before { animation: none; opacity: .55; }
+      }
+      .sb-app[data-y2k="true"] .sb-brand-title {
+        background: linear-gradient(180deg, #fff 0%, var(--accent) 55%, var(--accent2) 100%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        text-shadow: 0 1px 0 rgba(0,0,0,.15); letter-spacing: .5px;
+      }
+
       .sb-icon-badge { width: 26px; height: 26px; border-radius: 50%; background: var(--soft); border: 2px solid var(--outline); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--outline); }
 
       .sb-sidebar { padding: 22px 20px; display: flex; flex-direction: column; gap: 18px; border-right: 2.5px solid var(--outline); position: sticky; top: 0; height: 100vh; background: var(--card); z-index: 2; }
@@ -1245,6 +1277,38 @@ export default function GlobalStyle() {
       .sb-clickable:hover { box-shadow: 7px 7px 0 var(--outline), 0 22px 34px -16px rgba(0,0,0,.32), 0 4px 9px rgba(0,0,0,.07); }
       .sb-app[data-blocky="true"] .sb-card { box-shadow: 5px 5px 0 var(--outline), 0 14px 24px -14px rgba(0,0,0,.26); }
       .sb-app[data-blocky="true"] .sb-clickable:hover { box-shadow: 7px 7px 0 var(--outline), 0 18px 28px -14px rgba(0,0,0,.3); }
+
+      /* Y2K chrome depth pass — brighter mirror sheen + a pale bevel ring
+         around every card, plastic-translucent buttons, and a rainbow
+         conic-gradient "CD" ring behind every icon badge. */
+      .sb-app[data-y2k="true"] .sb-card {
+        box-shadow: 5px 5px 0 var(--outline), 0 16px 28px -16px rgba(0,0,0,.28), 0 3px 7px rgba(0,0,0,.06),
+          inset 0 2px 0 rgba(255,255,255,.65), inset 0 -14px 22px -18px rgba(0,0,0,.16);
+      }
+      .sb-app[data-y2k="true"] .sb-card::after {
+        background: linear-gradient(160deg, rgba(255,255,255,.6) 0%, rgba(255,255,255,0) 55%),
+          radial-gradient(circle at 85% 14%, rgba(255,255,255,.9) 0%, rgba(255,255,255,0) 18%);
+        opacity: 1;
+      }
+      .sb-app[data-y2k="true"] .sb-clickable:hover {
+        box-shadow: 7px 7px 0 var(--outline), 0 22px 34px -16px rgba(0,0,0,.32), 0 4px 9px rgba(0,0,0,.07),
+          inset 0 2px 0 rgba(255,255,255,.65);
+      }
+      .sb-app[data-y2k="true"] .sb-btn-primary {
+        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.5), inset 0 -2px 4px rgba(0,0,0,.15),
+          3px 3px 0 var(--accent2), 0 0 0 2px var(--soft), 0 12px 22px -12px rgba(0,0,0,.4);
+      }
+      .sb-app[data-y2k="true"] .sb-btn-primary:hover {
+        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.5), inset 0 -2px 4px rgba(0,0,0,.15),
+          4px 4px 0 var(--accent2), 0 0 0 2px var(--soft), 0 16px 26px -12px rgba(0,0,0,.44);
+      }
+      .sb-app[data-y2k="true"] .sb-nav-pill {
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 3px 3px 0 var(--outline),
+          0 0 0 2px var(--accent2), 0 9px 16px -10px rgba(0,0,0,.26);
+      }
+      .sb-app[data-y2k="true"] .sb-icon-badge {
+        background: conic-gradient(from 200deg, var(--p1), var(--p2), var(--p4), var(--p1));
+      }
 
       .sb-icon-badge {
         position: relative; overflow: hidden;

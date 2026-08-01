@@ -87,6 +87,14 @@ export const THEMES = {
     dot: "rgba(44,74,82,0.06)", emoji: "🧪",
     decor: ["beaker", "orbitRing", "dnaTwist", "sparkleStar"],
   },
+  "CD-ROM Dreams": {
+    bg: "#FBF3E4", card: "#FFFDF6", outline: "#211D18", ink: "#241F19", muted: "#8D8272",
+    accent: "#6C7BFF", accent2: "#FF5FA8", soft: "#CFE7FF",
+    palette: ["#B9D8FF", "#FFB8DE", "#D8FFB0", "#E4D8FF", "#FFE39E", "#CFE7FF"],
+    mascotFill: "#DCE6F5", mascotInner: "#FFFFFF", mascotBlush: "#FF6FA8",
+    dot: "rgba(33,29,24,0.08)", emoji: "💿", y2k: true,
+    decor: ["floppyDisk", "chromeBubble", "cdDisc", "retroMonitor"],
+  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the

@@ -913,7 +913,7 @@ export default function App() {
   };
 
   return (
-    <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"}>
+    <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"}>
       <GlobalStyle />
       <DecorLayer theme={theme} />
       <PWAPrompt />

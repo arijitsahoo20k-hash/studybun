@@ -21,6 +21,7 @@ const OUTLINE = "var(--outline)";
 const ACCENT = "var(--accent)";
 const ACCENT2 = "var(--accent2)";
 const SOFT = "var(--soft)";
+const CARD = "var(--card)";
 
 const strokeCap = { strokeLinecap: "round", strokeLinejoin: "round" };
 
@@ -475,6 +476,57 @@ export function TwinkleStar() {
   );
 }
 
+/* ---------- Y2K / retro-desktop (CD-ROM Dreams) ---------- */
+
+export function FloppyDisk() {
+  return (
+    <Svg>
+      <path d="M8 6 H36 L40 10 V42 H8 Z" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
+      <rect x="14" y="6" width="16" height="12" fill={SOFT} stroke={OUTLINE} strokeWidth="1.4" />
+      <rect x="24" y="8.5" width="4" height="7" fill={OUTLINE} opacity="0.5" />
+      <rect x="12" y="24" width="24" height="14" rx="1.5" fill={CARD} stroke={OUTLINE} strokeWidth="1.3" />
+      <path d="M15 29 H33 M15 33 H29" stroke={OUTLINE} strokeWidth="1.2" opacity="0.5" {...strokeCap} />
+    </Svg>
+  );
+}
+
+export function CdDisc() {
+  return (
+    <Svg>
+      <circle cx="24" cy="24" r="19" fill={SOFT} stroke={OUTLINE} strokeWidth="1.6" />
+      <circle cx="24" cy="24" r="13.5" fill="none" stroke={ACCENT} strokeWidth="1" opacity="0.5" />
+      <circle cx="24" cy="24" r="9" fill="none" stroke={ACCENT2} strokeWidth="1" opacity="0.5" />
+      <path d="M10 14 A19 19 0 0 1 30 6" fill="none" stroke={ACCENT2} strokeWidth="2.4" opacity="0.75" {...strokeCap} />
+      <path d="M38 16 A19 19 0 0 1 34 40" fill="none" stroke={ACCENT} strokeWidth="2.4" opacity="0.65" {...strokeCap} />
+      <circle cx="24" cy="24" r="4.2" fill={CARD} stroke={OUTLINE} strokeWidth="1.4" />
+      <path d="M14 12 q3 -2 6 -1" fill="none" stroke="#fff" strokeWidth="1.6" opacity="0.8" {...strokeCap} />
+    </Svg>
+  );
+}
+
+export function ChromeBubble() {
+  return (
+    <Svg>
+      <circle cx="24" cy="25" r="18" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.6" />
+      <ellipse cx="18" cy="17" rx="7" ry="4.5" fill="#fff" opacity="0.55" transform="rotate(-18 18 17)" />
+      <ellipse cx="31" cy="32" rx="4" ry="2.6" fill={ACCENT2} opacity="0.6" transform="rotate(10 31 32)" />
+      <path d="M9 25 q-2 8 6 12" fill="none" stroke={SOFT} strokeWidth="1.3" opacity="0.65" {...strokeCap} />
+    </Svg>
+  );
+}
+
+export function RetroMonitor() {
+  return (
+    <Svg>
+      <rect x="6" y="6" width="36" height="26" rx="4" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.6" />
+      <rect x="10" y="10" width="28" height="18" rx="2" fill={SOFT} stroke={OUTLINE} strokeWidth="1.3" />
+      <path d="M13 14 h10 M13 18 h16 M13 22 h8" stroke={OUTLINE} strokeWidth="1.2" opacity="0.45" {...strokeCap} />
+      <path d="M18 32 L18 38 L30 38 L30 32" fill="none" stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
+      <rect x="14" y="38" width="20" height="4" rx="1.5" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.4" />
+    </Svg>
+  );
+}
+
 export const MOTIFS = {
   blossom: Blossom,
   blossomSprig: BlossomSprig,
@@ -500,4 +552,8 @@ export const MOTIFS = {
   shootingStar: ShootingStar,
   candyPlanet: CandyPlanet,
   twinkleStar: TwinkleStar,
+  floppyDisk: FloppyDisk,
+  cdDisc: CdDisc,
+  chromeBubble: ChromeBubble,
+  retroMonitor: RetroMonitor,
 };
