@@ -1,8 +1,9 @@
 import { resolveModelList } from "./geminiModels";
 import {
   getRotationOrder, advancePointer, markKeySuccess,
-  markKeyRateLimited, markKeyInvalid, markKeyError, getModelPreference, hasUsableKeys,
-} from "./buddyKeyManager";
+  markKeyRateLimited, markKeyInvalid, markKeyError, hasUsableKeys,
+} from "./geminiKeyManager";
+import { getModelPreference } from "./buddyKeyManager";
 
 /**
  * The Smart Study Buddy's persona: an instructor and guide, not a generic

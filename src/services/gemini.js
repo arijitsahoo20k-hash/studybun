@@ -1,3 +1,8 @@
+import {
+  getRotationOrder, advancePointer, markKeySuccess,
+  markKeyRateLimited, markKeyInvalid, markKeyError, hasUsableKeys,
+} from "./geminiKeyManager";
+
 // Model is configurable via VITE_GEMINI_MODEL (.env). If unset, we try a
 // sensible list of fallbacks in order — this way the app keeps working even if
 // a particular model name is renamed, deprecated, or unavailable on a given
@@ -64,6 +69,7 @@ async function callModel(model, apiKey, prompt) {
     const text = await res.text().catch(() => "");
     const err = new Error(`Gemini request failed (${res.status}): ${text || res.statusText}`);
     err.status = res.status;
+    err.raw = text;
     throw err;
   }
 
@@ -78,26 +84,74 @@ async function callModel(model, apiKey, prompt) {
   }
 }
 
-/** Tries each model in MODELS_TO_TRY, only moving on when a model itself is unavailable. */
+function classifyError(err) {
+  if (err.status === 429) {
+    // "limit: 0" means this specific model has NO free-tier quota on this key at
+    // all — permanent for this model, not temporary. Move on to the next model
+    // on the SAME key instead of benching the whole key on a cooldown it doesn't need.
+    const raw = err.raw || "";
+    if (/"limit"\s*:\s*0\b/.test(raw)) return "model_unavailable";
+    return "rate_limited";
+  }
+  if (err.status === 400 || err.status === 403) {
+    const raw = (err.raw || "").toLowerCase();
+    if (raw.includes("api key") || raw.includes("api_key") || err.status === 403) return "invalid_key";
+    return "bad_request";
+  }
+  if (err.status === 404) return "model_unavailable";
+  return "other";
+}
+
+/**
+ * Rotates across every enabled, currently-usable key in VITE_GEMINI_API_KEYS
+ * (falls back to a single VITE_GEMINI_API_KEY if that's not set), and across
+ * MODELS_TO_TRY on each key — only advancing to the next key/model when the
+ * failure is clearly key- or model-specific, same strategy as the Study
+ * Buddy's key pool in buddyAI.js.
+ */
 async function runWithFallback(prompt) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey || apiKey.includes("YOUR-GEMINI")) {
-    throw new Error("Missing VITE_GEMINI_API_KEY. Add your Gemini API key to .env to enable AI features.");
+  if (!hasUsableKeys()) {
+    throw new Error("Missing VITE_GEMINI_API_KEY (or VITE_GEMINI_API_KEYS). Add your Gemini API key(s) to .env to enable AI features.");
   }
 
+  const rotation = getRotationOrder();
   let lastError;
-  for (const model of MODELS_TO_TRY) {
-    try {
-      return await callModel(model, apiKey, prompt);
-    } catch (err) {
-      lastError = err;
-      // Only fall through to the next model if this one isn't available/found.
-      // Any other error (bad key, quota, malformed response) should surface immediately.
-      if (err.status === 404 || err.status === 400) continue;
-      throw err;
+
+  for (const keyEntry of rotation) {
+    let modelUnavailableCount = 0;
+    for (const model of MODELS_TO_TRY) {
+      try {
+        const result = await callModel(model, keyEntry.key, prompt);
+        markKeySuccess(keyEntry.id);
+        return result;
+      } catch (err) {
+        const kind = classifyError(err);
+        lastError = err;
+        if (kind === "model_unavailable") {
+          modelUnavailableCount++;
+          continue; // try the next model on the SAME key
+        }
+        if (kind === "rate_limited") {
+          markKeyRateLimited(keyEntry.id);
+          break; // stop trying models on this key, rotate to the next key
+        }
+        if (kind === "invalid_key") {
+          markKeyInvalid(keyEntry.id, err.message);
+          break; // this key is dead, rotate to the next key
+        }
+        // bad_request / other: not key- or model-specific, surface immediately
+        markKeyError(keyEntry.id, err.message);
+        throw err;
+      }
+    }
+    if (modelUnavailableCount < MODELS_TO_TRY.length) {
+      // this key produced a real (non-model-availability) failure and moved on
+      advancePointer();
     }
   }
-  throw lastError;
+
+  advancePointer();
+  throw lastError || new Error("All configured Gemini keys failed.");
 }
 
 /**

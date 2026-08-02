@@ -1,88 +1,13 @@
 /**
- * Multi-key system for the Smart Study Buddy — configured by the app owner
- * (you), not the end user. Keys live in your .env / host env vars, exactly
- * like VITE_GEMINI_API_KEY already does for AI Insights, and are bundled
- * into the build. There is no in-app UI for users to type in their own keys.
- *
- * Set as many keys as you want, comma-separated:
- *   VITE_GEMINI_BUDDY_API_KEYS=key_one,key_two,key_three
- *
- * If that's not set, it falls back to VITE_GEMINI_API_KEY (the same key
- * AI Insights uses) so the buddy still works with just one key configured.
- *
- * Rotation strategy: round-robin across keys that aren't currently on
- * cooldown/invalid for this page session.
- * - 429 (rate limit / quota) -> key goes on a short cooldown, tried again later.
- * - 400/403 with an API-key-shaped error -> key is marked invalid for this
- *   session (it's a bad key — no point retrying it until you fix .env).
+ * Key rotation for the Smart Study Buddy now lives in the single shared pool
+ * at geminiKeyManager.js (VITE_GEMINI_API_KEYS) — re-exported here so
+ * existing imports keep working. This file now only holds the Buddy's
+ * model-family preference, which is unrelated to keys.
  */
-
-const RATE_LIMIT_COOLDOWN_MS = 60 * 1000; // 1 minute
-
-function parseKeys() {
-  const raw = import.meta.env.VITE_GEMINI_BUDDY_API_KEYS?.trim();
-  const single = import.meta.env.VITE_GEMINI_API_KEY?.trim();
-  const list = raw
-    ? raw.split(",").map((k) => k.trim()).filter(Boolean)
-    : (single && !single.includes("YOUR-GEMINI") ? [single] : []);
-  return list.map((key, i) => ({
-    id: `buddy_key_${i}`,
-    label: `Key ${i + 1}`,
-    key,
-    status: "unknown", // unknown | ok | rate_limited | invalid
-    disabledUntil: 0,
-    lastError: null,
-  }));
-}
-
-// Module-level state — resets on page reload, which is fine: it's just
-// short-lived rotation/cooldown bookkeeping, not anything that needs to persist.
-const KEYS = parseKeys();
-let ptr = 0;
-
-export function getKeys() {
-  return KEYS;
-}
-
-export function hasUsableKeys() {
-  const now = Date.now();
-  return KEYS.some((k) => k.status !== "invalid" && k.disabledUntil < now);
-}
-
-/** Ordered list of keys to attempt this call, round-robin starting after the last-used pointer. */
-export function getRotationOrder() {
-  const now = Date.now();
-  const usable = KEYS.filter((k) => k.status !== "invalid" && k.disabledUntil < now);
-  if (usable.length === 0) return [];
-  const start = ptr % usable.length;
-  return [...usable.slice(start), ...usable.slice(0, start)];
-}
-
-export function advancePointer() {
-  const usable = KEYS.filter((k) => k.status !== "invalid");
-  if (usable.length === 0) return;
-  ptr = (ptr + 1) % usable.length;
-}
-
-export function markKeySuccess(id) {
-  const k = KEYS.find((k) => k.id === id);
-  if (k) { k.status = "ok"; k.disabledUntil = 0; k.lastError = null; }
-}
-
-export function markKeyRateLimited(id) {
-  const k = KEYS.find((k) => k.id === id);
-  if (k) { k.status = "rate_limited"; k.disabledUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS; k.lastError = "Rate limited — cooling down briefly."; }
-}
-
-export function markKeyInvalid(id, message) {
-  const k = KEYS.find((k) => k.id === id);
-  if (k) { k.status = "invalid"; k.lastError = message || "Key rejected by Gemini."; }
-}
-
-export function markKeyError(id, message) {
-  const k = KEYS.find((k) => k.id === id);
-  if (k) k.lastError = message || "Request failed.";
-}
+export {
+  getKeys, hasUsableKeys, getRotationOrder, advancePointer,
+  markKeySuccess, markKeyRateLimited, markKeyInvalid, markKeyError,
+} from "./geminiKeyManager";
 
 /* ---------------- model preference ---------------- */
 // Not a secret, so this stays a lightweight local override on top of
