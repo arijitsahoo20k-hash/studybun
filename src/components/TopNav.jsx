@@ -16,7 +16,7 @@ import { MoreHorizontal } from "lucide-react";
  * silently swallowed into the overflow panel), even if that means one extra
  * item has to fall back into "More" to make room for it.
  */
-export default function TopNav({ nav, page, setPage, reducedMotion }) {
+export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem }) {
   const wrapRef = useRef(null);
   const measureRefs = useRef({});
   const moreMeasureRef = useRef(null);
@@ -108,6 +108,8 @@ export default function TopNav({ nav, page, setPage, reducedMotion }) {
             type="button"
             className={`sb-pillnav-item ${page === n.id ? "active" : ""}`}
             onClick={() => go(n.id)}
+            onMouseEnter={() => onHoverItem?.(n.id)}
+            onFocus={() => onHoverItem?.(n.id)}
           >
             <n.icon size={16} /><span>{n.label}</span>
           </button>
@@ -119,6 +121,8 @@ export default function TopNav({ nav, page, setPage, reducedMotion }) {
             type="button"
             className={`sb-pillnav-more ${overflowHasActive ? "active" : ""}`}
             onClick={() => setOverflowOpen((v) => !v)}
+            onMouseEnter={() => overflow.forEach((n) => onHoverItem?.(n.id))}
+            onFocus={() => overflow.forEach((n) => onHoverItem?.(n.id))}
             aria-expanded={overflowOpen}
             aria-haspopup="true"
           >

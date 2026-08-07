@@ -714,6 +714,11 @@ export default function GlobalStyle() {
       @keyframes sb-spin { to { transform: rotate(360deg); } }
 
       .sb-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; height: 100vh; font-weight: 800; color: var(--muted); }
+      /* Suspense fallback while a lazily-loaded page chunk is still being
+         fetched -- sized to the page area rather than the viewport (see
+         .sb-loading above, used only pre-nav) so switching pages never
+         yanks the whole screen around, just the content under the nav. */
+      .sb-page-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 50vh; width: 100%; font-weight: 800; font-size: 13.5px; color: var(--muted); }
 
       .sb-bottom-nav { display: none; }
 

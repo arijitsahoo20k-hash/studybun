@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, startTransition } from "react";
+import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, startTransition, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
@@ -23,24 +23,54 @@ import BuddyGuide from "./components/BuddyGuide";
 import { reactionMood, mascotEnergy, mascotTheme, MASCOTS } from "./data/mascots";
 import PWAPrompt from "./components/PWAPrompt";
 import { Confetti, LoadingScreen, DecorLayer } from "./components/ui";
-import Onboarding from "./pages/onboarding";
-import Dashboard from "./pages/Dashboard";
-import StudyTracker from "./pages/StudyTracker";
-import FocusTimer from "./pages/FocusTimer";
-import SyllabusPage from "./pages/Syllabus";
-import BacklogPage from "./pages/Backlog";
-import GoalsPage from "./pages/Goals";
-import QuestionsPage from "./pages/Questions";
-import MocksPage from "./pages/Mocks";
-import RevisionPage from "./pages/Revision";
-import PlannerPage from "./pages/Planner";
-import AnalyticsPage from "./pages/Analytics";
-import AchievementsPage from "./pages/Achievements";
-import LeaderboardPage from "./pages/Leaderboard";
-import ProfilePage from "./pages/Profile";
-import SettingsPage from "./pages/Settings";
-import AIInsightsPage from "./pages/AIInsights";
 import GlobalStyle from "./styles/GlobalStyle";
+
+// Every page below is its own JS chunk, fetched only the moment it's
+// actually navigated to instead of all being parsed/executed up front --
+// that up-front cost (16 pages' worth of code, several pulling in recharts)
+// was the real source of the "everything loads at once" lag, not anything
+// about the nav itself. Mascot/BuddyGuide/TopNav/PWAPrompt/ui/GlobalStyle
+// stay eager above since literally every screen needs them immediately.
+const Onboarding = lazy(() => import("./pages/onboarding"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const StudyTracker = lazy(() => import("./pages/StudyTracker"));
+const FocusTimer = lazy(() => import("./pages/FocusTimer"));
+const SyllabusPage = lazy(() => import("./pages/Syllabus"));
+const BacklogPage = lazy(() => import("./pages/Backlog"));
+const GoalsPage = lazy(() => import("./pages/Goals"));
+const QuestionsPage = lazy(() => import("./pages/Questions"));
+const MocksPage = lazy(() => import("./pages/Mocks"));
+const RevisionPage = lazy(() => import("./pages/Revision"));
+const PlannerPage = lazy(() => import("./pages/Planner"));
+const AnalyticsPage = lazy(() => import("./pages/Analytics"));
+const AchievementsPage = lazy(() => import("./pages/Achievements"));
+const LeaderboardPage = lazy(() => import("./pages/Leaderboard"));
+const ProfilePage = lazy(() => import("./pages/Profile"));
+const SettingsPage = lazy(() => import("./pages/Settings"));
+const AIInsightsPage = lazy(() => import("./pages/AIInsights"));
+
+// Map used both to prefetch a page's chunk the instant its nav pill is
+// hovered/focused (see TopNav's onHoverItem below) and, further down, as
+// the Suspense fallback while a chunk that wasn't prefetched in time is
+// still being fetched.
+const PAGE_LOADERS = {
+  dashboard: () => import("./pages/Dashboard"),
+  study: () => import("./pages/StudyTracker"),
+  timer: () => import("./pages/FocusTimer"),
+  syllabus: () => import("./pages/Syllabus"),
+  backlog: () => import("./pages/Backlog"),
+  goals: () => import("./pages/Goals"),
+  questions: () => import("./pages/Questions"),
+  mocks: () => import("./pages/Mocks"),
+  revision: () => import("./pages/Revision"),
+  planner: () => import("./pages/Planner"),
+  analytics: () => import("./pages/Analytics"),
+  ai: () => import("./pages/AIInsights"),
+  achievements: () => import("./pages/Achievements"),
+  leaderboard: () => import("./pages/Leaderboard"),
+  profile: () => import("./pages/Profile"),
+  settings: () => import("./pages/Settings"),
+};
 
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -66,6 +96,20 @@ const NAV = [
 // instead of living in the pill row too -- so a page is never reachable
 // two different ways from the same nav.
 const TOP_NAV = NAV.filter((n) => n.id !== "settings" && n.id !== "profile");
+
+// Suspense fallback for a lazy page chunk that's still being fetched.
+// Deliberately not the full-screen LoadingScreen (that one assumes it owns
+// the whole viewport, pre-nav) -- this sits inside the already-mounted page
+// area so the nav bar and everything around it stays put while just the
+// content underneath shows a small "still loading" beat.
+function PageLoading({ mascot }) {
+  return (
+    <div className="sb-page-loading">
+      <Mascot species={mascot} mood="studying" size={52} />
+      <p>Loading...</p>
+    </div>
+  );
+}
 
 // Mirrors the same check Mascot.jsx makes independently -- kept local here
 // too rather than shared, since it's a one-line read of the media query and
@@ -257,6 +301,20 @@ export default function App() {
   useLayoutEffect(() => {
     if (mobileNavOpen) positionNavPill(mobileNavPillRef.current, mobileNavItemRefs.current[page], true);
   }, [page, mobileNavOpen]);
+
+  // Pre-fetches a lazy page's JS chunk the moment its nav item is
+  // hovered/focused, so by the time the click actually lands the chunk is
+  // usually already sitting in the browser's cache and Suspense never has
+  // to show PageLoading at all -- the switch just feels instant. Each id is
+  // only ever fetched once per session.
+  const prefetchedPages = useRef(new Set());
+  const prefetchPage = (id) => {
+    if (prefetchedPages.current.has(id)) return;
+    const loader = PAGE_LOADERS[id];
+    if (!loader) return;
+    prefetchedPages.current.add(id);
+    loader().catch(() => { prefetchedPages.current.delete(id); });
+  };
 
   // Pass an `undo` callback for any action that can't otherwise be reversed —
   // the toast then stays up longer and shows an Undo button.
@@ -880,7 +938,9 @@ export default function App() {
       <div style={cssVars}>
         <GlobalStyle />
         <DecorLayer theme={theme} />
-        <Onboarding profile={profile} onSave={async (form) => { await saveProfile(form); }} />
+        <Suspense fallback={<LoadingScreen message="Preparing your study desk..." />}>
+          <Onboarding profile={profile} onSave={async (form) => { await saveProfile(form); }} />
+        </Suspense>
       </div>
     );
   }
@@ -950,13 +1010,15 @@ export default function App() {
           <span className="sb-brand-title">StudyBun</span>
         </div>
 
-        <TopNav nav={TOP_NAV} page={page} setPage={setPage} reducedMotion={reducedMotion} />
+        <TopNav nav={TOP_NAV} page={page} setPage={setPage} reducedMotion={reducedMotion} onHoverItem={prefetchPage} />
 
         <div className="sb-topbar-actions">
           <button
             type="button"
             className={`sb-topbar-icon ${page === "settings" ? "active" : ""}`}
             onClick={() => startTransition(() => setPage("settings"))}
+            onMouseEnter={() => prefetchPage("settings")}
+            onFocus={() => prefetchPage("settings")}
             aria-label="Settings"
             title="Settings"
           >
@@ -966,6 +1028,8 @@ export default function App() {
             type="button"
             className={`sb-topbar-icon ${page === "profile" ? "active" : ""}`}
             onClick={() => startTransition(() => setPage("profile"))}
+            onMouseEnter={() => prefetchPage("profile")}
+            onFocus={() => prefetchPage("profile")}
             aria-label="Profile"
             title="Profile"
           >
@@ -987,6 +1051,7 @@ export default function App() {
               ref={(el) => { mobileNavItemRefs.current[n.id] = el; }}
               className={`sb-nav-item ${page === n.id ? "active" : ""}`}
               onClick={() => { startTransition(() => setPage(n.id)); setMobileNavOpen(false); }}
+              onTouchStart={() => prefetchPage(n.id)}
             >
               <n.icon size={18} /><span>{n.label}</span>
             </button>
@@ -1004,22 +1069,24 @@ export default function App() {
             exit={reducedMotion ? undefined : { opacity: 0 }}
             transition={{ duration: 0.12, ease: "easeOut" }}
           >
-            {page === "dashboard" && <Dashboard {...pageProps} />}
-            {page === "study" && <StudyTracker {...pageProps} />}
-            {page === "timer" && <FocusTimer {...pageProps} />}
-            {page === "syllabus" && <SyllabusPage {...pageProps} />}
-            {page === "backlog" && <BacklogPage {...pageProps} />}
-            {page === "goals" && <GoalsPage {...pageProps} />}
-            {page === "questions" && <QuestionsPage {...pageProps} />}
-            {page === "mocks" && <MocksPage {...pageProps} />}
-            {page === "revision" && <RevisionPage {...pageProps} />}
-            {page === "planner" && <PlannerPage {...pageProps} />}
-            {page === "analytics" && <AnalyticsPage {...pageProps} />}
-            {page === "ai" && <AIInsightsPage {...pageProps} />}
-            {page === "achievements" && <AchievementsPage {...pageProps} />}
-            {page === "leaderboard" && <LeaderboardPage {...pageProps} />}
-            {page === "profile" && <ProfilePage {...pageProps} />}
-            {page === "settings" && <SettingsPage {...pageProps} />}
+            <Suspense fallback={<PageLoading mascot={mascot} />}>
+              {page === "dashboard" && <Dashboard {...pageProps} />}
+              {page === "study" && <StudyTracker {...pageProps} />}
+              {page === "timer" && <FocusTimer {...pageProps} />}
+              {page === "syllabus" && <SyllabusPage {...pageProps} />}
+              {page === "backlog" && <BacklogPage {...pageProps} />}
+              {page === "goals" && <GoalsPage {...pageProps} />}
+              {page === "questions" && <QuestionsPage {...pageProps} />}
+              {page === "mocks" && <MocksPage {...pageProps} />}
+              {page === "revision" && <RevisionPage {...pageProps} />}
+              {page === "planner" && <PlannerPage {...pageProps} />}
+              {page === "analytics" && <AnalyticsPage {...pageProps} />}
+              {page === "ai" && <AIInsightsPage {...pageProps} />}
+              {page === "achievements" && <AchievementsPage {...pageProps} />}
+              {page === "leaderboard" && <LeaderboardPage {...pageProps} />}
+              {page === "profile" && <ProfilePage {...pageProps} />}
+              {page === "settings" && <SettingsPage {...pageProps} />}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </main>
