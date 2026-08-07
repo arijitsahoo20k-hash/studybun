@@ -203,7 +203,11 @@ export default function GlobalStyle() {
       .sb-topbar-brand { display: flex; align-items: center; gap: 8px; padding: 5px 16px 5px 8px; border-radius: 999px; border: 2.5px solid var(--outline); background: var(--card); box-shadow: 4px 4px 0 var(--outline); flex-shrink: 0; }
       .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; white-space: nowrap; }
 
-      .sb-pillnav { position: relative; display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; overflow: hidden; padding: 6px; border-radius: 999px; border: 2.5px solid var(--outline); background: var(--card); box-shadow: 4px 4px 0 var(--outline); }
+      .sb-pillnav { position: relative; flex: 1 1 auto; min-width: 0; border-radius: 999px; border: 2.5px solid var(--outline); background: var(--card); box-shadow: 4px 4px 0 var(--outline); }
+      /* The clipping lives here, one level in, so the floating overflow
+         panel below (a sibling, not a child of this row) never gets cut
+         off along with it. */
+      .sb-pillnav-row { position: relative; display: flex; align-items: center; gap: 6px; overflow: hidden; padding: 6px; border-radius: inherit; }
       .sb-pillnav-item, .sb-pillnav-more { position: relative; display: flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 999px; border: none; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: background .15s ease, color .15s ease, transform .15s ease; }
       .sb-pillnav-item:hover:not(.active), .sb-pillnav-more:hover:not(.active) { background: var(--soft); transform: translateY(-1px); }
       .sb-pillnav-item.active, .sb-pillnav-more.active { background: var(--outline); color: var(--card); font-weight: 800; }

@@ -100,51 +100,58 @@ export default function TopNav({ nav, page, setPage, reducedMotion }) {
   };
 
   return (
-    <nav className="sb-pillnav" ref={wrapRef}>
-      {visible.map((n) => (
-        <button
-          key={n.id}
-          type="button"
-          className={`sb-pillnav-item ${page === n.id ? "active" : ""}`}
-          onClick={() => go(n.id)}
-        >
-          <n.icon size={16} /><span>{n.label}</span>
-        </button>
-      ))}
-
-      {overflow.length > 0 && (
-        <button
-          ref={moreTriggerRef}
-          type="button"
-          className={`sb-pillnav-more ${overflowHasActive ? "active" : ""}`}
-          onClick={() => setOverflowOpen((v) => !v)}
-          aria-expanded={overflowOpen}
-          aria-haspopup="true"
-        >
-          <MoreHorizontal size={16} /><span>More</span>
-        </button>
-      )}
-
-      {/* Off-screen mirror of every nav item (same markup/classes) purely so
-          we can read real rendered widths -- fonts, icon sizing and padding
-          all affect this and shouldn't be duplicated as magic numbers. */}
-      <div className="sb-pillnav-measure" aria-hidden="true">
-        {nav.map((n) => (
+    <nav className="sb-pillnav">
+      <div className="sb-pillnav-row" ref={wrapRef}>
+        {visible.map((n) => (
           <button
             key={n.id}
             type="button"
-            tabIndex={-1}
-            ref={(el) => { measureRefs.current[n.id] = el; }}
-            className="sb-pillnav-item"
+            className={`sb-pillnav-item ${page === n.id ? "active" : ""}`}
+            onClick={() => go(n.id)}
           >
             <n.icon size={16} /><span>{n.label}</span>
           </button>
         ))}
-        <button type="button" tabIndex={-1} ref={moreMeasureRef} className="sb-pillnav-more">
-          <MoreHorizontal size={16} /><span>More</span>
-        </button>
+
+        {overflow.length > 0 && (
+          <button
+            ref={moreTriggerRef}
+            type="button"
+            className={`sb-pillnav-more ${overflowHasActive ? "active" : ""}`}
+            onClick={() => setOverflowOpen((v) => !v)}
+            aria-expanded={overflowOpen}
+            aria-haspopup="true"
+          >
+            <MoreHorizontal size={16} /><span>More</span>
+          </button>
+        )}
+
+        {/* Off-screen mirror of every nav item (same markup/classes) purely so
+            we can read real rendered widths -- fonts, icon sizing and padding
+            all affect this and shouldn't be duplicated as magic numbers. */}
+        <div className="sb-pillnav-measure" aria-hidden="true">
+          {nav.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              tabIndex={-1}
+              ref={(el) => { measureRefs.current[n.id] = el; }}
+              className="sb-pillnav-item"
+            >
+              <n.icon size={16} /><span>{n.label}</span>
+            </button>
+          ))}
+          <button type="button" tabIndex={-1} ref={moreMeasureRef} className="sb-pillnav-more">
+            <MoreHorizontal size={16} /><span>More</span>
+          </button>
+        </div>
       </div>
 
+      {/* Deliberately OUTSIDE .sb-pillnav-row: that row clips (overflow:
+          hidden) so items never visibly spill before JS finishes measuring,
+          but that same clipping would hide this floating panel too since it
+          extends below the row. Living here, one level up, it's positioned
+          off the unclipped outer <nav> instead. */}
       <AnimatePresence>
         {overflowOpen && (
           <motion.div
