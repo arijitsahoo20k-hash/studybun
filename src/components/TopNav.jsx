@@ -26,6 +26,18 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
   const [visibleCount, setVisibleCount] = useState(nav.length);
   const [overflowOpen, setOverflowOpen] = useState(false);
 
+  // Tap devices (tablets) never fire onMouseEnter/onFocus, so without this
+  // the lazy chunk for a page only starts loading on tap itself -- and since
+  // go() wraps setPage in startTransition, React then holds the OLD active
+  // pill in place until that chunk finishes instead of switching right away.
+  // That's what reads as "laggy" on tablet specifically. Mirrors the
+  // onTouchStart prefetch the phone dropdown nav already has. Also track a
+  // synchronously-set pendingId so the highlight itself never waits on the
+  // transition, even on a slow/cold connection.
+  const [pendingId, setPendingId] = useState(null);
+  useEffect(() => { if (pendingId === page) setPendingId(null); }, [page, pendingId]);
+  const isActive = (id) => page === id || pendingId === id;
+
   const recalc = () => {
     const wrap = wrapRef.current;
     if (!wrap) return;
@@ -95,6 +107,7 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
   const overflowHasActive = overflow.some((n) => n.id === page);
 
   const go = (id) => {
+    setPendingId(id); // instant visual feedback, independent of the transition below
     startTransition(() => setPage(id));
     setOverflowOpen(false);
   };
@@ -106,10 +119,11 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
           <button
             key={n.id}
             type="button"
-            className={`sb-pillnav-item ${page === n.id ? "active" : ""}`}
+            className={`sb-pillnav-item ${isActive(n.id) ? "active" : ""}`}
             onClick={() => go(n.id)}
             onMouseEnter={() => onHoverItem?.(n.id)}
             onFocus={() => onHoverItem?.(n.id)}
+            onTouchStart={() => onHoverItem?.(n.id)}
           >
             <n.icon size={16} /><span>{n.label}</span>
           </button>
@@ -123,6 +137,7 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
             onClick={() => setOverflowOpen((v) => !v)}
             onMouseEnter={() => overflow.forEach((n) => onHoverItem?.(n.id))}
             onFocus={() => overflow.forEach((n) => onHoverItem?.(n.id))}
+            onTouchStart={() => overflow.forEach((n) => onHoverItem?.(n.id))}
             aria-expanded={overflowOpen}
             aria-haspopup="true"
           >
@@ -172,8 +187,9 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
                 key={n.id}
                 type="button"
                 role="menuitem"
-                className={`sb-pillnav-overflow-item ${page === n.id ? "active" : ""}`}
+                className={`sb-pillnav-overflow-item ${isActive(n.id) ? "active" : ""}`}
                 onClick={() => go(n.id)}
+                onTouchStart={() => onHoverItem?.(n.id)}
               >
                 <n.icon size={17} /><span>{n.label}</span>
               </button>

@@ -178,6 +178,51 @@ export default function App() {
   const mainRef = useRef(null);
   useEffect(() => { if (mainRef.current) mainRef.current.scrollTop = 0; }, [page]);
 
+  // Auto-hide topbar: slides up out of the way on scroll-down, reappears on
+  // scroll-up (or once you're back near the top), instead of sitting fixed
+  // the whole time. Reads/writes the DOM directly via refs rather than
+  // React state so a scroll-heavy page (Revision, Planner) never triggers a
+  // re-render per frame -- rAF-throttled and passive, so it stays off the
+  // main thread's critical path even on a 120Hz tablet.
+  const topbarRef = useRef(null);
+  useEffect(() => {
+    const scrollEl = mainRef.current;
+    const bar = topbarRef.current;
+    if (!scrollEl || !bar || reducedMotion) return;
+
+    let lastY = scrollEl.scrollTop;
+    let ticking = false;
+    const HIDE_DELTA = 8;   // ignore tiny/inertial jitter
+    const TOP_ZONE = 24;    // always visible once you're this close to the top
+
+    const apply = () => {
+      ticking = false;
+      const y = scrollEl.scrollTop;
+      const delta = y - lastY;
+
+      if (y <= TOP_ZONE) {
+        bar.classList.remove("sb-topbar-hidden");
+        bar.classList.remove("sb-topbar-scrolled");
+      } else {
+        bar.classList.add("sb-topbar-scrolled");
+        if (delta > HIDE_DELTA) {
+          bar.classList.add("sb-topbar-hidden");
+          lastY = y;
+        } else if (delta < -HIDE_DELTA) {
+          bar.classList.remove("sb-topbar-hidden");
+          lastY = y;
+        }
+      }
+    };
+
+    const onScroll = () => {
+      if (!ticking) { ticking = true; requestAnimationFrame(apply); }
+    };
+
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    return () => scrollEl.removeEventListener("scroll", onScroll);
+  }, [reducedMotion]);
+
   // StudyBun's push notifications deep-link to a page id (dashboard,
   // planner, revision, backlog, analytics, goals) via the service worker
   // (src/sw.js). Two delivery paths land here:
@@ -1004,7 +1049,7 @@ export default function App() {
       {/* Tablet/desktop: floating pill top nav (see .sb-topbar in
           GlobalStyle). Hidden below the phone breakpoint via CSS, in favor
           of the compact hamburger dropdown right below. */}
-      <header className="sb-topbar">
+      <header className="sb-topbar" ref={topbarRef}>
         <div className="sb-topbar-brand">
           <Mascot species={mascot} mood="happy" size={32} hop={hopping} peek />
           <span className="sb-brand-title">StudyBun</span>

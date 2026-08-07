@@ -199,7 +199,9 @@ export default function GlobalStyle() {
          measures and decides -- nothing here is breakpoint-guessed), and a
          pair of dedicated icon buttons for Settings/Profile so those two
          pages are never also duplicated inside the pill row or its overflow. */
-      .sb-topbar { display: flex; align-items: center; gap: 12px; padding: 16px clamp(20px, 4vw, 52px) 4px; position: sticky; top: 0; z-index: 40; background: var(--bg); }
+      .sb-topbar { display: flex; align-items: center; gap: 12px; padding: 16px clamp(20px, 4vw, 52px) 4px; position: sticky; top: 0; z-index: 40; background: var(--bg); transform: translateY(0); transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .2s ease, padding-bottom .2s ease; will-change: transform; }
+      .sb-topbar.sb-topbar-hidden { transform: translateY(-135%); }
+      .sb-topbar.sb-topbar-scrolled { padding-bottom: 12px; box-shadow: 0 10px 20px -16px rgba(0,0,0,.4); }
       .sb-topbar-brand { display: flex; align-items: center; gap: 8px; padding: 5px 16px 5px 8px; border-radius: 999px; border: 2.5px solid var(--outline); background: var(--card); box-shadow: 4px 4px 0 var(--outline); flex-shrink: 0; }
       .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; white-space: nowrap; }
 
@@ -208,7 +210,7 @@ export default function GlobalStyle() {
          panel below (a sibling, not a child of this row) never gets cut
          off along with it. */
       .sb-pillnav-row { position: relative; display: flex; align-items: center; gap: 6px; overflow: hidden; padding: 6px; border-radius: inherit; }
-      .sb-pillnav-item, .sb-pillnav-more { position: relative; display: flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 999px; border: none; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: background .15s ease, color .15s ease, transform .15s ease; }
+      .sb-pillnav-item, .sb-pillnav-more { position: relative; display: flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 999px; border: none; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: background .15s ease, color .15s ease, transform .15s ease; touch-action: manipulation; }
       .sb-pillnav-item:hover:not(.active), .sb-pillnav-more:hover:not(.active) { background: var(--soft); transform: translateY(-1px); }
       .sb-pillnav-item.active, .sb-pillnav-more.active { background: var(--outline); color: var(--card); font-weight: 800; }
       .sb-pillnav-item svg, .sb-pillnav-more svg { flex-shrink: 0; }
