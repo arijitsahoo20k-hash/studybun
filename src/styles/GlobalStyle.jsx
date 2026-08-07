@@ -48,7 +48,7 @@ export default function GlobalStyle() {
         background-size: 22px 22px; position: relative; transition: background-color .35s ease, color .35s ease;
       }
       .sb-app *, .sb-onboard *, .sb-loading * { box-sizing: border-box; }
-      .sb-app { display: grid; grid-template-columns: clamp(226px, 18.5vw, 284px) 1fr; position: relative; z-index: 1; }
+      .sb-app { display: flex; flex-direction: column; min-height: 100vh; position: relative; z-index: 1; }
 
       /* time-of-day ambient wash — subtly warms in the evening, cools in the morning */
       .sb-app::before {
@@ -193,12 +193,39 @@ export default function GlobalStyle() {
 
       .sb-icon-badge { width: 26px; height: 26px; border-radius: 50%; background: var(--soft); border: 2px solid var(--outline); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--outline); }
 
-      .sb-sidebar { padding: 22px 20px; display: flex; flex-direction: column; gap: 18px; border-right: 2.5px solid var(--outline); position: sticky; top: 0; height: 100vh; background: var(--card); z-index: 2; }
+      /* ===== top nav (tablet + desktop) =====
+         Replaces the old sidebar entirely. A brand chip, a floating pill
+         nav that fits as many labels as there's room for (TopNav.jsx
+         measures and decides -- nothing here is breakpoint-guessed), and a
+         pair of dedicated icon buttons for Settings/Profile so those two
+         pages are never also duplicated inside the pill row or its overflow. */
+      .sb-topbar { display: flex; align-items: center; gap: 12px; padding: 16px clamp(20px, 4vw, 52px) 4px; position: sticky; top: 0; z-index: 40; background: var(--bg); }
+      .sb-topbar-brand { display: flex; align-items: center; gap: 8px; padding: 5px 16px 5px 8px; border-radius: 999px; border: 2.5px solid var(--outline); background: var(--card); box-shadow: 4px 4px 0 var(--outline); flex-shrink: 0; }
+      .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; white-space: nowrap; }
+
+      .sb-pillnav { position: relative; display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; overflow: hidden; padding: 6px; border-radius: 999px; border: 2.5px solid var(--outline); background: var(--card); box-shadow: 4px 4px 0 var(--outline); }
+      .sb-pillnav-item, .sb-pillnav-more { position: relative; display: flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 999px; border: none; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: background .15s ease, color .15s ease, transform .15s ease; }
+      .sb-pillnav-item:hover:not(.active), .sb-pillnav-more:hover:not(.active) { background: var(--soft); transform: translateY(-1px); }
+      .sb-pillnav-item.active, .sb-pillnav-more.active { background: var(--outline); color: var(--card); font-weight: 800; }
+      .sb-pillnav-item svg, .sb-pillnav-more svg { flex-shrink: 0; }
+      /* Off-screen mirror used only to measure natural widths -- see
+         TopNav.jsx's recalc(). Laid out (not display:none) so real widths
+         come back, just invisible and out of flow. */
+      .sb-pillnav-measure { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; display: flex; gap: 6px; padding: 6px; }
+
+      .sb-pillnav-overflow { position: absolute; top: calc(100% + 8px); right: 0; z-index: 45; display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 4px; padding: 10px; background: var(--card); border: 2.5px solid var(--outline); border-radius: 18px; box-shadow: 5px 5px 0 var(--outline); max-width: min(420px, 90vw); }
+      .sb-pillnav-overflow-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 12px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13px; cursor: pointer; text-align: left; transition: background .15s ease, border-color .15s ease; }
+      .sb-pillnav-overflow-item:hover:not(.active) { background: var(--soft); }
+      .sb-pillnav-overflow-item.active { background: var(--soft); border-color: var(--outline); font-weight: 800; }
+
+      .sb-topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+      .sb-topbar-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; border: 2.5px solid var(--outline); background: var(--card); color: var(--ink); cursor: pointer; box-shadow: 3px 3px 0 var(--outline); transition: transform .15s ease, background .15s ease, color .15s ease; flex-shrink: 0; }
+      .sb-topbar-icon:hover { transform: translateY(-2px); }
+      .sb-topbar-icon.active { background: var(--outline); color: var(--card); }
+
+      /* ===== phone dropdown (unchanged pattern, just no sidebar to hide anymore) ===== */
       .sb-brand { display: flex; align-items: center; gap: 10px; }
-      .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 18px; }
       .sb-brand-sub { font-size: 11px; color: var(--muted); font-weight: 700; }
-      .sb-nav { position: relative; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; }
-      .sb-nav .sb-nav-item { margin-right: 7px; }
       .sb-nav-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 999px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; cursor: pointer; text-align: left; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
       .sb-nav-item:hover:not(.active) { background: var(--soft); border-color: var(--outline); transform: translateX(2px); }
       .sb-nav-item.active { border-color: transparent; font-weight: 800; }
@@ -212,9 +239,6 @@ export default function GlobalStyle() {
          (buttons, chips) rather than here, so there's a single definition. */
       .sb-nav-pill { position: absolute; top: 0; left: 0; transform-origin: 0 0; z-index: 0; border-radius: 999px; background: var(--soft); border: 2px solid var(--outline); pointer-events: none; will-change: transform; transition: transform .22s cubic-bezier(.22,1,.36,1); }
       .sb-nav-item > svg, .sb-nav-item > span:not(.sb-nav-pill) { position: relative; z-index: 1; }
-
-      .sb-sidebar-footer { border-top: 2px solid var(--soft); padding-top: 14px; }
-      .sb-sidebar-footer-label { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
 
       .sb-mobile-toggle { display: none; }
       .sb-mobile-nav { display: none; }
@@ -908,9 +932,12 @@ export default function GlobalStyle() {
       }
       .sb-scratch-canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
 
-      @media (max-width: 900px) {
-        .sb-app { grid-template-columns: 1fr; }
-        .sb-sidebar { display: none; }
+      /* Below this, the pill top nav has too little room to stay usable even
+         with overflow collapsing into "More" -- phones get the compact
+         hamburger dropdown instead. Tablets (portrait included) stay above
+         this and keep the real top nav. */
+      @media (max-width: 720px) {
+        .sb-topbar { display: none; }
         .sb-mobile-toggle { display: flex; position: fixed; top: 14px; left: 14px; z-index: 55; background: var(--card); border: 2px solid var(--outline); border-radius: 12px; padding: 8px; box-shadow: 3px 3px 0 var(--outline); }
         .sb-mobile-nav { display: flex; flex-direction: column; position: fixed; top: 58px; left: 14px; background: var(--card); border: 2px solid var(--outline); border-radius: 16px; padding: 10px; gap: 4px; z-index: 55; box-shadow: 5px 5px 0 var(--outline); max-height: 80vh; overflow-y: auto; }
         .sb-main { padding: 70px 16px 24px; }

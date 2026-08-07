@@ -18,6 +18,7 @@ import { buildExportPayload, downloadJSON, readFileAsJSON, importPayload, totalI
 import { todayIST, toISTDateStr, tsToISTDateStr, daysFromNowIST, daysUntilIST, formatISTCalendarDate, istHour } from "./lib/dateIST";
 
 import Mascot from "./components/Mascot";
+import TopNav from "./components/TopNav";
 import BuddyGuide from "./components/BuddyGuide";
 import { reactionMood, mascotEnergy, mascotTheme, MASCOTS } from "./data/mascots";
 import PWAPrompt from "./components/PWAPrompt";
@@ -59,6 +60,12 @@ const NAV = [
   { id: "profile", label: "Profile", icon: User },
   { id: "settings", label: "Settings", icon: Settings },
 ];
+
+// Settings and Profile get their own dedicated icon buttons at the end of
+// the top bar (mirroring the gear/avatar pattern of the reference design)
+// instead of living in the pill row too -- so a page is never reachable
+// two different ways from the same nav.
+const TOP_NAV = NAV.filter((n) => n.id !== "settings" && n.id !== "profile");
 
 // Mirrors the same check Mascot.jsx makes independently -- kept local here
 // too rather than shared, since it's a one-line read of the media query and
@@ -159,14 +166,13 @@ export default function App() {
   const [hopping, setHopping] = useState(false);
   const toastTimer = useRef(null);
 
-  // Sidebar nav highlight: a single pill sliding between nav items, moved
-  // with a plain CSS transform transition via refs rather than a re-measuring
-  // approach (e.g. framer-motion's layoutId), so the browser only does layout
-  // math once per page change and the slide itself is a compositor-only
-  // transform animation -- no per-frame stutter at high refresh rates.
-  const navItemRefs = useRef({});
-  const navPillRef = useRef(null);
-  const navPillMounted = useRef(false);
+  // Mobile dropdown's nav highlight: a single pill sliding between nav
+  // items, moved with a plain CSS transform transition via refs rather than
+  // a re-measuring approach (e.g. framer-motion's layoutId), so the browser
+  // only does layout math once per page change and the slide itself is a
+  // compositor-only transform animation -- no per-frame stutter at high
+  // refresh rates. (The tablet/desktop top nav has its own independent
+  // implementation inside TopNav.jsx.)
   const mobileNavItemRefs = useRef({});
   const mobileNavPillRef = useRef(null);
 
@@ -223,17 +229,6 @@ export default function App() {
     pillEl.__sbW = targetW; pillEl.__sbH = targetH; pillEl.__sbX = targetX; pillEl.__sbY = targetY;
   };
 
-  useLayoutEffect(() => {
-    positionNavPill(navPillRef.current, navItemRefs.current[page], reducedMotion || !navPillMounted.current);
-    if (navItemRefs.current[page]) navPillMounted.current = true;
-  }, [page, reducedMotion, profileLoading, profile]);
-
-  useEffect(() => {
-    const onResize = () => positionNavPill(navPillRef.current, navItemRefs.current[page], true);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [page]);
-
   // GlobalStyle's @font-face (Baloo 2 / Nunito) loads async and swaps in
   // after first paint (display: swap). The pill above is measured from the
   // nav button's live DOM rect, so if that swap changes button width/height
@@ -252,7 +247,6 @@ export default function App() {
     let cancelled = false;
     document.fonts.ready.then(() => {
       if (cancelled) return;
-      positionNavPill(navPillRef.current, navItemRefs.current[pageRef.current], true);
       if (mobileNavOpenRef.current) {
         positionNavPill(mobileNavPillRef.current, mobileNavItemRefs.current[pageRef.current], true);
       }
@@ -947,23 +941,42 @@ export default function App() {
         </div>
       )}
 
-      <aside className="sb-sidebar">
-        <div className="sb-brand"><Mascot species={mascot} mood="happy" size={40} hop={hopping} peek /><div><div className="sb-brand-title">StudyBun</div><div className="sb-brand-sub">Cozy JEE companion</div></div></div>
-        <nav className="sb-nav">
-          <span ref={navPillRef} className="sb-nav-pill" aria-hidden="true" />
-          {NAV.map((n) => (
-            <button
-              key={n.id}
-              ref={(el) => { navItemRefs.current[n.id] = el; }}
-              className={`sb-nav-item ${page === n.id ? "active" : ""}`}
-              onClick={() => startTransition(() => setPage(n.id))}
-            >
-              <n.icon size={18} /><span>{n.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      {/* Tablet/desktop: floating pill top nav (see .sb-topbar in
+          GlobalStyle). Hidden below the phone breakpoint via CSS, in favor
+          of the compact hamburger dropdown right below. */}
+      <header className="sb-topbar">
+        <div className="sb-topbar-brand">
+          <Mascot species={mascot} mood="happy" size={32} hop={hopping} peek />
+          <span className="sb-brand-title">StudyBun</span>
+        </div>
 
+        <TopNav nav={TOP_NAV} page={page} setPage={setPage} reducedMotion={reducedMotion} />
+
+        <div className="sb-topbar-actions">
+          <button
+            type="button"
+            className={`sb-topbar-icon ${page === "settings" ? "active" : ""}`}
+            onClick={() => startTransition(() => setPage("settings"))}
+            aria-label="Settings"
+            title="Settings"
+          >
+            <Settings size={18} />
+          </button>
+          <button
+            type="button"
+            className={`sb-topbar-icon ${page === "profile" ? "active" : ""}`}
+            onClick={() => startTransition(() => setPage("profile"))}
+            aria-label="Profile"
+            title="Profile"
+          >
+            <User size={18} />
+          </button>
+        </div>
+      </header>
+
+      {/* Phone: unchanged hamburger + dropdown, full NAV list including
+          Settings/Profile since there's no separate icon row to hold them
+          at this width. */}
       <button className="sb-mobile-toggle" onClick={() => setMobileNavOpen((v) => !v)}><Menu size={20} /></button>
       {mobileNavOpen && (
         <div className="sb-mobile-nav">
