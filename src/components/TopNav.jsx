@@ -12,9 +12,18 @@ import { MoreHorizontal } from "lucide-react";
  * Whatever doesn't fit collapses into the trailing "More" pill, which opens
  * a small floating panel instead of forcing everything into a hamburger.
  *
- * The currently active page is always kept visible in the bar itself (never
- * silently swallowed into the overflow panel), even if that means one extra
- * item has to fall back into "More" to make room for it.
+ * visibleCount is a pure function of available width -- it does NOT reshuffle
+ * when the active page happens to live in the overflow panel. Picking
+ * something from "More" just slides the indicator onto the More pill itself;
+ * it never yanks that item into the main row (which used to shove every
+ * other item sideways and could even collapse "More" away entirely).
+ *
+ * The active state is a single pill (span.sb-pillnav-indicator) that slides
+ * between whichever button is current -- a visible item, or the More
+ * trigger when the active page is tucked in the overflow panel -- using the
+ * same FLIP technique as the mobile dropdown's sliding pill: snap to the
+ * final size instantly, animate only `transform` so it's compositor-only
+ * and stays smooth regardless of refresh rate.
  */
 export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem }) {
   const wrapRef = useRef(null);
@@ -22,6 +31,8 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
   const moreMeasureRef = useRef(null);
   const moreTriggerRef = useRef(null);
   const panelRef = useRef(null);
+  const itemRefs = useRef({});
+  const pillRef = useRef(null);
 
   const [visibleCount, setVisibleCount] = useState(nav.length);
   const [overflowOpen, setOverflowOpen] = useState(false);
@@ -30,13 +41,13 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
   // the lazy chunk for a page only starts loading on tap itself -- and since
   // go() wraps setPage in startTransition, React then holds the OLD active
   // pill in place until that chunk finishes instead of switching right away.
-  // That's what reads as "laggy" on tablet specifically. Mirrors the
-  // onTouchStart prefetch the phone dropdown nav already has. Also track a
-  // synchronously-set pendingId so the highlight itself never waits on the
-  // transition, even on a slow/cold connection.
+  // Mirrors the onTouchStart prefetch the phone dropdown nav already has.
+  // Also track a synchronously-set pendingId so the highlight itself never
+  // waits on the transition, even on a slow/cold connection.
   const [pendingId, setPendingId] = useState(null);
   useEffect(() => { if (pendingId === page) setPendingId(null); }, [page, pendingId]);
-  const isActive = (id) => page === id || pendingId === id;
+  const activeId = pendingId || page;
+  const isActive = (id) => activeId === id;
 
   const recalc = () => {
     const wrap = wrapRef.current;
@@ -57,15 +68,10 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
       count += 1;
     }
     if (count < 1) count = 1;
-
-    // Never let the active page get stranded in the overflow panel.
-    const activeIdx = nav.findIndex((n) => n.id === page);
-    if (activeIdx !== -1 && activeIdx >= count) count = Math.min(nav.length, activeIdx + 1);
-
     setVisibleCount(count);
   };
 
-  useLayoutEffect(() => { recalc(); }, [page, nav]);
+  useLayoutEffect(() => { recalc(); }, [nav]);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -104,7 +110,7 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
 
   const visible = nav.slice(0, visibleCount);
   const overflow = nav.slice(visibleCount);
-  const overflowHasActive = overflow.some((n) => n.id === page);
+  const overflowHasActive = overflow.some((n) => n.id === activeId);
 
   const go = (id) => {
     setPendingId(id); // instant visual feedback, independent of the transition below
@@ -112,13 +118,90 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
     setOverflowOpen(false);
   };
 
+  // Slide the indicator pill onto whichever element is current -- a visible
+  // item's own button, or the More trigger if the active page is sitting in
+  // the overflow panel. `instant` skips the animation (first paint, a
+  // width-driven visibleCount change, or a font swap) so only an actual page
+  // switch gets the sliding motion.
+  const positionPill = (instant) => {
+    const pill = pillRef.current;
+    const wrap = wrapRef.current;
+    if (!pill || !wrap) return;
+    const target = overflowHasActive ? moreTriggerRef.current : itemRefs.current[activeId];
+    if (!target) { pill.style.opacity = "0"; return; }
+
+    const wrapRect = wrap.getBoundingClientRect();
+    const rect = target.getBoundingClientRect();
+    const targetW = rect.width;
+    const targetH = rect.height;
+    const targetX = rect.left - wrapRect.left;
+    const targetY = rect.top - wrapRect.top;
+
+    if (instant || pill.__sbX === undefined) {
+      pill.style.transition = "none";
+      pill.style.opacity = "1";
+      pill.style.width = `${targetW}px`;
+      pill.style.height = `${targetH}px`;
+      pill.style.transform = `translate(${targetX}px, ${targetY}px)`;
+      void pill.offsetHeight; // force reflow so "transition: none" actually applies
+      requestAnimationFrame(() => { pill.style.transition = ""; });
+      pill.__sbX = targetX; pill.__sbY = targetY; pill.__sbW = targetW; pill.__sbH = targetH;
+      return;
+    }
+
+    // FLIP: snap to final width/height (cheap, once), start the transform at
+    // a scaled stand-in for the OLD box, then transition transform back to
+    // identity -- compositor-only, so it stays smooth at 120Hz+ even while
+    // the new page's chunk is loading on the main thread.
+    const prevX = pill.__sbX, prevY = pill.__sbY, prevW = pill.__sbW, prevH = pill.__sbH;
+    const scaleX = targetW ? prevW / targetW : 1;
+    const scaleY = targetH ? prevH / targetH : 1;
+
+    pill.style.transition = "none";
+    pill.style.opacity = "1";
+    pill.style.width = `${targetW}px`;
+    pill.style.height = `${targetH}px`;
+    pill.style.transform = `translate(${prevX}px, ${prevY}px) scale(${scaleX}, ${scaleY})`;
+    void pill.offsetHeight;
+    pill.style.transition = "";
+    requestAnimationFrame(() => {
+      pill.style.transform = `translate(${targetX}px, ${targetY}px) scale(1, 1)`;
+    });
+
+    pill.__sbX = targetX; pill.__sbY = targetY; pill.__sbW = targetW; pill.__sbH = targetH;
+  };
+
+  const lastAnimKeyRef = useRef(null);
+  useLayoutEffect(() => {
+    // Only animate when the ACTIVE target actually changed (a real nav
+    // switch). A resize/recalc-driven visibleCount change can reposition the
+    // same active target for layout reasons and should snap instantly, not
+    // slide; same for the very first paint.
+    const key = `${activeId}:${overflowHasActive}`;
+    const isFirstRun = lastAnimKeyRef.current === null;
+    const targetChanged = lastAnimKeyRef.current !== key;
+    positionPill(reducedMotion || isFirstRun || !targetChanged);
+    lastAnimKeyRef.current = key;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, overflowHasActive, visibleCount]);
+
+  useEffect(() => {
+    if (!document.fonts?.ready) return;
+    let cancelled = false;
+    document.fonts.ready.then(() => { if (!cancelled) positionPill(true); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <nav className="sb-pillnav">
       <div className="sb-pillnav-row" ref={wrapRef}>
+        <span ref={pillRef} className="sb-pillnav-indicator" aria-hidden="true" style={{ opacity: 0 }} />
         {visible.map((n) => (
           <button
             key={n.id}
             type="button"
+            ref={(el) => { itemRefs.current[n.id] = el; }}
             className={`sb-pillnav-item ${isActive(n.id) ? "active" : ""}`}
             onClick={() => go(n.id)}
             onMouseEnter={() => onHoverItem?.(n.id)}

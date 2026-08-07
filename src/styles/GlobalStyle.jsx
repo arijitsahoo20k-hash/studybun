@@ -210,10 +210,15 @@ export default function GlobalStyle() {
          panel below (a sibling, not a child of this row) never gets cut
          off along with it. */
       .sb-pillnav-row { position: relative; display: flex; align-items: center; gap: 6px; overflow: hidden; padding: 6px; border-radius: inherit; }
-      .sb-pillnav-item, .sb-pillnav-more { position: relative; display: flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 999px; border: none; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: background .15s ease, color .15s ease, transform .15s ease; touch-action: manipulation; }
+      .sb-pillnav-item, .sb-pillnav-more { position: relative; z-index: 1; display: flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 999px; border: none; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: color .15s ease, transform .15s ease; touch-action: manipulation; }
       .sb-pillnav-item:hover:not(.active), .sb-pillnav-more:hover:not(.active) { background: var(--soft); transform: translateY(-1px); }
-      .sb-pillnav-item.active, .sb-pillnav-more.active { background: var(--outline); color: var(--card); font-weight: 800; }
+      .sb-pillnav-item.active, .sb-pillnav-more.active { color: var(--card); font-weight: 800; }
       .sb-pillnav-item svg, .sb-pillnav-more svg { flex-shrink: 0; }
+      /* The single sliding indicator (see TopNav.jsx) -- an absolutely
+         positioned pill that transform-animates between whichever button is
+         current, instead of each button flashing its own background on/off.
+         z-index 0 keeps it under the (z-index 1) button labels/icons above. */
+      .sb-pillnav-indicator { position: absolute; top: 0; left: 0; z-index: 0; border-radius: 999px; background: var(--outline); pointer-events: none; will-change: transform; transition: transform .32s cubic-bezier(.22,1,.36,1); }
       /* Off-screen mirror used only to measure natural widths -- see
          TopNav.jsx's recalc(). Laid out (not display:none) so real widths
          come back, just invisible and out of flow. */
