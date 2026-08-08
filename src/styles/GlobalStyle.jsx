@@ -122,28 +122,43 @@ export default function GlobalStyle() {
       }
 
       /* ===== frosted glass, two tiers =====
-         Tier 1 "chrome glass" (topbar, pill nav, toasts, the buddy bubble,
-         floating menus): a real backdrop-filter blur. Genuinely premium,
-         and cheap, because there are only ever one or two of these mounted
-         at once.
+         Tier 1 "chrome glass" (topbar, toasts, the buddy bubble, floating
+         menus): a real backdrop-filter blur -- cheap because there are
+         only ever one or two of these mounted at once.
          Tier 2 is .sb-card itself, right below. Every sticker card in the
          app renders through this one class, and pages like Syllabus or
-         Questions can have dozens mounted at a time -- a real blur on all
-         of them would tax scroll performance on exactly the kind of
-         mid-range Android tablet/phone this PWA runs on. So sticker cards
-         get the glass *look* -- a translucent tint plus a soft diagonal
-         sheen highlight -- without the blur *cost*. No backdrop-filter, no
-         per-frame compositing work, just two flat background layers that
-         paint once. Same offset hard-shadow + border sticker language
-         either way, so the identity of the design doesn't change. */
+         Questions can have dozens mounted at a time, so a real blur on
+         every one of them needs to stay small and *contained*: the
+         contain: layout paint rule below tells the browser the blur/paint
+         work for a card can never spill outside that card's own box, so
+         scrolling a page
+         full of them doesn't force a full-viewport recomposite the way an
+         unconstrained blur would -- the cost stays roughly one card's
+         worth, not "every card at once." Keeping the blur radius small
+         (7px, vs. 16-20px on the nav) is what actually keeps it cheap on
+         a mid-range Android phone; a small contained blur reads as glass
+         just as well as a big one once there's a card border and shadow
+         doing the rest of the work. The tint is lighter than before too
+         (74% vs 84%) so the dotted backdrop actually shows through,
+         blurred, instead of the card reading as a flat painted color. */
       .sb-card {
         background:
-          linear-gradient(135deg, color-mix(in srgb, #fff 42%, transparent) 0%, transparent 46%),
-          color-mix(in srgb, var(--card) 84%, transparent);
+          linear-gradient(135deg, color-mix(in srgb, #fff 55%, transparent) 0%, transparent 50%),
+          color-mix(in srgb, var(--card) 74%, transparent);
+        backdrop-filter: blur(7px) saturate(150%); -webkit-backdrop-filter: blur(7px) saturate(150%);
+        contain: layout paint; isolation: isolate;
         border-radius: 24px; padding: 20px;
         border: 2.5px solid var(--outline); box-shadow: 5px 5px 0 var(--outline);
         transition: transform .15s ease, box-shadow .15s ease, background-color .35s ease, border-color .35s ease;
         position: relative; z-index: 1;
+      }
+      /* Devices/browsers that can't do backdrop-filter at all fall back to
+         the old flat-tint look automatically -- no separate rule needed,
+         since the property is just ignored and the color-mix background
+         still paints. Belt-and-braces opt-out for anyone who explicitly
+         asked their OS for less motion/effects. */
+      @media (prefers-reduced-motion: reduce) {
+        .sb-card { backdrop-filter: none; -webkit-backdrop-filter: none; }
       }
       .sb-clickable { cursor: pointer; }
       .sb-clickable:hover { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 7px 7px 0 var(--outline); }
@@ -237,11 +252,18 @@ export default function GlobalStyle() {
          blurred background doesn't have a hard edge for that rounding
          error to show up against, so the seam disappears as a side effect
          of the glass treatment -- no separate patch needed. */
+      /* Only this outer strip actually blurs. The brand chip, pill nav and
+         icon buttons below used to each carry their own second
+         backdrop-filter on top of this one -- visually near-identical
+         (they already sit on the pre-blurred strip) but four overlapping
+         blur regions instead of one, recomputed every scroll frame, which
+         is what was actually causing the sticky-nav jank on Android. They
+         now just tint, and let this strip's single blur show through. */
       .sb-topbar {
         display: flex; align-items: center; gap: 12px; padding: 16px clamp(20px, 4vw, 52px) 4px;
         position: sticky; top: 0; z-index: 40;
         background: color-mix(in srgb, var(--bg) 78%, transparent);
-        backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
+        backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%);
         border-bottom: 1px solid transparent;
         transform: translateY(0); transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .2s ease, padding-bottom .2s ease;
         will-change: transform;
@@ -251,8 +273,7 @@ export default function GlobalStyle() {
       .sb-topbar-brand {
         display: flex; align-items: center; gap: 8px; padding: 5px 16px 5px 8px; border-radius: 999px;
         border: 2.5px solid var(--outline);
-        background: color-mix(in srgb, var(--card) 74%, transparent);
-        backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
+        background: color-mix(in srgb, var(--card) 82%, transparent);
         box-shadow: 4px 4px 0 var(--outline); flex-shrink: 0;
       }
       .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; white-space: nowrap; }
@@ -260,8 +281,7 @@ export default function GlobalStyle() {
       .sb-pillnav {
         position: relative; flex: 1 1 auto; min-width: 0; border-radius: 999px;
         border: 2.5px solid var(--outline);
-        background: color-mix(in srgb, var(--card) 74%, transparent);
-        backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
+        background: color-mix(in srgb, var(--card) 82%, transparent);
         box-shadow: 4px 4px 0 var(--outline);
       }
       /* The clipping lives here, one level in, so the floating overflow
@@ -289,7 +309,7 @@ export default function GlobalStyle() {
         position: absolute; top: calc(100% + 8px); right: 0; z-index: 45; display: grid;
         grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 4px; padding: 10px;
         background: color-mix(in srgb, var(--card) 80%, transparent);
-        backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+        backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%);
         border: 2.5px solid var(--outline); border-radius: 18px; box-shadow: 5px 5px 0 var(--outline); max-width: min(420px, 90vw);
       }
       .sb-pillnav-overflow-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 12px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13px; cursor: pointer; text-align: left; transition: background .15s ease, border-color .15s ease; }
@@ -300,8 +320,7 @@ export default function GlobalStyle() {
       .sb-topbar-icon {
         display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%;
         border: 2.5px solid var(--outline);
-        background: color-mix(in srgb, var(--card) 74%, transparent);
-        backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
+        background: color-mix(in srgb, var(--card) 82%, transparent);
         color: var(--ink); cursor: pointer; box-shadow: 3px 3px 0 var(--outline);
         transition: transform .15s ease, background .15s ease, color .15s ease; flex-shrink: 0;
       }
@@ -500,9 +519,20 @@ export default function GlobalStyle() {
          read as the same thing — color/glow/flicker speed all ramp up,
          topping out at a shimmering "legendary" look past 90 days. */
       .sb-streak-flame { background: var(--soft) !important; color: var(--muted) !important; opacity: .6; transition: opacity .3s ease, background .3s ease, color .3s ease, box-shadow .3s ease; }
-      .sb-streak-flame--lit { background: var(--flame-bg, #FFD9A8) !important; color: var(--flame-fg, #E8622C) !important; opacity: 1; box-shadow: 0 0 0 3px var(--flame-ring, rgba(232, 98, 44, .18)); animation: sb-flame-glow 1.6s ease-in-out infinite; }
+      /* The pulsing ring used to animate box-shadow's blur/spread directly,
+         which forces the browser to repaint the badge every frame. Same
+         look now comes from a ::after ring sized once (static box-shadow)
+         that only animates opacity + transform: scale -- both handled by
+         the compositor, no repaint, so it's free no matter how many are
+         on screen at once. */
+      .sb-streak-flame--lit { position: relative; background: var(--flame-bg, #FFD9A8) !important; color: var(--flame-fg, #E8622C) !important; opacity: 1; box-shadow: 0 0 0 3px var(--flame-ring, rgba(232, 98, 44, .18)); }
+      .sb-streak-flame--lit::after {
+        content: ""; position: absolute; inset: -6px; border-radius: 50%; pointer-events: none;
+        box-shadow: 0 0 14px 4px var(--flame-ring, rgba(232, 98, 44, .55));
+        animation: sb-flame-glow-pulse var(--flame-speed, 1.6s) ease-in-out infinite;
+      }
       .sb-streak-flame--lit svg { animation: sb-flame-flicker var(--flame-speed, 1.6s) ease-in-out infinite; }
-      @keyframes sb-flame-glow { 0%, 100% { box-shadow: 0 0 0 3px var(--flame-ring, rgba(232, 98, 44, .18)), 0 0 6px 1px var(--flame-ring, rgba(232, 98, 44, .35)); } 50% { box-shadow: 0 0 0 5px var(--flame-ring, rgba(232, 98, 44, .1)), 0 0 14px 4px var(--flame-ring, rgba(232, 98, 44, .55)); } }
+      @keyframes sb-flame-glow-pulse { 0%, 100% { opacity: .5; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.1); } }
       @keyframes sb-flame-flicker { 0%, 100% { transform: scale(1) rotate(0deg); } 25% { transform: scale(1.08) rotate(-3deg); } 50% { transform: scale(0.96) rotate(2deg); } 75% { transform: scale(1.05) rotate(-1deg); } }
       @keyframes sb-flame-shimmer { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
 
