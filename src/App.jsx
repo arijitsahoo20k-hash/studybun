@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
   RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, Crown, User, Settings, Menu,
-  NotebookPen, Layers,
+  NotebookPen,
 } from "lucide-react";
 
 import { THEMES, themeVars, timeWash } from "./data/themes";
@@ -24,13 +24,6 @@ import { reactionMood, mascotEnergy, mascotTheme, MASCOTS } from "./data/mascots
 import PWAPrompt from "./components/PWAPrompt";
 import { Confetti, LoadingScreen, DecorLayer } from "./components/ui";
 import GlobalStyle from "./styles/GlobalStyle";
-import StudioGlobalStyle from "./styles/StudioGlobalStyle";
-import { studioVars } from "./styles/studioTokens";
-import { useThemeMode } from "./hooks/useThemeMode";
-import ModeTransition from "./components/ModeTransition";
-import StudioSidebar from "./components/StudioSidebar";
-import StudioBottomNav from "./components/StudioBottomNav";
-const DashboardStudio = lazy(() => import("./pages/DashboardStudio"));
 
 // Every page below is its own JS chunk, fetched only the moment it's
 // actually navigated to instead of all being parsed/executed up front --
@@ -390,8 +383,7 @@ export default function App() {
   const theme = THEMES[profile?.theme] || THEMES["Sakura Bloom"];
   const mascot = profile?.mascot || "bunny";
   const mTheme = mascotTheme(mascot);
-  const cssVars = { ...themeVars(theme), "--time-wash": timeWash(), ...studioVars() };
-  const { mode, toggleMode, transitioning } = useThemeMode();
+  const cssVars = { ...themeVars(theme), "--time-wash": timeWash() };
 
   /* ---------- derived stats (shared by Dashboard / Analytics / AI Insights) ---------- */
   const sessions = sessionsQ.rows;
@@ -980,7 +972,6 @@ export default function App() {
     return (
       <div style={cssVars}>
         <GlobalStyle />
-        <StudioGlobalStyle />
         <DecorLayer theme={theme} />
         <LoadingScreen message="Preparing your study desk..." />
       </div>
@@ -991,7 +982,6 @@ export default function App() {
     return (
       <div style={cssVars}>
         <GlobalStyle />
-        <StudioGlobalStyle />
         <DecorLayer theme={theme} />
         <Suspense fallback={<LoadingScreen message="Preparing your study desk..." />}>
           <Onboarding profile={profile} onSave={async (form) => { await saveProfile(form); }} />
@@ -1021,39 +1011,9 @@ export default function App() {
     exportBackup, importBackup,
   };
 
-  const pageContent = (
-    <Suspense fallback={<PageLoading mascot={mascot} />}>
-      {page === "dashboard" && (mode === "studio" ? <DashboardStudio {...pageProps} /> : <Dashboard {...pageProps} />)}
-      {page === "study" && <StudyTracker {...pageProps} />}
-      {page === "timer" && <FocusTimer {...pageProps} />}
-      {page === "syllabus" && <SyllabusPage {...pageProps} />}
-      {page === "backlog" && <BacklogPage {...pageProps} />}
-      {page === "goals" && <GoalsPage {...pageProps} />}
-      {page === "questions" && <QuestionsPage {...pageProps} />}
-      {page === "mocks" && <MocksPage {...pageProps} />}
-      {page === "revision" && <RevisionPage {...pageProps} />}
-      {page === "planner" && <PlannerPage {...pageProps} />}
-      {page === "analytics" && <AnalyticsPage {...pageProps} />}
-      {page === "ai" && <AIInsightsPage {...pageProps} />}
-      {page === "achievements" && <AchievementsPage {...pageProps} />}
-      {page === "leaderboard" && <LeaderboardPage {...pageProps} />}
-      {page === "profile" && <ProfilePage {...pageProps} />}
-      {page === "settings" && <SettingsPage {...pageProps} />}
-    </Suspense>
-  );
-
   return (
-    <div
-      className="sb-app"
-      style={cssVars}
-      data-mode={mode}
-      data-stitched={theme.stitched ? "true" : "false"}
-      data-blocky={theme.blocky ? "true" : "false"}
-      data-y2k={theme.y2k ? "true" : "false"}
-    >
+    <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"}>
       <GlobalStyle />
-      <StudioGlobalStyle />
-      <ModeTransition active={transitioning} targetMode={mode} reducedMotion={reducedMotion} />
       <DecorLayer theme={theme} />
       <PWAPrompt />
       {celebrateType && <Confetti type={celebrateType} theme={theme} />}
@@ -1086,148 +1046,95 @@ export default function App() {
         </div>
       )}
 
-      {mode === "studio" ? (
-        <div className="sb-studio-shell">
-          <StudioSidebar
-            nav={NAV}
-            page={page}
-            setPage={(id) => startTransition(() => setPage(id))}
-            onHoverItem={prefetchPage}
-            onOpenSettings={() => startTransition(() => setPage("settings"))}
-            onOpenProfile={() => startTransition(() => setPage("profile"))}
-            settingsActive={page === "settings"}
-            profileActive={page === "profile"}
-            reducedMotion={reducedMotion}
-            onToggleMode={toggleMode}
-          />
-          <div className="sb-studio-main-col">
-            <div className="sb-studio-mobile-topbar">
-              <div className="sb-topbar-brand">
-                <Mascot species={mascot} mood="happy" size={26} hop={hopping} peek />
-                <span className="sb-brand-title">StudyBun</span>
-              </div>
-              <button type="button" className="st-btn st-btn--ghost" onClick={() => setMobileNavOpen((v) => !v)} aria-label="More pages">
-                <Menu size={17} />
-              </button>
-            </div>
-            {mobileNavOpen && (
-              <div className="sb-mobile-nav">
-                <span ref={mobileNavPillRef} className="sb-nav-pill" aria-hidden="true" />
-                {NAV.map((n) => (
-                  <button
-                    key={n.id}
-                    ref={(el) => { mobileNavItemRefs.current[n.id] = el; }}
-                    className={`sb-nav-item ${page === n.id ? "active" : ""}`}
-                    onClick={() => { startTransition(() => setPage(n.id)); setMobileNavOpen(false); }}
-                    onTouchStart={() => prefetchPage(n.id)}
-                  >
-                    <n.icon size={18} /><span>{n.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            <main className="sb-main sb-studio-content" ref={mainRef}>
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.div
-                  key={page}
-                  className="sb-page-transition"
-                  initial={reducedMotion ? false : { opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={reducedMotion ? undefined : { opacity: 0 }}
-                  transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
-                >
-                  {pageContent}
-                </motion.div>
-              </AnimatePresence>
-            </main>
-            <StudioBottomNav nav={TOP_NAV.slice(0, 4)} page={page} setPage={(id) => startTransition(() => setPage(id))} onMore={() => setMobileNavOpen((v) => !v)} reducedMotion={reducedMotion} />
-          </div>
+      {/* Tablet/desktop: floating pill top nav (see .sb-topbar in
+          GlobalStyle). Hidden below the phone breakpoint via CSS, in favor
+          of the compact hamburger dropdown right below. */}
+      <header className="sb-topbar" ref={topbarRef}>
+        <div className="sb-topbar-brand">
+          <Mascot species={mascot} mood="happy" size={32} hop={hopping} peek />
+          <span className="sb-brand-title">StudyBun</span>
         </div>
-      ) : (
-        <>
-          {/* Tablet/desktop: floating pill top nav (see .sb-topbar in
-              GlobalStyle). Hidden below the phone breakpoint via CSS, in favor
-              of the compact hamburger dropdown right below. */}
-          <header className="sb-topbar" ref={topbarRef}>
-            <div className="sb-topbar-brand">
-              <Mascot species={mascot} mood="happy" size={32} hop={hopping} peek />
-              <span className="sb-brand-title">StudyBun</span>
-            </div>
 
-            <TopNav nav={TOP_NAV} page={page} setPage={setPage} reducedMotion={reducedMotion} onHoverItem={prefetchPage} />
+        <TopNav nav={TOP_NAV} page={page} setPage={setPage} reducedMotion={reducedMotion} onHoverItem={prefetchPage} />
 
-            <div className="sb-topbar-actions">
-              <button
-                type="button"
-                className="sb-topbar-icon"
-                onClick={toggleMode}
-                aria-label="Switch to Studio Mode"
-                title="Switch to Studio Mode"
-              >
-                <Layers size={18} />
-              </button>
-              <button
-                type="button"
-                className={`sb-topbar-icon ${page === "settings" ? "active" : ""}`}
-                onClick={() => startTransition(() => setPage("settings"))}
-                onMouseEnter={() => prefetchPage("settings")}
-                onFocus={() => prefetchPage("settings")}
-                aria-label="Settings"
-                title="Settings"
-              >
-                <Settings size={18} />
-              </button>
-              <button
-                type="button"
-                className={`sb-topbar-icon ${page === "profile" ? "active" : ""}`}
-                onClick={() => startTransition(() => setPage("profile"))}
-                onMouseEnter={() => prefetchPage("profile")}
-                onFocus={() => prefetchPage("profile")}
-                aria-label="Profile"
-                title="Profile"
-              >
-                <User size={18} />
-              </button>
-            </div>
-          </header>
+        <div className="sb-topbar-actions">
+          <button
+            type="button"
+            className={`sb-topbar-icon ${page === "settings" ? "active" : ""}`}
+            onClick={() => startTransition(() => setPage("settings"))}
+            onMouseEnter={() => prefetchPage("settings")}
+            onFocus={() => prefetchPage("settings")}
+            aria-label="Settings"
+            title="Settings"
+          >
+            <Settings size={18} />
+          </button>
+          <button
+            type="button"
+            className={`sb-topbar-icon ${page === "profile" ? "active" : ""}`}
+            onClick={() => startTransition(() => setPage("profile"))}
+            onMouseEnter={() => prefetchPage("profile")}
+            onFocus={() => prefetchPage("profile")}
+            aria-label="Profile"
+            title="Profile"
+          >
+            <User size={18} />
+          </button>
+        </div>
+      </header>
 
-          {/* Phone: unchanged hamburger + dropdown, full NAV list including
-              Settings/Profile since there's no separate icon row to hold them
-              at this width. */}
-          <button className="sb-mobile-toggle" onClick={() => setMobileNavOpen((v) => !v)}><Menu size={20} /></button>
-          {mobileNavOpen && (
-            <div className="sb-mobile-nav">
-              <span ref={mobileNavPillRef} className="sb-nav-pill" aria-hidden="true" />
-              {NAV.map((n) => (
-                <button
-                  key={n.id}
-                  ref={(el) => { mobileNavItemRefs.current[n.id] = el; }}
-                  className={`sb-nav-item ${page === n.id ? "active" : ""}`}
-                  onClick={() => { startTransition(() => setPage(n.id)); setMobileNavOpen(false); }}
-                  onTouchStart={() => prefetchPage(n.id)}
-                >
-                  <n.icon size={18} /><span>{n.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <main className="sb-main" ref={mainRef}>
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.div
-                key={page}
-                className="sb-page-transition"
-                initial={reducedMotion ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={reducedMotion ? undefined : { opacity: 0 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-              >
-                {pageContent}
-              </motion.div>
-            </AnimatePresence>
-          </main>
-        </>
+      {/* Phone: unchanged hamburger + dropdown, full NAV list including
+          Settings/Profile since there's no separate icon row to hold them
+          at this width. */}
+      <button className="sb-mobile-toggle" onClick={() => setMobileNavOpen((v) => !v)}><Menu size={20} /></button>
+      {mobileNavOpen && (
+        <div className="sb-mobile-nav">
+          <span ref={mobileNavPillRef} className="sb-nav-pill" aria-hidden="true" />
+          {NAV.map((n) => (
+            <button
+              key={n.id}
+              ref={(el) => { mobileNavItemRefs.current[n.id] = el; }}
+              className={`sb-nav-item ${page === n.id ? "active" : ""}`}
+              onClick={() => { startTransition(() => setPage(n.id)); setMobileNavOpen(false); }}
+              onTouchStart={() => prefetchPage(n.id)}
+            >
+              <n.icon size={18} /><span>{n.label}</span>
+            </button>
+          ))}
+        </div>
       )}
+
+      <main className="sb-main" ref={mainRef}>
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.div
+            key={page}
+            className="sb-page-transition"
+            initial={reducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reducedMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
+          >
+            <Suspense fallback={<PageLoading mascot={mascot} />}>
+              {page === "dashboard" && <Dashboard {...pageProps} />}
+              {page === "study" && <StudyTracker {...pageProps} />}
+              {page === "timer" && <FocusTimer {...pageProps} />}
+              {page === "syllabus" && <SyllabusPage {...pageProps} />}
+              {page === "backlog" && <BacklogPage {...pageProps} />}
+              {page === "goals" && <GoalsPage {...pageProps} />}
+              {page === "questions" && <QuestionsPage {...pageProps} />}
+              {page === "mocks" && <MocksPage {...pageProps} />}
+              {page === "revision" && <RevisionPage {...pageProps} />}
+              {page === "planner" && <PlannerPage {...pageProps} />}
+              {page === "analytics" && <AnalyticsPage {...pageProps} />}
+              {page === "ai" && <AIInsightsPage {...pageProps} />}
+              {page === "achievements" && <AchievementsPage {...pageProps} />}
+              {page === "leaderboard" && <LeaderboardPage {...pageProps} />}
+              {page === "profile" && <ProfilePage {...pageProps} />}
+              {page === "settings" && <SettingsPage {...pageProps} />}
+            </Suspense>
+          </motion.div>
+        </AnimatePresence>
+      </main>
 
       <BuddyGuide {...pageProps} page={page} mood={buddyMood} energy={buddyEnergy} hopping={hopping} />
     </div>
