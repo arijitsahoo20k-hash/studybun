@@ -50,15 +50,29 @@ export default function GlobalStyle() {
       .sb-app *, .sb-onboard *, .sb-loading * { box-sizing: border-box; }
       .sb-app { display: flex; flex-direction: column; min-height: 100vh; position: relative; z-index: 1; }
 
-      /* time-of-day ambient wash — subtly warms in the evening, cools in the morning */
+      /* time-of-day ambient wash, plus a few big soft colour blobs sitting
+         behind everything. Nothing here animates -- it's painted once as a
+         fixed layer and left alone -- but it's what makes .sb-card-glass
+         (below) actually *look* like glass: blurring a nearly-flat page
+         background barely changes anything, which was why the frosted
+         look wasn't reading before. Blurring these blobs visibly bends
+         and diffuses colour, which is what a glass panel is supposed to
+         do. Uses the theme's own accent/palette colours, so it re-tints
+         itself with every theme and every light/dark toggle for free. */
       .sb-app::before {
         content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-        background: var(--time-wash); transition: background-color 1.5s ease;
+        background:
+          radial-gradient(38vmax circle at 12% 12%, color-mix(in srgb, var(--accent) 32%, transparent), transparent 65%),
+          radial-gradient(34vmax circle at 88% 18%, color-mix(in srgb, var(--accent2) 28%, transparent), transparent 65%),
+          radial-gradient(40vmax circle at 20% 92%, color-mix(in srgb, var(--p3, var(--soft)) 26%, transparent), transparent 68%),
+          radial-gradient(36vmax circle at 90% 88%, color-mix(in srgb, var(--p1, var(--soft)) 24%, transparent), transparent 68%),
+          var(--time-wash);
+        transition: background-color 1.5s ease;
       }
 
       /* kawaii custom cursors for anything interactive */
       .sb-btn, .sb-chip, .sb-nav-item, .sb-bottom-item, .sb-clickable, .sb-checkbox,
-      .sb-theme-chip, .sb-icon-btn, .sb-mobile-toggle, select.sb-input, .sb-mascot-pick, .sb-theme-swatch {
+      .sb-theme-chip, .sb-icon-btn, .sb-mobile-toggle, .sb-mobile-dark-toggle, select.sb-input, .sb-mascot-pick, .sb-theme-swatch {
         cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%90%BE%3C/text%3E%3C/svg%3E") 12 12, pointer;
       }
 
@@ -122,43 +136,40 @@ export default function GlobalStyle() {
       }
 
       /* ===== frosted glass, two tiers =====
-         Tier 1 "chrome glass" (topbar, toasts, the buddy bubble, floating
-         menus): a real backdrop-filter blur -- cheap because there are
-         only ever one or two of these mounted at once.
-         Tier 2 is .sb-card itself, right below. Every sticker card in the
-         app renders through this one class, and pages like Syllabus or
-         Questions can have dozens mounted at a time, so a real blur on
-         every one of them needs to stay small and *contained*: the
-         contain: layout paint rule below tells the browser the blur/paint
-         work for a card can never spill outside that card's own box, so
-         scrolling a page
-         full of them doesn't force a full-viewport recomposite the way an
-         unconstrained blur would -- the cost stays roughly one card's
-         worth, not "every card at once." Keeping the blur radius small
-         (7px, vs. 16-20px on the nav) is what actually keeps it cheap on
-         a mid-range Android phone; a small contained blur reads as glass
-         just as well as a big one once there's a card border and shadow
-         doing the rest of the work. The tint is lighter than before too
-         (74% vs 84%) so the dotted backdrop actually shows through,
-         blurred, instead of the card reading as a flat painted color. */
+         .sb-card (every sticker card in the app -- pages like Syllabus or
+         Questions mount dozens at once) stays the cheap version: a
+         translucent tint plus a soft diagonal sheen, no backdrop-filter,
+         so scrolling a long list never has to blur anything. Real blur on
+         dozens of simultaneously-visible cards is a genuine perf cost on
+         a mid-range Android phone regardless of how contained it is, so
+         it's reserved for .sb-card-glass -- an opt-in modifier used only
+         on the handful of hero/single-instance surfaces (dashboard
+         summary cards, the focus timer, a mock result, a profile header)
+         where there's only ever one or two on screen. Those get a real
+         backdrop-filter blur, kept cheap with contain: layout paint
+         (the blur/paint work can't spill past the card's own box, so nine
+         cards below it on the same page aren't part of the cost) and it
+         has the ambient colour blobs from .sb-app::before to actually
+         blur into -- which is what makes it visibly read as glass instead
+         of just a tinted box. */
       .sb-card {
         background:
-          linear-gradient(135deg, color-mix(in srgb, #fff 55%, transparent) 0%, transparent 50%),
-          color-mix(in srgb, var(--card) 74%, transparent);
-        backdrop-filter: blur(7px) saturate(150%); -webkit-backdrop-filter: blur(7px) saturate(150%);
-        contain: layout paint; isolation: isolate;
+          linear-gradient(135deg, color-mix(in srgb, #fff 42%, transparent) 0%, transparent 46%),
+          color-mix(in srgb, var(--card) 84%, transparent);
         border-radius: 24px; padding: 20px;
         border: 2.5px solid var(--outline); box-shadow: 5px 5px 0 var(--outline);
         transition: transform .15s ease, box-shadow .15s ease, background-color .35s ease, border-color .35s ease;
         position: relative; z-index: 1;
       }
-      /* Devices/browsers that can't do backdrop-filter at all fall back to
-         the old flat-tint look automatically -- no separate rule needed,
-         since the property is just ignored and the color-mix background
-         still paints. Belt-and-braces opt-out for anyone who explicitly
-         asked their OS for less motion/effects. */
+      .sb-card-glass {
+        background:
+          linear-gradient(135deg, color-mix(in srgb, #fff 55%, transparent) 0%, transparent 55%),
+          color-mix(in srgb, var(--card) 62%, transparent);
+        backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+        contain: layout paint; isolation: isolate;
+      }
       @media (prefers-reduced-motion: reduce) {
-        .sb-card { backdrop-filter: none; -webkit-backdrop-filter: none; }
+        .sb-card-glass { backdrop-filter: none; -webkit-backdrop-filter: none; background: color-mix(in srgb, var(--card) 84%, transparent); }
       }
       .sb-clickable { cursor: pointer; }
       .sb-clickable:hover { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 7px 7px 0 var(--outline); }
@@ -252,18 +263,23 @@ export default function GlobalStyle() {
          blurred background doesn't have a hard edge for that rounding
          error to show up against, so the seam disappears as a side effect
          of the glass treatment -- no separate patch needed. */
-      /* Only this outer strip actually blurs. The brand chip, pill nav and
-         icon buttons below used to each carry their own second
-         backdrop-filter on top of this one -- visually near-identical
-         (they already sit on the pre-blurred strip) but four overlapping
-         blur regions instead of one, recomputed every scroll frame, which
-         is what was actually causing the sticky-nav jank on Android. They
-         now just tint, and let this strip's single blur show through. */
+      /* This strip used to carry a real backdrop-filter blur. Sticky +
+         continuously blurring whatever scrolls underneath it, every single
+         frame, for as long as the header is on screen, is one of the
+         heaviest things you can ask a mid-range Android GPU to do -- worse
+         than almost any other effect in this file, because it's not a one-
+         off cost, it's ongoing for the entire scroll gesture. That's the
+         actual, specific cause of "the nav is laggy" -- not a minor tax,
+         the single biggest one in the app. So the bar itself no longer
+         blurs at all: a solid, near-opaque tint (98%) that reads clean
+         and flat, ChatGPT-header style, for zero per-frame cost. The
+         floating "More" overflow panel below still gets a real blur --
+         it's a transient popover, not something living permanently in the
+         scroll path, so the cost only exists for as long as it's open. */
       .sb-topbar {
         display: flex; align-items: center; gap: 12px; padding: 16px clamp(20px, 4vw, 52px) 4px;
         position: sticky; top: 0; z-index: 40;
-        background: color-mix(in srgb, var(--bg) 78%, transparent);
-        backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%);
+        background: color-mix(in srgb, var(--bg) 98%, transparent);
         border-bottom: 1px solid transparent;
         transform: translateY(0); transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .2s ease, padding-bottom .2s ease;
         will-change: transform;
@@ -273,7 +289,7 @@ export default function GlobalStyle() {
       .sb-topbar-brand {
         display: flex; align-items: center; gap: 8px; padding: 5px 16px 5px 8px; border-radius: 999px;
         border: 2.5px solid var(--outline);
-        background: color-mix(in srgb, var(--card) 82%, transparent);
+        background: var(--card);
         box-shadow: 4px 4px 0 var(--outline); flex-shrink: 0;
       }
       .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; white-space: nowrap; }
@@ -281,7 +297,7 @@ export default function GlobalStyle() {
       .sb-pillnav {
         position: relative; flex: 1 1 auto; min-width: 0; border-radius: 999px;
         border: 2.5px solid var(--outline);
-        background: color-mix(in srgb, var(--card) 82%, transparent);
+        background: var(--card);
         box-shadow: 4px 4px 0 var(--outline);
       }
       /* The clipping lives here, one level in, so the floating overflow
@@ -345,6 +361,7 @@ export default function GlobalStyle() {
       .sb-nav-item > svg, .sb-nav-item > span:not(.sb-nav-pill) { position: relative; z-index: 1; }
 
       .sb-mobile-toggle { display: none; }
+      .sb-mobile-dark-toggle { display: none; cursor: pointer; }
       .sb-mobile-nav { display: none; }
 
       .sb-main { padding: clamp(20px, 2.6vw, 40px) clamp(20px, 4vw, 52px) 90px; overflow-y: auto; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; }
@@ -1077,6 +1094,7 @@ export default function GlobalStyle() {
       @media (max-width: 720px) {
         .sb-topbar { display: none; }
         .sb-mobile-toggle { display: flex; position: fixed; top: 14px; left: 14px; z-index: 55; background: var(--card); border: 2px solid var(--outline); border-radius: 12px; padding: 8px; box-shadow: 3px 3px 0 var(--outline); }
+        .sb-mobile-dark-toggle { display: flex; position: fixed; top: 14px; right: 14px; z-index: 55; background: var(--card); border: 2px solid var(--outline); border-radius: 12px; padding: 8px; box-shadow: 3px 3px 0 var(--outline); color: var(--ink); }
         .sb-mobile-nav {
           display: flex; flex-direction: column; position: fixed; top: 58px; left: 14px;
           background: color-mix(in srgb, var(--card) 80%, transparent);

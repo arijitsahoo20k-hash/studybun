@@ -55,7 +55,7 @@ export default function FocusTimer(p) {
 
   return (
     <div className="sb-page">
-      <Card className="sb-timer-card">
+      <Card className="sb-timer-card" glass>
         <div className="sb-timer-topbar">
           <div className="sb-chip-row">
             {MODE_ORDER.map((m) => {

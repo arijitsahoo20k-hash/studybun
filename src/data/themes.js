@@ -120,3 +120,82 @@ export function timeWash() {
   if (h < 20) return "rgba(255,165,110,0.06)";      // evening — warm amber
   return "rgba(150,100,200,0.07)";                  // night — warm violet
 }
+
+/* ===== dark mode =====
+   Not 12 hand-authored dark palettes -- a shared near-black "shell" (the
+   ChatGPT-style dark you get from OLED-friendly grays, not a tinted-navy
+   dark) so every theme lands on the same calm dark surface, plus each
+   theme's own accent/palette colors pushed brighter and more saturated so
+   they still read as *that* theme instead of all 12 collapsing into the
+   same gray app. Pastels that work on a white card go muddy on a near-
+   black one at the same lightness, so accents get a real lightness lift
+   here, not just a coat of paint. */
+function hexToRgb(hex) {
+  const h = hex.replace("#", "");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function rgbToHex([r, g, b]) {
+  const c = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  return `#${c(r)}${c(g)}${c(b)}`;
+}
+function rgbToHsl([r, g, b]) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s; const l = (max + min) / 2;
+  if (max === min) { h = s = 0; } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      default: h = (r - g) / d + 4;
+    }
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function hslToRgb([h, s, l]) {
+  if (s === 0) { const v = l * 255; return [v, v, v]; }
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return [hue2rgb(p, q, h + 1 / 3) * 255, hue2rgb(p, q, h) * 255, hue2rgb(p, q, h - 1 / 3) * 255];
+}
+/** Brighten + resaturate a light-theme pastel so it still pops on a
+ *  near-black surface — lift lightness toward ~62-72% and push saturation
+ *  up, capped so nothing blows out to neon. */
+function forDark(hex, { dl = 0.14, ds = 0.12, minL = 0.55, maxL = 0.78 } = {}) {
+  const [h, s, l] = rgbToHsl(hexToRgb(hex));
+  const newL = Math.max(minL, Math.min(maxL, l + dl));
+  const newS = Math.max(0, Math.min(1, s + ds));
+  return rgbToHex(hslToRgb([h, newS, newL]));
+}
+
+const DARK_SHELL = {
+  bg: "#0F0F10", card: "#1B1B1D", soft: "#242426", outline: "#3A3A3D",
+  ink: "#ECECEC", muted: "#9B9B9E", dot: "rgba(255,255,255,0.045)",
+};
+
+export function darkThemeVars(theme) {
+  const accent = forDark(theme.accent);
+  const accent2 = forDark(theme.accent2);
+  const palette = theme.palette.map((c) => forDark(c, { dl: 0.1, ds: 0.08, minL: 0.5, maxL: 0.75 }));
+  return {
+    "--bg": DARK_SHELL.bg, "--card": DARK_SHELL.card, "--accent": accent, "--accent2": accent2,
+    "--soft": DARK_SHELL.soft, "--ink": DARK_SHELL.ink, "--muted": DARK_SHELL.muted, "--outline": DARK_SHELL.outline,
+    "--dot": DARK_SHELL.dot,
+    "--mascot-fill": forDark(theme.mascotFill, { dl: 0.06, ds: 0.05, minL: 0.45, maxL: 0.7 }),
+    "--mascot-inner": DARK_SHELL.card,
+    "--mascot-blush": forDark(theme.mascotBlush),
+    "--p1": palette[0], "--p2": palette[1], "--p3": palette[2],
+    "--p4": palette[3], "--p5": palette[4], "--p6": palette[5],
+    "--font-display": "'Baloo 2', system-ui, sans-serif", "--font-body": "'Nunito', system-ui, sans-serif",
+    "--font-hand": "'Caveat', cursive",
+  };
+}

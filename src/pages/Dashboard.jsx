@@ -56,7 +56,7 @@ export default function Dashboard(p) {
     <div className="sb-page">
       <div className="sb-dash-layout">
         <div className="sb-dash-main">
-          <Card className="sb-hero" washi paper>
+          <Card className="sb-hero" washi paper glass>
             <div>
               <div className="sb-hero-greet">{greeting}, {p.profile.name || "friend"} 🌸</div>
               <div className="sb-hero-line sb-quote">{line}</div>
@@ -68,18 +68,18 @@ export default function Dashboard(p) {
           </Card>
 
           <div className="sb-grid-3">
-            <Card paper>
+            <Card paper glass>
               <SectionTitle icon={Target}>Countdown to {p.profile.exam}</SectionTitle>
               <div className="sb-countdown sb-countdown-hero">{p.daysToExam}<span>days left</span></div>
             </Card>
-            <Card paper>
+            <Card paper glass>
               <SectionTitle icon={Clock3}>Today's goal</SectionTitle>
               <div className="sb-goal-row">
                 <ProgressRing pct={goalPct} />
                 <div><div className="sb-goal-num">{p.todayHours}h <span>/ {p.profile.daily_goal}h</span></div><div className="sb-muted">{p.todayLoggedHours}h logged · {p.todayTimerHours}h focus timer</div></div>
               </div>
             </Card>
-            <Card paper>
+            <Card paper glass>
               <div className="sb-section-title">
                 <span>
                   <span className={`sb-icon-badge sb-streak-flame sb-flame-tier-${flameTierFor(p.streak).tier}${p.streakActiveToday ? " sb-streak-flame--lit" : ""}`}>

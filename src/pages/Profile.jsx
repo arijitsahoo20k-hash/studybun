@@ -7,7 +7,7 @@ export default function ProfilePage(p) {
   const totalStudyHours = Math.floor(p.sessions.reduce((a, s) => a + Number(s.minutes || 0), 0) / 60);
   return (
     <div className="sb-page">
-      <Card className="sb-hero" washi>
+      <Card className="sb-hero" washi glass>
         <div>
           <div className="sb-hero-greet">{p.profile.name || "Friend"}</div>
           <div className="sb-hero-line">{p.profile.exam} · Goal {p.profile.daily_goal}h/day</div>
