@@ -18,12 +18,14 @@ import { MoreHorizontal } from "lucide-react";
  * it never yanks that item into the main row (which used to shove every
  * other item sideways and could even collapse "More" away entirely).
  *
- * The active state is a single pill (span.sb-pillnav-indicator) that slides
- * between whichever button is current -- a visible item, or the More
- * trigger when the active page is tucked in the overflow panel -- using the
- * same FLIP technique as the mobile dropdown's sliding pill: snap to the
- * final size instantly, animate only `transform` so it's compositor-only
- * and stays smooth regardless of refresh rate.
+ * The active state is a single pill (span.sb-pillnav-indicator, a
+ * motion.span) that springs between whichever button is current -- a
+ * visible item, or the More trigger when the active page is tucked in the
+ * overflow panel. Framer Motion owns the animation: we only ever hand it a
+ * target box (x/y/width/height in wrap-relative px) via state, and it
+ * interpolates from whatever's currently rendered. A resize-driven reflow
+ * or the very first paint sets `instant` so that update snaps with zero
+ * duration instead of animating.
  */
 export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem }) {
   const wrapRef = useRef(null);
@@ -32,10 +34,22 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
   const moreTriggerRef = useRef(null);
   const panelRef = useRef(null);
   const itemRefs = useRef({});
-  const pillRef = useRef(null);
 
   const [visibleCount, setVisibleCount] = useState(nav.length);
   const [overflowOpen, setOverflowOpen] = useState(false);
+
+  // The sliding indicator's box, in wrap-relative px -- handed straight to
+  // Framer Motion's `animate` prop below instead of being pushed onto the
+  // DOM by hand. Motion interpolates x/y/width/height itself (it already
+  // knows the currently-rendered value, so a prop change animates FROM
+  // there), so a page switch gets one springy, physically-real slide
+  // instead of a linear CSS transition. `pillInstantRef` flips a render to
+  // a zero-duration snap (first paint, a width-driven visibleCount change,
+  // a font swap) without needing its own state -- positionPill sets it
+  // synchronously right before the setPillBox that triggers the re-render
+  // reading it, so it's always current by the time JSX below runs.
+  const [pillBox, setPillBox] = useState({ x: 0, y: 0, width: 0, height: 0, opacity: 0 });
+  const pillInstantRef = useRef(true);
 
   // Tap devices (tablets) never fire onMouseEnter/onFocus, so without this
   // the lazy chunk for a page only starts loading on tap itself -- and since
@@ -118,57 +132,29 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
     setOverflowOpen(false);
   };
 
-  // Slide the indicator pill onto whichever element is current -- a visible
-  // item's own button, or the More trigger if the active page is sitting in
-  // the overflow panel. `instant` skips the animation (first paint, a
-  // width-driven visibleCount change, or a font swap) so only an actual page
-  // switch gets the sliding motion.
+  // Figure out where the indicator pill should sit -- over whichever
+  // element is current, a visible item's own button, or the More trigger if
+  // the active page is sitting in the overflow panel -- and hand the box
+  // straight to Framer Motion via state. `instant` marks this update to
+  // render with a zero-duration transition (see pillInstantRef above) so
+  // only an actual page switch gets the springy slide; a resize-driven
+  // reflow or the very first paint snaps in place instead.
   const positionPill = (instant) => {
-    const pill = pillRef.current;
     const wrap = wrapRef.current;
-    if (!pill || !wrap) return;
+    if (!wrap) return;
     const target = overflowHasActive ? moreTriggerRef.current : itemRefs.current[activeId];
-    if (!target) { pill.style.opacity = "0"; return; }
+    if (!target) { setPillBox((b) => ({ ...b, opacity: 0 })); return; }
 
     const wrapRect = wrap.getBoundingClientRect();
     const rect = target.getBoundingClientRect();
-    const targetW = rect.width;
-    const targetH = rect.height;
-    const targetX = rect.left - wrapRect.left;
-    const targetY = rect.top - wrapRect.top;
-
-    if (instant || pill.__sbX === undefined) {
-      pill.style.transition = "none";
-      pill.style.opacity = "1";
-      pill.style.width = `${targetW}px`;
-      pill.style.height = `${targetH}px`;
-      pill.style.transform = `translate(${targetX}px, ${targetY}px)`;
-      void pill.offsetHeight; // force reflow so "transition: none" actually applies
-      requestAnimationFrame(() => { pill.style.transition = ""; });
-      pill.__sbX = targetX; pill.__sbY = targetY; pill.__sbW = targetW; pill.__sbH = targetH;
-      return;
-    }
-
-    // FLIP: snap to final width/height (cheap, once), start the transform at
-    // a scaled stand-in for the OLD box, then transition transform back to
-    // identity -- compositor-only, so it stays smooth at 120Hz+ even while
-    // the new page's chunk is loading on the main thread.
-    const prevX = pill.__sbX, prevY = pill.__sbY, prevW = pill.__sbW, prevH = pill.__sbH;
-    const scaleX = targetW ? prevW / targetW : 1;
-    const scaleY = targetH ? prevH / targetH : 1;
-
-    pill.style.transition = "none";
-    pill.style.opacity = "1";
-    pill.style.width = `${targetW}px`;
-    pill.style.height = `${targetH}px`;
-    pill.style.transform = `translate(${prevX}px, ${prevY}px) scale(${scaleX}, ${scaleY})`;
-    void pill.offsetHeight;
-    pill.style.transition = "";
-    requestAnimationFrame(() => {
-      pill.style.transform = `translate(${targetX}px, ${targetY}px) scale(1, 1)`;
+    pillInstantRef.current = instant;
+    setPillBox({
+      x: rect.left - wrapRect.left,
+      y: rect.top - wrapRect.top,
+      width: rect.width,
+      height: rect.height,
+      opacity: 1,
     });
-
-    pill.__sbX = targetX; pill.__sbY = targetY; pill.__sbW = targetW; pill.__sbH = targetH;
   };
 
   const lastAnimKeyRef = useRef(null);
@@ -196,7 +182,13 @@ export default function TopNav({ nav, page, setPage, reducedMotion, onHoverItem 
   return (
     <nav className="sb-pillnav">
       <div className="sb-pillnav-row" ref={wrapRef}>
-        <span ref={pillRef} className="sb-pillnav-indicator" aria-hidden="true" style={{ opacity: 0 }} />
+        <motion.span
+          className="sb-pillnav-indicator"
+          aria-hidden="true"
+          initial={false}
+          animate={{ x: pillBox.x, y: pillBox.y, width: pillBox.width, height: pillBox.height, opacity: pillBox.opacity }}
+          transition={pillInstantRef.current ? { duration: 0 } : { type: "spring", stiffness: 480, damping: 42, mass: 0.9 }}
+        />
         {visible.map((n) => (
           <button
             key={n.id}

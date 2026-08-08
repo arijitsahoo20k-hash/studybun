@@ -1109,10 +1109,10 @@ export default function App() {
           <motion.div
             key={page}
             className="sb-page-transition"
-            initial={reducedMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={reducedMotion ? undefined : { opacity: 0 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
+            initial={reducedMotion ? false : { opacity: 0, y: 14, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reducedMotion ? undefined : { opacity: 0, y: -10, scale: 0.985 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           >
             <Suspense fallback={<PageLoading mascot={mascot} />}>
               {page === "dashboard" && <Dashboard {...pageProps} />}

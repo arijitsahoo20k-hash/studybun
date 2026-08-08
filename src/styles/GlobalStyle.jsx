@@ -64,7 +64,13 @@ export default function GlobalStyle() {
 
       .sb-env-banner { grid-column: 1 / -1; background: var(--soft); color: var(--ink); border-bottom: 2.5px solid var(--outline); padding: 8px 16px; font-size: 12.5px; font-weight: 800; text-align: center; position: relative; z-index: 2; }
 
-      .sb-pwa-banner { position: fixed; left: 16px; right: 16px; bottom: 16px; margin: 0 auto; max-width: 420px; background: var(--card); border: 2.5px solid var(--outline); border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 13px; color: var(--ink); box-shadow: 4px 4px 0 var(--outline); z-index: 70; animation: sb-pop .25s ease; }
+      .sb-pwa-banner {
+        position: fixed; left: 16px; right: 16px; bottom: 16px; margin: 0 auto; max-width: 420px;
+        background: color-mix(in srgb, var(--card) 82%, transparent);
+        backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+        border: 2.5px solid var(--outline); border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+        font-weight: 700; font-size: 13px; color: var(--ink); box-shadow: 4px 4px 0 var(--outline); z-index: 70; animation: sb-pop .25s ease;
+      }
       .sb-pwa-banner-text { flex: 1; line-height: 1.3; }
       .sb-pwa-banner-actions { display: flex; gap: 6px; flex-shrink: 0; }
       .sb-pwa-btn { border: 1.5px solid var(--outline); background: var(--accent); color: #fff; border-radius: 10px; padding: 6px 12px; font-size: 12.5px; font-weight: 800; cursor: pointer; }
@@ -115,9 +121,26 @@ export default function GlobalStyle() {
         65% { transform: rotate(6deg) translate(-1px,0); }
       }
 
-      /* ===== sticker cards ===== */
+      /* ===== frosted glass, two tiers =====
+         Tier 1 "chrome glass" (topbar, pill nav, toasts, the buddy bubble,
+         floating menus): a real backdrop-filter blur. Genuinely premium,
+         and cheap, because there are only ever one or two of these mounted
+         at once.
+         Tier 2 is .sb-card itself, right below. Every sticker card in the
+         app renders through this one class, and pages like Syllabus or
+         Questions can have dozens mounted at a time -- a real blur on all
+         of them would tax scroll performance on exactly the kind of
+         mid-range Android tablet/phone this PWA runs on. So sticker cards
+         get the glass *look* -- a translucent tint plus a soft diagonal
+         sheen highlight -- without the blur *cost*. No backdrop-filter, no
+         per-frame compositing work, just two flat background layers that
+         paint once. Same offset hard-shadow + border sticker language
+         either way, so the identity of the design doesn't change. */
       .sb-card {
-        background: var(--card); border-radius: 24px; padding: 20px;
+        background:
+          linear-gradient(135deg, color-mix(in srgb, #fff 42%, transparent) 0%, transparent 46%),
+          color-mix(in srgb, var(--card) 84%, transparent);
+        border-radius: 24px; padding: 20px;
         border: 2.5px solid var(--outline); box-shadow: 5px 5px 0 var(--outline);
         transition: transform .15s ease, box-shadow .15s ease, background-color .35s ease, border-color .35s ease;
         position: relative; z-index: 1;
@@ -125,7 +148,11 @@ export default function GlobalStyle() {
       .sb-clickable { cursor: pointer; }
       .sb-clickable:hover { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 7px 7px 0 var(--outline); }
       .sb-clickable:nth-child(even):hover { transform: translate(-2px, -2px) rotate(1deg); }
-      .sb-card-active { background: var(--soft); }
+      .sb-card-active {
+        background:
+          linear-gradient(135deg, color-mix(in srgb, #fff 42%, transparent) 0%, transparent 46%),
+          color-mix(in srgb, var(--soft) 88%, transparent);
+      }
 
       /* ===== rough paper texture (dashboard cards only) =====
          A single ::before pseudo-element per card -- no extra DOM node.
@@ -199,13 +226,44 @@ export default function GlobalStyle() {
          measures and decides -- nothing here is breakpoint-guessed), and a
          pair of dedicated icon buttons for Settings/Profile so those two
          pages are never also duplicated inside the pill row or its overflow. */
-      .sb-topbar { display: flex; align-items: center; gap: 12px; padding: 16px clamp(20px, 4vw, 52px) 4px; position: sticky; top: 0; z-index: 40; background: var(--bg); transform: translateY(0); transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .2s ease, padding-bottom .2s ease; will-change: transform; }
+      /* Was a plain opaque "background: var(--bg)", pinned via position:
+         sticky plus a translateY transform for the hide-on-scroll-down
+         behaviour. An opaque box on its own GPU compositor layer, moved by
+         transform, is exactly the recipe for the classic sticky-header
+         hairline: the browser's layer bounds round to the device pixel
+         grid slightly differently than the content scrolling underneath,
+         so a 1px seam of whatever's behind the header peeks through along
+         its bottom edge and reads as an unwanted border. A translucent,
+         blurred background doesn't have a hard edge for that rounding
+         error to show up against, so the seam disappears as a side effect
+         of the glass treatment -- no separate patch needed. */
+      .sb-topbar {
+        display: flex; align-items: center; gap: 12px; padding: 16px clamp(20px, 4vw, 52px) 4px;
+        position: sticky; top: 0; z-index: 40;
+        background: color-mix(in srgb, var(--bg) 78%, transparent);
+        backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
+        border-bottom: 1px solid transparent;
+        transform: translateY(0); transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .2s ease, padding-bottom .2s ease;
+        will-change: transform;
+      }
       .sb-topbar.sb-topbar-hidden { transform: translateY(-135%); }
-      .sb-topbar.sb-topbar-scrolled { padding-bottom: 12px; box-shadow: 0 10px 20px -16px rgba(0,0,0,.4); }
-      .sb-topbar-brand { display: flex; align-items: center; gap: 8px; padding: 5px 16px 5px 8px; border-radius: 999px; border: 2.5px solid var(--outline); background: var(--card); box-shadow: 4px 4px 0 var(--outline); flex-shrink: 0; }
+      .sb-topbar.sb-topbar-scrolled { padding-bottom: 12px; box-shadow: 0 14px 28px -20px rgba(0,0,0,.45); }
+      .sb-topbar-brand {
+        display: flex; align-items: center; gap: 8px; padding: 5px 16px 5px 8px; border-radius: 999px;
+        border: 2.5px solid var(--outline);
+        background: color-mix(in srgb, var(--card) 74%, transparent);
+        backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
+        box-shadow: 4px 4px 0 var(--outline); flex-shrink: 0;
+      }
       .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; white-space: nowrap; }
 
-      .sb-pillnav { position: relative; flex: 1 1 auto; min-width: 0; border-radius: 999px; border: 2.5px solid var(--outline); background: var(--card); box-shadow: 4px 4px 0 var(--outline); }
+      .sb-pillnav {
+        position: relative; flex: 1 1 auto; min-width: 0; border-radius: 999px;
+        border: 2.5px solid var(--outline);
+        background: color-mix(in srgb, var(--card) 74%, transparent);
+        backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
+        box-shadow: 4px 4px 0 var(--outline);
+      }
       /* The clipping lives here, one level in, so the floating overflow
          panel below (a sibling, not a child of this row) never gets cut
          off along with it. */
@@ -215,22 +273,38 @@ export default function GlobalStyle() {
       .sb-pillnav-item.active, .sb-pillnav-more.active { color: var(--card); font-weight: 800; }
       .sb-pillnav-item svg, .sb-pillnav-more svg { flex-shrink: 0; }
       /* The single sliding indicator (see TopNav.jsx) -- an absolutely
-         positioned pill that transform-animates between whichever button is
-         current, instead of each button flashing its own background on/off.
-         z-index 0 keeps it under the (z-index 1) button labels/icons above. */
-      .sb-pillnav-indicator { position: absolute; top: 0; left: 0; z-index: 0; border-radius: 999px; background: var(--outline); pointer-events: none; will-change: transform; transition: transform .32s cubic-bezier(.22,1,.36,1); }
+         positioned pill that Framer Motion springs between whichever button
+         is current, instead of each button flashing its own background
+         on/off. z-index 0 keeps it under the (z-index 1) button labels/icons
+         above. No CSS transition here -- Motion owns the animation via its
+         own inline style writes, so a CSS transition on the same property
+         would just race it. */
+      .sb-pillnav-indicator { position: absolute; top: 0; left: 0; z-index: 0; border-radius: 999px; background: var(--outline); pointer-events: none; }
       /* Off-screen mirror used only to measure natural widths -- see
          TopNav.jsx's recalc(). Laid out (not display:none) so real widths
          come back, just invisible and out of flow. */
       .sb-pillnav-measure { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; display: flex; gap: 6px; padding: 6px; }
 
-      .sb-pillnav-overflow { position: absolute; top: calc(100% + 8px); right: 0; z-index: 45; display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 4px; padding: 10px; background: var(--card); border: 2.5px solid var(--outline); border-radius: 18px; box-shadow: 5px 5px 0 var(--outline); max-width: min(420px, 90vw); }
+      .sb-pillnav-overflow {
+        position: absolute; top: calc(100% + 8px); right: 0; z-index: 45; display: grid;
+        grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 4px; padding: 10px;
+        background: color-mix(in srgb, var(--card) 80%, transparent);
+        backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+        border: 2.5px solid var(--outline); border-radius: 18px; box-shadow: 5px 5px 0 var(--outline); max-width: min(420px, 90vw);
+      }
       .sb-pillnav-overflow-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 12px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13px; cursor: pointer; text-align: left; transition: background .15s ease, border-color .15s ease; }
       .sb-pillnav-overflow-item:hover:not(.active) { background: var(--soft); }
       .sb-pillnav-overflow-item.active { background: var(--soft); border-color: var(--outline); font-weight: 800; }
 
       .sb-topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-      .sb-topbar-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; border: 2.5px solid var(--outline); background: var(--card); color: var(--ink); cursor: pointer; box-shadow: 3px 3px 0 var(--outline); transition: transform .15s ease, background .15s ease, color .15s ease; flex-shrink: 0; }
+      .sb-topbar-icon {
+        display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%;
+        border: 2.5px solid var(--outline);
+        background: color-mix(in srgb, var(--card) 74%, transparent);
+        backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
+        color: var(--ink); cursor: pointer; box-shadow: 3px 3px 0 var(--outline);
+        transition: transform .15s ease, background .15s ease, color .15s ease; flex-shrink: 0;
+      }
       .sb-topbar-icon:hover { transform: translateY(-2px); }
       .sb-topbar-icon.active { background: var(--outline); color: var(--card); }
 
@@ -677,7 +751,13 @@ export default function GlobalStyle() {
       .sb-muted { color: var(--muted); }
       .sb-muted.small { font-size: 11px; }
 
-      .sb-toast { position: fixed; top: 20px; right: 20px; background: var(--card); border: 2.5px solid var(--outline); border-radius: 16px; padding: 10px 16px; display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13px; box-shadow: 4px 4px 0 var(--outline); z-index: 60; animation: sb-pop .25s ease; max-width: min(360px, 80vw); }
+      .sb-toast {
+        position: fixed; top: 20px; right: 20px;
+        background: color-mix(in srgb, var(--card) 80%, transparent);
+        backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+        border: 2.5px solid var(--outline); border-radius: 16px; padding: 10px 16px; display: flex; align-items: center; gap: 8px;
+        font-weight: 800; font-size: 13px; box-shadow: 4px 4px 0 var(--outline); z-index: 60; animation: sb-pop .25s ease; max-width: min(360px, 80vw);
+      }
       @keyframes sb-pop { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
       .sb-toast-undo { flex-shrink: 0; border: 1.5px solid var(--outline); background: var(--soft); color: var(--ink); border-radius: 10px; padding: 5px 10px; font-size: 12px; font-weight: 800; cursor: pointer; margin-left: 4px; }
       .sb-toast-undo:hover { transform: translateY(-1px); }
@@ -731,7 +811,13 @@ export default function GlobalStyle() {
 
       /* ===== Buddy guide (persistent mascot companion, all pages) ===== */
       .sb-buddy { position: fixed; bottom: 20px; right: 20px; z-index: 65; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-      .sb-buddy-bubble { position: relative; max-width: 260px; background: var(--card); border: 2.5px solid var(--outline); border-radius: 18px; padding: 14px 30px 12px 16px; box-shadow: 4px 4px 0 var(--outline); animation: sb-pop .2s ease; }
+      .sb-buddy-bubble {
+        position: relative; max-width: 260px;
+        background: color-mix(in srgb, var(--card) 80%, transparent);
+        backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+        border: 2.5px solid var(--outline); border-radius: 18px; padding: 14px 30px 12px 16px;
+        box-shadow: 4px 4px 0 var(--outline); animation: sb-pop .2s ease;
+      }
       .sb-buddy-text { font-size: 12.5px; font-weight: 700; color: var(--ink); margin: 0; line-height: 1.45; }
       .sb-buddy-close { position: absolute; top: 8px; right: 8px; background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px; display: flex; }
       .sb-buddy-close:hover { color: var(--ink); }
@@ -747,7 +833,13 @@ export default function GlobalStyle() {
       .sb-buddy-action-ask { background: var(--accent); color: #fff; border-color: var(--outline); }
 
       /* ===== Buddy smart chat panel ===== */
-      .sb-buddy-chat { width: 300px; max-width: calc(100vw - 32px); background: var(--card); border: 2.5px solid var(--outline); border-radius: 18px; box-shadow: 4px 4px 0 var(--outline); display: flex; flex-direction: column; overflow: hidden; animation: sb-pop .2s ease; }
+      .sb-buddy-chat {
+        width: 300px; max-width: calc(100vw - 32px);
+        background: color-mix(in srgb, var(--card) 84%, transparent);
+        backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
+        border: 2.5px solid var(--outline); border-radius: 18px; box-shadow: 4px 4px 0 var(--outline);
+        display: flex; flex-direction: column; overflow: hidden; animation: sb-pop .2s ease;
+      }
       .sb-buddy-chat-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 2px solid var(--outline); background: var(--soft); }
       .sb-buddy-chat-title { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; color: var(--ink); }
       .sb-buddy-chat-list { flex: 1; max-height: 320px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -955,7 +1047,13 @@ export default function GlobalStyle() {
       @media (max-width: 720px) {
         .sb-topbar { display: none; }
         .sb-mobile-toggle { display: flex; position: fixed; top: 14px; left: 14px; z-index: 55; background: var(--card); border: 2px solid var(--outline); border-radius: 12px; padding: 8px; box-shadow: 3px 3px 0 var(--outline); }
-        .sb-mobile-nav { display: flex; flex-direction: column; position: fixed; top: 58px; left: 14px; background: var(--card); border: 2px solid var(--outline); border-radius: 16px; padding: 10px; gap: 4px; z-index: 55; box-shadow: 5px 5px 0 var(--outline); max-height: 80vh; overflow-y: auto; }
+        .sb-mobile-nav {
+          display: flex; flex-direction: column; position: fixed; top: 58px; left: 14px;
+          background: color-mix(in srgb, var(--card) 80%, transparent);
+          backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+          border: 2px solid var(--outline); border-radius: 16px; padding: 10px; gap: 4px; z-index: 55;
+          box-shadow: 5px 5px 0 var(--outline); max-height: 80vh; overflow-y: auto;
+        }
         .sb-main { padding: 70px 16px 24px; }
         .sb-bottom-nav { display: none; }
         .sb-buddy { bottom: 20px; right: 14px; }
