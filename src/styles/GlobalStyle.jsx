@@ -16,20 +16,6 @@ export default function GlobalStyle() {
          for :focus-visible — which only fires for keyboard/assistive-tech
          focus, not mouse or touch — so accessibility is preserved rather than
          removed. */
-      /* ===== viewport / browser chrome reset =====
-         The app owns the full viewport. Chrome's default body margin was
-         leaving a visible white frame around the entire PWA/page, especially
-         obvious on desktop where the dark app surface stopped several pixels
-         short of the window edges. Keep the reset on the document itself so
-         every route (Dashboard, Settings, and lazy-loaded pages) gets the
-         same edge-to-edge canvas. */
-      html, body, #root {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        min-width: 0;
-        min-height: 100%;
-      }
       html { -webkit-tap-highlight-color: transparent; }
       button, a, input, select, textarea, [tabindex], .sb-clickable {
         -webkit-tap-highlight-color: transparent;
@@ -308,21 +294,17 @@ export default function GlobalStyle() {
       }
       .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; white-space: nowrap; }
 
+      /* Desktop navigation is intentionally a transparent navigation rail.
+         The buttons/active indicator are the UI; the old outer card created
+         a large, unrelated rectangle around the entire nav. */
       .sb-pillnav {
-        /* The nav items already provide their own active/hover surfaces.
-           Keeping another card behind the whole row created a large
-           rectangular/capsule "box around the nav", which was especially
-           distracting on the Dashboard and Settings layouts. Let the header
-           breathe and keep only the individual navigation states visible. */
-        position: relative; flex: 1 1 auto; min-width: 0; border-radius: 999px;
-        border: 0;
-        background: transparent;
-        box-shadow: none;
+        position: relative; flex: 1 1 auto; min-width: 0;
+        border: none; background: transparent; box-shadow: none;
       }
       /* The clipping lives here, one level in, so the floating overflow
          panel below (a sibling, not a child of this row) never gets cut
          off along with it. */
-      .sb-pillnav-row { position: relative; display: flex; align-items: center; gap: 6px; overflow: hidden; padding: 6px; border-radius: inherit; }
+      .sb-pillnav-row { position: relative; display: flex; align-items: center; gap: 6px; overflow: hidden; padding: 2px 0; border-radius: 0; }
       .sb-pillnav-item, .sb-pillnav-more { position: relative; z-index: 1; display: flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 999px; border: none; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: color .15s ease, transform .15s ease; touch-action: manipulation; }
       .sb-pillnav-item:hover:not(.active), .sb-pillnav-more:hover:not(.active) { background: var(--soft); transform: translateY(-1px); }
       .sb-pillnav-item.active, .sb-pillnav-more.active { color: var(--card); font-weight: 800; }
@@ -338,7 +320,7 @@ export default function GlobalStyle() {
       /* Off-screen mirror used only to measure natural widths -- see
          TopNav.jsx's recalc(). Laid out (not display:none) so real widths
          come back, just invisible and out of flow. */
-      .sb-pillnav-measure { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; display: flex; gap: 6px; padding: 6px; }
+      .sb-pillnav-measure { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; display: flex; gap: 6px; padding: 2px 0; }
 
       .sb-pillnav-overflow {
         position: absolute; top: calc(100% + 8px); right: 0; z-index: 45; display: grid;
@@ -1583,56 +1565,9 @@ export default function GlobalStyle() {
         background: linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0) 55%);
       }
 
-      /* ================================================================
-         StudyBun 2026 workspace redesign
-         Scoped to active non-Dashboard/Settings routes. Shared navigation is
-         optimized globally, but the protected Dashboard and Settings page
-         surfaces are intentionally not restyled.
-         ================================================================ */
-      .sb-app:has(.sb-route-study)::before,
-      .sb-app:has(.sb-route-timer)::before,
-      .sb-app:has(.sb-route-syllabus)::before,
-      .sb-app:has(.sb-route-backlog)::before,
-      .sb-app:has(.sb-route-goals)::before,
-      .sb-app:has(.sb-route-questions)::before,
-      .sb-app:has(.sb-route-mocks)::before,
-      .sb-app:has(.sb-route-revision)::before,
-      .sb-app:has(.sb-route-planner)::before,
-      .sb-app:has(.sb-route-analytics)::before,
-      .sb-app:has(.sb-route-ai)::before,
-      .sb-app:has(.sb-route-achievements)::before,
-      .sb-app:has(.sb-route-leaderboard)::before,
-      .sb-app:has(.sb-route-profile)::before { display: none !important; }
-
-      .sb-app:has(.sb-route-study) .sb-decor-layer,
-      .sb-app:has(.sb-route-timer) .sb-decor-layer,
-      .sb-app:has(.sb-route-syllabus) .sb-decor-layer,
-      .sb-app:has(.sb-route-backlog) .sb-decor-layer,
-      .sb-app:has(.sb-route-goals) .sb-decor-layer,
-      .sb-app:has(.sb-route-questions) .sb-decor-layer,
-      .sb-app:has(.sb-route-mocks) .sb-decor-layer,
-      .sb-app:has(.sb-route-revision) .sb-decor-layer,
-      .sb-app:has(.sb-route-planner) .sb-decor-layer,
-      .sb-app:has(.sb-route-analytics) .sb-decor-layer,
-      .sb-app:has(.sb-route-ai) .sb-decor-layer,
-      .sb-app:has(.sb-route-achievements) .sb-decor-layer,
-      .sb-app:has(.sb-route-leaderboard) .sb-decor-layer,
-      .sb-app:has(.sb-route-profile) .sb-decor-layer { display: none; }
-
-      .sb-app:has(.sb-route-study),
-      .sb-app:has(.sb-route-timer),
-      .sb-app:has(.sb-route-syllabus),
-      .sb-app:has(.sb-route-backlog),
-      .sb-app:has(.sb-route-goals),
-      .sb-app:has(.sb-route-questions),
-      .sb-app:has(.sb-route-mocks),
-      .sb-app:has(.sb-route-revision),
-      .sb-app:has(.sb-route-planner),
-      .sb-app:has(.sb-route-analytics),
-      .sb-app:has(.sb-route-ai),
-      .sb-app:has(.sb-route-achievements),
-      .sb-app:has(.sb-route-leaderboard),
-      .sb-app:has(.sb-route-profile) { background-image: none !important; }
+      /* Shared theme backdrop + motifs are part of the app shell, not a
+         Dashboard-only treatment. Every authenticated route keeps the same
+         theme atmosphere while its page content remains independent. */
 
       .sb-app:has(.sb-route-study) .sb-card,
       .sb-app:has(.sb-route-study) .sb-card-glass,
