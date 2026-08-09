@@ -16,6 +16,20 @@ export default function GlobalStyle() {
          for :focus-visible — which only fires for keyboard/assistive-tech
          focus, not mouse or touch — so accessibility is preserved rather than
          removed. */
+      /* ===== viewport / browser chrome reset =====
+         The app owns the full viewport. Chrome's default body margin was
+         leaving a visible white frame around the entire PWA/page, especially
+         obvious on desktop where the dark app surface stopped several pixels
+         short of the window edges. Keep the reset on the document itself so
+         every route (Dashboard, Settings, and lazy-loaded pages) gets the
+         same edge-to-edge canvas. */
+      html, body, #root {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-width: 0;
+        min-height: 100%;
+      }
       html { -webkit-tap-highlight-color: transparent; }
       button, a, input, select, textarea, [tabindex], .sb-clickable {
         -webkit-tap-highlight-color: transparent;
@@ -295,10 +309,15 @@ export default function GlobalStyle() {
       .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; white-space: nowrap; }
 
       .sb-pillnav {
+        /* The nav items already provide their own active/hover surfaces.
+           Keeping another card behind the whole row created a large
+           rectangular/capsule "box around the nav", which was especially
+           distracting on the Dashboard and Settings layouts. Let the header
+           breathe and keep only the individual navigation states visible. */
         position: relative; flex: 1 1 auto; min-width: 0; border-radius: 999px;
-        border: 2.5px solid var(--outline);
-        background: var(--card);
-        box-shadow: 4px 4px 0 var(--outline);
+        border: 0;
+        background: transparent;
+        box-shadow: none;
       }
       /* The clipping lives here, one level in, so the floating overflow
          panel below (a sibling, not a child of this row) never gets cut
