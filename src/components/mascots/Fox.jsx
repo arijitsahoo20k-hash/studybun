@@ -1,7 +1,7 @@
 import React from "react";
 import useBlink from "./useBlink";
 
-const OUTLINE = { stroke: "var(--mascot-outline)", strokeWidth: 2.2, strokeLinejoin: "round" };
+const OUTLINE = { stroke: "var(--figure-outline)", strokeWidth: 2.2, strokeLinejoin: "round" };
 
 /**
  * Fox reads as sly and quick: narrow angled eye-lines with no visible pupil
@@ -42,65 +42,65 @@ export default function Fox({ mood = "idle", size = 72, hop = false, peek = fals
       {/* big bushy tail, its silhouette changes with mood */}
       <path className="sb-fox-tail" d={TAILS[m.tail] || TAILS.curl} fill="none" stroke="var(--accent2)" strokeWidth="10" strokeLinecap="round" />
       {/* white tail tip */}
-      <circle cx={m.tail === "up" ? 20 : m.tail === "wrap" ? 10 : 26} cy={m.tail === "up" ? -20 : m.tail === "wrap" ? 20 : (m.tail === "droop" ? 12 : m.tail === "poof" ? -8 : -2)} r="6" fill="var(--mascot-inner)" />
+      <circle cx={m.tail === "up" ? 20 : m.tail === "wrap" ? 10 : 26} cy={m.tail === "up" ? -20 : m.tail === "wrap" ? 20 : (m.tail === "droop" ? 12 : m.tail === "poof" ? -8 : -2)} r="6" fill="var(--figure-inner)" />
 
       {/* tall pointed ears, one folds flat for "concerned", one stretches for "reminder" */}
       <g className="sb-ear sb-ear-l" style={{ transform: m.earsBack ? "rotate(-24deg) translate(2px,5px)" : "none" }}>
         <path d="M -21 -15 L -11 -37 L -2 -15 Z" fill="var(--accent2)" {...OUTLINE} />
-        <path d="M -16 -19 L -11 -31 L -6 -19 Z" fill="var(--mascot-inner)" />
+        <path d="M -16 -19 L -11 -31 L -6 -19 Z" fill="var(--figure-inner)" />
       </g>
       <g className="sb-ear sb-ear-r" style={{ transform: m.earPerk ? "translateY(-4px) scaleY(1.12)" : "none" }}>
         <path d="M 21 -15 L 11 -37 L 2 -15 Z" fill="var(--accent2)" {...OUTLINE} />
-        <path d="M 16 -19 L 11 -31 L 6 -19 Z" fill="var(--mascot-inner)" />
+        <path d="M 16 -19 L 11 -31 L 6 -19 Z" fill="var(--figure-inner)" />
       </g>
 
       {/* narrow head with a shorter, cuter muzzle */}
       <path
         d="M -21 -6 Q -23 -25 0 -27 Q 23 -25 21 -6 Q 21 6 9 13 Q 3 25 0 29 Q -3 25 -9 13 Q -21 6 -21 -6 Z"
-        fill="var(--mascot-body)" stroke="var(--mascot-outline)" strokeWidth="2.4" strokeLinejoin="round"
+        fill="var(--figure-body)" stroke="var(--figure-outline)" strokeWidth="2.4" strokeLinejoin="round"
       />
       {/* mask-like marking across the eyes, unique to fox */}
       <path d="M -9 -21 Q 0 -27 9 -21 Q 5 -15 0 -14 Q -5 -15 -9 -21 Z" fill="var(--accent2)" opacity="0.55" />
       {/* white muzzle patch hugging the chin */}
-      <path d="M -9 9 Q 0 27 9 9 Q 5 19 0 20 Q -5 19 -9 9 Z" fill="var(--mascot-inner)" stroke="var(--mascot-outline)" strokeWidth="1.4" strokeLinejoin="round" />
-      <ellipse cx="0" cy="19.5" rx="2.4" ry="1.8" fill="var(--mascot-ink)" />
+      <path d="M -9 9 Q 0 27 9 9 Q 5 19 0 20 Q -5 19 -9 9 Z" fill="var(--figure-inner)" stroke="var(--figure-outline)" strokeWidth="1.4" strokeLinejoin="round" />
+      <ellipse cx="0" cy="19.5" rx="2.4" ry="1.8" fill="var(--figure-ink)" />
 
       <circle cx="-8" cy="4" r="4" fill="var(--accent)" opacity="0.35" />
       <circle cx="8" cy="4" r="4" fill="var(--accent)" opacity="0.35" />
 
       <g transform="translate(-7,-6)">
-        <path d={eyePath} stroke="var(--mascot-ink)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
+        <path d={eyePath} stroke="var(--figure-ink)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
         {m.pupil && !blink && (
           <>
-            <ellipse cx="-1" cy="0.6" rx="1.5" ry="2.1" fill="var(--mascot-ink)" />
+            <ellipse cx="-1" cy="0.6" rx="1.5" ry="2.1" fill="var(--figure-ink)" />
             <circle cx="-1.6" cy="-0.4" r="0.6" fill="#fff" />
           </>
         )}
-        {m.brow && <path d="M -3 -7 Q 3 -9 6 -6" stroke="var(--mascot-ink)" strokeWidth="1.5" fill="none" strokeLinecap="round" />}
+        {m.brow && <path d="M -3 -7 Q 3 -9 6 -6" stroke="var(--figure-ink)" strokeWidth="1.5" fill="none" strokeLinecap="round" />}
       </g>
       <g transform="translate(7,-6) scale(-1,1)">
-        <path d={eyePath} stroke="var(--mascot-ink)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
+        <path d={eyePath} stroke="var(--figure-ink)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
         {m.pupil && !blink && (
           <>
-            <ellipse cx="-1" cy="0.6" rx="1.5" ry="2.1" fill="var(--mascot-ink)" />
+            <ellipse cx="-1" cy="0.6" rx="1.5" ry="2.1" fill="var(--figure-ink)" />
             <circle cx="-1.6" cy="-0.4" r="0.6" fill="#fff" />
           </>
         )}
       </g>
 
-      <path d={m.mouth} stroke="var(--mascot-ink)" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      <path d={m.mouth} stroke="var(--figure-ink)" strokeWidth="1.8" fill="none" strokeLinecap="round" />
 
       {m.quill && (
         <g transform="translate(11,16) rotate(35)">
-          <rect x="0" y="0" width="2" height="16" fill="var(--mascot-outline)" rx="1" />
-          <path d="M 1 0 L -2.5 -5 L 4.5 -5 Z" fill="var(--mascot-inner)" stroke="var(--mascot-outline)" strokeWidth="1" />
+          <rect x="0" y="0" width="2" height="16" fill="var(--figure-outline)" rx="1" />
+          <path d="M 1 0 L -2.5 -5 L 4.5 -5 Z" fill="var(--figure-inner)" stroke="var(--figure-outline)" strokeWidth="1" />
         </g>
       )}
       {m.zzz && <text x="18" y="-24" fontSize="11" fill="var(--muted)" fontFamily="var(--font-display)">z</text>}
       {m.tear && (
         <g transform="translate(-13,1)">
           <g className="sb-mascot-tear">
-            <path d="M 0 0 C 2.2 3 4 5.2 4 7.4 A 4 4 0 1 1 -4 7.4 C -4 5.2 -2.2 3 0 0 Z" fill="#8FCBEA" stroke="var(--mascot-outline)" strokeWidth="1" strokeLinejoin="round" />
+            <path d="M 0 0 C 2.2 3 4 5.2 4 7.4 A 4 4 0 1 1 -4 7.4 C -4 5.2 -2.2 3 0 0 Z" fill="#8FCBEA" stroke="var(--figure-outline)" strokeWidth="1" strokeLinejoin="round" />
             <ellipse cx="-1.3" cy="5.4" rx="1" ry="1.4" fill="#fff" opacity="0.85" />
           </g>
         </g>
