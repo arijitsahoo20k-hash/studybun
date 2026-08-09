@@ -104,7 +104,7 @@ export function themeVars(theme) {
   return {
     "--bg": theme.bg, "--card": theme.card, "--accent": theme.accent, "--accent2": theme.accent2,
     "--soft": theme.soft, "--ink": theme.ink, "--muted": theme.muted, "--outline": theme.outline,
-    "--dot": theme.dot, "--mascot-fill": theme.mascotFill, "--mascot-inner": theme.mascotInner, "--mascot-blush": theme.mascotBlush,
+    "--dot": theme.dot, "--mascot-fill": theme.mascotFill, "--mascot-body": theme.mascotFill, "--mascot-inner": theme.mascotInner, "--mascot-blush": theme.mascotBlush, "--mascot-outline": theme.outline, "--mascot-ink": theme.ink,
     "--p1": theme.palette[0], "--p2": theme.palette[1], "--p3": theme.palette[2],
     "--p4": theme.palette[3], "--p5": theme.palette[4], "--p6": theme.palette[5],
     "--font-display": "'Baloo 2', system-ui, sans-serif", "--font-body": "'Nunito', system-ui, sans-serif",
@@ -121,97 +121,74 @@ export function timeWash() {
   return "rgba(150,100,200,0.07)";                  // night — warm violet
 }
 
-/* ===== dark mode =====
-   Not 12 hand-authored dark palettes -- a shared near-black "shell" (the
-   ChatGPT-style dark you get from OLED-friendly grays, not a tinted-navy
-   dark) so every theme lands on the same calm dark surface, plus each
-   theme's own accent/palette colors pushed brighter and more saturated so
-   they still read as *that* theme instead of all 12 collapsing into the
-   same gray app. Pastels that work on a white card go muddy on a near-
-   black one at the same lightness, so accents get a real lightness lift
-   here, not just a coat of paint. */
-function hexToRgb(hex) {
-  const h = hex.replace("#", "");
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-}
-function rgbToHex([r, g, b]) {
-  const c = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
-  return `#${c(r)}${c(g)}${c(b)}`;
-}
-function rgbToHsl([r, g, b]) {
-  r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h, s; const l = (max + min) / 2;
-  if (max === min) { h = s = 0; } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      default: h = (r - g) / d + 4;
-    }
-    h /= 6;
-  }
-  return [h, s, l];
-}
-function hslToRgb([h, s, l]) {
-  if (s === 0) { const v = l * 255; return [v, v, v]; }
-  const hue2rgb = (p, q, t) => {
-    if (t < 0) t += 1; if (t > 1) t -= 1;
-    if (t < 1 / 6) return p + (q - p) * 6 * t;
-    if (t < 1 / 2) return q;
-    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-    return p;
-  };
-  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-  const p = 2 * l - q;
-  return [hue2rgb(p, q, h + 1 / 3) * 255, hue2rgb(p, q, h) * 255, hue2rgb(p, q, h - 1 / 3) * 255];
-}
-/** Build a dedicated dark-mode palette instead of trying to invert the light theme.
- * The selected theme still controls its accent/art palette, while all core
- * surfaces use a purpose-built midnight shell so text, cards, inputs and nav
- * remain readable. */
-function forDark(hex, { dl = 0.14, ds = 0.12, minL = 0.55, maxL = 0.78 } = {}) {
-  const [h, s, l] = rgbToHsl(hexToRgb(hex));
-  const newL = Math.max(minL, Math.min(maxL, l + dl));
-  const newS = Math.max(0, Math.min(1, s + ds));
-  return rgbToHex(hslToRgb([h, newS, newL]));
-}
-
-function darkShellFor(theme) {
-  // A restrained hue tint keeps every theme recognisable without turning the
-  // UI into an inverted version of the light palette.
-  const [h] = rgbToHsl(hexToRgb(theme.bg));
-  const hue = Math.round(h * 360);
-  return {
-    bg: `hsl(${hue} 16% 7.5%)`,
-    card: `hsl(${hue} 15% 11.5%)`,
-    soft: `hsl(${hue} 16% 16%)`,
-    outline: `hsl(${hue} 14% 29%)`,
-    ink: '#F5F7FB',
-    muted: '#A8B0BE',
-    dot: 'rgba(255,255,255,0.055)',
-    sidebar: `hsl(${hue} 17% 9%)`,
-    input: `hsl(${hue} 14% 13.5%)`,
-  };
-}
+/* ===== dedicated dark mode =====
+   Dark mode is a separate visual design system. It does not invert, tint,
+   or mathematically transform the light palette. Each theme keeps its own
+   hue identity through a purpose-built dark shell, accents and mascot
+   colours. */
+const DARK_DESIGNS = {
+  "Sakura Bloom": {
+    bg: "#170F14", card: "#21171D", soft: "#2D2027", outline: "#5E3C49", sidebar: "#120B10", input: "#261A21",
+    accent: "#FF91A9", accent2: "#FFC09F", mascotBody: "#F59AAF", mascotInner: "#FFD8E1", mascotBlush: "#FF7394", mascotOutline: "#6B3B49", mascotInk: "#24151C"
+  },
+  "Strawberry Milk": {
+    bg: "#180F11", card: "#24171A", soft: "#312025", outline: "#6B3D45", sidebar: "#130B0D", input: "#291A1E",
+    accent: "#FF8F98", accent2: "#FFD08A", mascotBody: "#F79AA0", mascotInner: "#FFE1E3", mascotBlush: "#FF7180", mascotOutline: "#6F3540", mascotInk: "#261518"
+  },
+  "Blueberry Dream": {
+    bg: "#0F1220", card: "#181D2E", soft: "#232A40", outline: "#46527B", sidebar: "#0B0E19", input: "#1B2133",
+    accent: "#8BA4FF", accent2: "#C0A5FF", mascotBody: "#AAB9FF", mascotInner: "#E1E8FF", mascotBlush: "#B89CFF", mascotOutline: "#3E4B78", mascotInk: "#15182A"
+  },
+  "Tulip Garden": {
+    bg: "#1A1014", card: "#26191E", soft: "#342229", outline: "#6C4853", sidebar: "#130B0F", input: "#2B1C22",
+    accent: "#FF86A2", accent2: "#FFD36C", mascotBody: "#F7C77E", mascotInner: "#FFEBC5", mascotBlush: "#FF8FA7", mascotOutline: "#704451", mascotInk: "#29171D"
+  },
+  "Cloud Paradise": {
+    bg: "#0E151C", card: "#17232D", soft: "#22313D", outline: "#4B6273", sidebar: "#0A1016", input: "#1A2732",
+    accent: "#91C8F3", accent2: "#C1B1F0", mascotBody: "#C9DDF2", mascotInner: "#F0F7FF", mascotBlush: "#9FC3E3", mascotOutline: "#526A7C", mascotInk: "#17212A"
+  },
+  "Bubblegum Pop": {
+    bg: "#190E17", card: "#241521", soft: "#33202F", outline: "#704461", sidebar: "#120A11", input: "#291A26",
+    accent: "#FF78AF", accent2: "#78E4F3", mascotBody: "#F69BC5", mascotInner: "#FFE1EF", mascotBlush: "#FF73AC", mascotOutline: "#713D5B", mascotInk: "#27151F"
+  },
+  "Matcha Garden": {
+    bg: "#0F1710", card: "#182319", soft: "#243325", outline: "#4D6747", sidebar: "#0A100B", input: "#1B271C",
+    accent: "#86C779", accent2: "#E8D09B", mascotBody: "#C6E0BA", mascotInner: "#EAF5E2", mascotBlush: "#E59CB2", mascotOutline: "#4D6847", mascotInk: "#182118"
+  },
+  "Teddy Cafe": {
+    bg: "#18110C", card: "#241A13", soft: "#33261C", outline: "#6A4C37", sidebar: "#110B08", input: "#2A1E15",
+    accent: "#E19A5D", accent2: "#F1C98D", mascotBody: "#D7B185", mascotInner: "#F4DEC0", mascotBlush: "#E28E82", mascotOutline: "#654630", mascotInk: "#24170F"
+  },
+  "Panda Paper": {
+    bg: "#101010", card: "#191919", soft: "#252525", outline: "#45433F", sidebar: "#0B0B0B", input: "#1E1E1E",
+    accent: "#D9D2C8", accent2: "#F2A9BD", mascotBody: "#D7D4CC", mascotInner: "#F6F5F0", mascotBlush: "#EFA0B8", mascotOutline: "#4A4844", mascotInk: "#171615"
+  },
+  "Mossy Blockland": {
+    bg: "#0D160B", card: "#172313", soft: "#24351E", outline: "#526C45", sidebar: "#091008", input: "#1A2815",
+    accent: "#78D95A", accent2: "#D38B3D", mascotBody: "#B9DB9B", mascotInner: "#E8F5D8", mascotBlush: "#E79CAF", mascotOutline: "#4B633E", mascotInk: "#162013"
+  },
+  "Comet Lab": {
+    bg: "#0B171A", card: "#122327", soft: "#1D3338", outline: "#3F6871", sidebar: "#071013", input: "#172A2E",
+    accent: "#56D9EA", accent2: "#C29AF4", mascotBody: "#B8E7EB", mascotInner: "#E7FBFD", mascotBlush: "#B991EE", mascotOutline: "#3F6972", mascotInk: "#112125"
+  },
+  "CD-ROM Dreams": {
+    bg: "#0C1020", card: "#151B2D", soft: "#202A43", outline: "#4A5680", sidebar: "#080C18", input: "#181F33",
+    accent: "#8292FF", accent2: "#FF72B4", mascotBody: "#C7D3F2", mascotInner: "#F0F5FF", mascotBlush: "#FF72B4", mascotOutline: "#4B5680", mascotInk: "#141827"
+  },
+};
 
 export function darkThemeVars(theme) {
-  const shell = darkShellFor(theme);
-  const accent = forDark(theme.accent, { dl: 0.18, ds: 0.14, minL: 0.58, maxL: 0.78 });
-  const accent2 = forDark(theme.accent2, { dl: 0.18, ds: 0.14, minL: 0.58, maxL: 0.78 });
-  const palette = theme.palette.map((c) => forDark(c, { dl: 0.14, ds: 0.12, minL: 0.52, maxL: 0.76 }));
+  const d = DARK_DESIGNS[Object.keys(THEMES).find((name) => THEMES[name] === theme)] || DARK_DESIGNS["Sakura Bloom"];
   return {
-    '--bg': shell.bg, '--card': shell.card, '--card-2': shell.input, '--accent': accent, '--accent2': accent2,
-    '--soft': shell.soft, '--ink': shell.ink, '--muted': shell.muted, '--outline': shell.outline,
-    '--dot': shell.dot, '--sidebar-bg': shell.sidebar, '--input-bg': shell.input,
-    '--shadow-color': 'rgba(0,0,0,0.52)', '--accent-contrast': '#10131A',
-    '--mascot-fill': forDark(theme.mascotFill, { dl: 0.08, ds: 0.08, minL: 0.48, maxL: 0.7 }),
-    '--mascot-inner': shell.card,
-    '--mascot-blush': forDark(theme.mascotBlush, { dl: 0.18, ds: 0.1, minL: 0.56, maxL: 0.75 }),
-    '--p1': palette[0], '--p2': palette[1], '--p3': palette[2],
-    '--p4': palette[3], '--p5': palette[4], '--p6': palette[5],
-    '--font-display': "'Baloo 2', system-ui, sans-serif", '--font-body': "'Nunito', system-ui, sans-serif",
-    '--font-hand': "'Caveat', cursive",
+    "--bg": d.bg, "--card": d.card, "--card-2": d.input, "--accent": d.accent, "--accent2": d.accent2,
+    "--soft": d.soft, "--ink": "#F5F3F5", "--muted": "#B1AAB0", "--outline": d.outline,
+    "--dot": "rgba(255,255,255,0.045)", "--sidebar-bg": d.sidebar, "--input-bg": d.input,
+    "--shadow-color": "rgba(0,0,0,0.56)", "--accent-contrast": "#181218",
+    "--mascot-fill": d.mascotBody, "--mascot-body": d.mascotBody, "--mascot-inner": d.mascotInner, "--mascot-blush": d.mascotBlush,
+    "--mascot-outline": d.mascotOutline, "--mascot-ink": d.mascotInk,
+    "--p1": d.accent, "--p2": d.accent2, "--p3": d.mascotInner,
+    "--p4": d.mascotBlush, "--p5": d.soft, "--p6": d.outline,
+    "--font-display": "'Baloo 2', system-ui, sans-serif", "--font-body": "'Nunito', system-ui, sans-serif",
+    "--font-hand": "'Caveat', cursive",
   };
 }

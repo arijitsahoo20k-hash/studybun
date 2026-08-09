@@ -1,7 +1,7 @@
 import React from "react";
 import useBlink from "./useBlink";
 
-const OUTLINE = { stroke: "var(--outline)", strokeWidth: 2.2, strokeLinejoin: "round" };
+const OUTLINE = { stroke: "var(--mascot-outline)", strokeWidth: 2.2, strokeLinejoin: "round" };
 
 /**
  * Cat's own face vocabulary: almond eyes with a vertical slit pupil (never a
@@ -24,13 +24,13 @@ const MOOD = {
 function Eye({ state, pupil, mirror }) {
   const flip = mirror ? -1 : 1;
   if (state === "closed") {
-    return <path d={`M ${-6 * flip} 1 Q 0 ${-5} ${6 * flip} 1`} stroke="var(--ink)" strokeWidth="2.1" fill="none" strokeLinecap="round" />;
+    return <path d={`M ${-6 * flip} 1 Q 0 ${-5} ${6 * flip} 1`} stroke="var(--mascot-ink)" strokeWidth="2.1" fill="none" strokeLinecap="round" />;
   }
   if (state === "heavy") {
     return (
       <>
-        <path d={`M ${-6 * flip} -1 Q 0 -4 ${6 * flip} -1`} fill="none" stroke="var(--ink)" strokeWidth="1.3" opacity="0.55" />
-        <path d={`M ${-5.5 * flip} 1 Q 0 2.6 ${5.5 * flip} 1`} fill="none" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" />
+        <path d={`M ${-6 * flip} -1 Q 0 -4 ${6 * flip} -1`} fill="none" stroke="var(--mascot-ink)" strokeWidth="1.3" opacity="0.55" />
+        <path d={`M ${-5.5 * flip} 1 Q 0 2.6 ${5.5 * flip} 1`} fill="none" stroke="var(--mascot-ink)" strokeWidth="2" strokeLinecap="round" />
       </>
     );
   }
@@ -39,9 +39,9 @@ function Eye({ state, pupil, mirror }) {
     <>
       <path
         d={`M ${-6.4 * flip} 0.5 Q ${-2.5 * flip} -5.2 ${2.4 * flip} 0 Q ${-2.5 * flip} 5.2 ${-6.4 * flip} 0.5 Z`}
-        fill="var(--card)" stroke="var(--ink)" strokeWidth="1.2"
+        fill="var(--mascot-body)" stroke="var(--mascot-ink)" strokeWidth="1.2"
       />
-      <ellipse cx={-1.6 * flip} cy={dy} rx="1.7" ry={pupil} fill="var(--ink)" />
+      <ellipse cx={-1.6 * flip} cy={dy} rx="1.7" ry={pupil} fill="var(--mascot-ink)" />
       <circle cx={-1.6 * flip - 0.5 * flip} cy={dy - Math.min(pupil, 2.6) * 0.4} r={Math.min(pupil * 0.28, 0.9)} fill="#fff" />
     </>
   );
@@ -68,11 +68,11 @@ export default function Cat({ mood = "idle", size = 72, hop = false, peek = fals
       {/* ears, pulled back flat for "concerned", perked extra tall for "reminder" */}
       <g className="sb-ear sb-ear-l" style={{ transform: m.earsBack ? "rotate(-32deg) translate(3px,4px)" : "none" }}>
         <path d="M -22 -18 L -12 -34 L -4 -16 Z" fill="var(--accent2)" {...OUTLINE} />
-        <path d="M -19 -19 L -13 -29 L -8 -18 Z" fill="var(--soft)" />
+        <path d="M -19 -19 L -13 -29 L -8 -18 Z" fill="var(--mascot-inner)" />
       </g>
       <g className="sb-ear sb-ear-r" style={{ transform: m.earPerk ? "translateY(-3px) scaleY(1.1)" : "none" }}>
         <path d="M 22 -18 L 12 -34 L 4 -16 Z" fill="var(--accent2)" {...OUTLINE} />
-        <path d="M 19 -19 L 13 -29 L 8 -18 Z" fill="var(--soft)" />
+        <path d="M 19 -19 L 13 -29 L 8 -18 Z" fill="var(--mascot-inner)" />
       </g>
       {/* fluffy cheek tufts */}
       <path d="M -25 2 Q -34 5 -27 12 Q -24 8 -20 8 Z" fill="var(--accent2)" {...OUTLINE} />
@@ -81,10 +81,10 @@ export default function Cat({ mood = "idle", size = 72, hop = false, peek = fals
       {/* heart-shaped head, tapering to a gently rounded chin */}
       <path
         d="M -25 -3 Q -27 -22 0 -24 Q 27 -22 25 -3 Q 25 12 13 19 Q 0 24 -13 19 Q -25 12 -25 -3 Z"
-        fill="var(--card)" stroke="var(--outline)" strokeWidth="2.4" strokeLinejoin="round"
+        fill="var(--mascot-body)" stroke="var(--mascot-outline)" strokeWidth="2.4" strokeLinejoin="round"
       />
 
-      <path d="M -2.6 1 L 2.6 1 L 0 4.5 Z" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1" strokeLinejoin="round" />
+      <path d="M -2.6 1 L 2.6 1 L 0 4.5 Z" fill="var(--mascot-inner)" stroke="var(--mascot-outline)" strokeWidth="1" strokeLinejoin="round" />
 
       <circle cx="-9" cy="9" r="4.4" fill="var(--accent)" opacity="0.4" />
       <circle cx="9" cy="9" r="4.4" fill="var(--accent)" opacity="0.4" />
@@ -92,16 +92,16 @@ export default function Cat({ mood = "idle", size = 72, hop = false, peek = fals
       <g transform="translate(-8,-3)"><Eye state={eyeState} pupil={m.pupil} mirror={false} /></g>
       <g transform="translate(8,-3)"><Eye state={eyeState} pupil={m.pupil} mirror={true} /></g>
 
-      <path d={m.mouth} stroke="var(--ink)" strokeWidth="2" fill="none" strokeLinecap="round" transform="translate(0,3)" />
+      <path d={m.mouth} stroke="var(--mascot-ink)" strokeWidth="2" fill="none" strokeLinecap="round" transform="translate(0,3)" />
 
       {/* whiskers, always on top */}
-      <path d="M -6 6 L -18 3" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M -6 9 L -18 10" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M 6 6 L 18 3" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M 6 9 L 18 10" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M -6 6 L -18 3" stroke="var(--mascot-ink)" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M -6 9 L -18 10" stroke="var(--mascot-ink)" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M 6 6 L 18 3" stroke="var(--mascot-ink)" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M 6 9 L 18 10" stroke="var(--mascot-ink)" strokeWidth="1.3" strokeLinecap="round" />
 
       {m.glasses && (
-        <g transform="translate(0,-3)" stroke="var(--outline)" strokeWidth="1.6" fill="none">
+        <g transform="translate(0,-3)" stroke="var(--mascot-outline)" strokeWidth="1.6" fill="none">
           <circle cx="-8" cy="0" r="7.5" />
           <circle cx="8" cy="0" r="7.5" />
           <line x1="-0.5" y1="0" x2="0.5" y2="0" />
@@ -110,13 +110,13 @@ export default function Cat({ mood = "idle", size = 72, hop = false, peek = fals
         </g>
       )}
       {m.paw && (
-        <ellipse cx="-16" cy="12" rx="6" ry="5" fill="var(--soft)" stroke="var(--outline)" strokeWidth="1.4" transform="rotate(-18 -16 12)" />
+        <ellipse cx="-16" cy="12" rx="6" ry="5" fill="var(--mascot-inner)" stroke="var(--mascot-outline)" strokeWidth="1.4" transform="rotate(-18 -16 12)" />
       )}
       {m.zzz && <text x="18" y="-22" fontSize="11" fill="var(--muted)" fontFamily="var(--font-display)">z</text>}
       {m.tear && (
         <g transform="translate(-15,3)">
           <g className="sb-mascot-tear">
-            <path d="M 0 0 C 2.2 3 4 5.2 4 7.4 A 4 4 0 1 1 -4 7.4 C -4 5.2 -2.2 3 0 0 Z" fill="#8FCBEA" stroke="var(--outline)" strokeWidth="1" strokeLinejoin="round" />
+            <path d="M 0 0 C 2.2 3 4 5.2 4 7.4 A 4 4 0 1 1 -4 7.4 C -4 5.2 -2.2 3 0 0 Z" fill="#8FCBEA" stroke="var(--mascot-outline)" strokeWidth="1" strokeLinejoin="round" />
             <ellipse cx="-1.3" cy="5.4" rx="1" ry="1.4" fill="#fff" opacity="0.85" />
           </g>
         </g>
