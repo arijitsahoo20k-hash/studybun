@@ -1768,6 +1768,159 @@ export default function GlobalStyle() {
       .sb-pillnav-overflow { background: var(--card) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
       .sb-pwa-banner { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
       .sb-page-loading { min-height: 34vh; }
+
+      /* ================================================================
+         DEDICATED DARK MODE
+         Dark mode is its own visual system. It never inverts the light UI
+         and never relies on white glass/sheens to create contrast. The
+         selected theme supplies the accent colours; the shell, surfaces,
+         controls and navigation use the dedicated midnight tokens from
+         darkThemeVars().
+         ================================================================ */
+      .sb-app[data-mode="dark"] {
+        color-scheme: dark;
+        background-color: var(--bg);
+        color: var(--ink);
+        background-image: radial-gradient(var(--dot) 1.2px, transparent 1.2px);
+        background-size: 24px 24px;
+      }
+      .sb-app[data-mode="dark"]::before {
+        background:
+          radial-gradient(42vmax circle at 8% 8%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 68%),
+          radial-gradient(38vmax circle at 92% 14%, color-mix(in srgb, var(--accent2) 11%, transparent), transparent 68%),
+          radial-gradient(46vmax circle at 18% 94%, color-mix(in srgb, var(--p3) 9%, transparent), transparent 70%),
+          radial-gradient(42vmax circle at 88% 88%, color-mix(in srgb, var(--p1) 8%, transparent), transparent 70%);
+        opacity: .95;
+      }
+
+      .sb-app[data-mode="dark"] .sb-sidebar {
+        background: var(--sidebar-bg);
+        border-right: 1px solid color-mix(in srgb, var(--outline) 42%, transparent);
+      }
+      .sb-app[data-mode="dark"] .sb-sidebar-item.active {
+        background: var(--accent);
+        color: var(--accent-contrast);
+        border-color: var(--accent);
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+      .sb-app[data-mode="dark"] .sb-sidebar-item.active svg { color: var(--accent-contrast); }
+      .sb-app[data-mode="dark"] .sb-sidebar-action:hover,
+      .sb-app[data-mode="dark"] .sb-sidebar-item:hover:not(.active) {
+        background: var(--soft);
+      }
+
+      /* Flat, opaque dark surfaces: no white diagonal sheen and no accidental
+         transparency that can make text disappear against the motif layer. */
+      .sb-app[data-mode="dark"] .sb-card,
+      .sb-app[data-mode="dark"] .sb-card-glass,
+      .sb-app[data-mode="dark"] .sb-card-active,
+      .sb-app[data-mode="dark"] .sb-guide-card,
+      .sb-app[data-mode="dark"] .sb-timer-card,
+      .sb-app[data-mode="dark"] .sb-chapter-card,
+      .sb-app[data-mode="dark"] .sb-revision-card,
+      .sb-app[data-mode="dark"] .sb-achv-card,
+      .sb-app[data-mode="dark"] .sb-lb-you-card {
+        background: var(--card) !important;
+        color: var(--ink);
+        border-color: var(--outline);
+        box-shadow: 0 10px 28px -20px var(--shadow-color), 3px 3px 0 color-mix(in srgb, var(--outline) 78%, transparent);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+      .sb-app[data-mode="dark"] .sb-card::after { display: none; }
+      .sb-app[data-mode="dark"] .sb-paper::before { mix-blend-mode: normal; opacity: .10; }
+
+      .sb-app[data-mode="dark"] .sb-input,
+      .sb-app[data-mode="dark"] textarea.sb-input,
+      .sb-app[data-mode="dark"] select.sb-input,
+      .sb-app[data-mode="dark"] .sb-search-input,
+      .sb-app[data-mode="dark"] input:not([type="checkbox"]):not([type="radio"]),
+      .sb-app[data-mode="dark"] textarea,
+      .sb-app[data-mode="dark"] select {
+        background: var(--input-bg);
+        color: var(--ink);
+        border-color: var(--outline);
+        color-scheme: dark;
+      }
+      .sb-app[data-mode="dark"] input::placeholder,
+      .sb-app[data-mode="dark"] textarea::placeholder { color: var(--muted); opacity: .9; }
+      .sb-app[data-mode="dark"] option { background: var(--card); color: var(--ink); }
+
+      .sb-app[data-mode="dark"] .sb-btn-primary {
+        background: var(--accent);
+        color: var(--accent-contrast);
+        border-color: var(--accent);
+        box-shadow: 0 5px 14px color-mix(in srgb, var(--accent) 22%, transparent), 3px 3px 0 var(--outline);
+      }
+      .sb-app[data-mode="dark"] .sb-btn-soft,
+      .sb-app[data-mode="dark"] .sb-chip,
+      .sb-app[data-mode="dark"] .sb-icon-round,
+      .sb-app[data-mode="dark"] .sb-theme-chip,
+      .sb-app[data-mode="dark"] .sb-theme-swatch,
+      .sb-app[data-mode="dark"] .sb-mascot-pick,
+      .sb-app[data-mode="dark"] .sb-goal-delete-btn,
+      .sb-app[data-mode="dark"] .sb-goal-reopen-btn,
+      .sb-app[data-mode="dark"] .sb-journal-arrow {
+        background: var(--card);
+        color: var(--ink);
+        border-color: var(--outline);
+      }
+      .sb-app[data-mode="dark"] .sb-btn-soft:hover,
+      .sb-app[data-mode="dark"] .sb-chip:hover,
+      .sb-app[data-mode="dark"] .sb-icon-round:hover,
+      .sb-app[data-mode="dark"] .sb-theme-chip:hover,
+      .sb-app[data-mode="dark"] .sb-theme-swatch:hover,
+      .sb-app[data-mode="dark"] .sb-mascot-pick:hover {
+        background: var(--soft);
+      }
+      .sb-app[data-mode="dark"] .sb-chip.active,
+      .sb-app[data-mode="dark"] .sb-mascot-pick.active,
+      .sb-app[data-mode="dark"] .sb-theme-chip.active,
+      .sb-app[data-mode="dark"] .sb-theme-swatch.active {
+        background: var(--soft);
+        border-color: var(--accent);
+      }
+
+      /* Repaint decorative badges with the theme palette, but don't mix a
+         white highlight into every dark surface. */
+      .sb-app[data-mode="dark"] .sb-icon-badge {
+        background: var(--soft) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 2px 0 var(--outline);
+      }
+      .sb-app[data-mode="dark"] .sb-washi { opacity: .78; }
+      .sb-app[data-mode="dark"] .sb-progress-fill::after { opacity: .18; }
+
+      .sb-app[data-mode="dark"] .sb-settings-nav-item.active {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .sb-app[data-mode="dark"] .sb-settings-nav-item.active .sb-settings-nav-label,
+      .sb-app[data-mode="dark"] .sb-settings-nav-item.active .sb-settings-nav-sub { color: var(--accent-contrast); }
+      .sb-app[data-mode="dark"] .sb-settings-nav-item.active .sb-settings-nav-icon {
+        background: var(--accent-contrast);
+        color: var(--accent);
+        border-color: var(--accent-contrast);
+      }
+
+      .sb-app[data-mode="dark"] .sb-mobile-toggle,
+      .sb-app[data-mode="dark"] .sb-mobile-dark-toggle,
+      .sb-app[data-mode="dark"] .sb-mobile-nav {
+        background: var(--card);
+        color: var(--ink);
+        border-color: var(--outline);
+        box-shadow: 0 12px 28px -18px var(--shadow-color), 3px 3px 0 var(--outline);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+
+      .sb-app[data-mode="dark"] .sb-decor { opacity: .42; }
+      .sb-app[data-mode="dark"] .sb-decor-far { opacity: .20; }
+      .sb-app[data-mode="dark"] .sb-decor-near { opacity: .46; }
+
+      .sb-app[data-mode="dark"] ::selection {
+        background: color-mix(in srgb, var(--accent) 55%, #000);
+        color: #fff;
+      }
     `}</style>
   );
 }

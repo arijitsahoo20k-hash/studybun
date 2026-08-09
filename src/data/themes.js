@@ -167,9 +167,10 @@ function hslToRgb([h, s, l]) {
   const p = 2 * l - q;
   return [hue2rgb(p, q, h + 1 / 3) * 255, hue2rgb(p, q, h) * 255, hue2rgb(p, q, h - 1 / 3) * 255];
 }
-/** Brighten + resaturate a light-theme pastel so it still pops on a
- *  near-black surface — lift lightness toward ~62-72% and push saturation
- *  up, capped so nothing blows out to neon. */
+/** Build a dedicated dark-mode palette instead of trying to invert the light theme.
+ * The selected theme still controls its accent/art palette, while all core
+ * surfaces use a purpose-built midnight shell so text, cards, inputs and nav
+ * remain readable. */
 function forDark(hex, { dl = 0.14, ds = 0.12, minL = 0.55, maxL = 0.78 } = {}) {
   const [h, s, l] = rgbToHsl(hexToRgb(hex));
   const newL = Math.max(minL, Math.min(maxL, l + dl));
@@ -177,25 +178,40 @@ function forDark(hex, { dl = 0.14, ds = 0.12, minL = 0.55, maxL = 0.78 } = {}) {
   return rgbToHex(hslToRgb([h, newS, newL]));
 }
 
-const DARK_SHELL = {
-  bg: "#0F0F10", card: "#1B1B1D", soft: "#242426", outline: "#3A3A3D",
-  ink: "#ECECEC", muted: "#9B9B9E", dot: "rgba(255,255,255,0.045)",
-};
+function darkShellFor(theme) {
+  // A restrained hue tint keeps every theme recognisable without turning the
+  // UI into an inverted version of the light palette.
+  const [h] = rgbToHsl(hexToRgb(theme.bg));
+  const hue = Math.round(h * 360);
+  return {
+    bg: `hsl(${hue} 16% 7.5%)`,
+    card: `hsl(${hue} 15% 11.5%)`,
+    soft: `hsl(${hue} 16% 16%)`,
+    outline: `hsl(${hue} 14% 29%)`,
+    ink: '#F5F7FB',
+    muted: '#A8B0BE',
+    dot: 'rgba(255,255,255,0.055)',
+    sidebar: `hsl(${hue} 17% 9%)`,
+    input: `hsl(${hue} 14% 13.5%)`,
+  };
+}
 
 export function darkThemeVars(theme) {
-  const accent = forDark(theme.accent);
-  const accent2 = forDark(theme.accent2);
-  const palette = theme.palette.map((c) => forDark(c, { dl: 0.1, ds: 0.08, minL: 0.5, maxL: 0.75 }));
+  const shell = darkShellFor(theme);
+  const accent = forDark(theme.accent, { dl: 0.18, ds: 0.14, minL: 0.58, maxL: 0.78 });
+  const accent2 = forDark(theme.accent2, { dl: 0.18, ds: 0.14, minL: 0.58, maxL: 0.78 });
+  const palette = theme.palette.map((c) => forDark(c, { dl: 0.14, ds: 0.12, minL: 0.52, maxL: 0.76 }));
   return {
-    "--bg": DARK_SHELL.bg, "--card": DARK_SHELL.card, "--accent": accent, "--accent2": accent2,
-    "--soft": DARK_SHELL.soft, "--ink": DARK_SHELL.ink, "--muted": DARK_SHELL.muted, "--outline": DARK_SHELL.outline,
-    "--dot": DARK_SHELL.dot,
-    "--mascot-fill": forDark(theme.mascotFill, { dl: 0.06, ds: 0.05, minL: 0.45, maxL: 0.7 }),
-    "--mascot-inner": DARK_SHELL.card,
-    "--mascot-blush": forDark(theme.mascotBlush),
-    "--p1": palette[0], "--p2": palette[1], "--p3": palette[2],
-    "--p4": palette[3], "--p5": palette[4], "--p6": palette[5],
-    "--font-display": "'Baloo 2', system-ui, sans-serif", "--font-body": "'Nunito', system-ui, sans-serif",
-    "--font-hand": "'Caveat', cursive",
+    '--bg': shell.bg, '--card': shell.card, '--card-2': shell.input, '--accent': accent, '--accent2': accent2,
+    '--soft': shell.soft, '--ink': shell.ink, '--muted': shell.muted, '--outline': shell.outline,
+    '--dot': shell.dot, '--sidebar-bg': shell.sidebar, '--input-bg': shell.input,
+    '--shadow-color': 'rgba(0,0,0,0.52)', '--accent-contrast': '#10131A',
+    '--mascot-fill': forDark(theme.mascotFill, { dl: 0.08, ds: 0.08, minL: 0.48, maxL: 0.7 }),
+    '--mascot-inner': shell.card,
+    '--mascot-blush': forDark(theme.mascotBlush, { dl: 0.18, ds: 0.1, minL: 0.56, maxL: 0.75 }),
+    '--p1': palette[0], '--p2': palette[1], '--p3': palette[2],
+    '--p4': palette[3], '--p5': palette[4], '--p6': palette[5],
+    '--font-display': "'Baloo 2', system-ui, sans-serif", '--font-body': "'Nunito', system-ui, sans-serif",
+    '--font-hand': "'Caveat', cursive",
   };
 }
