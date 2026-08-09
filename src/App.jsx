@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
   RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, Crown, User, Settings, Menu,
-  NotebookPen, Sun, Moon,
+  NotebookPen,
 } from "lucide-react";
 
-import { THEMES, themeVars, darkThemeVars, timeWash } from "./data/themes";
+import { THEMES, themeVars, timeWash } from "./data/themes";
 import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS, defaultChapterProgressFor } from "./data/syllabus";
 import { useDeviceRow, useRealtimeTable, useChapterProgress, useMockAnalysis } from "./hooks/useRealtimeTable";
 import { useFocusTimer } from "./hooks/useFocusTimer";
@@ -213,25 +213,6 @@ export default function App() {
   const [hopping, setHopping] = useState(false);
   const toastTimer = useRef(null);
 
-  // Dark mode is independent of theme choice — a display preference, not a
-  // theme swap. Persisted to localStorage (not the Supabase profile) so it
-  // applies instantly with no round trip and works pre-login too. Reads the
-  // OS preference the very first time there's nothing saved yet.
-  const [darkMode, setDarkMode] = useState(() => {
-    try {
-      const saved = localStorage.getItem("sb-dark-mode");
-      if (saved != null) return saved === "1";
-      return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches || false;
-    } catch { return false; }
-  });
-  const toggleDarkMode = () => {
-    setDarkMode((v) => {
-      const next = !v;
-      try { localStorage.setItem("sb-dark-mode", next ? "1" : "0"); } catch {}
-      return next;
-    });
-  };
-
   // Mobile dropdown's nav highlight: a single pill sliding between nav
   // items, moved with a plain CSS transform transition via refs rather than
   // a re-measuring approach (e.g. framer-motion's layoutId), so the browser
@@ -360,9 +341,7 @@ export default function App() {
   const theme = THEMES[profile?.theme] || THEMES["Sakura Bloom"];
   const mascot = profile?.mascot || "bunny";
   const mTheme = mascotTheme(mascot);
-  const cssVars = darkMode
-    ? { ...darkThemeVars(theme), "--time-wash": "rgba(0,0,0,0)" }
-    : { ...themeVars(theme), "--time-wash": timeWash() };
+  const cssVars = { ...themeVars(theme), "--time-wash": timeWash() };
 
   /* ---------- derived stats (shared by Dashboard / Analytics / AI Insights) ---------- */
   const sessions = sessionsQ.rows;
@@ -991,7 +970,7 @@ export default function App() {
   };
 
   return (
-    <div className="sb-app" style={cssVars} data-mode={darkMode ? "dark" : "light"} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"}>
+    <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"}>
       <GlobalStyle />
       <DecorLayer theme={theme} />
       <PWAPrompt />
@@ -1037,33 +1016,12 @@ export default function App() {
         </div>
 
         <TopNav nav={NAV} page={page} setPage={setPage} reducedMotion={reducedMotion} onHoverItem={prefetchPage} />
-
-        <div className="sb-sidebar-footer">
-          <button
-            type="button"
-            className="sb-sidebar-action"
-            onClick={toggleDarkMode}
-            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-            title={darkMode ? "Light mode" : "Dark mode"}
-          >
-            <span className="sb-sidebar-action-icon">{darkMode ? <Sun size={18} /> : <Moon size={18} />}</span>
-            <span>{darkMode ? "Light mode" : "Dark mode"}</span>
-          </button>
-        </div>
       </aside>
 
       {/* Phone: unchanged hamburger + dropdown, full NAV list including
           Settings/Profile since there's no separate icon row to hold them
           at this width. */}
       <button className="sb-mobile-toggle" onClick={() => setMobileNavOpen((v) => !v)}><Menu size={20} /></button>
-      <button
-        className="sb-mobile-dark-toggle"
-        onClick={toggleDarkMode}
-        aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-        title={darkMode ? "Light mode" : "Dark mode"}
-      >
-        {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-      </button>
       {mobileNavOpen && (
         <div className="sb-mobile-nav">
           <span ref={mobileNavPillRef} className="sb-nav-pill" aria-hidden="true" />

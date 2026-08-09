@@ -308,7 +308,7 @@ export default function NavBar({ onGetStarted }) {
         .sb-nav-rail {
           margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
           padding: 12px 16px; border-radius: 22px; border: 2.5px solid var(--outline);
-          background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(12px);
+          background: var(--card);
           box-shadow: 5px 5px 0px var(--outline);
         }
 
@@ -342,7 +342,7 @@ export default function NavBar({ onGetStarted }) {
 
         .sb-nav-overlay {
           display: none; position: fixed; inset: 0; z-index: 70; flex-direction: column; align-items: center; justify-content: center;
-          gap: 22px; background: color-mix(in srgb, var(--bg) 96%, transparent); backdrop-filter: blur(16px); opacity: 0;
+          gap: 22px; background: var(--bg); opacity: 0;
         }
         .sb-nav-overlay-link {
           background: none; border: none; font-family: var(--font-display); font-weight: 800; font-size: 30px; color: var(--ink); cursor: pointer;

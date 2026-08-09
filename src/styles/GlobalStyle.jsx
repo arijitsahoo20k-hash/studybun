@@ -1,6 +1,4 @@
 import React from "react";
-import "./LightMode.css";
-import "./DarkMode.css";
 
 export default function GlobalStyle() {
   return (
@@ -72,8 +70,8 @@ export default function GlobalStyle() {
       .sb-app::before {
         content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
         background:
-          radial-gradient(38vmax circle at 12% 12%, color-mix(in srgb, var(--accent) 32%, transparent), transparent 65%),
-          radial-gradient(34vmax circle at 88% 18%, color-mix(in srgb, var(--accent2) 28%, transparent), transparent 65%),
+          radial-gradient(38vmax circle at 12% 12%, var(--accent), transparent 65%),
+          radial-gradient(34vmax circle at 88% 18%, var(--accent2), transparent 65%),
           radial-gradient(40vmax circle at 20% 92%, color-mix(in srgb, var(--p3, var(--mascot-inner)) 26%, transparent), transparent 68%),
           radial-gradient(36vmax circle at 90% 88%, color-mix(in srgb, var(--p1, var(--mascot-inner)) 24%, transparent), transparent 68%),
           var(--time-wash);
@@ -82,7 +80,7 @@ export default function GlobalStyle() {
 
       /* kawaii custom cursors for anything interactive */
       .sb-btn, .sb-chip, .sb-nav-item, .sb-bottom-item, .sb-clickable, .sb-checkbox,
-      .sb-theme-chip, .sb-icon-btn, .sb-mobile-toggle, .sb-mobile-dark-toggle, select.sb-input, .sb-mascot-pick, .sb-theme-swatch {
+      .sb-theme-chip, .sb-icon-btn, .sb-mobile-toggle, select.sb-input, .sb-mascot-pick, .sb-theme-swatch {
         cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%90%BE%3C/text%3E%3C/svg%3E") 12 12, pointer;
       }
 
@@ -90,8 +88,7 @@ export default function GlobalStyle() {
 
       .sb-pwa-banner {
         position: fixed; left: 16px; right: 16px; bottom: 16px; margin: 0 auto; max-width: 420px;
-        background: color-mix(in srgb, var(--mascot-body) 82%, transparent);
-        backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+        background: var(--mascot-body);
         border: 2.5px solid var(--mascot-outline); border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 10px;
         font-weight: 700; font-size: 13px; color: var(--mascot-ink); box-shadow: 4px 4px 0 var(--mascot-outline); z-index: 70; animation: sb-pop .25s ease;
       }
@@ -145,50 +142,21 @@ export default function GlobalStyle() {
         65% { transform: rotate(6deg) translate(-1px,0); }
       }
 
-      /* ===== frosted glass, two tiers =====
-         .sb-card (every sticker card in the app -- pages like Syllabus or
-         Questions mount dozens at once) stays the cheap version: a
-         translucent tint plus a soft diagonal sheen, no backdrop-filter,
-         so scrolling a long list never has to blur anything. Real blur on
-         dozens of simultaneously-visible cards is a genuine perf cost on
-         a mid-range Android phone regardless of how contained it is, so
-         it's reserved for .sb-card-glass -- an opt-in modifier used only
-         on the handful of hero/single-instance surfaces (dashboard
-         summary cards, the focus timer, a mock result, a profile header)
-         where there's only ever one or two on screen. Those get a real
-         backdrop-filter blur, kept cheap with contain: layout paint
-         (the blur/paint work can't spill past the card's own box, so nine
-         cards below it on the same page aren't part of the cost) and it
-         has the ambient colour blobs from .sb-app::before to actually
-         blur into -- which is what makes it visibly read as glass instead
-         of just a tinted box. */
+      /* ===== flat sticker card =====
+         Solid fill + thick outline + hard offset shadow. No blur, no
+         gradients, no translucency -- this is the original look. */
       .sb-card {
-        background:
-          linear-gradient(135deg, color-mix(in srgb, #fff 42%, transparent) 0%, transparent 46%),
-          color-mix(in srgb, var(--mascot-body) 84%, transparent);
+        background: var(--mascot-body);
         border-radius: 24px; padding: 20px;
         border: 2.5px solid var(--mascot-outline); box-shadow: 5px 5px 0 var(--mascot-outline);
         transition: transform .15s ease, box-shadow .15s ease, background-color .35s ease, border-color .35s ease;
         position: relative; z-index: 1;
       }
-      .sb-card-glass {
-        background:
-          linear-gradient(135deg, color-mix(in srgb, #fff 55%, transparent) 0%, transparent 55%),
-          color-mix(in srgb, var(--mascot-body) 62%, transparent);
-        backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
-        contain: layout paint; isolation: isolate;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .sb-card-glass { backdrop-filter: none; -webkit-backdrop-filter: none; background: color-mix(in srgb, var(--mascot-body) 84%, transparent); }
-      }
+      .sb-card-glass { background: var(--mascot-body); }
       .sb-clickable { cursor: pointer; }
       .sb-clickable:hover { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 7px 7px 0 var(--mascot-outline); }
       .sb-clickable:nth-child(even):hover { transform: translate(-2px, -2px) rotate(1deg); }
-      .sb-card-active {
-        background:
-          linear-gradient(135deg, color-mix(in srgb, #fff 42%, transparent) 0%, transparent 46%),
-          color-mix(in srgb, var(--mascot-inner) 88%, transparent);
-      }
+      .sb-card-active { background: var(--mascot-inner); }
 
       /* ===== rough paper texture (dashboard cards only) =====
          A single ::before pseudo-element per card -- no extra DOM node.
@@ -260,8 +228,8 @@ export default function GlobalStyle() {
       .sb-sidebar {
         position: relative; z-index: 45; flex: 0 0 244px; width: 244px; height: 100vh;
         display: flex; flex-direction: column; padding: 18px 14px 14px;
-        background: color-mix(in srgb, var(--bg) 94%, var(--mascot-body) 6%);
-        border-right: 0; box-shadow: none;
+        background: var(--mascot-body);
+        border-right: 2.5px solid var(--mascot-outline); box-shadow: none;
         overflow: hidden;
       }
       .sb-sidebar-brand {
@@ -289,12 +257,12 @@ export default function GlobalStyle() {
         transition: background .15s ease, color .15s ease, transform .15s ease, border-color .15s ease;
         touch-action: manipulation;
       }
-      .sb-sidebar-item:hover:not(.active) { background: var(--mascot-inner); transform: translateX(2px); }
-      .sb-sidebar-item.active { background: var(--mascot-outline); color: var(--mascot-body); border-color: var(--mascot-outline); box-shadow: 3px 3px 0 color-mix(in srgb, var(--mascot-outline) 72%, transparent); }
+      .sb-sidebar-item:hover:not(.active) { background: var(--mascot-inner); border-color: var(--mascot-outline); transform: translateX(2px); }
+      .sb-sidebar-item.active { background: var(--mascot-inner); color: var(--mascot-ink); border-color: var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline); }
       .sb-sidebar-item-icon { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 22px; }
       .sb-sidebar-item-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-      .sb-sidebar-footer { flex: 0 0 auto; padding: 10px 2px 0; margin-top: 8px; border-top: 1px solid color-mix(in srgb, var(--mascot-outline) 18%, transparent); }
+      .sb-sidebar-footer { flex: 0 0 auto; padding: 10px 2px 0; margin-top: 8px; border-top: 1px solid var(--mascot-outline); }
       .sb-sidebar-action {
         width: 100%; min-height: 42px; display: flex; align-items: center; gap: 11px; padding: 9px 11px;
         border: 2px solid transparent; border-radius: 13px; background: transparent; color: var(--mascot-ink);
@@ -310,7 +278,6 @@ export default function GlobalStyle() {
       .sb-topbar, .sb-pillnav { display: none !important; }
 
       /* ===== phone dropdown ===== */
- (unchanged pattern, just no sidebar to hide anymore) ===== */
       .sb-brand { display: flex; align-items: center; gap: 10px; }
       .sb-brand-sub { font-size: 11px; color: var(--muted); font-weight: 700; }
       .sb-nav-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 999px; border: 2px solid transparent; background: transparent; color: var(--mascot-ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; cursor: pointer; text-align: left; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
@@ -324,11 +291,10 @@ export default function GlobalStyle() {
          above it so the pill never visually covers them. Its box-shadow is
          set once, further down, alongside the other "glossy depth" surfaces
          (buttons, chips) rather than here, so there's a single definition. */
-      .sb-nav-pill { position: absolute; top: 0; left: 0; transform-origin: 0 0; z-index: 0; border-radius: 999px; background: var(--mascot-inner); border: 2px solid var(--mascot-outline); pointer-events: none; will-change: transform; transition: transform .22s cubic-bezier(.22,1,.36,1); }
+      .sb-nav-pill { position: absolute; top: 0; left: 0; transform-origin: 0 0; z-index: 0; border-radius: 999px; background: var(--mascot-inner); border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline); pointer-events: none; will-change: transform; transition: transform .22s cubic-bezier(.22,1,.36,1); }
       .sb-nav-item > svg, .sb-nav-item > span:not(.sb-nav-pill) { position: relative; z-index: 1; }
 
       .sb-mobile-toggle { display: none; }
-      .sb-mobile-dark-toggle { display: none; cursor: pointer; }
       .sb-mobile-nav { display: none; }
 
       .sb-main { flex: 1 1 auto; min-width: 0; width: calc(100% - 244px); height: 100vh; padding: clamp(20px, 2.6vw, 40px) clamp(20px, 3vw, 44px) 90px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; }
@@ -599,7 +565,7 @@ export default function GlobalStyle() {
       .sb-icon-round:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--mascot-outline); }
       .sb-icon-round.on { background: var(--mascot-inner); }
 
-      .sb-duration-pop, .sb-timer-settings { width: 100%; max-width: 380px; background: color-mix(in srgb, var(--mascot-body) 88%, transparent); backdrop-filter: blur(10px); border: 2px solid var(--mascot-outline); border-radius: 18px; padding: 14px 16px; box-shadow: 3px 3px 0 var(--mascot-outline); display: flex; flex-direction: column; gap: 10px; animation: sb-pop .18s ease; }
+      .sb-duration-pop, .sb-timer-settings { width: 100%; max-width: 380px; background: var(--mascot-body); border: 2px solid var(--mascot-outline); border-radius: 18px; padding: 14px 16px; box-shadow: 3px 3px 0 var(--mascot-outline); display: flex; flex-direction: column; gap: 10px; animation: sb-pop .18s ease; }
       .sb-duration-pop-title { font-weight: 800; font-size: 13px; }
       .sb-duration-stepper { display: flex; align-items: center; justify-content: center; gap: 10px; }
       .sb-duration-stepper button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--mascot-outline); background: var(--mascot-inner); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
@@ -767,8 +733,7 @@ export default function GlobalStyle() {
 
       .sb-toast {
         position: fixed; top: 20px; right: 20px;
-        background: color-mix(in srgb, var(--mascot-body) 80%, transparent);
-        backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+        background: var(--mascot-body);
         border: 2.5px solid var(--mascot-outline); border-radius: 16px; padding: 10px 16px; display: flex; align-items: center; gap: 8px;
         font-weight: 800; font-size: 13px; box-shadow: 4px 4px 0 var(--mascot-outline); z-index: 60; animation: sb-pop .25s ease; max-width: min(360px, 80vw);
       }
@@ -827,8 +792,7 @@ export default function GlobalStyle() {
       .sb-buddy { position: fixed; bottom: 20px; right: 20px; z-index: 65; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
       .sb-buddy-bubble {
         position: relative; max-width: 260px;
-        background: color-mix(in srgb, var(--mascot-body) 80%, transparent);
-        backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+        background: var(--mascot-body);
         border: 2.5px solid var(--mascot-outline); border-radius: 18px; padding: 14px 30px 12px 16px;
         box-shadow: 4px 4px 0 var(--mascot-outline); animation: sb-pop .2s ease;
       }
@@ -849,8 +813,7 @@ export default function GlobalStyle() {
       /* ===== Buddy smart chat panel ===== */
       .sb-buddy-chat {
         width: 300px; max-width: calc(100vw - 32px);
-        background: color-mix(in srgb, var(--mascot-body) 84%, transparent);
-        backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
+        background: var(--mascot-body);
         border: 2.5px solid var(--mascot-outline); border-radius: 18px; box-shadow: 4px 4px 0 var(--mascot-outline);
         display: flex; flex-direction: column; overflow: hidden; animation: sb-pop .2s ease;
       }
@@ -1069,11 +1032,9 @@ export default function GlobalStyle() {
         .sb-sidebar { display: none; }
         .sb-main { width: 100%; height: 100vh; padding: 70px 16px 24px; }
         .sb-mobile-toggle { display: flex; position: fixed; top: 14px; left: 14px; z-index: 55; background: var(--mascot-body); border: 2px solid var(--mascot-outline); border-radius: 12px; padding: 8px; box-shadow: 3px 3px 0 var(--mascot-outline); }
-        .sb-mobile-dark-toggle { display: flex; position: fixed; top: 14px; right: 14px; z-index: 55; background: var(--mascot-body); border: 2px solid var(--mascot-outline); border-radius: 12px; padding: 8px; box-shadow: 3px 3px 0 var(--mascot-outline); color: var(--mascot-ink); }
         .sb-mobile-nav {
           display: flex; flex-direction: column; position: fixed; top: 58px; left: 14px;
-          background: color-mix(in srgb, var(--mascot-body) 80%, transparent);
-          backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+          background: var(--mascot-body);
           border: 2px solid var(--mascot-outline); border-radius: 16px; padding: 10px; gap: 4px; z-index: 55;
           box-shadow: 5px 5px 0 var(--mascot-outline); max-height: 80vh; overflow-y: auto;
         }
@@ -1408,256 +1369,6 @@ export default function GlobalStyle() {
         .sb-goal-cover-title { font-size: 38px; }
       }
 
-      /* ================================================================
-         ===== depth pass =====
-         Everything above draws the flat "paper sticker" language (solid
-         fill + thick outline + hard offset shadow). The rules below layer
-         a second, soft, blurred ambient shadow *underneath* that hard
-         offset shadow -- so surfaces keep their sticker identity but read
-         as genuinely lifted off the page -- plus a subtle glossy sheen
-         (a top-side highlight blended with soft-light, low-opacity, and
-         pointer-events:none so it never interferes with clicks) on the
-         rounded/circular surfaces, for a puffy, glassy, "real 3D material"
-         feel. Both tricks use only neutral black/white so they read
-         correctly on every theme, light or dark, without per-theme cases. */
-
-      .sb-card {
-        box-shadow: 5px 5px 0 var(--mascot-outline), 0 16px 28px -16px rgba(0,0,0,.28), 0 3px 7px rgba(0,0,0,.06);
-        isolation: isolate;
-      }
-      .sb-card::after {
-        content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-        background: linear-gradient(165deg, rgba(255,255,255,.32) 0%, rgba(255,255,255,0) 46%);
-        mix-blend-mode: soft-light; opacity: .9; z-index: 3;
-      }
-      /* Chapter cards can number in the dozens-to-hundreds on the Syllabus
-         page, so they get a cheap, single-layer shadow instead of the full
-         blend-mode sheen treatment above -- that combo was expensive enough
-         per-card to visibly lag the whole page when rendered at that count. */
-      .sb-chapter-card {
-        box-shadow: 3px 3px 0 var(--mascot-outline);
-      }
-      .sb-clickable:hover { box-shadow: 7px 7px 0 var(--mascot-outline), 0 22px 34px -16px rgba(0,0,0,.32), 0 4px 9px rgba(0,0,0,.07); }
-      .sb-app[data-blocky="true"] .sb-card { box-shadow: 5px 5px 0 var(--mascot-outline), 0 14px 24px -14px rgba(0,0,0,.26); }
-      .sb-app[data-blocky="true"] .sb-clickable:hover { box-shadow: 7px 7px 0 var(--mascot-outline), 0 18px 28px -14px rgba(0,0,0,.3); }
-
-      /* Y2K chrome depth pass — brighter mirror sheen + a pale bevel ring
-         around every card, plastic-translucent buttons, and a rainbow
-         conic-gradient "CD" ring behind every icon badge. */
-      .sb-app[data-y2k="true"] .sb-card {
-        box-shadow: 5px 5px 0 var(--mascot-outline), 0 16px 28px -16px rgba(0,0,0,.28), 0 3px 7px rgba(0,0,0,.06),
-          inset 0 2px 0 rgba(255,255,255,.65), inset 0 -14px 22px -18px rgba(0,0,0,.16);
-      }
-      .sb-app[data-y2k="true"] .sb-card::after {
-        background: linear-gradient(160deg, rgba(255,255,255,.6) 0%, rgba(255,255,255,0) 55%),
-          radial-gradient(circle at 85% 14%, rgba(255,255,255,.9) 0%, rgba(255,255,255,0) 18%);
-        opacity: 1;
-      }
-      .sb-app[data-y2k="true"] .sb-clickable:hover {
-        box-shadow: 7px 7px 0 var(--mascot-outline), 0 22px 34px -16px rgba(0,0,0,.32), 0 4px 9px rgba(0,0,0,.07),
-          inset 0 2px 0 rgba(255,255,255,.65);
-      }
-      .sb-app[data-y2k="true"] .sb-btn-primary {
-        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.5), inset 0 -2px 4px rgba(0,0,0,.15),
-          3px 3px 0 var(--accent2), 0 0 0 2px var(--mascot-inner), 0 12px 22px -12px rgba(0,0,0,.4);
-      }
-      .sb-app[data-y2k="true"] .sb-btn-primary:hover {
-        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.5), inset 0 -2px 4px rgba(0,0,0,.15),
-          4px 4px 0 var(--accent2), 0 0 0 2px var(--mascot-inner), 0 16px 26px -12px rgba(0,0,0,.44);
-      }
-      .sb-app[data-y2k="true"] .sb-nav-pill {
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 3px 3px 0 var(--mascot-outline),
-          0 0 0 2px var(--accent2), 0 9px 16px -10px rgba(0,0,0,.26);
-      }
-      .sb-app[data-y2k="true"] .sb-icon-badge {
-        background: conic-gradient(from 200deg, var(--p1), var(--p2), var(--p4), var(--p1));
-      }
-
-      .sb-icon-badge {
-        position: relative; overflow: hidden;
-        background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--mascot-inner) 100%, white 42%), var(--mascot-inner) 78%);
-        box-shadow: inset 0 2px 2px rgba(255,255,255,.55), inset 0 -3px 4px rgba(0,0,0,.16), 2px 2px 0 var(--mascot-outline);
-      }
-      .sb-grid-3 > .sb-card:nth-child(1) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(1) .sb-icon-badge { background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--p1) 100%, white 42%), var(--p1) 78%); }
-      .sb-grid-3 > .sb-card:nth-child(2) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(2) .sb-icon-badge { background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--p2) 100%, white 42%), var(--p2) 78%); }
-      .sb-grid-3 > .sb-card:nth-child(3) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(3) .sb-icon-badge { background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--p3) 100%, white 42%), var(--p3) 78%); }
-      .sb-grid-4 > .sb-card:nth-child(4) .sb-icon-badge { background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--p4) 100%, white 42%), var(--p4) 78%); }
-
-      .sb-btn-primary {
-        position: relative; overflow: hidden;
-        background: linear-gradient(160deg, color-mix(in srgb, var(--mascot-outline) 100%, white 20%), var(--mascot-outline) 70%);
-        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), inset 0 -2px 4px rgba(0,0,0,.15), 3px 3px 0 var(--accent2), 0 12px 22px -12px rgba(0,0,0,.4);
-      }
-      .sb-btn-primary:hover { box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), inset 0 -2px 4px rgba(0,0,0,.15), 4px 4px 0 var(--accent2), 0 16px 26px -12px rgba(0,0,0,.44); }
-      .sb-btn-soft {
-        position: relative; overflow: hidden;
-        background: linear-gradient(160deg, color-mix(in srgb, var(--mascot-inner) 100%, white 22%), var(--mascot-inner) 72%);
-        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), inset 0 -2px 3px rgba(0,0,0,.08), 3px 3px 0 var(--mascot-outline), 0 10px 18px -12px rgba(0,0,0,.24);
-      }
-      .sb-btn-soft:hover { box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), inset 0 -2px 3px rgba(0,0,0,.08), 4px 4px 0 var(--mascot-outline), 0 14px 22px -12px rgba(0,0,0,.28); }
-      .sb-btn:active { filter: brightness(.95); }
-
-      .sb-chip {
-        position: relative; overflow: hidden;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 2px 2px 0 var(--mascot-outline), 0 7px 14px -9px rgba(0,0,0,.22);
-      }
-      .sb-chip:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 3px 3px 0 var(--mascot-outline), 0 9px 16px -8px rgba(0,0,0,.26); }
-      .sb-chip.active { box-shadow: inset 0 1px 2px rgba(0,0,0,.12), 2px 2px 0 var(--mascot-outline); }
-
-      /* Single definition of the nav pill's shadow (base rule is up in the
-         sidebar section, near .sb-sidebar/.sb-nav) -- kept here with the
-         rest of the glossy-depth surfaces so it stays visually consistent
-         with buttons/chips instead of drifting out of sync with them. */
-      .sb-nav-pill {
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 3px 3px 0 var(--mascot-outline), 0 9px 16px -10px rgba(0,0,0,.26);
-      }
-
-      .sb-washi { box-shadow: 1px 2px 3px rgba(0,0,0,.15), 0 7px 12px -7px rgba(0,0,0,.22); }
-
-      .sb-pwa-banner { box-shadow: 4px 4px 0 var(--mascot-outline), 0 16px 26px -14px rgba(0,0,0,.3); }
-
-      .sb-journal-arrow, .sb-goal-star-btn, .sb-goal-delete-btn {
-        position: relative; overflow: hidden; background-color: var(--mascot-body);
-        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.5), inset 0 -2px 3px rgba(0,0,0,.1), 2px 2px 0 var(--mascot-outline);
-      }
-      .sb-goal-complete-btn, .sb-goal-reopen-btn {
-        box-shadow: inset 0 1.5px 0 rgba(255,255,255,.35), inset 0 -2px 3px rgba(0,0,0,.12), 2px 2px 0 var(--mascot-outline);
-      }
-      .sb-goal-complete-btn:hover, .sb-goal-reopen-btn:hover { box-shadow: inset 0 1.5px 0 rgba(255,255,255,.35), inset 0 -2px 3px rgba(0,0,0,.12), 3px 3px 0 var(--mascot-outline); }
-
-      /* recessed / inset surfaces -- the visual counterpart to the raised
-         cards & buttons above. Alternating raised and recessed materials
-         is what makes a flat-color UI actually parse as three-dimensional. */
-      .sb-input, textarea.sb-input, select.sb-input {
-        box-shadow: inset 0 2px 5px rgba(0,0,0,.12), inset 0 -1px 0 rgba(255,255,255,.3);
-      }
-      .sb-progress-track { box-shadow: inset 0 2px 5px rgba(0,0,0,.15); overflow: hidden; }
-      .sb-progress-fill { position: relative; }
-      .sb-progress-fill::after {
-        content: ""; position: absolute; inset: 0; pointer-events: none;
-        background: linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0) 55%);
-      }
-
-      .sb-app:has(.sb-route-study) .sb-card,
-      .sb-app:has(.sb-route-study) .sb-card-glass,
-      .sb-app:has(.sb-route-study) .sb-guide-card,
-      .sb-app:has(.sb-route-study) .sb-timer-card,
-      .sb-app:has(.sb-route-study) .sb-chapter-card,
-      .sb-app:has(.sb-route-study) .sb-revision-card,
-      .sb-app:has(.sb-route-study) .sb-achv-card,
-      .sb-app:has(.sb-route-study) .sb-lb-you-card,
-      .sb-app:has(.sb-route-timer) .sb-card,
-      .sb-app:has(.sb-route-timer) .sb-card-glass,
-      .sb-app:has(.sb-route-timer) .sb-guide-card,
-      .sb-app:has(.sb-route-timer) .sb-timer-card,
-      .sb-app:has(.sb-route-timer) .sb-chapter-card,
-      .sb-app:has(.sb-route-timer) .sb-revision-card,
-      .sb-app:has(.sb-route-timer) .sb-achv-card,
-      .sb-app:has(.sb-route-timer) .sb-lb-you-card,
-      .sb-app:has(.sb-route-syllabus) .sb-card,
-      .sb-app:has(.sb-route-syllabus) .sb-card-glass,
-      .sb-app:has(.sb-route-syllabus) .sb-guide-card,
-      .sb-app:has(.sb-route-syllabus) .sb-timer-card,
-      .sb-app:has(.sb-route-syllabus) .sb-chapter-card,
-      .sb-app:has(.sb-route-syllabus) .sb-revision-card,
-      .sb-app:has(.sb-route-syllabus) .sb-achv-card,
-      .sb-app:has(.sb-route-syllabus) .sb-lb-you-card,
-      .sb-app:has(.sb-route-backlog) .sb-card,
-      .sb-app:has(.sb-route-backlog) .sb-card-glass,
-      .sb-app:has(.sb-route-backlog) .sb-guide-card,
-      .sb-app:has(.sb-route-backlog) .sb-timer-card,
-      .sb-app:has(.sb-route-backlog) .sb-chapter-card,
-      .sb-app:has(.sb-route-backlog) .sb-revision-card,
-      .sb-app:has(.sb-route-backlog) .sb-achv-card,
-      .sb-app:has(.sb-route-backlog) .sb-lb-you-card,
-      .sb-app:has(.sb-route-goals) .sb-card,
-      .sb-app:has(.sb-route-goals) .sb-card-glass,
-      .sb-app:has(.sb-route-goals) .sb-guide-card,
-      .sb-app:has(.sb-route-goals) .sb-timer-card,
-      .sb-app:has(.sb-route-goals) .sb-chapter-card,
-      .sb-app:has(.sb-route-goals) .sb-revision-card,
-      .sb-app:has(.sb-route-goals) .sb-achv-card,
-      .sb-app:has(.sb-route-goals) .sb-lb-you-card,
-      .sb-app:has(.sb-route-questions) .sb-card,
-      .sb-app:has(.sb-route-questions) .sb-card-glass,
-      .sb-app:has(.sb-route-questions) .sb-guide-card,
-      .sb-app:has(.sb-route-questions) .sb-timer-card,
-      .sb-app:has(.sb-route-questions) .sb-chapter-card,
-      .sb-app:has(.sb-route-questions) .sb-revision-card,
-      .sb-app:has(.sb-route-questions) .sb-achv-card,
-      .sb-app:has(.sb-route-questions) .sb-lb-you-card,
-      .sb-app:has(.sb-route-mocks) .sb-card,
-      .sb-app:has(.sb-route-mocks) .sb-card-glass,
-      .sb-app:has(.sb-route-mocks) .sb-guide-card,
-      .sb-app:has(.sb-route-mocks) .sb-timer-card,
-      .sb-app:has(.sb-route-mocks) .sb-chapter-card,
-      .sb-app:has(.sb-route-mocks) .sb-revision-card,
-      .sb-app:has(.sb-route-mocks) .sb-achv-card,
-      .sb-app:has(.sb-route-mocks) .sb-lb-you-card,
-      .sb-app:has(.sb-route-revision) .sb-card,
-      .sb-app:has(.sb-route-revision) .sb-card-glass,
-      .sb-app:has(.sb-route-revision) .sb-guide-card,
-      .sb-app:has(.sb-route-revision) .sb-timer-card,
-      .sb-app:has(.sb-route-revision) .sb-chapter-card,
-      .sb-app:has(.sb-route-revision) .sb-revision-card,
-      .sb-app:has(.sb-route-revision) .sb-achv-card,
-      .sb-app:has(.sb-route-revision) .sb-lb-you-card,
-      .sb-app:has(.sb-route-planner) .sb-card,
-      .sb-app:has(.sb-route-planner) .sb-card-glass,
-      .sb-app:has(.sb-route-planner) .sb-guide-card,
-      .sb-app:has(.sb-route-planner) .sb-timer-card,
-      .sb-app:has(.sb-route-planner) .sb-chapter-card,
-      .sb-app:has(.sb-route-planner) .sb-revision-card,
-      .sb-app:has(.sb-route-planner) .sb-achv-card,
-      .sb-app:has(.sb-route-planner) .sb-lb-you-card,
-      .sb-app:has(.sb-route-analytics) .sb-card,
-      .sb-app:has(.sb-route-analytics) .sb-card-glass,
-      .sb-app:has(.sb-route-analytics) .sb-guide-card,
-      .sb-app:has(.sb-route-analytics) .sb-timer-card,
-      .sb-app:has(.sb-route-analytics) .sb-chapter-card,
-      .sb-app:has(.sb-route-analytics) .sb-revision-card,
-      .sb-app:has(.sb-route-analytics) .sb-achv-card,
-      .sb-app:has(.sb-route-analytics) .sb-lb-you-card,
-      .sb-app:has(.sb-route-ai) .sb-card,
-      .sb-app:has(.sb-route-ai) .sb-card-glass,
-      .sb-app:has(.sb-route-ai) .sb-guide-card,
-      .sb-app:has(.sb-route-ai) .sb-timer-card,
-      .sb-app:has(.sb-route-ai) .sb-chapter-card,
-      .sb-app:has(.sb-route-ai) .sb-revision-card,
-      .sb-app:has(.sb-route-ai) .sb-achv-card,
-      .sb-app:has(.sb-route-ai) .sb-lb-you-card,
-      .sb-app:has(.sb-route-achievements) .sb-card,
-      .sb-app:has(.sb-route-achievements) .sb-card-glass,
-      .sb-app:has(.sb-route-achievements) .sb-guide-card,
-      .sb-app:has(.sb-route-achievements) .sb-timer-card,
-      .sb-app:has(.sb-route-achievements) .sb-chapter-card,
-      .sb-app:has(.sb-route-achievements) .sb-revision-card,
-      .sb-app:has(.sb-route-achievements) .sb-achv-card,
-      .sb-app:has(.sb-route-achievements) .sb-lb-you-card,
-      .sb-app:has(.sb-route-leaderboard) .sb-card,
-      .sb-app:has(.sb-route-leaderboard) .sb-card-glass,
-      .sb-app:has(.sb-route-leaderboard) .sb-guide-card,
-      .sb-app:has(.sb-route-leaderboard) .sb-timer-card,
-      .sb-app:has(.sb-route-leaderboard) .sb-chapter-card,
-      .sb-app:has(.sb-route-leaderboard) .sb-revision-card,
-      .sb-app:has(.sb-route-leaderboard) .sb-achv-card,
-      .sb-app:has(.sb-route-leaderboard) .sb-lb-you-card,
-      .sb-app:has(.sb-route-profile) .sb-card,
-      .sb-app:has(.sb-route-profile) .sb-card-glass,
-      .sb-app:has(.sb-route-profile) .sb-guide-card,
-      .sb-app:has(.sb-route-profile) .sb-timer-card,
-      .sb-app:has(.sb-route-profile) .sb-chapter-card,
-      .sb-app:has(.sb-route-profile) .sb-revision-card,
-      .sb-app:has(.sb-route-profile) .sb-achv-card,
-      .sb-app:has(.sb-route-profile) .sb-lb-you-card {
-        background: var(--mascot-body) !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        box-shadow: 0 1px 0 color-mix(in srgb, var(--mascot-outline) 45%, transparent), 0 8px 24px -20px rgba(0,0,0,.45) !important;
-        border: 1px solid color-mix(in srgb, var(--mascot-outline) 38%, transparent) !important;
-        border-radius: 14px !important;
-      }
-
       .sb-page-transition { animation: none !important; }
       .sb-app:has(.sb-route-study) .sb-page,
       .sb-app:has(.sb-route-timer) .sb-page,
@@ -1752,7 +1463,7 @@ export default function GlobalStyle() {
       .sb-app:has(.sb-route-backlog) .sb-input,
       .sb-app:has(.sb-route-mocks) .sb-input,
       .sb-app:has(.sb-route-revision) .sb-input,
-      .sb-app:has(.sb-route-planner) .sb-input { background: var(--mascot-body) !important; border-color: color-mix(in srgb, var(--mascot-outline) 34%, transparent) !important; }
+      .sb-app:has(.sb-route-planner) .sb-input { background: var(--mascot-body) !important; border-color: var(--mascot-outline) !important; }
       .sb-app:has(.sb-route-study) .sb-btn,
       .sb-app:has(.sb-route-timer) .sb-btn,
       .sb-app:has(.sb-route-syllabus) .sb-btn,
@@ -1767,8 +1478,8 @@ export default function GlobalStyle() {
       .sb-app:has(.sb-route-achievements) .sb-btn,
       .sb-app:has(.sb-route-leaderboard) .sb-btn,
       .sb-app:has(.sb-route-profile) .sb-btn { box-shadow: none !important; }
-      .sb-pillnav-overflow { background: var(--mascot-body) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-      .sb-pwa-banner { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+      .sb-pillnav-overflow { background: var(--mascot-body) !important; }
+      .sb-pwa-banner { }
       .sb-page-loading { min-height: 34vh; }
 
       
