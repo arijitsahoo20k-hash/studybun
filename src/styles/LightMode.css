@@ -1,38 +1,95 @@
-/* StudyBun — dedicated LIGHT mode surface system.
-   Light mode must use the selected theme as a UI theme, not the mascot
-   illustration palette. In particular, application cards must NEVER inherit
-   --mascot-body / --mascot-inner, because those are intentionally colourful.
-   Dark mode remains isolated in DarkMode.css. */
+/* StudyBun dedicated light mode.
+   This layer is scoped to data-mode="light" and keeps the light UI separate
+   from the dark system. Theme colours are accents; application surfaces stay
+   close to the selected theme's card/soft neutrals. */
+.sb-app[data-mode="light"] { color-scheme: light; }
 
-.sb-app[data-mode="light"] {
+.sb-app[data-mode="light"] .sb-card,
+.sb-app[data-mode="light"] .sb-card-glass,
+.sb-app[data-mode="light"] .sb-card-active {
+  color: var(--ink);
+  border-color: var(--outline);
+}
+.sb-app[data-mode="light"] .sb-sidebar {
+  background: color-mix(in srgb, var(--bg) 94%, var(--card) 6%);
+  border-right: 1px solid color-mix(in srgb, var(--outline) 22%, transparent);
+}
+.sb-app[data-mode="light"] .sb-sidebar-item { color: var(--ink); }
+.sb-app[data-mode="light"] .sb-sidebar-item.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.sb-app[data-mode="light"] .sb-sidebar-item:hover:not(.active),
+.sb-app[data-mode="light"] .sb-sidebar-action:hover { background: var(--soft); color: var(--ink); }
+
+/* Keep ordinary controls neutral; mascot illustration variables are not used
+   as application surfaces in light mode either. */
+.sb-app[data-mode="light"] .sb-btn-soft,
+.sb-app[data-mode="light"] .sb-chip,
+.sb-app[data-mode="light"] .sb-icon-round,
+.sb-app[data-mode="light"] .sb-theme-chip,
+.sb-app[data-mode="light"] .sb-theme-swatch,
+.sb-app[data-mode="light"] .sb-mascot-pick,
+.sb-app[data-mode="light"] .sb-icon-badge {
+  background: var(--soft);
+  color: var(--ink);
+  border-color: var(--outline);
+}
+.sb-app[data-mode="light"] .sb-input,
+.sb-app[data-mode="light"] textarea.sb-input,
+.sb-app[data-mode="light"] select.sb-input,
+.sb-app[data-mode="light"] .sb-search-input,
+.sb-app[data-mode="light"] input:not([type="checkbox"]):not([type="radio"]),
+.sb-app[data-mode="light"] textarea,
+.sb-app[data-mode="light"] select {
+  background: var(--card) !important;
+  color: var(--ink) !important;
+  border-color: color-mix(in srgb, var(--outline) 60%, transparent) !important;
   color-scheme: light;
 }
+.sb-app[data-mode="light"] input::placeholder,
+.sb-app[data-mode="light"] textarea::placeholder { color: var(--muted) !important; opacity: .9; }
 
-/* =========================================================
-   1. PRIMARY SURFACES
-   =========================================================
-   Cards are calm theme surfaces. Accent colours belong to actions/status,
-   not the entire card background. No glass effect in light mode. */
+/* Mascots remain controlled only by the mascot components. */
+
+
+/* ================================================================
+   GLOBAL LIGHT-MODE SURFACE CONTRACT — ALL PAGES
+   Normal application cards/panels are theme surfaces, never mascot fills
+   or decorative palette colours. Accent/soft colours are reserved for
+   selected/active states and small semantic UI.
+   ================================================================ */
+
 .sb-app[data-mode="light"] .sb-card,
 .sb-app[data-mode="light"] .sb-card-glass,
 .sb-app[data-mode="light"] .sb-card-active,
+.sb-app[data-mode="light"] .sb-flow-card,
 .sb-app[data-mode="light"] .sb-guide-card,
 .sb-app[data-mode="light"] .sb-timer-card,
 .sb-app[data-mode="light"] .sb-chapter-card,
 .sb-app[data-mode="light"] .sb-revision-card,
 .sb-app[data-mode="light"] .sb-achv-card,
-.sb-app[data-mode="light"] .sb-lb-you-card {
+.sb-app[data-mode="light"] .sb-lb-you-card,
+.sb-app[data-mode="light"] .sb-info-panel,
+.sb-app[data-mode="light"] .sb-faq-item,
+.sb-app[data-mode="light"] .sb-land-trust-card,
+.sb-app[data-mode="light"] .sb-land-theme-card,
+.sb-app[data-mode="light"] .sb-mini-stat,
+.sb-app[data-mode="light"] .sb-cal-section,
+.sb-app[data-mode="light"] .sb-cal-items,
+.sb-app[data-mode="light"] .sb-buddy-chat-list,
+.sb-app[data-mode="light"] .sb-suggestion-list,
+.sb-app[data-mode="light"] .sb-lb-list,
+.sb-app[data-mode="light"] .sb-goal-cover-stats {
   background: var(--card) !important;
-  background-image: none !important;
   color: var(--ink) !important;
   border-color: var(--outline) !important;
-  box-shadow: 4px 4px 0 color-mix(in srgb, var(--outline) 78%, transparent) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-/* Remove the decorative sheen/texture from generic cards in light mode.
-   The selected theme's card colour should remain clean and consistent. */
+/* Remove decorative mascot-body/inner paints from normal light cards. */
 .sb-app[data-mode="light"] .sb-card::before,
 .sb-app[data-mode="light"] .sb-card::after,
 .sb-app[data-mode="light"] .sb-card-glass::before,
@@ -42,201 +99,60 @@
   mix-blend-mode: normal !important;
 }
 
-/* Route-level rules in GlobalStyle previously repaint a few cards with the
-   mascot colour. These selectors intentionally win in light mode. */
-.sb-app[data-mode="light"]:has(.sb-route-profile) .sb-achv-card,
-.sb-app[data-mode="light"]:has(.sb-route-profile) .sb-lb-you-card {
-  background: var(--card) !important;
-  background-image: none !important;
+/* Nested stat/item surfaces stay subtle and theme-based instead of becoming
+   random filled colour blocks. */
+.sb-app[data-mode="light"] .sb-stat-big,
+.sb-app[data-mode="light"] .sb-cal-item,
+.sb-app[data-mode="light"] .sb-cal-legend-item,
+.sb-app[data-mode="light"] .sb-buddy-status-row,
+.sb-app[data-mode="light"] .sb-goal-cover-stats,
+.sb-app[data-mode="light"] .sb-land-stat-chip {
+  background: var(--soft) !important;
   color: var(--ink) !important;
+  border-color: color-mix(in srgb, var(--outline) 55%, transparent) !important;
 }
 
-/* =========================================================
-   2. SECONDARY SURFACES / CONTROLS
-   =========================================================
-   Secondary controls use the theme's soft neutral, never mascot artwork
-   colours. Accent remains reserved for selected/primary states. */
+/* Active/selected surfaces may use the theme accent, but only intentionally. */
+.sb-app[data-mode="light"] .sb-card-active,
+.sb-app[data-mode="light"] .sb-chip.active,
+.sb-app[data-mode="light"] .sb-theme-chip.active,
+.sb-app[data-mode="light"] .sb-mascot-pick.active {
+  background: color-mix(in srgb, var(--soft) 78%, var(--accent) 22%) !important;
+  border-color: var(--accent) !important;
+}
+
+/* All light-mode buttons/controls that are supposed to be secondary remain
+   neutral; primary buttons keep their accent styling from the shared UI. */
 .sb-app[data-mode="light"] .sb-btn-soft,
 .sb-app[data-mode="light"] .sb-chip,
 .sb-app[data-mode="light"] .sb-icon-round,
 .sb-app[data-mode="light"] .sb-theme-chip,
-.sb-app[data-mode="light"] .sb-theme-swatch,
 .sb-app[data-mode="light"] .sb-mascot-pick,
+.sb-app[data-mode="light"] .sb-icon-badge,
 .sb-app[data-mode="light"] .sb-goal-delete-btn,
 .sb-app[data-mode="light"] .sb-goal-reopen-btn,
-.sb-app[data-mode="light"] .sb-journal-arrow,
-.sb-app[data-mode="light"] .sb-icon-badge,
-.sb-app[data-mode="light"] .sb-radio-chip,
-.sb-app[data-mode="light"] .sb-mini-action,
-.sb-app[data-mode="light"] .sb-cal-nav,
-.sb-app[data-mode="light"] .sb-mobile-toggle,
-.sb-app[data-mode="light"] .sb-mobile-dark-toggle {
+.sb-app[data-mode="light"] .sb-journal-arrow {
   background: var(--soft) !important;
   color: var(--ink) !important;
   border-color: var(--outline) !important;
 }
 
-.sb-app[data-mode="light"] .sb-btn-soft:hover,
-.sb-app[data-mode="light"] .sb-chip:hover,
-.sb-app[data-mode="light"] .sb-theme-chip:hover,
-.sb-app[data-mode="light"] .sb-theme-swatch:hover,
-.sb-app[data-mode="light"] .sb-mascot-pick:hover,
-.sb-app[data-mode="light"] .sb-radio-chip:hover,
-.sb-app[data-mode="light"] .sb-mini-action:hover {
-  background: color-mix(in srgb, var(--soft) 78%, var(--accent) 22%) !important;
-}
-
-.sb-app[data-mode="light"] .sb-chip.active,
-.sb-app[data-mode="light"] .sb-mascot-pick.active,
-.sb-app[data-mode="light"] .sb-theme-chip.active,
-.sb-app[data-mode="light"] .sb-theme-swatch.active,
-.sb-app[data-mode="light"] .sb-radio-chip.active {
-  background: color-mix(in srgb, var(--accent) 18%, var(--soft)) !important;
-  border-color: var(--accent) !important;
-}
-
-/* Theme picker swatches contain their own colour preview elements; only the
-   clickable swatch shell is neutralised here. */
-.sb-app[data-mode="light"] .sb-theme-swatch > span {
-  background: var(--accent) !important;
-}
-
-/* =========================================================
-   3. INPUTS
-   ========================================================= */
-.sb-app[data-mode="light"] .sb-input,
-.sb-app[data-mode="light"] textarea.sb-input,
-.sb-app[data-mode="light"] select.sb-input,
-.sb-app[data-mode="light"] .sb-search-input,
-.sb-app[data-mode="light"] input:not([type="checkbox"]):not([type="radio"]),
-.sb-app[data-mode="light"] textarea,
-.sb-app[data-mode="light"] select,
-.sb-app[data-mode="light"]:has(.sb-route-study) .sb-input,
-.sb-app[data-mode="light"]:has(.sb-route-questions) .sb-input,
-.sb-app[data-mode="light"]:has(.sb-route-backlog) .sb-input,
-.sb-app[data-mode="light"]:has(.sb-route-mocks) .sb-input,
-.sb-app[data-mode="light"]:has(.sb-route-revision) .sb-input,
-.sb-app[data-mode="light"]:has(.sb-route-planner) .sb-input {
-  background: var(--card) !important;
-  color: var(--ink) !important;
-  border-color: color-mix(in srgb, var(--outline) 60%, transparent) !important;
-  color-scheme: light;
-}
-
-.sb-app[data-mode="light"] input::placeholder,
-.sb-app[data-mode="light"] textarea::placeholder {
-  color: var(--muted) !important;
-  opacity: .9;
-}
-
-/* =========================================================
-   4. NAVIGATION / MENUS
-   ========================================================= */
-.sb-app[data-mode="light"] .sb-sidebar {
-  background: color-mix(in srgb, var(--bg) 94%, var(--card) 6%) !important;
-  border-right-color: color-mix(in srgb, var(--outline) 22%, transparent) !important;
-}
-
-.sb-app[data-mode="light"] .sb-sidebar-item {
-  color: var(--ink);
-}
-
-.sb-app[data-mode="light"] .sb-sidebar-item.active {
-  background: var(--accent) !important;
-  color: #fff !important;
-  border-color: var(--accent) !important;
-}
-
-.sb-app[data-mode="light"] .sb-sidebar-item:hover:not(.active),
-.sb-app[data-mode="light"] .sb-sidebar-action:hover {
-  background: var(--soft) !important;
-  color: var(--ink) !important;
-}
-
-.sb-app[data-mode="light"] .sb-mobile-nav,
-.sb-app[data-mode="light"] .sb-pillnav-overflow {
-  background: var(--card) !important;
-  color: var(--ink) !important;
-  border-color: var(--outline) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-/* =========================================================
-   5. SMALL APP SURFACES
-   =========================================================
-   These are UI containers, not illustrations. Keep them theme-neutral. */
-.sb-app[data-mode="light"] .sb-duration-pop,
-.sb-app[data-mode="light"] .sb-timer-settings,
-.sb-app[data-mode="light"] .sb-buddy-bubble,
-.sb-app[data-mode="light"] .sb-buddy-chat,
-.sb-app[data-mode="light"] .sb-scratch-wrap,
-.sb-app[data-mode="light"] .sb-settings-nav-item,
-.sb-app[data-mode="light"] .sb-cal-item,
-.sb-app[data-mode="light"] .sb-cal-cell.has-data {
-  background: var(--card) !important;
-  color: var(--ink) !important;
-  border-color: var(--outline) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-.sb-app[data-mode="light"] .sb-buddy-action,
-.sb-app[data-mode="light"] .sb-buddy-key-toggle {
-  background: var(--soft) !important;
-  color: var(--ink) !important;
-  border-color: var(--outline) !important;
-}
-
-.sb-app[data-mode="light"] .sb-week-dot {
-  background: var(--soft) !important;
-  border-color: var(--outline) !important;
-}
-
-.sb-app[data-mode="light"] .sb-due-chip,
-.sb-app[data-mode="light"] .sb-tag {
-  background: var(--soft) !important;
-  color: var(--ink) !important;
-  border-color: var(--outline) !important;
-}
-
-/* Semantic status colours remain intentionally coloured. */
-.sb-app[data-mode="light"] .sb-tag.priority-high,
-.sb-app[data-mode="light"] .sb-due-chip.overdue {
-  background: #FFD9DF !important;
-  color: #7A2436 !important;
-  border-color: #C0435A !important;
-}
-
-.sb-app[data-mode="light"] .sb-tag.priority-medium,
-.sb-app[data-mode="light"] .sb-due-chip.today {
-  background: #FFEBC2 !important;
-  color: #6B4A0E !important;
-  border-color: #A67A2E !important;
-}
-
-/* =========================================================
-   6. TEXT / SELECTION
-   ========================================================= */
-.sb-app[data-mode="light"] .sb-main,
+/* Keep page shells and modal surfaces tied to the selected theme. */
 .sb-app[data-mode="light"] .sb-page,
 .sb-app[data-mode="light"] .sb-page-shell,
-.sb-app[data-mode="light"] .sb-page-wrap {
+.sb-app[data-mode="light"] .sb-page-wrap,
+.sb-app[data-mode="light"] .sb-main {
   color: var(--ink);
 }
 
-.sb-app[data-mode="light"] .sb-muted,
-.sb-app[data-mode="light"] .sb-card-sub,
-.sb-app[data-mode="light"] .sb-subtitle,
-.sb-app[data-mode="light"] .sb-hint,
-.sb-app[data-mode="light"] .sb-empty {
-  color: var(--muted) !important;
+.sb-app[data-mode="light"] .sb-modal,
+.sb-app[data-mode="light"] .sb-modal-card,
+.sb-app[data-mode="light"] .sb-sheet,
+.sb-app[data-mode="light"] .sb-dialog,
+.sb-app[data-mode="light"] .sb-popover,
+.sb-app[data-mode="light"] .sb-dropdown,
+.sb-app[data-mode="light"] .sb-menu {
+  background: var(--card) !important;
+  color: var(--ink) !important;
+  border-color: var(--outline) !important;
 }
-
-.sb-app[data-mode="light"] ::selection {
-  background: color-mix(in srgb, var(--accent) 38%, white);
-  color: var(--ink);
-}
-
-/* Mascot SVGs are intentionally excluded from all surface rules above.
-   Their illustration palette continues to come from mascot tokens. */

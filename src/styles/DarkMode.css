@@ -291,3 +291,83 @@
 }
 
 .sb-app[data-mode="dark"] ::selection { background: color-mix(in srgb, var(--accent) 55%, #000); color: #fff; }
+
+
+/* ================================================================
+   GLOBAL DARK-MODE SURFACE CONTRACT — ALL PAGES
+   Dark cards are intentionally tinted by the selected theme. They are not
+   plain grey/black blocks and never inherit the light mascot fill. The
+   accent is used as a restrained tint so every theme remains recognisable.
+   ================================================================ */
+
+.sb-app[data-mode="dark"] .sb-card,
+.sb-app[data-mode="dark"] .sb-card-glass,
+.sb-app[data-mode="dark"] .sb-card-active,
+.sb-app[data-mode="dark"] .sb-flow-card,
+.sb-app[data-mode="dark"] .sb-guide-card,
+.sb-app[data-mode="dark"] .sb-timer-card,
+.sb-app[data-mode="dark"] .sb-chapter-card,
+.sb-app[data-mode="dark"] .sb-revision-card,
+.sb-app[data-mode="dark"] .sb-achv-card,
+.sb-app[data-mode="dark"] .sb-lb-you-card,
+.sb-app[data-mode="dark"] .sb-info-panel,
+.sb-app[data-mode="dark"] .sb-faq-item,
+.sb-app[data-mode="dark"] .sb-land-trust-card,
+.sb-app[data-mode="dark"] .sb-land-theme-card,
+.sb-app[data-mode="dark"] .sb-mini-stat,
+.sb-app[data-mode="dark"] .sb-cal-section,
+.sb-app[data-mode="dark"] .sb-cal-items,
+.sb-app[data-mode="dark"] .sb-buddy-chat-list,
+.sb-app[data-mode="dark"] .sb-suggestion-list,
+.sb-app[data-mode="dark"] .sb-lb-list,
+.sb-app[data-mode="dark"] .sb-goal-cover-stats {
+  background: color-mix(in srgb, var(--card) 86%, var(--accent) 14%) !important;
+  color: var(--ink) !important;
+  border-color: color-mix(in srgb, var(--outline) 72%, var(--accent) 28%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Remove old glass sheen so the theme tint is clean and consistent. */
+.sb-app[data-mode="dark"] .sb-card::before,
+.sb-app[data-mode="dark"] .sb-card::after,
+.sb-app[data-mode="dark"] .sb-card-glass::before,
+.sb-app[data-mode="dark"] .sb-card-glass::after {
+  background: none !important;
+  opacity: 0 !important;
+  mix-blend-mode: normal !important;
+}
+
+/* Secondary/nested surfaces get a slightly stronger theme tint. */
+.sb-app[data-mode="dark"] .sb-stat-big,
+.sb-app[data-mode="dark"] .sb-cal-item,
+.sb-app[data-mode="dark"] .sb-cal-legend-item,
+.sb-app[data-mode="dark"] .sb-buddy-status-row,
+.sb-app[data-mode="dark"] .sb-land-stat-chip {
+  background: color-mix(in srgb, var(--soft) 82%, var(--accent) 18%) !important;
+  color: var(--ink) !important;
+  border-color: color-mix(in srgb, var(--outline) 70%, var(--accent) 30%) !important;
+}
+
+/* Active cards are visibly selected without becoming neon. */
+.sb-app[data-mode="dark"] .sb-card-active,
+.sb-app[data-mode="dark"] .sb-chip.active,
+.sb-app[data-mode="dark"] .sb-theme-chip.active,
+.sb-app[data-mode="dark"] .sb-mascot-pick.active {
+  background: color-mix(in srgb, var(--card) 68%, var(--accent) 32%) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 10px 28px -20px var(--shadow-color), 3px 3px 0 color-mix(in srgb, var(--accent) 55%, var(--outline)) !important;
+}
+
+/* Dark modal/menu surfaces follow the same theme. */
+.sb-app[data-mode="dark"] .sb-modal,
+.sb-app[data-mode="dark"] .sb-modal-card,
+.sb-app[data-mode="dark"] .sb-sheet,
+.sb-app[data-mode="dark"] .sb-dialog,
+.sb-app[data-mode="dark"] .sb-popover,
+.sb-app[data-mode="dark"] .sb-dropdown,
+.sb-app[data-mode="dark"] .sb-menu {
+  background: color-mix(in srgb, var(--card) 86%, var(--accent) 14%) !important;
+  color: var(--ink) !important;
+  border-color: var(--outline) !important;
+}
