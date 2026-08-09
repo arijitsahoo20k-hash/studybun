@@ -1,0 +1,54 @@
+/* StudyBun dedicated light mode.
+   This layer is scoped to data-mode="light" and keeps the light UI separate
+   from the dark system. Theme colours are accents; application surfaces stay
+   close to the selected theme's card/soft neutrals. */
+.sb-app[data-mode="light"] { color-scheme: light; }
+
+.sb-app[data-mode="light"] .sb-card,
+.sb-app[data-mode="light"] .sb-card-glass,
+.sb-app[data-mode="light"] .sb-card-active {
+  color: var(--ink);
+  border-color: var(--outline);
+}
+.sb-app[data-mode="light"] .sb-sidebar {
+  background: color-mix(in srgb, var(--bg) 94%, var(--card) 6%);
+  border-right: 1px solid color-mix(in srgb, var(--outline) 22%, transparent);
+}
+.sb-app[data-mode="light"] .sb-sidebar-item { color: var(--ink); }
+.sb-app[data-mode="light"] .sb-sidebar-item.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.sb-app[data-mode="light"] .sb-sidebar-item:hover:not(.active),
+.sb-app[data-mode="light"] .sb-sidebar-action:hover { background: var(--soft); color: var(--ink); }
+
+/* Keep ordinary controls neutral; mascot illustration variables are not used
+   as application surfaces in light mode either. */
+.sb-app[data-mode="light"] .sb-btn-soft,
+.sb-app[data-mode="light"] .sb-chip,
+.sb-app[data-mode="light"] .sb-icon-round,
+.sb-app[data-mode="light"] .sb-theme-chip,
+.sb-app[data-mode="light"] .sb-theme-swatch,
+.sb-app[data-mode="light"] .sb-mascot-pick,
+.sb-app[data-mode="light"] .sb-icon-badge {
+  background: var(--soft);
+  color: var(--ink);
+  border-color: var(--outline);
+}
+.sb-app[data-mode="light"] .sb-input,
+.sb-app[data-mode="light"] textarea.sb-input,
+.sb-app[data-mode="light"] select.sb-input,
+.sb-app[data-mode="light"] .sb-search-input,
+.sb-app[data-mode="light"] input:not([type="checkbox"]):not([type="radio"]),
+.sb-app[data-mode="light"] textarea,
+.sb-app[data-mode="light"] select {
+  background: var(--card) !important;
+  color: var(--ink) !important;
+  border-color: color-mix(in srgb, var(--outline) 60%, transparent) !important;
+  color-scheme: light;
+}
+.sb-app[data-mode="light"] input::placeholder,
+.sb-app[data-mode="light"] textarea::placeholder { color: var(--muted) !important; opacity: .9; }
+
+/* Mascots remain controlled only by the mascot components. */
