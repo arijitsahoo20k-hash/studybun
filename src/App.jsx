@@ -129,26 +129,36 @@ export const FEATURE_UNLOCK_STREAK = 6;
 
 export default function App() {
   const { user } = useAuth();
+  const [page, setPage] = useState("dashboard");
   const { row: profile, loading: profileLoading, save: saveProfile, refetch: refetchProfile } = useDeviceRow("profiles", {
     name: "", exam: "JEE Main", exam_date: "2027-01-24", daily_goal: 6, theme: "Sakura Bloom", mascot: "bunny",
     streak_freeze_tokens: 1, streak_freeze_granted_days: 0,
   });
 
-  const sessionsQ = useRealtimeTable("study_sessions", { orderBy: "session_date" });
-  const timerSessionsQ = useRealtimeTable("timer_sessions", { orderBy: "created_at" });
-  const chapters = useChapterProgress();
-  const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date" });
-  const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date" });
-  const mockAnalysis = useMockAnalysis();
-  const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true });
-  const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date" });
-  const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at" });
-  const goalsQ = useRealtimeTable("goals", { orderBy: "created_at", ascending: true });
-  const achievementsQ = useRealtimeTable("achievements", { orderBy: "unlocked_at" });
+  // Keep only genuinely global data live. Page-specific datasets/subscriptions
+  // are activated when their page is visible, preventing navigation from
+  // waking every table, realtime channel and derived list at once.
+  const pageData = {
+    dashboard: true, study: true, timer: true, syllabus: true, backlog: true,
+    goals: true, questions: true, mocks: true, revision: true, planner: true,
+    analytics: true, ai: true, achievements: true, leaderboard: true, profile: true, settings: true,
+  };
+  const isPage = (...ids) => pageData[page] && ids.includes(page);
+  const sessionsQ = useRealtimeTable("study_sessions", { orderBy: "session_date", enabled: page === "dashboard" || isPage("study", "backlog", "analytics", "ai", "leaderboard", "profile") });
+  const timerSessionsQ = useRealtimeTable("timer_sessions", { orderBy: "created_at", enabled: page === "dashboard" || isPage("timer", "analytics", "leaderboard", "profile") });
+  const chapters = useChapterProgress({ enabled: page === "dashboard" || isPage("study", "timer", "syllabus", "mocks", "revision", "ai", "leaderboard") });
+  const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || isPage("syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
+  const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date", enabled: page === "dashboard" || isPage("syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
+  const mockAnalysis = useMockAnalysis({ enabled: page === "dashboard" || page === "mocks" });
+  const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true, enabled: page === "dashboard" || isPage("syllabus", "mocks", "revision", "ai", "profile") });
+  const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date", enabled: page === "dashboard" || isPage("backlog", "planner", "profile") });
+  const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at", enabled: page === "dashboard" || isPage("backlog", "ai") });
+  const goalsQ = useRealtimeTable("goals", { orderBy: "created_at", ascending: true, enabled: page === "dashboard" || isPage("goals", "achievements") });
+  const achievementsQ = useRealtimeTable("achievements", { orderBy: "unlocked_at", enabled: page === "dashboard" || page === "achievements" });
   // Streak-freeze tokens: see supabase/migration_streak_freeze.sql. A frozen
   // date is treated exactly like a genuine study day (folded into
   // streakDays below), so a missed day doesn't reset the streak to 0.
-  const streakFreezesQ = useRealtimeTable("streak_freezes", { orderBy: "frozen_date" });
+  const streakFreezesQ = useRealtimeTable("streak_freezes", { orderBy: "frozen_date", enabled: page === "dashboard" || page === "planner" || page === "profile" });
 
   // Lives here (not inside FocusTimer) so switching pages never resets it.
   // Every completed session is logged to timer_sessions automatically —
@@ -170,7 +180,6 @@ export default function App() {
   // from a completely different page.
   const studyingIds = useStudyPresence(focusTimer.running);
 
-  const [page, setPage] = useState("dashboard");
   const reducedMotion = useMemo(prefersReducedMotion, []);
   // <main> is the app's only scroll container, so without this a nav switch
   // could land you mid-scroll on the new page if the old one had you scrolled
@@ -1143,35 +1152,26 @@ export default function App() {
       )}
 
       <main className="sb-main" ref={mainRef}>
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.div
-            key={page}
-            className="sb-page-transition"
-            initial={reducedMotion ? false : { opacity: 0, y: 14, scale: 0.985 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={reducedMotion ? undefined : { opacity: 0, y: -10, scale: 0.985 }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Suspense fallback={<PageLoading mascot={mascot} />}>
-              {page === "dashboard" && <Dashboard {...pageProps} />}
-              {page === "study" && <StudyTracker {...pageProps} />}
-              {page === "timer" && <FocusTimer {...pageProps} />}
-              {page === "syllabus" && <SyllabusPage {...pageProps} />}
-              {page === "backlog" && <BacklogPage {...pageProps} />}
-              {page === "goals" && <GoalsPage {...pageProps} />}
-              {page === "questions" && <QuestionsPage {...pageProps} />}
-              {page === "mocks" && <MocksPage {...pageProps} />}
-              {page === "revision" && <RevisionPage {...pageProps} />}
-              {page === "planner" && <PlannerPage {...pageProps} />}
-              {page === "analytics" && <AnalyticsPage {...pageProps} />}
-              {page === "ai" && <AIInsightsPage {...pageProps} />}
-              {page === "achievements" && <AchievementsPage {...pageProps} />}
-              {page === "leaderboard" && <LeaderboardPage {...pageProps} />}
-              {page === "profile" && <ProfilePage {...pageProps} />}
-              {page === "settings" && <SettingsPage {...pageProps} />}
-            </Suspense>
-          </motion.div>
-        </AnimatePresence>
+        <div className={`sb-page-transition sb-route-${page}`} key={page}>
+          <Suspense fallback={<PageLoading mascot={mascot} />}>
+            {page === "dashboard" && <Dashboard {...pageProps} />}
+            {page === "study" && <StudyTracker {...pageProps} />}
+            {page === "timer" && <FocusTimer {...pageProps} />}
+            {page === "syllabus" && <SyllabusPage {...pageProps} />}
+            {page === "backlog" && <BacklogPage {...pageProps} />}
+            {page === "goals" && <GoalsPage {...pageProps} />}
+            {page === "questions" && <QuestionsPage {...pageProps} />}
+            {page === "mocks" && <MocksPage {...pageProps} />}
+            {page === "revision" && <RevisionPage {...pageProps} />}
+            {page === "planner" && <PlannerPage {...pageProps} />}
+            {page === "analytics" && <AnalyticsPage {...pageProps} />}
+            {page === "ai" && <AIInsightsPage {...pageProps} />}
+            {page === "achievements" && <AchievementsPage {...pageProps} />}
+            {page === "leaderboard" && <LeaderboardPage {...pageProps} />}
+            {page === "profile" && <ProfilePage {...pageProps} />}
+            {page === "settings" && <SettingsPage {...pageProps} />}
+          </Suspense>
+        </div>
       </main>
 
       <BuddyGuide {...pageProps} page={page} mood={buddyMood} energy={buddyEnergy} hopping={hopping} />

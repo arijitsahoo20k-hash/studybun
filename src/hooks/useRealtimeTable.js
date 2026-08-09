@@ -8,7 +8,7 @@ import { weightageFor } from "../data/syllabus";
  * real time. If there's no signed-in user yet (e.g. Supabase isn't
  * configured), it stays idle with empty rows rather than erroring.
  */
-export function useRealtimeTable(table, { orderBy = "created_at", ascending = false } = {}) {
+export function useRealtimeTable(table, { orderBy = "created_at", ascending = false, enabled = true } = {}) {
   const { user } = useAuth();
   const userId = user?.id;
   const [rows, setRows] = useState([]);
@@ -23,6 +23,15 @@ export function useRealtimeTable(table, { orderBy = "created_at", ascending = fa
     if (!userId) {
       setRows([]);
       setLoading(false);
+      loadRef.current = null;
+      return () => { mounted.current = false; };
+    }
+
+    if (!enabled) {
+      // Keep the last successful page snapshot in memory so navigating back
+      // is instant; only the network subscription/query is paused.
+      setLoading(false);
+      loadRef.current = null;
       return () => { mounted.current = false; };
     }
 
@@ -69,7 +78,7 @@ export function useRealtimeTable(table, { orderBy = "created_at", ascending = fa
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table, userId]);
+  }, [table, userId, enabled]);
 
   const insert = useCallback(
     async (row) => {
@@ -181,8 +190,8 @@ export function useDeviceRow(table, defaults = {}) {
 }
 
 /** mock_analysis is 1:1 with a mock_tests row (keyed by mock_id) — a thin wrapper with upsert semantics. */
-export function useMockAnalysis() {
-  const { rows, loading, insert, update, remove, refetch } = useRealtimeTable("mock_analysis", { orderBy: "created_at" });
+export function useMockAnalysis(options = {}) {
+  const { rows, loading, insert, update, remove, refetch } = useRealtimeTable("mock_analysis", { orderBy: "created_at", ...options });
 
   const map = {};
   rows.forEach((r) => { map[r.mock_id] = r; });
@@ -201,8 +210,8 @@ export function useMockAnalysis() {
 }
 
 /** chapter_progress is keyed by (subject, chapter) rather than id-first — a thin wrapper with upsert semantics. */
-export function useChapterProgress() {
-  const { rows, loading, insert, update, refetch } = useRealtimeTable("chapter_progress", { orderBy: "updated_at" });
+export function useChapterProgress(options = {}) {
+  const { rows, loading, insert, update, refetch } = useRealtimeTable("chapter_progress", { orderBy: "updated_at", ...options });
 
   const map = {};
   rows.forEach((r) => { map[`${r.subject}::${r.chapter}`] = r; });
