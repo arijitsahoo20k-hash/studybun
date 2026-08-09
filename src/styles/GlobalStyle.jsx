@@ -1772,3 +1772,6 @@ export default function GlobalStyle() {
       .sb-page-loading { min-height: 34vh; }
 
       
+    `}</style>
+  );
+}
