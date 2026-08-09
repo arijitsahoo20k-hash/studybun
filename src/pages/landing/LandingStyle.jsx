@@ -17,19 +17,6 @@ export default function LandingStyle() {
       .sb-reveal { opacity: 0; transform: translateY(26px); transition: opacity .65s cubic-bezier(.22,1,.36,1), transform .65s cubic-bezier(.22,1,.36,1); }
       .sb-reveal-in { opacity: 1; transform: translateY(0); }
 
-      /* ---------- nav ---------- */
-      .sb-land-nav {
-        position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between;
-        padding: 12px clamp(16px, 5vw, 40px); background: color-mix(in srgb, var(--bg) 82%, transparent);
-        backdrop-filter: blur(10px); border-bottom: 2px solid var(--outline);
-      }
-      .sb-land-nav-brand { display: flex; align-items: center; gap: 9px; cursor: default; }
-      .sb-land-nav-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--ink); }
-      .sb-land-nav-links { display: flex; align-items: center; gap: 4px; }
-      .sb-land-nav-link { background: none; border: none; font-family: var(--font-body); font-weight: 800; font-size: 13px; color: var(--muted); padding: 8px 12px; border-radius: 999px; cursor: pointer; transition: color .15s ease, background-color .15s ease; }
-      .sb-land-nav-link:hover { color: var(--ink); background: var(--soft); }
-      @media (max-width: 640px) { .sb-land-nav-links { display: none; } }
-
       /* ---------- shared section shell ---------- */
       .sb-land-section { max-width: 980px; margin: 0 auto; padding: 64px 20px; position: relative; z-index: 1; }
       .sb-land-section-head { text-align: center; max-width: 560px; margin: 0 auto 40px; }
