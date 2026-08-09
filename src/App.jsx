@@ -91,12 +91,6 @@ const NAV = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-// Settings and Profile get their own dedicated icon buttons at the end of
-// the top bar (mirroring the gear/avatar pattern of the reference design)
-// instead of living in the pill row too -- so a page is never reachable
-// two different ways from the same nav.
-const TOP_NAV = NAV.filter((n) => n.id !== "settings" && n.id !== "profile");
-
 // Suspense fallback for a lazy page chunk that's still being fetched.
 // Deliberately not the full-screen LoadingScreen (that one assumes it owns
 // the whole viewport, pre-nav) -- this sits inside the already-mounted page
@@ -186,51 +180,6 @@ export default function App() {
   // down -- jarring on its own, and doubly so once page switches animate.
   const mainRef = useRef(null);
   useEffect(() => { if (mainRef.current) mainRef.current.scrollTop = 0; }, [page]);
-
-  // Auto-hide topbar: slides up out of the way on scroll-down, reappears on
-  // scroll-up (or once you're back near the top), instead of sitting fixed
-  // the whole time. Reads/writes the DOM directly via refs rather than
-  // React state so a scroll-heavy page (Revision, Planner) never triggers a
-  // re-render per frame -- rAF-throttled and passive, so it stays off the
-  // main thread's critical path even on a 120Hz tablet.
-  const topbarRef = useRef(null);
-  useEffect(() => {
-    const scrollEl = mainRef.current;
-    const bar = topbarRef.current;
-    if (!scrollEl || !bar || reducedMotion) return;
-
-    let lastY = scrollEl.scrollTop;
-    let ticking = false;
-    const HIDE_DELTA = 8;   // ignore tiny/inertial jitter
-    const TOP_ZONE = 24;    // always visible once you're this close to the top
-
-    const apply = () => {
-      ticking = false;
-      const y = scrollEl.scrollTop;
-      const delta = y - lastY;
-
-      if (y <= TOP_ZONE) {
-        bar.classList.remove("sb-topbar-hidden");
-        bar.classList.remove("sb-topbar-scrolled");
-      } else {
-        bar.classList.add("sb-topbar-scrolled");
-        if (delta > HIDE_DELTA) {
-          bar.classList.add("sb-topbar-hidden");
-          lastY = y;
-        } else if (delta < -HIDE_DELTA) {
-          bar.classList.remove("sb-topbar-hidden");
-          lastY = y;
-        }
-      }
-    };
-
-    const onScroll = () => {
-      if (!ticking) { ticking = true; requestAnimationFrame(apply); }
-    };
-
-    scrollEl.addEventListener("scroll", onScroll, { passive: true });
-    return () => scrollEl.removeEventListener("scroll", onScroll);
-  }, [reducedMotion]);
 
   // StudyBun's push notifications deep-link to a page id (dashboard,
   // planner, revision, backlog, analytics, goals) via the service worker
@@ -1076,51 +1025,32 @@ export default function App() {
         </div>
       )}
 
-      {/* Tablet/desktop: floating pill top nav (see .sb-topbar in
-          GlobalStyle). Hidden below the phone breakpoint via CSS, in favor
-          of the compact hamburger dropdown right below. */}
-      <header className="sb-topbar" ref={topbarRef}>
-        <div className="sb-topbar-brand">
-          <Mascot species={mascot} mood="happy" size={32} hop={hopping} peek />
-          <span className="sb-brand-title">StudyBun</span>
+      <aside className="sb-sidebar" aria-label="StudyBun navigation">
+        <div className="sb-sidebar-brand">
+          <div className="sb-sidebar-brand-mark">
+            <Mascot species={mascot} mood="happy" size={38} hop={hopping} peek />
+          </div>
+          <div className="sb-sidebar-brand-copy">
+            <span className="sb-brand-title">StudyBun</span>
+            <span className="sb-sidebar-brand-sub">JEE study companion</span>
+          </div>
         </div>
 
-        <TopNav nav={TOP_NAV} page={page} setPage={setPage} reducedMotion={reducedMotion} onHoverItem={prefetchPage} />
+        <TopNav nav={NAV} page={page} setPage={setPage} reducedMotion={reducedMotion} onHoverItem={prefetchPage} />
 
-        <div className="sb-topbar-actions">
+        <div className="sb-sidebar-footer">
           <button
             type="button"
-            className="sb-topbar-icon"
+            className="sb-sidebar-action"
             onClick={toggleDarkMode}
             aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
             title={darkMode ? "Light mode" : "Dark mode"}
           >
-            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-          <button
-            type="button"
-            className={`sb-topbar-icon ${page === "settings" ? "active" : ""}`}
-            onClick={() => startTransition(() => setPage("settings"))}
-            onMouseEnter={() => prefetchPage("settings")}
-            onFocus={() => prefetchPage("settings")}
-            aria-label="Settings"
-            title="Settings"
-          >
-            <Settings size={18} />
-          </button>
-          <button
-            type="button"
-            className={`sb-topbar-icon ${page === "profile" ? "active" : ""}`}
-            onClick={() => startTransition(() => setPage("profile"))}
-            onMouseEnter={() => prefetchPage("profile")}
-            onFocus={() => prefetchPage("profile")}
-            aria-label="Profile"
-            title="Profile"
-          >
-            <User size={18} />
+            <span className="sb-sidebar-action-icon">{darkMode ? <Sun size={18} /> : <Moon size={18} />}</span>
+            <span>{darkMode ? "Light mode" : "Dark mode"}</span>
           </button>
         </div>
-      </header>
+      </aside>
 
       {/* Phone: unchanged hamburger + dropdown, full NAV list including
           Settings/Profile since there's no separate icon row to hold them

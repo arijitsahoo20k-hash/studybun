@@ -5,6 +5,14 @@ export default function GlobalStyle() {
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&family=Caveat:wght@600;700&display=swap');
 
+      /* Hard viewport reset: the app owns the viewport, not the browser body.
+         This removes the default document margin and prevents a white strip
+         from ever showing beside the full-height StudyBun shell. */
+      html, body, #root { margin: 0; padding: 0; width: 100%; min-width: 0; min-height: 100%; }
+      html { min-height: 100%; background: #111; }
+      body { min-height: 100vh; overflow: hidden; }
+      #root { min-height: 100vh; }
+
       /* ===== tap/focus reset =====
          Android Chrome (incl. installed PWAs) paints two things this app never
          styled: (1) a translucent blue rectangle on tap — the UA's default
@@ -48,7 +56,7 @@ export default function GlobalStyle() {
         background-size: 22px 22px; position: relative; transition: background-color .35s ease, color .35s ease;
       }
       .sb-app *, .sb-onboard *, .sb-loading * { box-sizing: border-box; }
-      .sb-app { display: flex; flex-direction: column; min-height: 100vh; position: relative; z-index: 1; }
+      .sb-app { display: flex; flex-direction: row; min-height: 100vh; height: 100vh; width: 100%; max-width: 100%; position: relative; z-index: 1; overflow: hidden; }
 
       /* time-of-day ambient wash, plus a few big soft colour blobs sitting
          behind everything. Nothing here animates -- it's painted once as a
@@ -246,105 +254,61 @@ export default function GlobalStyle() {
 
       .sb-icon-badge { width: 26px; height: 26px; border-radius: 50%; background: var(--soft); border: 2px solid var(--outline); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--outline); }
 
-      /* ===== top nav (tablet + desktop) =====
-         Replaces the old sidebar entirely. A brand chip, a floating pill
-         nav that fits as many labels as there's room for (TopNav.jsx
-         measures and decides -- nothing here is breakpoint-guessed), and a
-         pair of dedicated icon buttons for Settings/Profile so those two
-         pages are never also duplicated inside the pill row or its overflow. */
-      /* Was a plain opaque "background: var(--bg)", pinned via position:
-         sticky plus a translateY transform for the hide-on-scroll-down
-         behaviour. An opaque box on its own GPU compositor layer, moved by
-         transform, is exactly the recipe for the classic sticky-header
-         hairline: the browser's layer bounds round to the device pixel
-         grid slightly differently than the content scrolling underneath,
-         so a 1px seam of whatever's behind the header peeks through along
-         its bottom edge and reads as an unwanted border. A translucent,
-         blurred background doesn't have a hard edge for that rounding
-         error to show up against, so the seam disappears as a side effect
-         of the glass treatment -- no separate patch needed. */
-      /* This strip used to carry a real backdrop-filter blur. Sticky +
-         continuously blurring whatever scrolls underneath it, every single
-         frame, for as long as the header is on screen, is one of the
-         heaviest things you can ask a mid-range Android GPU to do -- worse
-         than almost any other effect in this file, because it's not a one-
-         off cost, it's ongoing for the entire scroll gesture. That's the
-         actual, specific cause of "the nav is laggy" -- not a minor tax,
-         the single biggest one in the app. So the bar itself no longer
-         blurs at all: a solid, near-opaque tint (98%) that reads clean
-         and flat, ChatGPT-header style, for zero per-frame cost. The
-         floating "More" overflow panel below still gets a real blur --
-         it's a transient popover, not something living permanently in the
-         scroll path, so the cost only exists for as long as it's open. */
-      .sb-topbar {
-        display: flex; align-items: center; gap: 12px; padding: 16px clamp(20px, 4vw, 52px) 4px;
-        position: sticky; top: 0; z-index: 40;
-        background: color-mix(in srgb, var(--bg) 98%, transparent);
-        border-bottom: 1px solid transparent;
-        transform: translateY(0); transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .2s ease, padding-bottom .2s ease;
-        will-change: transform;
+      /* ===== persistent desktop/tablet sidebar ===== */
+      .sb-sidebar {
+        position: relative; z-index: 45; flex: 0 0 244px; width: 244px; height: 100vh;
+        display: flex; flex-direction: column; padding: 18px 14px 14px;
+        background: color-mix(in srgb, var(--bg) 94%, var(--card) 6%);
+        border-right: 0; box-shadow: none;
+        overflow: hidden;
       }
-      .sb-topbar.sb-topbar-hidden { transform: translateY(-135%); }
-      .sb-topbar.sb-topbar-scrolled { padding-bottom: 12px; box-shadow: 0 14px 28px -20px rgba(0,0,0,.45); }
-      .sb-topbar-brand {
-        display: flex; align-items: center; gap: 8px; padding: 5px 16px 5px 8px; border-radius: 999px;
-        border: 2.5px solid var(--outline);
-        background: var(--card);
-        box-shadow: 4px 4px 0 var(--outline); flex-shrink: 0;
+      .sb-sidebar-brand {
+        display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px;
+        flex: 0 0 auto;
       }
-      .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; white-space: nowrap; }
+      .sb-sidebar-brand-mark {
+        width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
+        flex: 0 0 46px;
+      }
+      .sb-sidebar-brand-copy { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+      .sb-brand-title { font-family: var(--font-display); font-weight: 800; font-size: 17px; white-space: nowrap; }
+      .sb-sidebar-brand-sub { font-size: 10px; color: var(--muted); font-weight: 800; white-space: nowrap; }
 
-      /* Desktop navigation is intentionally a transparent navigation rail.
-         The buttons/active indicator are the UI; the old outer card created
-         a large, unrelated rectangle around the entire nav. */
-      .sb-pillnav {
-        position: relative; flex: 1 1 auto; min-width: 0;
-        border: none; background: transparent; box-shadow: none;
+      .sb-sidebar-nav {
+        flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
+        scrollbar-width: thin; padding: 4px 2px;
       }
-      /* The clipping lives here, one level in, so the floating overflow
-         panel below (a sibling, not a child of this row) never gets cut
-         off along with it. */
-      .sb-pillnav-row { position: relative; display: flex; align-items: center; gap: 6px; overflow: hidden; padding: 2px 0; border-radius: 0; }
-      .sb-pillnav-item, .sb-pillnav-more { position: relative; z-index: 1; display: flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 999px; border: none; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: color .15s ease, transform .15s ease; touch-action: manipulation; }
-      .sb-pillnav-item:hover:not(.active), .sb-pillnav-more:hover:not(.active) { background: var(--soft); transform: translateY(-1px); }
-      .sb-pillnav-item.active, .sb-pillnav-more.active { color: var(--card); font-weight: 800; }
-      .sb-pillnav-item svg, .sb-pillnav-more svg { flex-shrink: 0; }
-      /* The single sliding indicator (see TopNav.jsx) -- an absolutely
-         positioned pill that Framer Motion springs between whichever button
-         is current, instead of each button flashing its own background
-         on/off. z-index 0 keeps it under the (z-index 1) button labels/icons
-         above. No CSS transition here -- Motion owns the animation via its
-         own inline style writes, so a CSS transition on the same property
-         would just race it. */
-      .sb-pillnav-indicator { position: absolute; top: 0; left: 0; z-index: 0; border-radius: 999px; background: var(--outline); pointer-events: none; }
-      /* Off-screen mirror used only to measure natural widths -- see
-         TopNav.jsx's recalc(). Laid out (not display:none) so real widths
-         come back, just invisible and out of flow. */
-      .sb-pillnav-measure { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; display: flex; gap: 6px; padding: 2px 0; }
-
-      .sb-pillnav-overflow {
-        position: absolute; top: calc(100% + 8px); right: 0; z-index: 45; display: grid;
-        grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 4px; padding: 10px;
-        background: color-mix(in srgb, var(--card) 80%, transparent);
-        backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%);
-        border: 2.5px solid var(--outline); border-radius: 18px; box-shadow: 5px 5px 0 var(--outline); max-width: min(420px, 90vw);
+      .sb-sidebar-nav-list { display: flex; flex-direction: column; gap: 3px; }
+      .sb-sidebar-item {
+        width: 100%; min-height: 43px; display: flex; align-items: center; gap: 11px;
+        padding: 9px 11px; border: 2px solid transparent; border-radius: 13px;
+        background: transparent; color: var(--ink); font-family: var(--font-body);
+        font-size: 13px; font-weight: 800; text-align: left; cursor: pointer;
+        transition: background .15s ease, color .15s ease, transform .15s ease, border-color .15s ease;
+        touch-action: manipulation;
       }
-      .sb-pillnav-overflow-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 12px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13px; cursor: pointer; text-align: left; transition: background .15s ease, border-color .15s ease; }
-      .sb-pillnav-overflow-item:hover:not(.active) { background: var(--soft); }
-      .sb-pillnav-overflow-item.active { background: var(--soft); border-color: var(--outline); font-weight: 800; }
+      .sb-sidebar-item:hover:not(.active) { background: var(--soft); transform: translateX(2px); }
+      .sb-sidebar-item.active { background: var(--outline); color: var(--card); border-color: var(--outline); box-shadow: 3px 3px 0 color-mix(in srgb, var(--outline) 72%, transparent); }
+      .sb-sidebar-item-icon { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 22px; }
+      .sb-sidebar-item-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-      .sb-topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-      .sb-topbar-icon {
-        display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%;
-        border: 2.5px solid var(--outline);
-        background: color-mix(in srgb, var(--card) 82%, transparent);
-        color: var(--ink); cursor: pointer; box-shadow: 3px 3px 0 var(--outline);
-        transition: transform .15s ease, background .15s ease, color .15s ease; flex-shrink: 0;
+      .sb-sidebar-footer { flex: 0 0 auto; padding: 10px 2px 0; margin-top: 8px; border-top: 1px solid color-mix(in srgb, var(--outline) 18%, transparent); }
+      .sb-sidebar-action {
+        width: 100%; min-height: 42px; display: flex; align-items: center; gap: 11px; padding: 9px 11px;
+        border: 2px solid transparent; border-radius: 13px; background: transparent; color: var(--ink);
+        font-family: var(--font-body); font-size: 13px; font-weight: 800; cursor: pointer;
+        transition: background .15s ease, transform .15s ease, border-color .15s ease;
       }
-      .sb-topbar-icon:hover { transform: translateY(-2px); }
-      .sb-topbar-icon.active { background: var(--outline); color: var(--card); }
+      .sb-sidebar-action:hover { background: var(--soft); transform: translateX(2px); }
+      .sb-sidebar-action-icon { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 22px; }
 
-      /* ===== phone dropdown (unchanged pattern, just no sidebar to hide anymore) ===== */
+      /* Legacy top-nav classes are deliberately neutralised. Keeping these
+         selectors makes old cached markup harmless during a hot reload and
+         guarantees no large nav rectangle can reappear. */
+      .sb-topbar, .sb-pillnav { display: none !important; }
+
+      /* ===== phone dropdown ===== */
+ (unchanged pattern, just no sidebar to hide anymore) ===== */
       .sb-brand { display: flex; align-items: center; gap: 10px; }
       .sb-brand-sub { font-size: 11px; color: var(--muted); font-weight: 700; }
       .sb-nav-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 999px; border: 2px solid transparent; background: transparent; color: var(--ink); font-family: var(--font-body); font-weight: 700; font-size: 13.5px; cursor: pointer; text-align: left; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
@@ -365,7 +329,7 @@ export default function GlobalStyle() {
       .sb-mobile-dark-toggle { display: none; cursor: pointer; }
       .sb-mobile-nav { display: none; }
 
-      .sb-main { padding: clamp(20px, 2.6vw, 40px) clamp(20px, 4vw, 52px) 90px; overflow-y: auto; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; }
+      .sb-main { flex: 1 1 auto; min-width: 0; width: calc(100% - 244px); height: 100vh; padding: clamp(20px, 2.6vw, 40px) clamp(20px, 3vw, 44px) 90px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; }
       /* One page's worth of content, wrapped so AnimatePresence in App.jsx
          has a single element to fade/slide in and out between nav switches.
          Mirrors .sb-main's own centering so the swap is otherwise invisible
@@ -1092,8 +1056,16 @@ export default function GlobalStyle() {
          with overflow collapsing into "More" -- phones get the compact
          hamburger dropdown instead. Tablets (portrait included) stay above
          this and keep the real top nav. */
+      @media (max-width: 1080px) and (min-width: 721px) {
+        .sb-sidebar { flex-basis: 210px; width: 210px; padding-left: 10px; padding-right: 10px; }
+        .sb-main { width: calc(100% - 210px); padding-left: 24px; padding-right: 24px; }
+        .sb-sidebar-brand-sub { display: none; }
+        .sb-sidebar-item { font-size: 12px; }
+      }
+
       @media (max-width: 720px) {
-        .sb-topbar { display: none; }
+        .sb-sidebar { display: none; }
+        .sb-main { width: 100%; height: 100vh; padding: 70px 16px 24px; }
         .sb-mobile-toggle { display: flex; position: fixed; top: 14px; left: 14px; z-index: 55; background: var(--card); border: 2px solid var(--outline); border-radius: 12px; padding: 8px; box-shadow: 3px 3px 0 var(--outline); }
         .sb-mobile-dark-toggle { display: flex; position: fixed; top: 14px; right: 14px; z-index: 55; background: var(--card); border: 2px solid var(--outline); border-radius: 12px; padding: 8px; box-shadow: 3px 3px 0 var(--outline); color: var(--ink); }
         .sb-mobile-nav {
@@ -1103,7 +1075,6 @@ export default function GlobalStyle() {
           border: 2px solid var(--outline); border-radius: 16px; padding: 10px; gap: 4px; z-index: 55;
           box-shadow: 5px 5px 0 var(--outline); max-height: 80vh; overflow-y: auto;
         }
-        .sb-main { padding: 70px 16px 24px; }
         .sb-bottom-nav { display: none; }
         .sb-buddy { bottom: 20px; right: 14px; }
         .sb-buddy-bubble { max-width: 210px; }
@@ -1564,10 +1535,6 @@ export default function GlobalStyle() {
         content: ""; position: absolute; inset: 0; pointer-events: none;
         background: linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0) 55%);
       }
-
-      /* Shared theme backdrop + motifs are part of the app shell, not a
-         Dashboard-only treatment. Every authenticated route keeps the same
-         theme atmosphere while its page content remains independent. */
 
       .sb-app:has(.sb-route-study) .sb-card,
       .sb-app:has(.sb-route-study) .sb-card-glass,
