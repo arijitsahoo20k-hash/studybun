@@ -702,9 +702,50 @@ export default function GlobalStyle() {
       .sb-checkbox { width: 22px; height: 22px; border-radius: 8px; border: 2.5px solid var(--mascot-outline); background: var(--mascot-body); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--bg); flex-shrink: 0; position: relative; transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
       .sb-checkbox.checked { background: var(--mascot-inner); color: var(--mascot-outline); animation: sb-check-pop .3s cubic-bezier(.34,1.56,.64,1); }
       .sb-task-row-editing { align-items: flex-start; gap: 8px; background: var(--mascot-inner); }
-      .sb-task-edit-grid { display: grid; grid-template-columns: 1fr 110px 100px; gap: 6px; flex: 1; }
+      .sb-task-edit-grid { display: grid; grid-template-columns: 1fr 110px 100px 130px; gap: 6px; flex: 1; }
       .sb-task-edit-grid .sb-input { padding: 6px 8px; font-size: 12.5px; }
       .sb-task-edit-actions { display: flex; gap: 2px; flex-shrink: 0; padding-top: 2px; }
+      @media (max-width: 640px) { .sb-task-edit-grid { grid-template-columns: 1fr 1fr; } }
+
+      /* ===== Planner: side-by-side layout + date-wise accordion groups =====
+         Left rail (add-task + week stats) sticks alongside the task list on
+         wider viewports instead of stacking the whole page vertically; the
+         task list itself is chunked into collapsible date groups instead of
+         one long undifferentiated column of rows. */
+      .sb-plan-layout { display: flex; flex-direction: column; gap: 18px; }
+      .sb-plan-side { display: flex; flex-direction: column; gap: 18px; }
+      .sb-plan-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+      @media (min-width: 900px) {
+        .sb-plan-layout { display: grid; grid-template-columns: 300px 1fr; align-items: start; gap: 22px; }
+        .sb-plan-side { position: sticky; top: 18px; }
+      }
+      @media (min-width: 1200px) {
+        .sb-plan-layout { grid-template-columns: 330px 1fr; gap: 26px; }
+      }
+
+      .sb-plan-stats { padding: 18px 20px; }
+      .sb-plan-stat-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 2px; font-size: 13px; font-weight: 700; color: var(--muted); border-bottom: 1.5px dashed var(--mascot-outline); }
+      .sb-plan-stat-row:last-of-type { border-bottom: none; }
+      .sb-plan-stat-row b { font-family: var(--font-display); font-size: 16px; color: var(--ink); }
+      .sb-plan-stat-row.warn b { color: #C0435A; }
+      .sb-plan-nudge { margin-top: 10px; padding: 8px 10px; background: var(--mascot-inner); border-radius: 12px; border: 1.5px dashed var(--mascot-outline); font-size: 12px; }
+
+      .sb-plan-group { margin-bottom: 10px; border-radius: 16px; overflow: hidden; border: 2px solid var(--mascot-outline); background: var(--bg); }
+      .sb-plan-group:last-child { margin-bottom: 0; }
+      .sb-plan-group-head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 14px; background: var(--mascot-body); border: none; cursor: pointer; font-family: inherit; text-align: left; }
+      .sb-plan-completed-head { border-radius: 14px; border: 2px solid var(--mascot-outline); }
+      .sb-plan-group-title { display: flex; align-items: center; gap: 7px; font-weight: 800; font-size: 13.5px; color: var(--mascot-ink); }
+      .sb-plan-group-count { background: var(--card); border: 1.5px solid var(--mascot-outline); border-radius: 999px; padding: 1px 8px; font-size: 11px; }
+      .sb-plan-group.overdue .sb-plan-group-head { background: #FFD9DF; }
+      .sb-plan-group.overdue .sb-plan-group-title { color: #7A2436; }
+      .sb-plan-group.today .sb-plan-group-head { background: var(--mascot-inner); }
+      .sb-plan-chevron { transition: transform .2s ease; flex-shrink: 0; }
+      .sb-plan-group.open .sb-plan-chevron, .sb-plan-chevron.open { transform: rotate(180deg); }
+      .sb-plan-group-body { padding: 8px 8px 2px; }
+      .sb-plan-row { background: var(--card); border: 1.5px solid var(--mascot-outline); }
+      .sb-plan-row.overdue { border-color: #C0435A; }
+      .sb-plan-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+      .sb-plan-meta .sb-tag { text-transform: capitalize; }
       @keyframes sb-check-pop { 0% { transform: scale(0.7); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
       .sb-spark { position: absolute; font-size: 11px; color: var(--accent); opacity: 0; pointer-events: none; animation: sb-spark-burst .6s ease-out forwards; }
       .sb-spark.s1 { top: 50%; left: 50%; animation-delay: .02s; --tx: -16px; --ty: -14px; }
