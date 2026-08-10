@@ -7,16 +7,16 @@ export default function GlobalStyle() {
 
       /* Hard viewport reset: the app owns the viewport, not the browser body.
          This removes the default document margin and prevents a white strip
-         from ever showing beside the full-height StudyBun shell. `html`'s own
+         from ever showing beside the full-height StudyBun shell. html's own
          background is a neutral cream fallback (not a theme var -- html sits
          above where --bg gets defined, so it can't read it) just so any
          rubber-band/overscroll sliver on mobile shows paper, not a black
          void. The old #111 here made the whole *landing* page look "dark
          themed" on any device with elastic overscroll, since Landing has no
          .sb-app wrapper to paint over it.
-         `overflow: hidden` on body was meant to lock the *app* shell to the
+         overflow: hidden on body was meant to lock the *app* shell to the
          viewport (it manages its own internal scrolling via .sb-main below),
-         but living on `body` it silently killed page-level scrolling for
+         but living on body it silently killed page-level scrolling for
          the Landing/Onboarding/Auth screens too, which have no such internal
          scroll container and rely on the normal document scroll. Moved it
          onto .sb-app itself (already set further down) instead. */
