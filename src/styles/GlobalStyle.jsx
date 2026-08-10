@@ -543,24 +543,62 @@ export default function GlobalStyle() {
       .sb-mini-stat { text-align: center; }
       .sb-mini-num { font-family: var(--font-display); font-size: 24px; font-weight: 800; text-shadow: 1.5px 1.5px 0 var(--mascot-inner); }
 
-      .sb-timeline-group { margin-bottom: 14px; }
-      .sb-timeline-day { display: flex; align-items: baseline; justify-content: space-between; font-weight: 800; font-size: 12px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em; }
-      .sb-timeline-day-total { font-size: 11px; opacity: .75; letter-spacing: 0; }
-      .sb-timeline-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 6px; border-radius: 14px; background: var(--bg); }
+      .sb-timeline-group { margin-bottom: 18px; }
+      .sb-timeline-day { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+      .sb-timeline-day span:first-child {
+        font-weight: 800; font-size: 11px; color: var(--mascot-ink); text-transform: uppercase; letter-spacing: .05em;
+        background: var(--mascot-inner); border: 1.5px solid var(--mascot-outline); border-radius: 999px; padding: 4px 12px;
+      }
+      .sb-timeline-day-total { font-size: 11.5px; font-weight: 800; color: var(--muted); flex-shrink: 0; }
+      /* Each session is its own little sticker card now (border + hard shadow)
+         with a thick colored left edge carrying the subject color -- reads as
+         a proper timeline entry instead of a flat tinted strip. */
+      .sb-timeline-row {
+        display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 8px;
+        border-radius: 12px; background: var(--card);
+        border: 2px solid var(--mascot-outline); border-left: 5px solid var(--mascot-outline);
+        box-shadow: 2px 2px 0 var(--mascot-outline);
+        transition: transform .12s ease, box-shadow .12s ease;
+      }
+      .sb-timeline-row:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--mascot-outline); }
       .sb-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid var(--mascot-outline); }
-      .sb-timeline-info { display: flex; justify-content: space-between; flex: 1; font-size: 13.5px; }
+      .sb-timeline-info { display: flex; justify-content: space-between; flex: 1; font-size: 13.5px; gap: 8px; flex-wrap: wrap; }
       .sb-timeline-row .sb-icon-btn { opacity: .55; flex-shrink: 0; }
       .sb-timeline-row .sb-icon-btn:hover { opacity: 1; }
 
       /* ---------- Study Tracker: side-by-side layout + trend/timeline bits ---------- */
       .sb-track-layout { display: flex; flex-direction: column; gap: 18px; align-items: start; }
-      .sb-track-left, .sb-track-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-      @media (min-width: 1100px) {
-        .sb-track-layout { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 22px; }
+      .sb-track-left, .sb-track-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; width: 100%; }
+      /* 900px picks up tablets in landscape (iPad landscape is 1024, iPad Mini
+         landscape ~1024 too) as well as small laptops -- the old 1100px cutoff
+         left every tablet stacked single-column despite being asked for
+         explicitly. Portrait tablets still stack, which is what you want at
+         ~768-820px of width. */
+      @media (min-width: 900px) {
+        .sb-track-layout { display: grid; grid-template-columns: minmax(300px, 360px) 1fr; gap: 20px; align-items: start; }
         .sb-track-left { position: sticky; top: 18px; }
       }
+      @media (min-width: 1400px) {
+        .sb-track-layout { grid-template-columns: minmax(340px, 400px) 1fr; gap: 26px; }
+      }
+
+      /* cards that hold numbers/trends (as opposed to the form/timeline
+         cards) get a faint theme-tinted wash so the page reads as distinct
+         zones rather than four identical white boxes stacked in a row */
+      .sb-card-tinted { background: color-mix(in srgb, var(--soft) 30%, var(--card) 70%); }
 
       .sb-track-quickmins { display: flex; flex-wrap: wrap; gap: 6px; margin: -8px 0 14px; }
+
+      /* ---- Today's summary: one big hero total + a row of small type chips,
+         replacing the old 4-up grid that squashed unevenly in a narrow
+         sidebar column ---- */
+      .sb-track-today-hero { text-align: center; padding: 4px 0 14px; }
+      .sb-track-today-hero-num { font-family: var(--font-display); font-size: 38px; font-weight: 800; line-height: 1; color: var(--mascot-ink); text-shadow: 2px 2px 0 var(--mascot-inner); }
+      .sb-track-today-hero-label { font-size: 11.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 6px; }
+      .sb-track-today-chips { display: flex; gap: 8px; padding-top: 14px; border-top: 2px dashed var(--mascot-outline); }
+      .sb-track-today-chip { flex: 1 1 0; min-width: 0; text-align: center; background: var(--mascot-inner); border: 2px solid var(--mascot-outline); border-radius: 14px; padding: 8px 4px; }
+      .sb-track-today-chip-num { font-family: var(--font-display); font-weight: 800; font-size: 16px; color: var(--mascot-ink); }
+      .sb-track-today-chip-label { font-size: 10px; font-weight: 700; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
       .sb-track-splitbar { display: flex; width: 100%; height: 9px; border-radius: 999px; overflow: hidden; margin-top: 16px; background: var(--soft); }
       .sb-track-splitbar > span { height: 100%; }
@@ -571,8 +609,8 @@ export default function GlobalStyle() {
       .sb-track-weekbars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; height: 140px; }
       .sb-track-weekbar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
       .sb-track-weekbar-num { font-size: 10px; font-weight: 800; color: var(--muted); min-height: 12px; }
-      .sb-track-weekbar-track { width: 100%; max-width: 30px; flex: 1; display: flex; align-items: flex-end; background: var(--soft); border-radius: 8px; overflow: hidden; }
-      .sb-track-weekbar-fill { width: 100%; background: var(--accent); border-radius: 8px 8px 0 0; transition: height .5s cubic-bezier(.34,1.56,.64,1); }
+      .sb-track-weekbar-track { width: 100%; max-width: 30px; flex: 1; display: flex; align-items: flex-end; background: var(--card); border: 1.5px solid var(--mascot-outline); border-radius: 8px; overflow: hidden; }
+      .sb-track-weekbar-fill { width: 100%; background: var(--accent); border-radius: 6px 6px 0 0; transition: height .5s cubic-bezier(.34,1.56,.64,1); }
       .sb-track-weekbar-label { font-size: 10.5px; font-weight: 700; color: var(--muted); }
       .sb-track-weekbar-label.is-today { color: var(--mascot-ink); font-weight: 800; }
 
@@ -582,6 +620,8 @@ export default function GlobalStyle() {
         .sb-track-weekbars { height: 120px; }
         .sb-track-timeline-actions { flex-direction: column; }
         .sb-track-timeline-actions .sb-btn { width: 100%; justify-content: center; }
+        .sb-track-today-chips { flex-wrap: wrap; }
+        .sb-track-today-chip { flex: 1 1 calc(50% - 4px); }
       }
 
       .sb-timer-card { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 34px; }

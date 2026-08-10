@@ -90,7 +90,7 @@ export default function StudyTracker(p) {
       <div className="sb-track-layout">
         {/* ---------- Left: log form + today's snapshot (sticky on desktop) ---------- */}
         <div className="sb-track-left">
-          <Card>
+          <Card washi>
             <SectionTitle icon={BookOpen}>Log a study session</SectionTitle>
             <div className="sb-form-grid">
               <div>
@@ -137,14 +137,22 @@ export default function StudyTracker(p) {
             </Btn>
           </Card>
 
-          <Card>
+          <Card className="sb-card-tinted">
             <SectionTitle icon={Clock3}>Today's summary</SectionTitle>
-            <div className="sb-grid-4">
+            <div className="sb-track-today-hero">
+              <div className="sb-track-today-hero-num">{p.todayHours}h</div>
+              <div className="sb-track-today-hero-label">Studied today</div>
+            </div>
+            <div className="sb-track-today-chips">
               {["Lecture", "Practice", "Revision"].map((t) => {
                 const mins = p.sessions.filter((s) => s.session_date === todayStr() && s.session_type === t).reduce((a, s) => a + Number(s.minutes || 0), 0);
-                return <div key={t} className="sb-mini-stat"><div className="sb-mini-num">{(mins / 60).toFixed(1)}h</div><div className="sb-muted">{t}</div></div>;
+                return (
+                  <div key={t} className="sb-track-today-chip">
+                    <div className="sb-track-today-chip-num">{(mins / 60).toFixed(1)}h</div>
+                    <div className="sb-track-today-chip-label">{t}</div>
+                  </div>
+                );
               })}
-              <div className="sb-mini-stat"><div className="sb-mini-num">{p.todayHours}h</div><div className="sb-muted">Total</div></div>
             </div>
             {todaySplit.total > 0 && (
               <>
@@ -170,7 +178,7 @@ export default function StudyTracker(p) {
 
         {/* ---------- Right: 7-day trend + full timeline ---------- */}
         <div className="sb-track-right">
-          <Card>
+          <Card className="sb-card-tinted">
             <SectionTitle icon={BarChart3}>Last 7 days</SectionTitle>
             <div className="sb-track-weekbars">
               {last7.map((d) => (
@@ -213,7 +221,7 @@ export default function StudyTracker(p) {
                         <span className="sb-timeline-day-total">{fmtDuration(dayTotal)}</span>
                       </div>
                       {list.map((s) => (
-                        <div key={s.id} className="sb-timeline-row">
+                        <div key={s.id} className="sb-timeline-row" style={{ borderLeftColor: SYLLABUS[s.subject]?.color }}>
                           <span className="sb-dot" style={{ background: SYLLABUS[s.subject]?.color }} />
                           <div className="sb-timeline-info">
                             <div><b>{s.session_type}</b> · {s.subject} — {s.chapter}</div>
