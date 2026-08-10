@@ -146,13 +146,13 @@ export default function GlobalStyle() {
          Solid fill + thick outline + hard offset shadow. No blur, no
          gradients, no translucency -- this is the original look. */
       .sb-card {
-        background: var(--mascot-body);
+        background: var(--card);
         border-radius: 24px; padding: 20px;
         border: 2.5px solid var(--mascot-outline); box-shadow: 5px 5px 0 var(--mascot-outline);
         transition: transform .15s ease, box-shadow .15s ease, background-color .35s ease, border-color .35s ease;
         position: relative; z-index: 1;
       }
-      .sb-card-glass { background: var(--mascot-body); }
+      .sb-card-glass { background: var(--card); }
       .sb-clickable { cursor: pointer; }
       .sb-clickable:hover { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 7px 7px 0 var(--mascot-outline); }
       .sb-clickable:nth-child(even):hover { transform: translate(-2px, -2px) rotate(1deg); }
