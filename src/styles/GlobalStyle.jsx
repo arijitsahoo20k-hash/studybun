@@ -58,23 +58,14 @@ export default function GlobalStyle() {
       .sb-app *, .sb-onboard *, .sb-loading * { box-sizing: border-box; }
       .sb-app { display: flex; flex-direction: row; min-height: 100vh; height: 100vh; width: 100%; max-width: 100%; position: relative; z-index: 1; overflow: hidden; }
 
-      /* time-of-day ambient wash, plus a few big soft colour blobs sitting
-         behind everything. Nothing here animates -- it's painted once as a
-         fixed layer and left alone -- but it's what makes .sb-card-glass
-         (below) actually *look* like glass: blurring a nearly-flat page
-         background barely changes anything, which was why the frosted
-         look wasn't reading before. Blurring these blobs visibly bends
-         and diffuses colour, which is what a glass panel is supposed to
-         do. Uses the theme's own accent/palette colours, so it re-tints
-         itself with every theme and every light/dark toggle for free. */
+      /* time-of-day ambient wash only -- a single flat, near-transparent
+         layer that subtly warms in the evening and cools in the morning.
+         Deliberately NOT painting big accent-coloured blobs behind the
+         page: cards and surfaces get their color from --card/--bg (near-
+         white per theme), not from a tinted backdrop showing through. */
       .sb-app::before {
         content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-        background:
-          radial-gradient(30vmax circle at 10% 8%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
-          radial-gradient(26vmax circle at 92% 14%, color-mix(in srgb, var(--accent2) 26%, transparent), transparent 70%),
-          radial-gradient(30vmax circle at 14% 95%, color-mix(in srgb, var(--p3, var(--mascot-inner)) 14%, transparent), transparent 72%),
-          radial-gradient(26vmax circle at 94% 92%, color-mix(in srgb, var(--p1, var(--mascot-inner)) 12%, transparent), transparent 72%),
-          var(--time-wash);
+        background: var(--time-wash);
         transition: background-color 1.5s ease;
       }
 
@@ -314,10 +305,6 @@ export default function GlobalStyle() {
       .sb-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 18px; }
       .sb-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 18px; }
       .sb-grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 14px; }
-      .sb-grid-3 > .sb-card:nth-child(1) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(1) .sb-icon-badge { background: var(--p1); }
-      .sb-grid-3 > .sb-card:nth-child(2) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(2) .sb-icon-badge { background: var(--p2); }
-      .sb-grid-3 > .sb-card:nth-child(3) .sb-icon-badge, .sb-grid-4 > .sb-card:nth-child(3) .sb-icon-badge { background: var(--p3); }
-      .sb-grid-4 > .sb-card:nth-child(4) .sb-icon-badge { background: var(--p4); }
 
       /* ===== dashboard two-column layout: main stack + pinboard ===== */
       .sb-dash-layout { display: grid; grid-template-columns: 2.1fr 1fr; gap: 20px; align-items: stretch; }
@@ -325,7 +312,7 @@ export default function GlobalStyle() {
       @media (max-width: 880px) { .sb-dash-layout { grid-template-columns: 1fr; } }
 
       .sb-pinboard {
-        background: color-mix(in srgb, var(--accent2) 26%, var(--card) 74%);
+        background: color-mix(in srgb, var(--soft) 45%, var(--card) 55%);
         border: 3px solid var(--mascot-outline); border-radius: 22px; padding: 22px 20px;
         box-shadow: 6px 6px 0 var(--mascot-outline); position: relative;
         display: flex; flex-direction: column; min-width: 0; height: 100%;
