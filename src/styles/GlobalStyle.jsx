@@ -70,10 +70,10 @@ export default function GlobalStyle() {
       .sb-app::before {
         content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
         background:
-          radial-gradient(38vmax circle at 12% 12%, var(--accent), transparent 65%),
-          radial-gradient(34vmax circle at 88% 18%, var(--accent2), transparent 65%),
-          radial-gradient(40vmax circle at 20% 92%, color-mix(in srgb, var(--p3, var(--mascot-inner)) 26%, transparent), transparent 68%),
-          radial-gradient(36vmax circle at 90% 88%, color-mix(in srgb, var(--p1, var(--mascot-inner)) 24%, transparent), transparent 68%),
+          radial-gradient(30vmax circle at 10% 8%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
+          radial-gradient(26vmax circle at 92% 14%, color-mix(in srgb, var(--accent2) 26%, transparent), transparent 70%),
+          radial-gradient(30vmax circle at 14% 95%, color-mix(in srgb, var(--p3, var(--mascot-inner)) 14%, transparent), transparent 72%),
+          radial-gradient(26vmax circle at 94% 92%, color-mix(in srgb, var(--p1, var(--mascot-inner)) 12%, transparent), transparent 72%),
           var(--time-wash);
         transition: background-color 1.5s ease;
       }
@@ -325,7 +325,7 @@ export default function GlobalStyle() {
       @media (max-width: 880px) { .sb-dash-layout { grid-template-columns: 1fr; } }
 
       .sb-pinboard {
-        background: color-mix(in srgb, var(--accent2) 55%, #a9825a 45%);
+        background: color-mix(in srgb, var(--accent2) 26%, var(--card) 74%);
         border: 3px solid var(--mascot-outline); border-radius: 22px; padding: 22px 20px;
         box-shadow: 6px 6px 0 var(--mascot-outline); position: relative;
         display: flex; flex-direction: column; min-width: 0; height: 100%;

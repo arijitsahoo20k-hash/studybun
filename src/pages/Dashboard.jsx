@@ -177,7 +177,7 @@ export default function Dashboard(p) {
           <div className="sb-pin-note sb-pin-quote sb-paper" style={{ "--pin-ink": "var(--muted)" }}>"{line}"</div>
           <div
             className="sb-pin-note sb-paper sb-clickable"
-            style={{ background: "var(--p2)", "--pin-ink": "color-mix(in srgb, var(--p2) 30%, #16240f 70%)" }}
+            style={{ background: "color-mix(in srgb, var(--p2) 42%, var(--card) 58%)", "--pin-ink": "color-mix(in srgb, var(--p2) 45%, var(--outline) 55%)" }}
             onClick={() => p.setPage("backlog")}
           >
             <div className="sb-pin-label">backlog</div>
@@ -185,7 +185,7 @@ export default function Dashboard(p) {
           </div>
           <div
             className="sb-pin-note sb-paper sb-clickable"
-            style={{ background: "var(--p5)", "--pin-ink": "color-mix(in srgb, var(--p5) 30%, #0f1f2b 70%)" }}
+            style={{ background: "color-mix(in srgb, var(--p5) 42%, var(--card) 58%)", "--pin-ink": "color-mix(in srgb, var(--p5) 45%, var(--outline) 55%)" }}
             onClick={() => p.setPage("revision")}
           >
             <div className="sb-pin-label">revisions</div>
@@ -193,7 +193,7 @@ export default function Dashboard(p) {
           </div>
           <div
             className="sb-pin-note sb-paper sb-clickable"
-            style={{ background: "var(--p1)", "--pin-ink": "color-mix(in srgb, var(--p1) 30%, #3a0f1f 70%)" }}
+            style={{ background: "color-mix(in srgb, var(--p1) 42%, var(--card) 58%)", "--pin-ink": "color-mix(in srgb, var(--p1) 45%, var(--outline) 55%)" }}
             onClick={() => p.setPage("questions")}
           >
             <div className="sb-pin-label">questions</div>
