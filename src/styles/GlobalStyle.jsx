@@ -544,10 +544,45 @@ export default function GlobalStyle() {
       .sb-mini-num { font-family: var(--font-display); font-size: 24px; font-weight: 800; text-shadow: 1.5px 1.5px 0 var(--mascot-inner); }
 
       .sb-timeline-group { margin-bottom: 14px; }
-      .sb-timeline-day { font-weight: 800; font-size: 12px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em; }
+      .sb-timeline-day { display: flex; align-items: baseline; justify-content: space-between; font-weight: 800; font-size: 12px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em; }
+      .sb-timeline-day-total { font-size: 11px; opacity: .75; letter-spacing: 0; }
       .sb-timeline-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 6px; border-radius: 14px; background: var(--bg); }
       .sb-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid var(--mascot-outline); }
       .sb-timeline-info { display: flex; justify-content: space-between; flex: 1; font-size: 13.5px; }
+      .sb-timeline-row .sb-icon-btn { opacity: .55; flex-shrink: 0; }
+      .sb-timeline-row .sb-icon-btn:hover { opacity: 1; }
+
+      /* ---------- Study Tracker: side-by-side layout + trend/timeline bits ---------- */
+      .sb-track-layout { display: flex; flex-direction: column; gap: 18px; align-items: start; }
+      .sb-track-left, .sb-track-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+      @media (min-width: 1100px) {
+        .sb-track-layout { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 22px; }
+        .sb-track-left { position: sticky; top: 18px; }
+      }
+
+      .sb-track-quickmins { display: flex; flex-wrap: wrap; gap: 6px; margin: -8px 0 14px; }
+
+      .sb-track-splitbar { display: flex; width: 100%; height: 9px; border-radius: 999px; overflow: hidden; margin-top: 16px; background: var(--soft); }
+      .sb-track-splitbar > span { height: 100%; }
+      .sb-track-splitlegend { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-top: 10px; }
+      .sb-track-splitlegend-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+      .sb-track-splitlegend-item i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+      .sb-track-weekbars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; height: 140px; }
+      .sb-track-weekbar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+      .sb-track-weekbar-num { font-size: 10px; font-weight: 800; color: var(--muted); min-height: 12px; }
+      .sb-track-weekbar-track { width: 100%; max-width: 30px; flex: 1; display: flex; align-items: flex-end; background: var(--soft); border-radius: 8px; overflow: hidden; }
+      .sb-track-weekbar-fill { width: 100%; background: var(--accent); border-radius: 8px 8px 0 0; transition: height .5s cubic-bezier(.34,1.56,.64,1); }
+      .sb-track-weekbar-label { font-size: 10.5px; font-weight: 700; color: var(--muted); }
+      .sb-track-weekbar-label.is-today { color: var(--mascot-ink); font-weight: 800; }
+
+      .sb-track-filterrow { margin-bottom: 14px; }
+      .sb-track-timeline-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 6px; }
+      @media (max-width: 520px) {
+        .sb-track-weekbars { height: 120px; }
+        .sb-track-timeline-actions { flex-direction: column; }
+        .sb-track-timeline-actions .sb-btn { width: 100%; justify-content: center; }
+      }
 
       .sb-timer-card { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 34px; }
       .sb-timer-topbar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; width: 100%; }
@@ -1400,7 +1435,6 @@ export default function GlobalStyle() {
       .sb-app:has(.sb-route-profile) .sb-grid-2 { grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); align-items: start; }
 
       @media (min-width: 1100px) {
-        .sb-app:has(.sb-route-study) .sb-form-grid,
         .sb-app:has(.sb-route-questions) .sb-form-grid,
         .sb-app:has(.sb-route-backlog) .sb-form-grid { grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); }
         .sb-app:has(.sb-route-revision) .sb-revision-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; }

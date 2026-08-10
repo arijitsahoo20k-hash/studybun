@@ -951,7 +951,7 @@ export default function App() {
   const pageProps = {
     profile, saveProfile, mascot,
     userId: user?.id, studyingIds,
-    sessions, timerSessions, addSession, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
+    sessions, timerSessions, addSession, deleteSession: sessionsQ.remove, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
     questions, addQuestions, mocks, addMock, updateMock, deleteMock,
     mockAnalysisMap: mockAnalysis.map, saveMockAnalysis,
     revisions, completeRevision, addRevision, deleteRevision,
