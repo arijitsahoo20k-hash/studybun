@@ -4,7 +4,7 @@
     { "path": "/api/cron/notify?slot=morning", "schedule": "0 3 * * *" },
     { "path": "/api/cron/notify?slot=afternoon", "schedule": "0 9 * * *" },
     { "path": "/api/cron/notify?slot=evening", "schedule": "30 14 * * *" },
-    { "path": "/api/cron/community-cleanup", "schedule": "*/30 * * * *" }
+    { "path": "/api/cron/community-cleanup", "schedule": "0 20 * * *" }
   ],
   "functions": {
     "api/cron/notify.js": { "maxDuration": 60 },
