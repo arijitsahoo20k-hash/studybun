@@ -92,21 +92,32 @@ export default function CommunityStyle() {
       .sb-chat-expiry-note { margin-top: 8px; text-align: center; }
 
       /* ---------- accountability card ---------- */
-      .sb-checkin-form, .sb-checkin-active, .sb-checkin-report { display: flex; flex-direction: column; gap: 10px; }
+      .sb-checkin-form, .sb-checkin-active, .sb-checkin-report { display: flex; flex-direction: column; gap: 13px; }
       .sb-checkin-form label, .sb-checkin-report label {
-        display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; font-weight: 800; color: var(--muted);
+        display: flex; flex-direction: column; gap: 5px; font-size: 11px; font-weight: 800;
+        color: var(--muted); letter-spacing: .02em; text-transform: uppercase;
       }
-      .sb-checkin-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .sb-checkin-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
       .sb-checkin-form input, .sb-checkin-form select, .sb-checkin-report input {
-        border: 2px solid var(--mascot-outline); border-radius: 10px; padding: 7px 10px;
-        font-family: var(--font-body); font-size: 12.5px; background: var(--card); color: var(--ink);
+        border: 2px solid var(--mascot-outline); border-radius: 10px; padding: 8px 11px;
+        font-family: var(--font-body); font-size: 13px; font-weight: 600; background: var(--card);
+        color: var(--ink); line-height: 1.3; min-width: 0;
       }
-      .sb-checkin-active { padding-top: 4px; }
+      .sb-checkin-form select {
+        appearance: none; -webkit-appearance: none;
+        background-image: linear-gradient(45deg, transparent 50%, var(--mascot-outline) 50%),
+          linear-gradient(135deg, var(--mascot-outline) 50%, transparent 50%);
+        background-position: calc(100% - 18px) center, calc(100% - 13px) center;
+        background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 30px;
+      }
+      .sb-checkin-form input::placeholder { font-weight: 500; opacity: .55; }
+      .sb-checkin-form > .sb-btn { margin-top: 2px; }
+      .sb-checkin-active { padding-top: 2px; gap: 10px; }
       .sb-checkin-active-line strong { color: var(--mascot-ink); }
       .sb-checkin-goal-text { font-weight: 700; font-size: 13.5px; }
       .sb-checkin-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
       .sb-checkin-done { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--mascot-ink); padding: 6px 0; }
-      .sb-checkin-weekly { margin-top: 14px; padding-top: 12px; border-top: 1.5px dashed var(--mascot-outline); font-size: 13px; font-weight: 700; }
+      .sb-checkin-weekly { margin-top: 16px; padding-top: 13px; border-top: 1.5px dashed var(--mascot-outline); font-size: 13px; font-weight: 700; }
 
       /* ---------- feed ---------- */
       .sb-composer-trigger {
