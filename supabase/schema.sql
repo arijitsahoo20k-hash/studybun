@@ -122,10 +122,26 @@ create table if not exists backlog_items (
   reason_custom text,
   in_session boolean not null default false, -- selected into today's Backlog Session
   completed_at timestamptz,
+  -- ---- JEE Recovery Engine (see src/lib/recoveryEngine.js) ----
+  -- Generated recovery cards ("Rotational Motion — Concept gap") are computed
+  -- fresh on every render from mock_tests + mock_analysis + revision_plans;
+  -- these columns only persist the user's own action on a generated item.
+  source_type text not null default 'manual', -- manual | mock_analysis | revision | pacing
+  source_key text,        -- stable dedup identity for generated items, e.g. "physics::rotational motion::concept_gap"
+  chapter text,            -- chapter this recovery item is about (generated items only)
+  problem_type text,       -- concept_gap | silly_mistake | calculation_error | time_management | guesswork | revision_overdue | pacing
+  priority_score numeric,  -- 0-100 recovery score at last (re)computation
+  evidence_count numeric default 1,
+  last_evidence_at date,
+  recommended_action text,
+  dismissed_until date,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 create index if not exists idx_backlog_items_user on backlog_items(user_id, status);
+create unique index if not exists idx_backlog_items_source_key
+  on backlog_items(user_id, source_key)
+  where source_key is not null;
 
 -- ---------- GOALS (journal) ----------
 create table if not exists goals (

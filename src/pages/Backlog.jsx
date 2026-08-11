@@ -1,7 +1,11 @@
-import React, { useMemo, useState } from "react";
-import { FolderClock, Plus, X, Star, Trash2, Archive, Pencil, RotateCcw, AlertTriangle, Sparkles } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  FolderClock, Plus, X, Star, Trash2, Archive, Pencil, RotateCcw, AlertTriangle,
+  Sparkles, Target, TrendingDown, Map, CalendarCheck, PlayCircle, EyeOff, CheckCircle2,
+} from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState, ProgressRing } from "../components/ui";
-import { todayIST, daysAgoIST, formatISTCalendarDate, formatISTTimestamp, tsToISTDateStr, daysBetweenDateStrs } from "../lib/dateIST";
+import { todayIST, formatISTCalendarDate, formatISTTimestamp, tsToISTDateStr, daysBetweenDateStrs } from "../lib/dateIST";
+import { buildRecoverySignals, mergeWithPersisted, buildTodayPlan, computeScoreLeakage, buildChapterMap } from "../lib/recoveryEngine";
 
 const SUBJECTS = ["Physics", "Chemistry", "Maths", "Other"];
 const CATEGORIES = ["Full Chapter", "Lecture", "Notes", "Questions", "DPP", "Module", "Revision", "Mock Analysis", "Custom"];
@@ -9,15 +13,14 @@ const STATUSES = ["Not Started", "In Progress", "Completed", "Paused"];
 const REASONS = ["Procrastination", "Illness", "Busy Schedule", "Difficult Topic", "Missed Class", "Custom"];
 const SORTS = ["Recently added", "Nearest deadline", "Oldest first", "Subject"];
 const FILTERS = ["All", "Pending", "In Progress", "Completed"];
-const OVERDUE_SPOTLIGHT_MAX = 4;
 
 const fmtDate = (d) => (d ? formatISTCalendarDate(d, { month: "short", day: "numeric" }) : null);
 const fmtCompletedAt = (iso) => (iso ? formatISTTimestamp(iso, { month: "short", day: "numeric" }) : null);
 const isOverdue = (d) => !!d && d < todayIST();
-// Positive count of calendar days a deadline has already slipped by.
 const daysPastDue = (d) => daysBetweenDateStrs(todayIST(), d);
-// Days remaining until a not-yet-overdue deadline.
 const daysUntilDue = (d) => daysBetweenDateStrs(d, todayIST());
+const isManual = (b) => !b.source_type || b.source_type === "manual";
+const healthColor = (pct) => (pct >= 70 ? "#4E8F63" : pct >= 40 ? "#A67A2E" : "#C0435A");
 
 const emptyDraft = () => ({
   title: "", subject: "Physics", category: "Full Chapter", deadline: "",
@@ -104,6 +107,38 @@ function ItemForm({ initial, onSubmit, onCancel, submitLabel = "Add to backlog" 
   );
 }
 
+function RecoveryCard({ item, onStart, onAddToday, onDismiss, onComplete, compact }) {
+  return (
+    <div className={`sb-recovery-card impact-${item.impactTier}`}>
+      <div className="sb-recovery-card-head">
+        <div style={{ minWidth: 0 }}>
+          <div className="sb-recovery-subject">{item.subject}</div>
+          <div className="sb-recovery-title">{item.chapter || item.subject}</div>
+          <div className="sb-recovery-problem">{item.problemLabel}</div>
+        </div>
+        <span className={`sb-recovery-impact-badge ${item.impactTier}`}>{item.impactTier} impact</span>
+      </div>
+
+      <div className="sb-recovery-why"><b>Why: </b>{item.why}</div>
+      <div className="sb-recovery-action"><b>Recommended:</b> {item.recommendedAction}</div>
+
+      <div className="sb-recovery-meta-row">
+        <span>~{item.effortMin} min</span>
+        <span>{item.recoveryStatus === "In Progress" ? "In progress" : `Last seen ${fmtDate(item.lastEvidenceAt) || "—"}`}</span>
+      </div>
+
+      {!compact && (
+        <div className="sb-recovery-card-actions">
+          <Btn onClick={() => onStart(item)}><PlayCircle size={14} /> Start recovery</Btn>
+          <Btn variant="soft" onClick={() => onAddToday(item)}>Add to today</Btn>
+          <Btn variant="ghost" onClick={() => onComplete(item)}><CheckCircle2 size={14} /> Mark recovered</Btn>
+          <Btn variant="ghost" onClick={() => onDismiss(item)}><EyeOff size={14} /> Not now</Btn>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BacklogPage(p) {
   const [editingId, setEditingId] = useState(null);
   const [filter, setFilter] = useState("All");
@@ -111,45 +146,65 @@ export default function BacklogPage(p) {
   const [buildingSession, setBuildingSession] = useState(false);
   const [sessionPicks, setSessionPicks] = useState([]);
 
-  const items = p.backlogItems;
-  const active = useMemo(() => items.filter((b) => b.status !== "Completed"), [items]);
-  const completed = useMemo(() => items.filter((b) => b.status === "Completed"), [items]);
+  const allItems = p.backlogItems || [];
+  const mocks = p.mocks || [];
+  const mockAnalysisMap = p.mockAnalysisMap || {};
+  const revisions = p.revisions || [];
+
+  // ---------- Layer A → B → C: the recovery queue ----------
+  const liveSignals = useMemo(
+    () => buildRecoverySignals({ mocks, mockAnalysisMap, revisions }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mocks, mockAnalysisMap, revisions]
+  );
+  const { merged: queue, toReopen } = useMemo(() => mergeWithPersisted(liveSignals, allItems), [liveSignals, allItems]);
+
+  // A mistake that repeats after being marked Recovered/Dismissed reopens the
+  // card automatically — the feedback loop from spec §24/§25. Guarded so a
+  // given row is only re-triggered once per fresh evidence bump.
+  const reopenedRef = useRef(new Set());
+  useEffect(() => {
+    toReopen.forEach(({ id, sig }) => {
+      const guardKey = `${id}:${sig.evidenceCount}`;
+      if (reopenedRef.current.has(guardKey)) return;
+      reopenedRef.current.add(guardKey);
+      p.reopenRecoveryRow(id, sig);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toReopen]);
+
+  const today = todayIST();
+  const activeQueue = useMemo(
+    () => queue.filter((it) => (it.recoveryStatus === "Open" || it.recoveryStatus === "In Progress") && (!it.dismissedUntil || it.dismissedUntil <= today)),
+    [queue, today]
+  );
+  const dismissedQueue = useMemo(() => queue.filter((it) => it.recoveryStatus === "Dismissed" && it.dismissedUntil && it.dismissedUntil > today), [queue, today]);
+  const recoveredQueue = useMemo(() => queue.filter((it) => it.recoveryStatus === "Recovered"), [queue]);
+
+  const todayPlan = useMemo(() => {
+    const pinned = activeQueue.filter((it) => it.inSession);
+    const auto = buildTodayPlan(activeQueue).picks;
+    const combined = [...pinned];
+    auto.forEach((it) => { if (!combined.some((c) => c.sourceKey === it.sourceKey)) combined.push(it); });
+    const picks = combined.slice(0, 4);
+    return { picks, totalMin: picks.reduce((s, it) => s + it.effortMin, 0) };
+  }, [activeQueue]);
+
+  const leakage = useMemo(() => computeScoreLeakage(mocks, queue), [mocks, queue]);
+  const chapterMap = useMemo(() => buildChapterMap(queue), [queue]);
+  const repeatMistakeCount = useMemo(() => activeQueue.filter((it) => it.mockOccurrences >= 2).length, [activeQueue]);
+  const highImpactCount = activeQueue.filter((it) => it.impactTier === "high").length;
+
+  // ---------- Manual backlog (secondary, existing behaviour preserved) ----------
+  const manualItems = useMemo(() => allItems.filter(isManual), [allItems]);
+  const active = useMemo(() => manualItems.filter((b) => b.status !== "Completed"), [manualItems]);
+  const completed = useMemo(() => manualItems.filter((b) => b.status === "Completed"), [manualItems]);
   const sessionItems = useMemo(() => active.filter((b) => b.in_session), [active]);
 
-  // ---- Overdue items -- the whole point of the spotlight below: surface
-  // what's already slipped, worst offender first, before anything else. ----
   const overdueItems = useMemo(
     () => active.filter((b) => isOverdue(b.deadline)).sort((a, b) => (a.deadline < b.deadline ? -1 : 1)),
     [active]
   );
-  const overdueSpotlight = overdueItems.slice(0, OVERDUE_SPOTLIGHT_MAX);
-  const overdueHiddenCount = overdueItems.length - overdueSpotlight.length;
-
-  // ---- "Backlog pulse": a quick health read -- how much of the open pile
-  // is still on track vs. slipped, plus how much got cleared recently, so
-  // progress actually feels visible instead of the backlog only ever
-  // looking like a wall of open items. ----
-  const healthPct = active.length === 0 ? 100 : Math.round(((active.length - overdueItems.length) / active.length) * 100);
-  const clearedThisWeek = useMemo(() => {
-    const weekStart = daysAgoIST(6);
-    return completed.filter((b) => b.completed_at && tsToISTDateStr(b.completed_at) >= weekStart).length;
-  }, [completed]);
-
-  const heroLine = active.length === 0
-    ? "Backlog's clear — nothing hanging over you."
-    : overdueItems.length > 0
-    ? `${overdueItems.length} item${overdueItems.length === 1 ? "" : "s"} overdue — let's clear those first.`
-    : `${active.length} item${active.length === 1 ? "" : "s"} open${sessionItems.length > 0 ? ` · ${sessionItems.length} in today's session` : ""}`;
-
-  const reasonInsight = useMemo(() => {
-    const withReason = items.filter((b) => b.reason);
-    if (withReason.length < 3) return null;
-    const counts = {};
-    withReason.forEach((b) => { counts[b.reason] = (counts[b.reason] || 0) + 1; });
-    const [top, n] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-    if (n / withReason.length < 0.34) return null;
-    return `Most of your backlog is caused by ${top.toLowerCase()}.`;
-  }, [items]);
 
   const visible = useMemo(() => {
     const base = filter === "Completed" ? completed
@@ -180,97 +235,197 @@ export default function BacklogPage(p) {
     setBuildingSession(false);
   };
 
-  const addAllOverdueToSession = () => {
-    overdueItems.filter((b) => !b.in_session).forEach((b) => p.toggleSessionItem(b));
-  };
+  // ---------- Hero copy ----------
+  const hasAnyMockReview = Object.keys(mockAnalysisMap).length > 0;
+  const heroSub = !hasAnyMockReview && manualItems.length === 0
+    ? "Review your first mock and tag the chapters behind your mistakes. We'll turn those mistakes into a prioritized recovery plan."
+    : "Your recovery queue is built from mock mistakes, weak chapters, missed revision and unfinished work.";
+
+  // ---------- Recovery health ring (pulse) ----------
+  const recoveryHealthPct = activeQueue.length === 0
+    ? 100
+    : Math.round(100 - activeQueue.reduce((sum, it) => sum + it.priorityScore, 0) / activeQueue.length);
+  const recoveredThisWeek = useMemo(() => {
+    return recoveredQueue.filter((it) => {
+      const row = allItems.find((b) => b.source_key === it.sourceKey);
+      return row?.completed_at && daysBetweenDateStrs(today, tsToISTDateStr(row.completed_at)) <= 6;
+    }).length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recoveredQueue, allItems, today]);
 
   return (
     <div className="sb-page">
       <Card className="sb-hero" washi>
         <div className="sb-hero-copy">
-          <div className="sb-hero-greet">Backlog</div>
-          <div className="sb-hero-line" style={overdueItems.length > 0 ? { color: "#C0435A" } : undefined}>{heroLine}</div>
+          <div className="sb-hero-greet">Clear what is costing you marks.</div>
+          <div className="sb-hero-line">{heroSub}</div>
+          {(activeQueue.length > 0 || manualItems.length > 0) && (
+            <div className="sb-recovery-summary">
+              <span className="sb-recovery-summary-chip"><b>{activeQueue.length}</b> recovery items</span>
+              {highImpactCount > 0 && <span className="sb-recovery-summary-chip warn"><b>{highImpactCount}</b> high impact</span>}
+              <span className="sb-recovery-summary-chip"><b>{activeQueue.filter((it) => it.problemType === "revision_overdue").length}</b> revision overdue</span>
+              <span className="sb-recovery-summary-chip"><b>{activeQueue.filter((it) => it.sourceType === "mock_analysis").length}</b> mock-derived</span>
+            </div>
+          )}
         </div>
       </Card>
 
       <div className="sb-backlog-layout">
-        {/* ---------- Left: add form + pulse (sticky on desktop) ---------- */}
+        {/* ---------- Left: manual add form + recovery pulse (sticky on desktop) ---------- */}
         <div className="sb-backlog-left">
           <Card washi>
-            <SectionTitle icon={Plus}>Add to backlog</SectionTitle>
+            <SectionTitle icon={Plus}>Add manual item</SectionTitle>
             <ItemForm onSubmit={(payload) => p.addBacklogItem(payload)} />
           </Card>
 
           <Card className="sb-card-tinted">
-            <SectionTitle icon={Sparkles}>Backlog pulse</SectionTitle>
+            <SectionTitle icon={Sparkles}>Backlog health</SectionTitle>
             <div className="sb-backlog-pulse">
               <div className="sb-backlog-ring-wrap">
-                <ProgressRing pct={healthPct} size={80} stroke={9} color={healthPct < 50 ? "#C0435A" : undefined} />
-                <div className="sb-backlog-ring-label">On track</div>
+                <ProgressRing pct={recoveryHealthPct} size={80} stroke={9} color={healthColor(recoveryHealthPct)} />
+                <div className="sb-backlog-ring-label">Recovery health</div>
               </div>
               <div className="sb-backlog-pulse-nums">
                 <div className="sb-backlog-stat">
-                  <span className="sb-backlog-stat-label">Open</span>
-                  <span className="sb-backlog-stat-num">{active.length}</span>
-                </div>
-                <div className={`sb-backlog-stat ${overdueItems.length > 0 ? "is-warn" : ""}`}>
-                  <span className="sb-backlog-stat-label">Overdue</span>
-                  <span className="sb-backlog-stat-num">{overdueItems.length}</span>
+                  <span className="sb-backlog-stat-label">Recovery load</span>
+                  <span className="sb-backlog-stat-num">{activeQueue.length}</span>
                 </div>
                 <div className="sb-backlog-stat">
-                  <span className="sb-backlog-stat-label">Cleared this week</span>
-                  <span className="sb-backlog-stat-num">{clearedThisWeek}</span>
+                  <span className="sb-backlog-stat-label">High impact</span>
+                  <span className="sb-backlog-stat-num">{highImpactCount}</span>
+                </div>
+                <div className="sb-backlog-stat">
+                  <span className="sb-backlog-stat-label">Recovered this week</span>
+                  <span className="sb-backlog-stat-num">{recoveredThisWeek}</span>
                 </div>
               </div>
             </div>
-            {reasonInsight && <div className="sb-hero-meta" style={{ marginTop: 12 }}>{reasonInsight}</div>}
+            {repeatMistakeCount > 0 && (
+              <div className="sb-repeat-callout">
+                <div className="sb-repeat-callout-num">{repeatMistakeCount}</div>
+                <div className="sb-repeat-callout-text">Repeat mistake{repeatMistakeCount === 1 ? "" : "s"} — this is the biggest threat to your score right now.</div>
+              </div>
+            )}
           </Card>
         </div>
 
-        {/* ---------- Right: overdue spotlight + today's session + the full list ---------- */}
+        {/* ---------- Right: recovery plan, priority queue, leakage, chapter map, manual list, history ---------- */}
         <div className="sb-backlog-right">
-          {overdueItems.length > 0 && (
-            <Card className="sb-overdue-card">
-              <SectionTitle
-                icon={AlertTriangle}
-                right={overdueItems.some((b) => !b.in_session) ? <Btn variant="ghost" onClick={addAllOverdueToSession}>Add all to today</Btn> : null}
-              >
-                Tackle these first
-              </SectionTitle>
-              <p className="sb-muted small" style={{ marginBottom: 10 }}>
-                {overdueItems.length} item{overdueItems.length === 1 ? "" : "s"} past deadline. Clear these before piling on more.
-              </p>
-              {overdueSpotlight.map((b) => (
-                <div key={b.id} className="sb-overdue-row">
-                  <span className="sb-overdue-days">{daysPastDue(b.deadline)}d late</span>
-                  <div className="sb-overdue-info"><b>{b.title}</b><div className="sb-muted">{b.subject} · {b.category}</div></div>
-                  <button
-                    className={`sb-icon-btn ${b.in_session ? "starred" : ""}`}
-                    title={b.in_session ? "Remove from today's session" : "Add to today's session"}
-                    onClick={() => p.toggleSessionItem(b)}
-                  >
-                    <Star size={16} fill={b.in_session ? "currentColor" : "none"} />
-                  </button>
+
+          {/* ---------- Today's Recovery Plan ---------- */}
+          <Card>
+            <SectionTitle icon={CalendarCheck}>Today's Recovery Plan</SectionTitle>
+            {todayPlan.picks.length === 0 ? (
+              <EmptyState mascot={p.mascot} mood="idle" text={hasAnyMockReview ? "No major recovery signals right now." : "Your recovery engine is ready."}
+                sub={hasAnyMockReview ? "Keep reviewing mocks and we'll surface repeated weaknesses automatically." : "Review your first mock and tag the chapters behind your mistakes."} />
+            ) : (
+              <>
+                <div className="sb-today-plan-list">
+                  {todayPlan.picks.map((it, i) => (
+                    <div key={it.sourceKey} className="sb-today-plan-row">
+                      <div className="sb-today-plan-num">{String(i + 1).padStart(2, "0")}</div>
+                      <div className="sb-today-plan-info"><b>{it.chapter || it.subject}</b><div className="sb-muted small">{it.problemLabel}</div></div>
+                      <div className="sb-today-plan-effort">{it.effortMin} min</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {overdueHiddenCount > 0 && <div className="sb-overdue-more">+{overdueHiddenCount} more overdue in the list below</div>}
+                <div className="sb-today-plan-total">Total: ~{todayPlan.totalMin} min</div>
+                <div style={{ marginTop: 10 }}>
+                  <Btn onClick={() => p.startRecoveryItem(todayPlan.picks[0])}><PlayCircle size={16} /> Start today's plan</Btn>
+                </div>
+              </>
+            )}
+          </Card>
+
+          {/* ---------- Clear These First ---------- */}
+          <Card>
+            <SectionTitle icon={Target}>Clear these first <span className="sb-muted">({activeQueue.length})</span></SectionTitle>
+            {activeQueue.length === 0 ? (
+              <EmptyState mascot={p.mascot} mood="happy" text="No major recovery signals right now." sub="Keep reviewing mocks and we'll surface repeated weaknesses automatically." />
+            ) : (
+              <div className="sb-recovery-grid">
+                {activeQueue.map((it) => (
+                  <RecoveryCard
+                    key={it.sourceKey}
+                    item={it}
+                    onStart={p.startRecoveryItem}
+                    onAddToday={p.addRecoveryToToday}
+                    onDismiss={p.dismissRecoveryItem}
+                    onComplete={p.completeRecoveryItem}
+                  />
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* ---------- Score leakage ---------- */}
+          {(leakage.hasMainsData || leakage.hasPotentialData) && (
+            <Card>
+              <SectionTitle icon={TrendingDown}>Score leakage</SectionTitle>
+              {leakage.hasMainsData ? (
+                <div className="sb-leakage-grid">
+                  {["Physics", "Chemistry", "Maths"].map((s) => {
+                    const v = leakage.actual[s];
+                    const max = Math.max(1, leakage.actual.Physics, leakage.actual.Chemistry, leakage.actual.Maths);
+                    return (
+                      <div key={s} className="sb-leakage-row">
+                        <div className="sb-leakage-label">{s}</div>
+                        <div className="sb-leakage-track"><div className="sb-leakage-fill" style={{ width: `${(v / max) * 100}%` }} /></div>
+                        <div className="sb-leakage-value">-{v}</div>
+                      </div>
+                    );
+                  })}
+                  <p className="sb-muted small" style={{ marginTop: 2 }}>Actual negative marks from JEE Main mocks (+4/-1 scheme).</p>
+                </div>
+              ) : (
+                <p className="sb-muted small">Log a JEE Main mock to see actual negative marks by subject.</p>
+              )}
+              {leakage.hasPotentialData && (
+                <p className="sb-leakage-potential">
+                  Potential recovery: ~{Object.values(leakage.potential).reduce((a, b) => a + b, 0)} marks if you clear the open items in "Clear these first". This is an estimate, not a guarantee.
+                </p>
+              )}
             </Card>
           )}
 
+          {/* ---------- Chapter Recovery Map ---------- */}
+          {Object.keys(chapterMap).length > 0 && (
+            <Card>
+              <SectionTitle icon={Map}>Chapter recovery map</SectionTitle>
+              {Object.entries(chapterMap).map(([subject, chapters]) => (
+                <div key={subject} className="sb-chaptermap-subject">
+                  <div className="sb-chaptermap-subject-title">{subject}</div>
+                  {chapters.map((c) => (
+                    <div key={c.chapter} className="sb-chaptermap-row">
+                      <div className="sb-chaptermap-name">{c.chapter}</div>
+                      <div className="sb-chaptermap-health">
+                        <div className="sb-chaptermap-health-track">
+                          <div className="sb-chaptermap-health-fill" style={{ width: `${c.health}%`, background: healthColor(c.health) }} />
+                        </div>
+                      </div>
+                      <span className="sb-tag">{c.health}/100</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </Card>
+          )}
+
+          {/* ---------- Manual backlog ---------- */}
           <Card>
             <SectionTitle
               icon={Star}
               right={sessionItems.length > 0 && !buildingSession ? <Btn variant="ghost" onClick={() => setBuildingSession(true)}>Add more</Btn> : null}
             >
-              Today's session
+              Today's manual session
             </SectionTitle>
 
             {sessionItems.length === 0 && !buildingSession && (
               active.length === 0 ? (
-                <EmptyState mascot={p.mascot} mood="idle" text="Nothing in your backlog yet." sub="Add your first item on the left." />
+                <EmptyState mascot={p.mascot} mood="idle" text="No manual backlog items yet." sub="Add unfinished lectures, DPPs, or pending assignments on the left." />
               ) : (
                 <>
-                  <p className="sb-muted" style={{ marginBottom: 10 }}>Pick a few items to focus on today instead of staring at the whole backlog.</p>
+                  <p className="sb-muted" style={{ marginBottom: 10 }}>Pick a few manual items to focus on today.</p>
                   <Btn variant="soft" onClick={() => setBuildingSession(true)}><Plus size={16} /> Build today's session</Btn>
                 </>
               )
@@ -319,7 +474,29 @@ export default function BacklogPage(p) {
             )}
           </Card>
 
-          {items.length > 0 && (
+          {overdueItems.length > 0 && (
+            <Card className="sb-overdue-card">
+              <SectionTitle icon={AlertTriangle}>Manual items overdue</SectionTitle>
+              <p className="sb-muted small" style={{ marginBottom: 10 }}>
+                {overdueItems.length} manual item{overdueItems.length === 1 ? "" : "s"} past deadline.
+              </p>
+              {overdueItems.slice(0, 4).map((b) => (
+                <div key={b.id} className="sb-overdue-row">
+                  <span className="sb-overdue-days">{daysPastDue(b.deadline)}d late</span>
+                  <div className="sb-overdue-info"><b>{b.title}</b><div className="sb-muted">{b.subject} · {b.category}</div></div>
+                  <button
+                    className={`sb-icon-btn ${b.in_session ? "starred" : ""}`}
+                    title={b.in_session ? "Remove from today's session" : "Add to today's session"}
+                    onClick={() => p.toggleSessionItem(b)}
+                  >
+                    <Star size={16} fill={b.in_session ? "currentColor" : "none"} />
+                  </button>
+                </div>
+              ))}
+            </Card>
+          )}
+
+          {manualItems.length > 0 && (
             <Card>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
                 <div className="sb-chip-row">
@@ -336,9 +513,7 @@ export default function BacklogPage(p) {
             </Card>
           )}
 
-          {items.length === 0 ? (
-            <Card><EmptyState mascot={p.mascot} mood="happy" text="No backlog yet." sub="Add whatever's piling up — a lecture, a DPP, a chapter — and chip away at it." /></Card>
-          ) : filter === "Completed" ? (
+          {manualItems.length === 0 ? null : filter === "Completed" ? (
             <Card>
               <SectionTitle icon={Archive}>Archive <span className="sb-muted">({completed.length} completed)</span></SectionTitle>
               {completed.length === 0 ? (
@@ -383,6 +558,7 @@ export default function BacklogPage(p) {
                       <div key={b.id} className="sb-chapter-card">
                         <div className="sb-chapter-name">{b.title}</div>
                         <div className="sb-chapter-tags">
+                          <span className="sb-recovery-source-tag manual">Manual</span>
                           <span className="sb-tag">{b.category}</span>
                           {b.deadline && (() => {
                             const overdue = isOverdue(b.deadline);
@@ -418,6 +594,33 @@ export default function BacklogPage(p) {
                 </div>
               </Card>
             ))
+          )}
+
+          {/* ---------- Completed / Recovered history ---------- */}
+          {(recoveredQueue.length > 0 || dismissedQueue.length > 0) && (
+            <Card>
+              <SectionTitle icon={CheckCircle2}>Recovered <span className="sb-muted">({recoveredQueue.length})</span></SectionTitle>
+              {recoveredQueue.length === 0 ? (
+                <p className="sb-muted small">Nothing recovered yet — cleared recovery items will land here.</p>
+              ) : (
+                <div className="sb-chapter-grid">
+                  {recoveredQueue.map((it) => (
+                    <div key={it.sourceKey} className="sb-chapter-card">
+                      <div className="sb-chapter-name" style={{ textDecoration: "line-through" }}>{it.chapter || it.subject}</div>
+                      <div className="sb-chapter-tags">
+                        <span className="sb-recovery-source-tag generated">Recovered</span>
+                        <span className="sb-tag">{it.problemLabel}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {dismissedQueue.length > 0 && (
+                <p className="sb-muted small" style={{ marginTop: 12 }}>
+                  {dismissedQueue.length} item{dismissedQueue.length === 1 ? "" : "s"} dismissed for now — they'll resurface automatically if the evidence grows, or after their snooze window ends.
+                </p>
+              )}
+            </Card>
           )}
         </div>
       </div>

@@ -849,6 +849,64 @@ export default function GlobalStyle() {
         .sb-backlog-pulse-nums { width: 100%; }
       }
 
+      /* ---------- Recovery Engine (Backlog → JEE Recovery) ---------- */
+      .sb-recovery-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+      .sb-recovery-summary-chip { display: inline-flex; align-items: baseline; gap: 5px; padding: 6px 12px; border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--mascot-body); font-size: 12px; font-weight: 800; color: var(--mascot-ink); }
+      .sb-recovery-summary-chip b { font-family: var(--font-display); font-size: 15px; }
+      .sb-recovery-summary-chip.warn { background: #FFD9DF; border-color: #C0435A; color: #7A2436; }
+
+      .sb-today-plan-list { display: flex; flex-direction: column; gap: 8px; }
+      .sb-today-plan-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: var(--bg); border-left: 4px solid var(--accent); }
+      .sb-today-plan-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--mascot-inner); border: 2px solid var(--mascot-outline); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 800; font-size: 12px; }
+      .sb-today-plan-info { flex: 1; min-width: 0; }
+      .sb-today-plan-info b { font-size: 13.5px; }
+      .sb-today-plan-effort { flex-shrink: 0; font-size: 11px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+      .sb-today-plan-total { font-size: 12px; font-weight: 800; color: var(--muted); margin-top: 4px; text-align: right; }
+
+      .sb-recovery-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+      @media (min-width: 720px) { .sb-recovery-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media (min-width: 1400px) { .sb-recovery-grid { grid-template-columns: repeat(3, 1fr); } }
+      .sb-recovery-card { background: var(--bg); border: 2px solid var(--mascot-outline); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+      .sb-recovery-card.impact-high { border-color: #C0435A; }
+      .sb-recovery-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+      .sb-recovery-subject { font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+      .sb-recovery-title { font-size: 14.5px; font-weight: 800; margin-top: 2px; }
+      .sb-recovery-problem { font-size: 12px; color: var(--muted); font-weight: 700; }
+      .sb-recovery-impact-badge { flex-shrink: 0; font-size: 9.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; border-radius: 10px; padding: 4px 9px; white-space: nowrap; }
+      .sb-recovery-impact-badge.high { color: #7A2436; background: #FFD9DF; border: 1.5px solid #C0435A; }
+      .sb-recovery-impact-badge.medium { color: #6B4A0E; background: #FFEBC2; border: 1.5px solid #A67A2E; }
+      .sb-recovery-impact-badge.low { color: #285C3A; background: #D6F0DC; border: 1.5px solid #4E8F63; }
+      .sb-recovery-why { font-size: 12px; color: var(--muted); line-height: 1.5; }
+      .sb-recovery-why b { color: var(--mascot-ink); }
+      .sb-recovery-action { font-size: 12.5px; background: var(--mascot-inner); border: 1.5px dashed var(--mascot-outline); border-radius: 12px; padding: 8px 10px; line-height: 1.5; }
+      .sb-recovery-meta-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); font-weight: 700; }
+      .sb-recovery-card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+      .sb-recovery-source-tag { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; border-radius: 8px; }
+      .sb-recovery-source-tag.generated { background: var(--mascot-inner); color: var(--mascot-ink); }
+      .sb-recovery-source-tag.manual { background: var(--mascot-body); color: var(--muted); border: 1.5px solid var(--mascot-outline); }
+
+      .sb-leakage-grid { display: flex; flex-direction: column; gap: 10px; }
+      .sb-leakage-row { display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 10px; }
+      .sb-leakage-label { font-size: 12.5px; font-weight: 800; }
+      .sb-leakage-value { font-size: 13px; font-weight: 800; color: #7A2436; white-space: nowrap; }
+      .sb-leakage-track { height: 10px; border-radius: 8px; background: var(--soft); overflow: hidden; }
+      .sb-leakage-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #C0435A, #E88A9A); }
+      .sb-leakage-potential { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+      .sb-chaptermap-subject { margin-bottom: 14px; }
+      .sb-chaptermap-subject:last-child { margin-bottom: 0; }
+      .sb-chaptermap-subject-title { font-weight: 800; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+      .sb-chaptermap-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--bg); margin-bottom: 6px; }
+      .sb-chaptermap-row:last-child { margin-bottom: 0; }
+      .sb-chaptermap-name { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .sb-chaptermap-health { flex-shrink: 0; width: 70px; }
+      .sb-chaptermap-health-track { height: 7px; border-radius: 6px; background: var(--soft); overflow: hidden; }
+      .sb-chaptermap-health-fill { height: 100%; border-radius: 6px; }
+
+      .sb-repeat-callout { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: #FFD9DF; border: 2px solid #C0435A; margin-top: 10px; }
+      .sb-repeat-callout-num { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: #7A2436; }
+      .sb-repeat-callout-text { font-size: 12.5px; font-weight: 700; color: #7A2436; line-height: 1.4; }
+
       /* ---------- Question Practice: side-by-side layout + accuracy bits ---------- */
       .sb-practice-layout { display: flex; flex-direction: column; gap: 18px; align-items: start; }
       .sb-practice-left, .sb-practice-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; width: 100%; }

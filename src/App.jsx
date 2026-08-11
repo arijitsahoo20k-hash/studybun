@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
   RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, Crown, User, Settings, Menu,
-  NotebookPen, ChevronsLeft, ChevronsRight,
+  NotebookPen, ChevronsLeft, ChevronsRight, Users,
 } from "lucide-react";
 
 import { THEMES, themeVars, timeWash } from "./data/themes";
@@ -46,6 +46,7 @@ const PlannerPage = lazy(() => import("./pages/Planner"));
 const AnalyticsPage = lazy(() => import("./pages/Analytics"));
 const AchievementsPage = lazy(() => import("./pages/Achievements"));
 const LeaderboardPage = lazy(() => import("./pages/Leaderboard"));
+const CommunityPage = lazy(() => import("./pages/Community"));
 const ProfilePage = lazy(() => import("./pages/Profile"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const AIInsightsPage = lazy(() => import("./pages/AIInsights"));
@@ -69,6 +70,7 @@ const PAGE_LOADERS = {
   ai: () => import("./pages/AIInsights"),
   achievements: () => import("./pages/Achievements"),
   leaderboard: () => import("./pages/Leaderboard"),
+  community: () => import("./pages/Community"),
   profile: () => import("./pages/Profile"),
   settings: () => import("./pages/Settings"),
 };
@@ -88,6 +90,7 @@ const NAV = [
   { id: "ai", label: "AI Insights", icon: Sparkles },
   { id: "achievements", label: "Achievements", icon: Trophy },
   { id: "leaderboard", label: "Leaderboard", icon: Crown },
+  { id: "community", label: "Community", icon: Users },
   { id: "profile", label: "Profile", icon: User },
   { id: "settings", label: "Settings", icon: Settings },
 ];
@@ -143,14 +146,16 @@ export default function App() {
   const timerSessionsQ = useRealtimeTable("timer_sessions", { orderBy: "created_at", enabled: page === "dashboard" || isPage("timer", "analytics", "leaderboard", "profile") });
   const chapters = useChapterProgress({ enabled: page === "dashboard" || isPage("study", "timer", "syllabus", "mocks", "revision", "ai", "leaderboard") });
   const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || isPage("questions", "syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
-  const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date", enabled: page === "dashboard" || isPage("syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
-  const mockAnalysis = useMockAnalysis({ enabled: page === "dashboard" || page === "mocks" });
+  const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date", enabled: page === "dashboard" || isPage("syllabus", "mocks", "backlog", "analytics", "ai", "leaderboard", "profile") });
+  // Backlog's recovery engine reads mock mistake tags directly, so it needs
+  // mock_analysis live too — not just on the Mocks page itself.
+  const mockAnalysis = useMockAnalysis({ enabled: page === "dashboard" || page === "mocks" || page === "backlog" });
   // Single-row cache of the last Smart AI Comparison result (Mock Tests
   // page) — lives in Supabase, not localStorage, so it survives switching
   // devices/browsers on the same account. Always-on like profiles/
   // user_settings since it's just one small row, not a page-gated list.
   const mockAiCompareRow = useDeviceRow("mock_ai_comparison", { result: null });
-  const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true, enabled: page === "dashboard" || isPage("syllabus", "mocks", "revision", "ai", "profile") });
+  const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true, enabled: page === "dashboard" || isPage("syllabus", "mocks", "backlog", "revision", "ai", "profile") });
   const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date", enabled: page === "dashboard" || isPage("backlog", "planner", "profile") });
   const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at", enabled: page === "dashboard" || isPage("backlog", "ai") });
   const goalsQ = useRealtimeTable("goals", { orderBy: "created_at", ascending: true, enabled: page === "dashboard" || isPage("goals", "achievements") });
@@ -892,6 +897,68 @@ export default function App() {
     showToast("Backlog item deleted", () => backlogItemsQ.insert(rest));
   };
 
+  // ---------- JEE Recovery Engine ----------
+  // Generated recovery cards live in backlog_items too (source_type !=
+  // "manual"), keyed by the deterministic source_key from
+  // src/lib/recoveryEngine.js. They only get a real row once the user acts
+  // on one — until then a card is "Open" purely in memory. Acting on it
+  // upserts by source_key, so re-tagging a mock never creates a duplicate.
+  const upsertRecoveryItem = async (signal, patch = {}) => {
+    const existing = backlogItems.find((b) => b.source_key === signal.sourceKey);
+    const base = {
+      title: signal.title,
+      subject: signal.subject,
+      category: "Recovery",
+      source_type: signal.sourceType,
+      source_key: signal.sourceKey,
+      chapter: signal.chapter,
+      problem_type: signal.problemType,
+      priority_score: signal.priorityScore,
+      evidence_count: signal.evidenceCount,
+      last_evidence_at: signal.lastEvidenceAt,
+      recommended_action: signal.recommendedAction,
+      notes: signal.why,
+    };
+    if (existing) return backlogItemsQ.update(existing.id, { ...base, ...patch, updated_at: new Date().toISOString() });
+    return backlogItemsQ.insert({ status: "Not Started", in_session: false, ...base, ...patch });
+  };
+
+  const RECOVERY_TARGET_PAGE = {
+    concept_gap: "revision", revision_overdue: "revision",
+    silly_mistake: "questions", calculation_error: "questions", guesswork: "questions",
+    time_management: "timer", pacing: "mocks",
+  };
+  const RECOVERY_TARGET_LABEL = { revision: "Revision Planner", questions: "Question Practice", timer: "Focus Timer", mocks: "Mock Tests" };
+
+  const startRecoveryItem = async (signal) => {
+    await upsertRecoveryItem(signal, { status: "In Progress" });
+    const target = RECOVERY_TARGET_PAGE[signal.problemType] || "backlog";
+    if (target !== "backlog") {
+      showToast(`Off to ${RECOVERY_TARGET_LABEL[target]} — ${signal.chapter || signal.subject}`);
+      setPage(target);
+    }
+  };
+  const addRecoveryToToday = async (signal) => {
+    await upsertRecoveryItem(signal, { in_session: true });
+    showToast("Added to today's recovery plan 🎯");
+  };
+  const dismissRecoveryItem = async (signal) => {
+    await upsertRecoveryItem(signal, { status: "Paused", dismissed_until: daysFromNowIST(14), in_session: false });
+    showToast("Dismissed for now — it'll resurface if the evidence grows.");
+  };
+  const completeRecoveryItem = async (signal) => {
+    await upsertRecoveryItem(signal, { status: "Completed", completed_at: new Date().toISOString(), in_session: false });
+    fireCelebrate();
+    showToast(`${signal.chapter || signal.subject} recovered! 🌸`);
+  };
+  const reopenRecoveryRow = async (id, signal) => {
+    await backlogItemsQ.update(id, {
+      status: "Not Started", dismissed_until: null,
+      priority_score: signal.priorityScore, evidence_count: signal.evidenceCount, last_evidence_at: signal.lastEvidenceAt,
+      updated_at: new Date().toISOString(),
+    });
+  };
+
   const addGoal = async (item) => {
     const row = await goalsQ.insert({ status: "Active", starred: false, ...item });
     showToast("New page written 📝", row && (() => goalsQ.remove(row.id)));
@@ -998,6 +1065,7 @@ export default function App() {
     tasks, addTask, toggleTask, updateTask, deleteTask, backlogChapters, todayHours, todayMinutes,
     todayLoggedHours, todayTimerHours, totalLoggedHours, totalTimerHours,
     backlogItems, addBacklogItem, updateBacklogItem, setBacklogStatus, toggleSessionItem, deleteBacklogItem,
+    upsertRecoveryItem, startRecoveryItem, addRecoveryToToday, dismissRecoveryItem, completeRecoveryItem, reopenRecoveryRow,
     goals, addGoal, updateGoal, completeGoal, deleteGoal,
     streak, streakActiveToday, weeklyData, subjectPie, totalQuestions, todayQuestions, daysToExam,
     dueRevisions, upcomingRevisions, overdueRevisions, overallPct, completedCount,
@@ -1119,6 +1187,7 @@ export default function App() {
             {page === "ai" && <AIInsightsPage {...pageProps} />}
             {page === "achievements" && <AchievementsPage {...pageProps} />}
             {page === "leaderboard" && <LeaderboardPage {...pageProps} />}
+            {page === "community" && <CommunityPage {...pageProps} />}
             {page === "profile" && <ProfilePage {...pageProps} />}
             {page === "settings" && <SettingsPage {...pageProps} />}
           </Suspense>

@@ -1,0 +1,104 @@
+import React, { useState } from "react";
+import { MoreHorizontal, Flag, UserX, Trash2 } from "lucide-react";
+
+const REPORT_REASONS = [
+  { value: "spam", label: "Spam" },
+  { value: "harassment", label: "Harassment" },
+  { value: "abuse", label: "Abuse" },
+  { value: "inappropriate", label: "Inappropriate content" },
+  { value: "misinformation", label: "Academic misinformation" },
+  { value: "other", label: "Other" },
+];
+
+/**
+ * The "⋯" menu on any chat message / post / reply. Report and Block are
+ * always available on other people's content; Delete only shows for your
+ * own content or if you're a moderator. Reused everywhere instead of a
+ * separate BlockDialog/ReportDialog pair per surface.
+ */
+export default function ContentActions({ authorId, currentUserId, isModerator, targetType, targetId, onReport, onBlock, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState(null); // null | "report" | "confirmBlock"
+  const [reason, setReason] = useState("spam");
+  const [details, setDetails] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const isOwn = authorId === currentUserId;
+  const canDelete = isOwn || isModerator;
+
+  const close = () => { setOpen(false); setMode(null); setDetails(""); setReason("spam"); setDone(false); };
+
+  const submitReport = async () => {
+    setSubmitting(true);
+    const res = await onReport?.({ targetType, targetId, reason, details });
+    setSubmitting(false);
+    if (res?.ok) setDone(true);
+  };
+
+  return (
+    <div className="sb-cm-actions">
+      <button type="button" className="sb-cm-actions-trigger" onClick={() => setOpen((v) => !v)} aria-label="More actions">
+        <MoreHorizontal size={16} />
+      </button>
+      {open && !mode && (
+        <div className="sb-cm-actions-menu" role="menu">
+          {!isOwn && (
+            <button type="button" role="menuitem" onClick={() => setMode("report")}>
+              <Flag size={13} /> Report
+            </button>
+          )}
+          {!isOwn && (
+            <button type="button" role="menuitem" onClick={() => setMode("confirmBlock")}>
+              <UserX size={13} /> Block user
+            </button>
+          )}
+          {canDelete && (
+            <button type="button" role="menuitem" className="danger" onClick={() => { onDelete?.(); close(); }}>
+              <Trash2 size={13} /> Delete
+            </button>
+          )}
+        </div>
+      )}
+      {open && mode === "report" && (
+        <div className="sb-cm-actions-panel" role="dialog" aria-label="Report content">
+          {done ? (
+            <>
+              <p>Report sent. Thanks for helping keep this space safe.</p>
+              <button type="button" onClick={close}>Close</button>
+            </>
+          ) : (
+            <>
+              <label className="sb-cm-panel-label">Why are you reporting this?</label>
+              <select value={reason} onChange={(e) => setReason(e.target.value)}>
+                {REPORT_REASONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+              <textarea
+                placeholder="Add details (optional)"
+                value={details}
+                maxLength={500}
+                onChange={(e) => setDetails(e.target.value)}
+              />
+              <div className="sb-cm-panel-btns">
+                <button type="button" onClick={close}>Cancel</button>
+                <button type="button" className="primary" disabled={submitting} onClick={submitReport}>
+                  {submitting ? "Sending..." : "Submit report"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {open && mode === "confirmBlock" && (
+        <div className="sb-cm-actions-panel" role="dialog" aria-label="Block user">
+          <p>Block this student? You won't see their messages or posts anymore.</p>
+          <div className="sb-cm-panel-btns">
+            <button type="button" onClick={close}>Cancel</button>
+            <button type="button" className="primary" onClick={() => { onBlock?.(); close(); }}>Block</button>
+          </div>
+        </div>
+      )}
+      {open && <div className="sb-cm-actions-backdrop" onClick={close} />}
+    </div>
+  );
+}
