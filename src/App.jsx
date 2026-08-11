@@ -145,6 +145,11 @@ export default function App() {
   const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || isPage("questions", "syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
   const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date", enabled: page === "dashboard" || isPage("syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
   const mockAnalysis = useMockAnalysis({ enabled: page === "dashboard" || page === "mocks" });
+  // Single-row cache of the last Smart AI Comparison result (Mock Tests
+  // page) — lives in Supabase, not localStorage, so it survives switching
+  // devices/browsers on the same account. Always-on like profiles/
+  // user_settings since it's just one small row, not a page-gated list.
+  const mockAiCompareRow = useDeviceRow("mock_ai_comparison", { result: null });
   const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true, enabled: page === "dashboard" || isPage("syllabus", "mocks", "revision", "ai", "profile") });
   const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date", enabled: page === "dashboard" || isPage("backlog", "planner", "profile") });
   const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at", enabled: page === "dashboard" || isPage("backlog", "ai") });
@@ -767,6 +772,13 @@ export default function App() {
     if (row) showToast("Mistake breakdown saved 🔍");
     return row;
   };
+
+  // Persists the Smart AI Comparison's last result to Supabase (not just
+  // localStorage) so it survives switching devices/browsers on the same
+  // account. Only called on a successful generation — a failed re-run
+  // leaves whatever's already saved untouched.
+  const saveMockAiComparison = async (result) => mockAiCompareRow.save({ result });
+
   const completeRevision = async (id) => {
     const priorStatus = revisions.find((r) => r.id === id)?.status || "Pending";
     await revisionsQ.update(id, { status: "Completed" });
@@ -955,6 +967,7 @@ export default function App() {
     sessions, timerSessions, addSession, deleteSession: sessionsQ.remove, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
     questions, addQuestions, deleteQuestion: questionsQ.remove, mocks, addMock, updateMock, deleteMock,
     mockAnalysisMap: mockAnalysis.map, saveMockAnalysis,
+    mockAiComparison: mockAiCompareRow.row, saveMockAiComparison,
     revisions, completeRevision, addRevision, deleteRevision,
     tasks, addTask, toggleTask, updateTask, deleteTask, backlogChapters, todayHours, todayMinutes,
     todayLoggedHours, todayTimerHours, totalLoggedHours, totalTimerHours,

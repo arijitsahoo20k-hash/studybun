@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from "react";
-import { ClipboardList, TrendingUp, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X, Search, Clock, Target } from "lucide-react";
+import { ClipboardList, TrendingUp, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X, Search, Clock, Target, Award, Compass } from "lucide-react";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
+import { Card, SectionTitle, Btn, EmptyState, ProgressRing } from "../components/ui";
 import { formatISTCalendarDate, todayIST } from "../lib/dateIST";
 import { generateMockComparison } from "../services/groqMockCompare";
 import { ALL_CHAPTERS } from "../data/syllabus";
@@ -67,7 +67,10 @@ export default function MocksPage(p) {
   const [editingId, setEditingId] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
-  const [aiResult, setAiResult] = useState(null);
+  // The result itself lives in Supabase (p.mockAiComparison, saved via
+  // p.saveMockAiComparison) so it survives switching devices/browsers on
+  // the same account — not just this component's or this device's memory.
+  const aiResult = p.mockAiComparison?.result || null;
   const formRef = useRef(null);
   const [reviewOpenId, setReviewOpenId] = useState(null);
   const [reviewDraft, setReviewDraft] = useState(emptyAnalysis());
@@ -246,22 +249,37 @@ export default function MocksPage(p) {
     setAiLoading(true);
     setAiError(null);
     try {
+      // generateMockComparison automatically compares Main vs Advanced when
+      // both exist, or falls back to a standalone, benchmark-aware
+      // evaluation of whichever one the student actually has logged — no
+      // need to pick a mode here, it's smart about the arrays it's handed.
       const out = await generateMockComparison(
         [...mainsMocks].reverse().map(toAIRow),
         [...advancedMocks].reverse().map(toAIRow)
       );
-      setAiResult(out);
+      await p.saveMockAiComparison(out);
     } catch (e) {
+      // Deliberately don't touch the saved result here — a failed re-run
+      // shouldn't erase a previously successful comparison. The error shows
+      // alongside the last good result instead of replacing it.
       setAiError(e.message || "Something went wrong generating the comparison.");
     } finally {
       setAiLoading(false);
     }
   };
 
+  // ---- Mock pulse (left sidebar tinted card) ----
+  const latestMock = p.mocks[0] || null;
+  const latestPct = latestMock ? pctOf(latestMock) : null;
+  const bestPct = p.mocks.length ? Math.max(...p.mocks.map(pctOf)) : null;
+
   return (
     <div className="sb-page">
-      <div ref={formRef}>
-      <Card style={editingId ? { borderColor: "var(--accent)", boxShadow: "0 0 0 3px var(--soft)" } : undefined}>
+      <div className="sb-mocks-layout">
+        {/* ---------- Left: add/edit form + mock pulse (sticky on desktop) ---------- */}
+        <div className="sb-mocks-left">
+          <div ref={formRef}>
+          <Card washi style={editingId ? { borderColor: "var(--accent)", boxShadow: "0 0 0 3px var(--soft)" } : undefined}>
         <SectionTitle
           icon={ClipboardList}
           right={editingId && <button className="sb-icon-btn" title="Cancel edit" onClick={cancelEdit}><X size={16} /></button>}
@@ -330,7 +348,30 @@ export default function MocksPage(p) {
           {editingId && <Btn variant="soft" onClick={cancelEdit}>Cancel</Btn>}
         </div>
       </Card>
-      </div>
+          </div>
+
+          <Card className="sb-card-tinted">
+            <SectionTitle icon={Award}>Mock pulse</SectionTitle>
+            {p.mocks.length > 0 ? (
+              <div className="sb-backlog-pulse">
+                <div className="sb-backlog-ring-wrap">
+                  <ProgressRing pct={latestPct} size={80} stroke={9} color={latestPct < 50 ? "#C0435A" : undefined} paw={false} />
+                  <div className="sb-backlog-ring-label">Latest score</div>
+                </div>
+                <div className="sb-backlog-pulse-nums">
+                  <div className="sb-backlog-stat"><span className="sb-backlog-stat-label">Best score</span><span className="sb-backlog-stat-num">{bestPct}%</span></div>
+                  <div className="sb-backlog-stat"><span className="sb-backlog-stat-label">Total mocks</span><span className="sb-backlog-stat-num">{p.mocks.length}</span></div>
+                  <div className="sb-backlog-stat"><span className="sb-backlog-stat-label">Main · Advanced</span><span className="sb-backlog-stat-num">{mainsMocks.length} · {advancedMocks.length}</span></div>
+                </div>
+              </div>
+            ) : (
+              <div className="sb-hero-meta">Log your first mock to see your pulse here.</div>
+            )}
+          </Card>
+        </div>
+
+        {/* ---------- Right: trend, comparisons, AI insight, mistakes, history ---------- */}
+        <div className="sb-mocks-right">
 
       <Card>
         <SectionTitle icon={TrendingUp}>Score trend</SectionTitle>
@@ -399,27 +440,43 @@ export default function MocksPage(p) {
       <Card>
         <SectionTitle icon={Sparkles}>Smart AI Comparison</SectionTitle>
         <p className="sb-muted" style={{ fontSize: 12, marginBottom: 10 }}>
-          Sends your real Main and Advanced mock scores to a free-tier AI model and asks it to compare them — which paper you're
-          stronger on, subject-by-subject gaps, and what to focus on. Only runs when you click the button below.
+          Sends your real mock scores to a free-tier AI model. If you've logged both JEE Main and JEE Advanced, it compares
+          them head-to-head — stronger paper, subject-by-subject gaps, what to focus on. If you've only logged one paper so
+          far, it evaluates that one on its own, benchmarked against general real-world JEE percentile and cutoff trends
+          instead of just refusing. Only runs when you click the button below — the last result is saved to your account, so
+          it's still here next time you open the app, on this device or any other, until you run it again.
         </p>
         <Btn onClick={runAIComparison} disabled={aiLoading || p.mocks.length === 0}>
-          {aiLoading ? <><RefreshCw size={16} className="sb-spin" /> Comparing...</> : <><Sparkles size={16} /> Compare with AI</>}
+          {aiLoading ? <><RefreshCw size={16} className="sb-spin" /> Comparing...</> : <><Sparkles size={16} /> {aiResult ? "Re-run comparison" : "Compare with AI"}</>}
         </Btn>
 
         {p.mocks.length === 0 && <div className="sb-muted" style={{ fontSize: 12, marginTop: 8 }}>Log at least one mock to run a comparison.</div>}
 
         {aiError && (
           <div style={{ marginTop: 14 }}>
-            <SectionTitle icon={AlertTriangle}>Couldn't generate comparison</SectionTitle>
+            <SectionTitle icon={AlertTriangle}>Couldn't generate a new comparison</SectionTitle>
             <p className="sb-muted">{aiError}</p>
+            {aiResult && <p className="sb-muted small" style={{ marginTop: 4 }}>Showing your last successful comparison below.</p>}
           </div>
         )}
 
         {aiResult && (
           <div style={{ marginTop: 16 }}>
+            {aiResult.mode === "single" && (
+              <div className="sb-hero-meta" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <Compass size={14} /> Only {aiResult.exam_focus} mocks logged so far — this is a standalone evaluation, not a head-to-head.
+              </div>
+            )}
+
             <div className="sb-grid-2">
-              <div className="sb-mini-stat"><div className="sb-mini-num" style={{ fontSize: 15 }}>{aiResult.stronger_paper}</div><div className="sb-muted">Stronger paper</div></div>
-              <div className="sb-mini-stat"><div className="sb-mini-num" style={{ fontSize: 15 }}>{aiResult.score_gap_pct}</div><div className="sb-muted">Score gap</div></div>
+              <div className="sb-mini-stat">
+                <div className="sb-mini-num" style={{ fontSize: 15 }}>{aiResult.mode === "single" ? aiResult.exam_focus : aiResult.stronger_paper}</div>
+                <div className="sb-muted">{aiResult.mode === "single" ? "Focus exam" : "Stronger paper"}</div>
+              </div>
+              <div className="sb-mini-stat">
+                <div className="sb-mini-num" style={{ fontSize: 15 }}>{aiResult.mode === "single" ? aiResult.percentile_estimate : aiResult.score_gap_pct}</div>
+                <div className="sb-muted">{aiResult.mode === "single" ? "Est. percentile band" : "Score gap"}</div>
+              </div>
             </div>
             <p style={{ marginTop: 12 }}>{aiResult.summary}</p>
 
@@ -428,6 +485,16 @@ export default function MocksPage(p) {
                 <div><b>Physics</b><p className="sb-muted" style={{ fontSize: 13 }}>{aiResult.subject_comparison.physics}</p></div>
                 <div><b>Chemistry</b><p className="sb-muted" style={{ fontSize: 13 }}>{aiResult.subject_comparison.chemistry}</p></div>
                 <div><b>Math</b><p className="sb-muted" style={{ fontSize: 13 }}>{aiResult.subject_comparison.math}</p></div>
+              </div>
+            )}
+
+            {aiResult.benchmark_context && (
+              <div className="sb-card-tinted" style={{ marginTop: 12, padding: 12, borderRadius: 14 }}>
+                <div className="sb-muted small" style={{ fontWeight: 800, marginBottom: 4, textTransform: "uppercase", letterSpacing: ".04em", fontSize: 10.5 }}>
+                  Real-world benchmark {aiResult.mode === "compare" && aiResult.percentile_estimate ? `· ${aiResult.percentile_estimate}` : ""}
+                </div>
+                <p style={{ fontSize: 13 }}>{aiResult.benchmark_context}</p>
+                <p className="sb-muted" style={{ fontSize: 10.5, marginTop: 6 }}>General trend estimate from the model's own knowledge, not a live lookup — treat it as a rough compass, not an exact rank.</p>
               </div>
             )}
 
@@ -534,6 +601,8 @@ export default function MocksPage(p) {
           );
         })}
       </Card>
+        </div>
+      </div>
     </div>
   );
 }

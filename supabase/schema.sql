@@ -286,6 +286,20 @@ create table if not exists ai_insights_history (
 );
 create index if not exists idx_ai_insights_user on ai_insights_history(user_id, generated_at desc);
 
+-- ---------- MOCK TESTS: SMART AI COMPARISON CACHE ----------
+-- One row per user holding the *last* Smart AI Comparison result (Mock
+-- Tests page). Deliberately a single-row cache (like user_statistics),
+-- not a history log like ai_insights_history — the feature only ever
+-- needs "what did the AI last say", and this is what makes that survive
+-- switching devices/browsers on the same account, not just this one
+-- device's local storage. Overwritten only when the student explicitly
+-- clicks "Compare with AI" again; a failed re-run leaves it untouched.
+create table if not exists mock_ai_comparison (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  result jsonb,
+  updated_at timestamptz default now()
+);
+
 -- ---------- THEMES / MASCOTS (reference tables; app also has built-in defaults) ----------
 create table if not exists themes (
   id text primary key,
@@ -326,7 +340,8 @@ begin
       'profiles','user_settings','study_sessions','timer_sessions',
       'syllabus_subjects','syllabus_chapters','chapter_progress','backlog_items','goals',
       'question_logs','mock_tests','mock_analysis','revision_plans','revision_logs',
-      'tasks','achievements','notifications','ai_insights_history','user_statistics'
+      'tasks','achievements','notifications','ai_insights_history','user_statistics',
+      'mock_ai_comparison'
     ])
   loop
     execute format('alter table %I enable row level security;', t);
@@ -358,6 +373,7 @@ alter publication supabase_realtime add table revision_plans;
 alter publication supabase_realtime add table tasks;
 alter publication supabase_realtime add table achievements;
 alter publication supabase_realtime add table notifications;
+alter publication supabase_realtime add table mock_ai_comparison;
 
 -- ============================================================
 -- LEADERBOARD (kawaii realtime Top 20 + anti-cheat Study Score)

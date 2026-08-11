@@ -718,6 +718,17 @@ export default function GlobalStyle() {
         .sb-practice-layout { grid-template-columns: minmax(340px, 400px) 1fr; gap: 26px; }
       }
 
+      /* ---------- Mocks: side-by-side layout + pulse card ---------- */
+      .sb-mocks-layout { display: flex; flex-direction: column; gap: 18px; align-items: start; }
+      .sb-mocks-left, .sb-mocks-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; width: 100%; }
+      @media (min-width: 900px) {
+        .sb-mocks-layout { display: grid; grid-template-columns: minmax(300px, 360px) 1fr; gap: 20px; align-items: start; }
+        .sb-mocks-left { position: sticky; top: 18px; }
+      }
+      @media (min-width: 1400px) {
+        .sb-mocks-layout { grid-template-columns: minmax(340px, 400px) 1fr; gap: 26px; }
+      }
+
       .sb-acc-row { display: flex; align-items: center; gap: 10px; padding: 8px 2px; }
       .sb-acc-row-label { flex: 0 0 108px; font-size: 12.5px; font-weight: 800; color: var(--mascot-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .sb-acc-row-bar { flex: 1; min-width: 0; }
