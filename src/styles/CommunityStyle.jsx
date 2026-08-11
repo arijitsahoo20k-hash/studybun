@@ -23,18 +23,43 @@ export default function CommunityStyle() {
       .sb-community-shell { margin-top: 16px; }
       .sb-community-content { gap: 0; }
 
+      /* Each tab now shows exactly one card standalone, so it should read
+         like a proper full section, not a cramped little box: more padding,
+         a real min-height so short content doesn't float tiny in empty
+         space, and slightly bigger type throughout. */
+      .sb-community-content > .sb-card { padding: 26px 24px; min-height: 460px; display: flex; flex-direction: column; }
+      .sb-community-content .sb-section-title { font-size: 18px; margin-bottom: 18px; }
+      .sb-community-content .sb-icon-badge { width: 34px; height: 34px; }
+      .sb-community-content .sb-icon-badge svg { width: 18px; height: 18px; }
+
       /* Chat is now its own tab instead of sharing space with check-ins and
          the feed, so it gets a noticeably bigger, roomier list. */
-      .sb-community-content .sb-chat-list { max-height: min(52vh, 420px); }
-      .sb-community-content .sb-post-list { gap: 16px; }
+      .sb-community-content .sb-chat-list { max-height: min(56vh, 480px); gap: 14px; }
+      .sb-community-content .sb-chat-msg-content { font-size: 14.5px; padding: 10px 14px; }
+      .sb-community-content .sb-post-list { gap: 18px; }
+      .sb-community-content .sb-post { padding: 16px 18px; }
+      .sb-community-content .sb-post-content { font-size: 14.5px; }
+      .sb-community-content .sb-post-name { font-size: 14px; }
+      .sb-community-content .sb-checkins-row { padding: 12px 14px; }
+      .sb-community-content .sb-checkins-name { font-size: 14px; }
+      .sb-community-content .sb-checkins-goal { font-size: 13px; }
+      .sb-community-content .sb-checkin-goal-text { font-size: 15px; }
+      .sb-community-content .sb-checkin-form label,
+      .sb-community-content .sb-checkin-report label { font-size: 12px; }
 
       @media (min-width: 641px) and (max-width: 1023px) {
         .sb-community-stats { gap: 18px; }
-        .sb-community-content .sb-chat-list { max-height: min(56vh, 500px); }
+        .sb-community-content > .sb-card { min-height: 500px; }
+        .sb-community-content .sb-chat-list { max-height: min(58vh, 540px); }
       }
 
       @media (min-width: 1024px) {
-        .sb-community-content .sb-chat-list { max-height: min(62vh, 620px); }
+        .sb-community-content > .sb-card { padding: 32px 30px; min-height: 560px; }
+        .sb-community-content .sb-chat-list { max-height: min(64vh, 640px); }
+      }
+
+      @media (max-width: 640px) {
+        .sb-community-content > .sb-card { min-height: 380px; }
       }
 
       /* ---------- check-ins list ---------- */
