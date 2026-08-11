@@ -216,6 +216,55 @@ export default function GlobalStyle() {
       .sb-sidebar-footer { border-top: 2px solid var(--soft); padding-top: 14px; }
       .sb-sidebar-footer-label { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
 
+      /* ===== Desktop sidebar nav (TopNav.jsx) =====
+         Separate from .sb-nav/.sb-nav-item above, which only belongs to
+         the phone dropdown nav. These classes back the persistent desktop
+         sidebar and previously had no rules at all, so buttons fell back
+         to unstyled native rendering (wrapping two-per-row with default
+         browser borders). */
+      .sb-sidebar-brand { display: flex; align-items: center; gap: 10px; }
+      .sb-sidebar-brand-mark { flex-shrink: 0; display: inline-flex; }
+      .sb-sidebar-brand-copy { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+      .sb-sidebar-brand-sub { font-size: 11px; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+      .sb-sidebar-nav { position: relative; display: flex; flex-direction: column; flex: 1; overflow-y: auto; overflow-x: hidden; }
+      .sb-sidebar-nav-list { display: flex; flex-direction: column; gap: 5px; }
+      .sb-sidebar-item {
+        position: relative; display: flex; align-items: center; gap: 10px; width: 100%;
+        padding: 10px 12px; border-radius: 999px; border: 2px solid transparent;
+        background: transparent; color: var(--ink); font-family: var(--font-body);
+        font-weight: 700; font-size: 13.5px; cursor: pointer; text-align: left;
+        transition: background .15s ease, transform .15s ease, border-color .15s ease;
+      }
+      .sb-sidebar-item:hover:not(.active) { background: var(--soft); border-color: var(--outline); transform: translateX(2px); }
+      .sb-sidebar-item.active { background: var(--soft); border-color: var(--outline); font-weight: 800; }
+      .sb-sidebar-item-icon { display: inline-flex; flex-shrink: 0; }
+      .sb-sidebar-item-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+      /* Collapsed rail: icon-only, centered, with a tooltip flown out on
+         hover/focus so the label is still reachable. */
+      .sb-app:has(.sb-sidebar-collapsed) { grid-template-columns: 76px 1fr; }
+      .sb-sidebar-collapsed .sb-sidebar-brand-copy,
+      .sb-sidebar-collapsed .sb-sidebar-item-label { display: none; }
+      .sb-sidebar-collapsed .sb-sidebar-item { justify-content: center; padding: 10px; }
+      .sb-sidebar-tooltip {
+        position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+        background: var(--ink); color: var(--card); font-size: 12px; font-weight: 700;
+        padding: 5px 10px; border-radius: 8px; white-space: nowrap;
+        opacity: 0; pointer-events: none; transition: opacity .12s ease;
+        z-index: 5;
+      }
+      .sb-sidebar-item:hover .sb-sidebar-tooltip,
+      .sb-sidebar-item:focus-visible .sb-sidebar-tooltip { opacity: 1; }
+
+      .sb-sidebar-toggle-btn {
+        display: flex; align-items: center; justify-content: center; width: 100%;
+        padding: 8px; border-radius: 12px; border: 2px solid var(--outline);
+        background: transparent; color: var(--ink); cursor: pointer;
+        transition: background .15s ease, transform .15s ease;
+      }
+      .sb-sidebar-toggle-btn:hover { background: var(--soft); }
+
       .sb-mobile-toggle { display: none; }
       .sb-mobile-nav { display: none; }
 
