@@ -280,6 +280,7 @@ export default function GlobalStyle() {
         background: var(--mascot-body);
         border-right: 2.5px solid var(--mascot-outline); box-shadow: none;
         overflow: hidden;
+        transition: flex-basis .26s cubic-bezier(.4,0,.2,1), width .26s cubic-bezier(.4,0,.2,1), padding .26s ease;
       }
       .sb-sidebar-brand {
         display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px;
@@ -299,6 +300,7 @@ export default function GlobalStyle() {
       }
       .sb-sidebar-nav-list { display: flex; flex-direction: column; gap: 3px; }
       .sb-sidebar-item {
+        position: relative;
         width: 100%; min-height: 43px; display: flex; align-items: center; gap: 11px;
         padding: 9px 11px; border: 2px solid transparent; border-radius: 13px;
         background: transparent; color: var(--mascot-ink); font-family: var(--font-body);
@@ -320,6 +322,49 @@ export default function GlobalStyle() {
       }
       .sb-sidebar-action:hover { background: var(--mascot-inner); transform: translateX(2px); }
       .sb-sidebar-action-icon { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 22px; }
+
+      /* ===== collapsible sidebar (icons-only rail) =====
+         Toggled from App.jsx's sidebarCollapsed state (persisted to
+         localStorage). .sb-main needs no matching override: it's
+         flex: 1 1 auto against the sidebar's fixed flex-basis, so it
+         fills whatever space the sidebar gives up automatically, and
+         re-flows in step with the sidebar's own width transition above. */
+      .sb-sidebar-collapsed { flex-basis: 76px; width: 76px; padding-left: 10px; padding-right: 10px; }
+      .sb-sidebar-collapsed .sb-sidebar-brand { justify-content: center; padding-left: 0; padding-right: 0; }
+      .sb-sidebar-collapsed .sb-sidebar-brand-copy,
+      .sb-sidebar-collapsed .sb-sidebar-item-label { display: none; }
+      .sb-sidebar-collapsed .sb-sidebar-item,
+      .sb-sidebar-collapsed .sb-sidebar-action {
+        justify-content: center; gap: 0; padding-left: 0; padding-right: 0;
+      }
+      .sb-sidebar-collapsed .sb-sidebar-item:hover:not(.active),
+      .sb-sidebar-collapsed .sb-sidebar-item.active { transform: none; }
+      /* Hover/focus tooltip for the icons-only rail. The rail itself stays
+         overflow:hidden the rest of the time (needed for its own vertical
+         scroll with 16 nav items on short viewports); it only pops open to
+         overflow:visible for the moment a tooltip needs to escape it,
+         via :has() -- same selector technique already used elsewhere in
+         this file (route-scoped .sb-main overrides below). */
+      .sb-sidebar-collapsed:has(.sb-sidebar-item:hover, .sb-sidebar-item:focus-visible),
+      .sb-sidebar-nav-collapsed:has(.sb-sidebar-item:hover, .sb-sidebar-item:focus-visible) {
+        overflow: visible;
+      }
+      .sb-sidebar-tooltip {
+        position: absolute; left: calc(100% + 10px); top: 50%;
+        transform: translateY(-50%) translateX(-4px);
+        background: var(--mascot-body); color: var(--mascot-ink);
+        border: 2px solid var(--mascot-outline); border-radius: 10px;
+        padding: 5px 10px; font-size: 12px; font-weight: 800; white-space: nowrap;
+        box-shadow: 3px 3px 0 var(--mascot-outline);
+        opacity: 0; pointer-events: none; z-index: 60;
+        transition: opacity .15s ease, transform .15s ease;
+      }
+      .sb-sidebar-item:hover .sb-sidebar-tooltip,
+      .sb-sidebar-item:focus-visible .sb-sidebar-tooltip { opacity: 1; transform: translateY(-50%) translateX(0); }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-sidebar { transition: none; }
+        .sb-sidebar-tooltip { transition: none; }
+      }
 
       /* Legacy top-nav classes are deliberately neutralised. Keeping these
          selectors makes old cached markup harmless during a hot reload and
@@ -1254,6 +1299,7 @@ export default function GlobalStyle() {
         .sb-main { width: calc(100% - 210px); padding-left: 24px; padding-right: 24px; }
         .sb-sidebar-brand-sub { display: none; }
         .sb-sidebar-item { font-size: 12px; }
+        .sb-sidebar-collapsed { flex-basis: 64px; width: 64px; padding-left: 8px; padding-right: 8px; }
       }
 
       @media (max-width: 720px) {

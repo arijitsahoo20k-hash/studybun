@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
   RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, Crown, User, Settings, Menu,
-  NotebookPen,
+  NotebookPen, ChevronsLeft, ChevronsRight,
 } from "lucide-react";
 
 import { THEMES, themeVars, timeWash } from "./data/themes";
@@ -214,6 +214,32 @@ export default function App() {
   }, []);
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Desktop/tablet sidebar collapse (icons-only rail) -- persisted so it
+  // survives reloads, same guarded-localStorage pattern as
+  // useCustomBackground.js. Doesn't touch the phone hamburger dropdown at
+  // all, since .sb-sidebar is display:none below 720px regardless.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("sb-sidebar-collapsed-v1") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed((v) => {
+      const next = !v;
+      try {
+        window.localStorage.setItem("sb-sidebar-collapsed-v1", next ? "1" : "0");
+      } catch {
+        // localStorage unavailable (private mode etc.) -- collapse still
+        // works for this session, it just won't persist across reloads.
+      }
+      return next;
+    });
+  };
+
   const [toast, setToast] = useState(null); // { message, undo? }
   const [celebrateType, setCelebrateType] = useState(null); // null | "confetti" | "petals"
   const [hopping, setHopping] = useState(false);
@@ -1019,7 +1045,10 @@ export default function App() {
         </div>
       )}
 
-      <aside className="sb-sidebar" aria-label="StudyBun navigation">
+      <aside
+        className={`sb-sidebar ${sidebarCollapsed ? "sb-sidebar-collapsed" : ""}`}
+        aria-label="StudyBun navigation"
+      >
         <div className="sb-sidebar-brand">
           <div className="sb-sidebar-brand-mark">
             <Mascot species={mascot} mood="happy" size={38} hop={hopping} peek />
@@ -1030,7 +1059,29 @@ export default function App() {
           </div>
         </div>
 
-        <TopNav nav={NAV} page={page} setPage={setPage} reducedMotion={reducedMotion} onHoverItem={prefetchPage} />
+        <TopNav
+          nav={NAV}
+          page={page}
+          setPage={setPage}
+          reducedMotion={reducedMotion}
+          onHoverItem={prefetchPage}
+          collapsed={sidebarCollapsed}
+        />
+
+        <div className="sb-sidebar-footer">
+          <button
+            type="button"
+            className="sb-sidebar-action sb-sidebar-collapse-btn"
+            onClick={toggleSidebarCollapsed}
+            aria-expanded={!sidebarCollapsed}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <span className="sb-sidebar-action-icon">
+              {sidebarCollapsed ? <ChevronsRight size={18} strokeWidth={2.2} /> : <ChevronsLeft size={18} strokeWidth={2.2} />}
+            </span>
+            <span className="sb-sidebar-item-label">{sidebarCollapsed ? "Expand" : "Collapse"}</span>
+          </button>
+        </div>
       </aside>
 
       {/* Phone: unchanged hamburger + dropdown, full NAV list including
