@@ -1599,8 +1599,7 @@ export default function GlobalStyle() {
       .sb-app:has(.sb-route-profile) .sb-grid-2 { grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); align-items: start; }
 
       @media (min-width: 1100px) {
-        .sb-app:has(.sb-route-questions) .sb-form-grid,
-        .sb-app:has(.sb-route-backlog) .sb-form-grid { grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); }
+        .sb-app:has(.sb-route-questions) .sb-form-grid { grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); }
         .sb-app:has(.sb-route-revision) .sb-revision-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; }
         .sb-app:has(.sb-route-planner) .sb-task-edit-grid { grid-template-columns: minmax(0, 1fr) repeat(3, minmax(120px, .35fr)); }
         .sb-app:has(.sb-route-goals) .sb-goal-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
