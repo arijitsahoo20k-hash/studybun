@@ -707,6 +707,25 @@ export default function GlobalStyle() {
         .sb-backlog-pulse-nums { width: 100%; }
       }
 
+      /* ---------- Question Practice: side-by-side layout + accuracy bits ---------- */
+      .sb-practice-layout { display: flex; flex-direction: column; gap: 18px; align-items: start; }
+      .sb-practice-left, .sb-practice-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; width: 100%; }
+      @media (min-width: 900px) {
+        .sb-practice-layout { display: grid; grid-template-columns: minmax(300px, 360px) 1fr; gap: 20px; align-items: start; }
+        .sb-practice-left { position: sticky; top: 18px; }
+      }
+      @media (min-width: 1400px) {
+        .sb-practice-layout { grid-template-columns: minmax(340px, 400px) 1fr; gap: 26px; }
+      }
+
+      .sb-acc-row { display: flex; align-items: center; gap: 10px; padding: 8px 2px; }
+      .sb-acc-row-label { flex: 0 0 108px; font-size: 12.5px; font-weight: 800; color: var(--mascot-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .sb-acc-row-bar { flex: 1; min-width: 0; }
+      .sb-acc-row-pct { flex: 0 0 auto; font-size: 12px; font-weight: 800; color: var(--muted); min-width: 38px; text-align: right; }
+      .sb-acc-row-n { font-size: 10.5px; color: var(--muted); font-weight: 700; margin-left: 4px; }
+
+      .sb-mistake-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
       .sb-timer-card { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 34px; }
       .sb-timer-topbar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; width: 100%; }
       .sb-sound-toggle { display: inline-flex; align-items: center; gap: 6px; border: 2px solid var(--mascot-outline); background: var(--mascot-body); color: var(--muted); border-radius: 999px; padding: 6px 12px; font-weight: 800; font-size: 11.5px; cursor: pointer; box-shadow: 2px 2px 0 var(--mascot-outline); transition: transform .12s ease, box-shadow .12s ease, background-color .2s ease, color .2s ease; }
@@ -1599,7 +1618,6 @@ export default function GlobalStyle() {
       .sb-app:has(.sb-route-profile) .sb-grid-2 { grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); align-items: start; }
 
       @media (min-width: 1100px) {
-        .sb-app:has(.sb-route-questions) .sb-form-grid { grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); }
         .sb-app:has(.sb-route-revision) .sb-revision-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; }
         .sb-app:has(.sb-route-planner) .sb-task-edit-grid { grid-template-columns: minmax(0, 1fr) repeat(3, minmax(120px, .35fr)); }
         .sb-app:has(.sb-route-goals) .sb-goal-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }

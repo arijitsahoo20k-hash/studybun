@@ -142,7 +142,7 @@ export default function App() {
   const sessionsQ = useRealtimeTable("study_sessions", { orderBy: "session_date", enabled: page === "dashboard" || isPage("study", "backlog", "analytics", "ai", "leaderboard", "profile") });
   const timerSessionsQ = useRealtimeTable("timer_sessions", { orderBy: "created_at", enabled: page === "dashboard" || isPage("timer", "analytics", "leaderboard", "profile") });
   const chapters = useChapterProgress({ enabled: page === "dashboard" || isPage("study", "timer", "syllabus", "mocks", "revision", "ai", "leaderboard") });
-  const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || isPage("syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
+  const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || isPage("questions", "syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
   const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date", enabled: page === "dashboard" || isPage("syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
   const mockAnalysis = useMockAnalysis({ enabled: page === "dashboard" || page === "mocks" });
   const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true, enabled: page === "dashboard" || isPage("syllabus", "mocks", "revision", "ai", "profile") });
@@ -953,7 +953,7 @@ export default function App() {
     profile, saveProfile, mascot,
     userId: user?.id, studyingIds,
     sessions, timerSessions, addSession, deleteSession: sessionsQ.remove, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
-    questions, addQuestions, mocks, addMock, updateMock, deleteMock,
+    questions, addQuestions, deleteQuestion: questionsQ.remove, mocks, addMock, updateMock, deleteMock,
     mockAnalysisMap: mockAnalysis.map, saveMockAnalysis,
     revisions, completeRevision, addRevision, deleteRevision,
     tasks, addTask, toggleTask, updateTask, deleteTask, backlogChapters, todayHours, todayMinutes,
