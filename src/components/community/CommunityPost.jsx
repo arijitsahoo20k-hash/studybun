@@ -63,6 +63,11 @@ export default function CommunityPost({ post, reactions, currentUserId, myProfil
         <div className="sb-post-tag">{post.subject}{post.chapter ? ` — ${post.chapter}` : ""}</div>
       )}
       <div className="sb-post-content">{post.content}</div>
+      {post.image_url && (
+        <a href={post.image_url} target="_blank" rel="noreferrer" className="sb-post-image-wrap">
+          <img src={post.image_url} alt="" className="sb-post-image" loading="lazy" />
+        </a>
+      )}
 
       <div className="sb-post-actions">
         {REACTIONS.map(({ key, label, icon: Icon }) => (

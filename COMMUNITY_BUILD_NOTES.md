@@ -4,13 +4,16 @@
 
 1. Run `supabase/migration_community.sql` in your Supabase SQL editor (safe
    to re-run; everything is idempotent).
-2. Deploy as usual — `vercel.json` now also schedules
+2. Run `supabase/migration_community_post_images.sql` too — adds the
+   `community_posts.image_url` column and creates the
+   `community-post-images` storage bucket + RLS policies (also idempotent).
+3. Deploy as usual — `vercel.json` now also schedules
    `api/cron/community-cleanup.js` every 30 minutes to physically delete
    expired chat messages. It reuses the same `CRON_SECRET` /
    `SUPABASE_SERVICE_ROLE_KEY` env vars as the existing notify cron.
-3. Nothing else to configure — Community reuses your existing Supabase
+4. Nothing else to configure — Community reuses your existing Supabase
    client, auth, profile, and presence systems.
-4. To promote a user to moderator/admin, insert/update a row in
+5. To promote a user to moderator/admin, insert/update a row in
    `user_roles` using the Supabase dashboard or service role — this is
    intentional; there is no in-app UI or client-writable path to grant
    roles.
@@ -20,12 +23,29 @@
 - **Chat**: realtime, per-channel (General / JEE Main / JEE Advanced /
   Physics / Chemistry / Maths), 1000-char limit, server-side rate limiting
   and duplicate-message guard, mandatory 5-day expiry enforced by an
-  actual `DELETE` in Postgres (cron), not a client-side filter.
+  actual `DELETE` in Postgres (cron), not a client-side filter. Chat stays
+  **text-only on purpose** — see "Chat vs. Post" below.
 - **Accountability**: daily check-in with JEE-oriented goal types, live
   "today's check-ins" list of other students, non-shaming status language,
   lightweight completion reporting, weekly summary.
 - **Feed**: five post types (check-in/progress/question/tip/milestone),
-  three simple reactions, one-level replies, pagination.
+  optional image attachment, three simple reactions, one-level replies,
+  pagination.
+
+## Chat vs. Post
+
+The two surfaces are deliberately different, not just visually:
+
+- **Chat** = fast, disposable, text-only back-and-forth. 5-day expiry.
+- **Post** = the thing worth keeping and worth actually looking at — so
+  it's the only place that supports an image attachment (mock score
+  screenshot, a solved problem, notes, etc). Images are compressed
+  client-side (`src/lib/compressImage.js`, max ~1600px / JPEG q0.82, no
+  new dependency) before upload to the `community-post-images` Storage
+  bucket, at `${userId}/${uuid}.ext`. Bucket is public-read; write/delete
+  is restricted by RLS to the uploader's own folder
+  (`supabase/migration_community_post_images.sql`). Deleting a post
+  best-effort deletes its file too.
 - **Safety**: reporting (six reason categories, reporter identity never
   exposed to anyone but the reporter/moderators), blocking (enforced at
   the RLS layer, not just client-side filtering), a `user_roles` table

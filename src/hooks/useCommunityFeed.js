@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
 import { attachProfiles } from "../lib/communityProfiles";
+import { compressImage } from "../lib/compressImage";
 
 const PAGE_SIZE = 20;
-const POST_SELECT = "id, user_id, type, content, subject, chapter, created_at";
+const POST_SELECT = "id, user_id, type, content, subject, chapter, image_url, created_at";
 const REPLY_SELECT = "id, post_id, user_id, content, created_at";
+const IMAGE_BUCKET = "community-post-images";
 
 export function useCommunityFeed() {
   const { user } = useAuth();
@@ -79,9 +81,26 @@ export function useCommunityFeed() {
       const content = (form.content || "").trim();
       if (!content) return { ok: false, error: "Write something first." };
       if (content.length > 2000) return { ok: false, error: "That's too long (max 2000 characters)." };
+
+      let image_url = null;
+      if (form.imageFile) {
+        try {
+          const compressed = await compressImage(form.imageFile);
+          const ext = compressed.type === "image/png" ? "png" : "jpg";
+          const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from(IMAGE_BUCKET)
+            .upload(path, compressed, { contentType: compressed.type, upsert: false });
+          if (upErr) return { ok: false, error: "Couldn't upload that image. Try again." };
+          image_url = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+        } catch {
+          return { ok: false, error: "Couldn't process that image. Try a different one." };
+        }
+      }
+
       const { data, error: err } = await supabase
         .from("community_posts")
-        .insert({ user_id: userId, type: form.type, content, subject: form.subject || null, chapter: form.chapter || null })
+        .insert({ user_id: userId, type: form.type, content, subject: form.subject || null, chapter: form.chapter || null, image_url })
         .select(POST_SELECT)
         .single();
       if (err) {
@@ -95,11 +114,23 @@ export function useCommunityFeed() {
   );
 
   const deletePost = useCallback(async (id) => {
+    const target = posts.find((p) => p.id === id);
     const { error: err } = await supabase.from("community_posts").delete().eq("id", id);
     if (err) return { ok: false };
     setPosts((prev) => prev.filter((p) => p.id !== id));
+    // Best-effort cleanup of the uploaded file — RLS only lets the owner
+    // (or the storage path check) remove it, so this quietly no-ops for
+    // anyone else (e.g. a moderator deleting someone else's post).
+    if (target?.image_url) {
+      const marker = `/${IMAGE_BUCKET}/`;
+      const idx = target.image_url.indexOf(marker);
+      if (idx !== -1) {
+        const path = target.image_url.slice(idx + marker.length);
+        supabase.storage.from(IMAGE_BUCKET).remove([path]).catch(() => {});
+      }
+    }
     return { ok: true };
-  }, []);
+  }, [posts]);
 
   const loadReplies = useCallback(async (postId) => {
     const { data, error } = await supabase

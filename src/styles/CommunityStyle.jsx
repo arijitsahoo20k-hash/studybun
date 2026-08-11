@@ -33,8 +33,17 @@ export default function CommunityStyle() {
       .sb-community-content .sb-icon-badge svg { width: 18px; height: 18px; }
 
       /* Chat is now its own tab instead of sharing space with check-ins and
-         the feed, so it gets a noticeably bigger, roomier list. */
-      .sb-community-content .sb-chat-list { max-height: min(56vh, 480px); gap: 14px; }
+         the feed, so it gets a noticeably bigger, roomier list. The card
+         itself is given a real, fixed height and turned into a flex
+         column — the message list is the only part that stretches/scrolls,
+         the composer stays pinned full-width at the bottom instead of
+         floating as a small leftover box under a tall, mostly-empty card. */
+      .sb-community-content > .sb-card.sb-community-chat {
+        height: min(74vh, 700px);
+        min-height: 460px;
+        padding-bottom: 20px;
+      }
+      .sb-community-content .sb-chat-list { flex: 1; min-height: 0; max-height: none; gap: 14px; }
       .sb-community-content .sb-chat-msg-content { font-size: 14.5px; padding: 10px 14px; }
       .sb-community-content .sb-post-list { gap: 18px; }
       .sb-community-content .sb-post { padding: 16px 18px; }
@@ -50,16 +59,17 @@ export default function CommunityStyle() {
       @media (min-width: 641px) and (max-width: 1023px) {
         .sb-community-stats { gap: 18px; }
         .sb-community-content > .sb-card { min-height: 500px; }
-        .sb-community-content .sb-chat-list { max-height: min(58vh, 540px); }
+        .sb-community-content > .sb-card.sb-community-chat { height: min(76vh, 740px); }
       }
 
       @media (min-width: 1024px) {
         .sb-community-content > .sb-card { padding: 32px 30px; min-height: 560px; }
-        .sb-community-content .sb-chat-list { max-height: min(64vh, 640px); }
+        .sb-community-content > .sb-card.sb-community-chat { height: min(78vh, 800px); padding-bottom: 26px; }
       }
 
       @media (max-width: 640px) {
         .sb-community-content > .sb-card { min-height: 380px; }
+        .sb-community-content > .sb-card.sb-community-chat { height: min(72vh, 620px); min-height: 420px; }
       }
 
       /* ---------- check-ins list ---------- */
@@ -80,14 +90,18 @@ export default function CommunityStyle() {
 
       /* ---------- chat ---------- */
       .sb-community-chat { display: flex; flex-direction: column; }
-      .sb-channel-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+      .sb-channel-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; flex-shrink: 0; }
+      .sb-channel-selector .sb-chip {
+        padding: 9px 18px; font-size: 13px; border-radius: 999px; font-weight: 800;
+      }
       .sb-chat-list {
-        display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto;
-        padding: 4px 2px; margin-bottom: 10px;
+        display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
+        padding: 6px 8px; margin-bottom: 12px; border-radius: 18px;
+        background: var(--mascot-inner); border: 2px solid var(--mascot-outline);
       }
       .sb-chat-load-older {
-        align-self: center; font-size: 11px; font-weight: 800; color: var(--muted); background: none;
-        border: none; cursor: pointer; text-decoration: underline; padding: 4px;
+        align-self: center; font-size: 11.5px; font-weight: 800; color: var(--muted); background: none;
+        border: none; cursor: pointer; text-decoration: underline; padding: 6px;
       }
       .sb-chat-msg { display: flex; gap: 8px; align-items: flex-start; position: relative; }
       .sb-chat-msg.own { flex-direction: row-reverse; }
@@ -98,23 +112,51 @@ export default function CommunityStyle() {
       .sb-chat-msg-name { font-weight: 800; color: var(--mascot-ink); }
       .sb-chat-msg-content {
         display: inline-block; margin-top: 3px; padding: 8px 12px; border-radius: 14px;
-        background: var(--mascot-body); border: 2px solid var(--mascot-outline); font-size: 13px;
+        background: var(--card); border: 2px solid var(--mascot-outline); font-size: 13px;
         white-space: pre-wrap; word-break: break-word; box-shadow: 2px 2px 0 var(--mascot-outline);
       }
-      .sb-chat-msg.own .sb-chat-msg-content { background: var(--mascot-inner); }
-      .sb-chat-composer { display: flex; gap: 8px; align-items: flex-end; }
-      .sb-chat-composer textarea {
-        flex: 1; resize: none; border: 2px solid var(--mascot-outline); border-radius: 14px;
-        padding: 8px 12px; font-family: var(--font-body); font-size: 13px; background: var(--card);
-        color: var(--ink);
+      .sb-chat-msg.own .sb-chat-msg-content { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
+
+      /* Composer: the actual thing that was left half-finished before —
+         a real full-width input bar with an auto-growing textarea (up to
+         5 lines), a proper counter, and a send button that matches the
+         rest of the app's sticker-button language instead of a bare
+         circle. Pinned to the bottom of the flex column via flex-shrink:0
+         on the card, so it always spans the full card width. */
+      .sb-chat-composer {
+        display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+        background: var(--card); border: 2.5px solid var(--mascot-outline); border-radius: 20px;
+        padding: 8px 8px 8px 16px; box-shadow: 3px 3px 0 var(--mascot-outline);
+        transition: box-shadow .15s ease, transform .15s ease;
       }
+      .sb-chat-composer:focus-within { box-shadow: 4px 4px 0 var(--mascot-outline); transform: translate(-1px, -1px); }
+      .sb-chat-composer textarea {
+        flex: 1; resize: none; border: none; outline: none; background: transparent;
+        padding: 10px 0; font-family: var(--font-body); font-size: 14.5px; line-height: 1.4;
+        color: var(--ink); max-height: 140px; overflow-y: auto;
+      }
+      .sb-chat-composer textarea::placeholder { color: var(--muted); opacity: .8; }
       .sb-chat-composer button {
-        width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--mascot-outline);
+        width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--mascot-outline);
         background: var(--mascot-outline); color: var(--bg); display: inline-flex; align-items: center;
         justify-content: center; cursor: pointer; box-shadow: 2px 2px 0 var(--accent2); flex-shrink: 0;
+        transition: transform .12s ease, box-shadow .12s ease;
       }
-      .sb-chat-composer button:disabled { opacity: .5; cursor: not-allowed; }
-      .sb-chat-expiry-note { margin-top: 8px; text-align: center; }
+      .sb-chat-composer button:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--accent2); }
+      .sb-chat-composer button:active:not(:disabled) { transform: translate(0, 0); box-shadow: 1px 1px 0 var(--accent2); }
+      .sb-chat-composer button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+      .sb-chat-composer-foot {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 8px; flex-shrink: 0; gap: 10px;
+      }
+      .sb-chat-hint { font-size: 11px; color: var(--muted); font-weight: 600; }
+      .sb-chat-hint kbd {
+        font-family: inherit; font-size: 10px; font-weight: 800; padding: 1.5px 5px;
+        border: 1.5px solid var(--mascot-outline); border-radius: 5px; background: var(--mascot-inner);
+      }
+      .sb-chat-counter { font-size: 10.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+      .sb-chat-counter.warn { color: #C24444; }
+      .sb-chat-expiry-note { margin-top: 6px; text-align: center; }
 
       /* ---------- accountability card ---------- */
       .sb-checkin-form, .sb-checkin-active, .sb-checkin-report { display: flex; flex-direction: column; gap: 13px; }
@@ -156,6 +198,24 @@ export default function CommunityStyle() {
         border: 2px solid var(--mascot-outline); border-radius: 10px; padding: 8px 10px;
         font-family: var(--font-body); font-size: 13px; background: var(--card); color: var(--ink); resize: vertical;
       }
+      .sb-composer-attach {
+        align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
+        border: 2px dashed var(--mascot-outline); background: var(--mascot-body); color: var(--mascot-ink);
+        border-radius: 12px; padding: 7px 12px; font-size: 12px; font-weight: 800; cursor: pointer;
+      }
+      .sb-composer-attach:hover { background: var(--mascot-inner); }
+      .sb-composer-image-preview { position: relative; width: 100%; max-width: 260px; border-radius: 14px; overflow: hidden;
+        border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline); }
+      .sb-composer-image-preview img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
+      .sb-composer-image-remove {
+        position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%;
+        border: 2px solid var(--mascot-outline); background: var(--card); color: var(--ink);
+        display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+      }
+      .sb-post-image-wrap { display: block; margin-top: 10px; border-radius: 14px; overflow: hidden;
+        border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline); }
+      .sb-post-image { display: block; width: 100%; max-height: 360px; object-fit: cover; }
+
       .sb-post-list { display: flex; flex-direction: column; gap: 14px; }
       .sb-post {
         border: 2px solid var(--mascot-outline); border-radius: 16px; padding: 12px 14px;

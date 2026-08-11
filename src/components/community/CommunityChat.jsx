@@ -5,6 +5,7 @@ import ChatMessage from "./ChatMessage";
 import ChannelSelector from "./ChannelSelector";
 
 const MAX_LEN = 1000;
+const TEXTAREA_MAX_HEIGHT = 140;
 
 export default function CommunityChat({
   channels, activeChannelId, onSelectChannel,
@@ -14,12 +15,24 @@ export default function CommunityChat({
   const [draft, setDraft] = useState("");
   const [err, setErr] = useState(null);
   const listRef = useRef(null);
+  const textareaRef = useRef(null);
   const submittingRef = useRef(false);
 
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length, activeChannelId]);
+
+  // Auto-grow the textarea with content instead of staying a fixed
+  // 2-row box — it now behaves like a real chat input (grows up to ~5
+  // lines, then scrolls internally) rather than looking untouched next
+  // to the bigger card around it.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`;
+  }, [draft]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -35,6 +48,7 @@ export default function CommunityChat({
   };
 
   const visible = messages.filter((m) => !moderation.isBlocked(m.user_id));
+  const nearLimit = draft.length > MAX_LEN * 0.85;
 
   return (
     <Card washi className="sb-community-chat">
@@ -68,17 +82,24 @@ export default function CommunityChat({
 
       <form className="sb-chat-composer" onSubmit={handleSend}>
         <textarea
+          ref={textareaRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(e); }}
           placeholder="Say something to your study group..."
           maxLength={MAX_LEN}
-          rows={2}
+          rows={1}
         />
         <button type="submit" disabled={sending || !draft.trim()} aria-label="Send message">
-          <Send size={16} />
+          <Send size={18} />
         </button>
       </form>
+      <div className="sb-chat-composer-foot">
+        <span className="sb-chat-hint"><kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line</span>
+        {draft.length > 0 && (
+          <span className={`sb-chat-counter ${nearLimit ? "warn" : ""}`}>{draft.length}/{MAX_LEN}</span>
+        )}
+      </div>
       {err && <p className="sb-cm-error">{err}</p>}
       <p className="sb-muted small sb-chat-expiry-note">Messages disappear after 5 days.</p>
     </Card>
