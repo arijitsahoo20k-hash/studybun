@@ -227,8 +227,7 @@ export default function GlobalStyle() {
       .sb-page-transition { display: flex; justify-content: center; width: 100%; }
       .sb-page { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: clamp(680px, 92vw, 1480px); }
 
-      .sb-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-      .sb-hero > *:last-child { align-self: center; }
+      .sb-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
       .sb-hero-greet { font-family: var(--font-display); font-size: 23px; font-weight: 700; }
       .sb-hero-line { color: var(--muted); margin-top: 4px; font-weight: 700; font-size: 14px; max-width: 420px; }
       .sb-hero-meta { font-size: 12px; color: var(--muted); margin-top: 8px; font-weight: 700; }
