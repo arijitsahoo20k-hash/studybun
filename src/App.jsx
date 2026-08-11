@@ -1071,15 +1071,12 @@ export default function App() {
         <div className="sb-sidebar-footer">
           <button
             type="button"
-            className="sb-sidebar-action sb-sidebar-collapse-btn"
+            className="sb-sidebar-toggle-btn"
             onClick={toggleSidebarCollapsed}
             aria-expanded={!sidebarCollapsed}
             title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <span className="sb-sidebar-action-icon">
-              {sidebarCollapsed ? <ChevronsRight size={18} strokeWidth={2.2} /> : <ChevronsLeft size={18} strokeWidth={2.2} />}
-            </span>
-            <span className="sb-sidebar-item-label">{sidebarCollapsed ? "Expand" : "Collapse"}</span>
+            {sidebarCollapsed ? <ChevronsRight size={18} strokeWidth={2.4} /> : <ChevronsLeft size={18} strokeWidth={2.4} />}
           </button>
         </div>
       </aside>

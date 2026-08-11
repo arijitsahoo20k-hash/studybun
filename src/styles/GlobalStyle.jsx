@@ -313,15 +313,14 @@ export default function GlobalStyle() {
       .sb-sidebar-item-icon { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 22px; }
       .sb-sidebar-item-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-      .sb-sidebar-footer { flex: 0 0 auto; padding: 10px 2px 0; margin-top: 8px; border-top: 1px solid var(--mascot-outline); }
-      .sb-sidebar-action {
-        width: 100%; min-height: 42px; display: flex; align-items: center; gap: 11px; padding: 9px 11px;
-        border: 2px solid transparent; border-radius: 13px; background: transparent; color: var(--mascot-ink);
-        font-family: var(--font-body); font-size: 13px; font-weight: 800; cursor: pointer;
-        transition: background .15s ease, transform .15s ease, border-color .15s ease;
+      .sb-sidebar-footer { flex: 0 0 auto; padding: 10px 2px 0; margin-top: 8px; border-top: 1px solid var(--mascot-outline); display: flex; justify-content: center; }
+      .sb-sidebar-toggle-btn {
+        width: 36px; height: 36px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+        border: 2px solid var(--mascot-outline); border-radius: 10px; background: transparent; color: var(--mascot-ink);
+        cursor: pointer; transition: background .15s ease, transform .15s ease, border-color .15s ease;
       }
-      .sb-sidebar-action:hover { background: var(--mascot-inner); transform: translateX(2px); }
-      .sb-sidebar-action-icon { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 22px; }
+      .sb-sidebar-toggle-btn:hover { background: var(--mascot-inner); transform: translateY(-1px); }
+      .sb-sidebar-toggle-btn:active { transform: translateY(0); }
 
       /* ===== collapsible sidebar (icons-only rail) =====
          Toggled from App.jsx's sidebarCollapsed state (persisted to
@@ -333,8 +332,7 @@ export default function GlobalStyle() {
       .sb-sidebar-collapsed .sb-sidebar-brand { justify-content: center; padding-left: 0; padding-right: 0; }
       .sb-sidebar-collapsed .sb-sidebar-brand-copy,
       .sb-sidebar-collapsed .sb-sidebar-item-label { display: none; }
-      .sb-sidebar-collapsed .sb-sidebar-item,
-      .sb-sidebar-collapsed .sb-sidebar-action {
+      .sb-sidebar-collapsed .sb-sidebar-item {
         justify-content: center; gap: 0; padding-left: 0; padding-right: 0;
       }
       .sb-sidebar-collapsed .sb-sidebar-item:hover:not(.active),
