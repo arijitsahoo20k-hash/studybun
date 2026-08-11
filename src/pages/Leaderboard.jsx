@@ -42,9 +42,12 @@ export default function LeaderboardPage(p) {
   return (
     <div className="sb-page">
       <Card className="sb-hero" washi>
-        <div>
+        <div className="sb-hero-copy">
           <div className="sb-hero-greet"><Crown size={22} style={{ marginRight: 6, verticalAlign: "-3px" }} />Leaderboard</div>
           <div className="sb-hero-line">Top 20 study buddies, ranked by Study Score ✨</div>
+        </div>
+        <div className="sb-hero-mascot-wrap">
+          <Mascot species={p.mascot} mood="happy" size={68} />
         </div>
         <div className="sb-lb-live-badge"><span className="sb-lb-live-dot" />Live</div>
       </Card>

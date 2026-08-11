@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { FolderClock, Plus, X, Star, Trash2, Archive, Pencil, RotateCcw, AlertTriangle, Sparkles } from "lucide-react";
+import { FolderClock, Plus, X, Star, Trash2, Archive, Pencil, RotateCcw, AlertTriangle, Sparkles, Layers } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState, ProgressRing } from "../components/ui";
+import Mascot from "../components/Mascot";
 import { todayIST, daysAgoIST, formatISTCalendarDate, formatISTTimestamp, tsToISTDateStr, daysBetweenDateStrs } from "../lib/dateIST";
 
 const SUBJECTS = ["Physics", "Chemistry", "Maths", "Other"];
@@ -187,9 +188,16 @@ export default function BacklogPage(p) {
   return (
     <div className="sb-page">
       <Card className="sb-hero" washi>
-        <div>
+        <div className="sb-hero-copy">
           <div className="sb-hero-greet">Backlog</div>
           <div className="sb-hero-line" style={overdueItems.length > 0 ? { color: "#C0435A" } : undefined}>{heroLine}</div>
+        </div>
+        <div className="sb-hero-stats">
+          <div className="sb-hero-stat"><Layers size={15} /><b>{active.length}</b><span>open</span></div>
+          <div className={`sb-hero-stat${overdueItems.length > 0 ? " is-warn" : ""}`}><AlertTriangle size={15} /><b>{overdueItems.length}</b><span>overdue</span></div>
+        </div>
+        <div className="sb-hero-mascot-wrap">
+          <Mascot species={p.mascot} mood={overdueItems.length > 0 ? "concerned" : "happy"} size={68} />
         </div>
       </Card>
 

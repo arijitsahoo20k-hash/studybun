@@ -397,27 +397,47 @@ export default function GlobalStyle() {
       .sb-page-transition { display: flex; justify-content: center; width: 100%; }
       .sb-page { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: clamp(680px, 92vw, 1480px); }
 
+      /* align-items: flex-start (not center) is deliberate -- the washi
+         tape sticker sits pinned to the card's top-left corner, and on
+         short-copy pages (Backlog, Leaderboard) center-aligning a taller
+         row (driven by the mascot/badge on the right) used to shove the
+         greet text down the card, stranding it far below the tape with a
+         dead gap in between. Starting the copy block at the top keeps it
+         glued under the tape; the right-side item (mascot/badge/stats)
+         self-centers instead so it still sits mid-height next to the text. */
       .sb-hero {
         position: relative;
-        display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+        display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+        min-height: 96px;
       }
-      /* Two soft color blobs behind the hero copy -- background-clip keeps
-         them contained to the card's own rounded corners (via
-         border-radius: inherit below) without needing overflow: hidden on
-         .sb-hero itself, which would otherwise clip the washi-tape sticker
-         (.sb-washi, positioned partly above the card's top edge). Only
-         ::after is used here (not ::before) because .sb-paper::before
-         already owns that pseudo-element on this same card for its base
-         paper texture -- claiming ::before too would silently drop one of
-         the two. */
+      .sb-hero > *:not(.sb-hero-copy) { align-self: center; }
+      /* Two soft color blobs plus a faint scattered sparkle field behind
+         the hero copy -- background-clip keeps them contained to the
+         card's own rounded corners (via border-radius: inherit below)
+         without needing overflow: hidden on .sb-hero itself, which would
+         otherwise clip the washi-tape sticker (.sb-washi, positioned
+         partly above the card's top edge). Only ::after is used here (not
+         ::before) because .sb-paper::before already owns that
+         pseudo-element on this same card for its base paper texture --
+         claiming ::before too would silently drop one of the two. The
+         sparkle field exists so the wide stretch of card between the copy
+         and whatever sits on the right (mascot, badge, stat chips) reads
+         as an intentional airy backdrop rather than empty leftover space,
+         even on pages where that right-hand content is small or absent. */
       .sb-hero::after {
         content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
         border-radius: inherit;
         background:
           radial-gradient(220px 220px at 104% -16%, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 72%),
-          radial-gradient(170px 170px at -4% 130%, color-mix(in srgb, var(--p2) 26%, transparent) 0%, transparent 72%);
+          radial-gradient(170px 170px at -4% 130%, color-mix(in srgb, var(--p2) 26%, transparent) 0%, transparent 72%),
+          radial-gradient(circle, color-mix(in srgb, var(--outline) 55%, transparent) 1.6px, transparent 1.6px);
+        background-size: auto, auto, 34px 34px;
+        background-position: 0 0, 0 0, 10px 12px;
+        opacity: 1;
+        mask-image: radial-gradient(ellipse 60% 100% at 62% 50%, black 0%, transparent 78%);
       }
       .sb-hero > * { position: relative; z-index: 1; }
+      .sb-hero-copy { min-width: 0; }
       .sb-hero-greet {
         font-family: var(--font-display); font-weight: 800; letter-spacing: .1px;
         font-size: clamp(20px, 2.6vw, 25px);
@@ -428,13 +448,30 @@ export default function GlobalStyle() {
       /* Circular "sticker platform" behind the hero mascot -- same visual
          language as .sb-icon-badge / pin-note borders (outline + flat
          drop shadow) rather than a bare floating character. */
-      .sb-hero-mascot-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 8px; }
+      .sb-hero-mascot-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 8px; flex-shrink: 0; }
       .sb-hero-mascot-wrap::before {
         content: ""; position: absolute; inset: 2px; border-radius: 50%;
         background: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--mascot-inner) 92%, white 8%), var(--mascot-inner));
         border: 2.5px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline);
       }
       .sb-hero-mascot-wrap > * { position: relative; z-index: 1; }
+
+      /* Small stat pills that fill the gap between the hero copy and
+         whatever sits on the far right (mascot/badge), turning what used
+         to be dead horizontal space into a quick at-a-glance readout.
+         Used on Dashboard (streak / backlog / revisions) and reused by any
+         other hero that has 2-3 numbers worth surfacing. */
+      .sb-hero-stats { display: flex; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+      .sb-hero-stat {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+        min-width: 64px; padding: 8px 12px; border-radius: 16px;
+        background: var(--card); border: 2px solid var(--mascot-outline); box-shadow: 2px 2px 0 var(--mascot-outline);
+      }
+      .sb-hero-stat svg { color: var(--accent); margin-bottom: 1px; }
+      .sb-hero-stat b { font-family: var(--font-display); font-size: 16px; line-height: 1.1; }
+      .sb-hero-stat span { font-size: 10.5px; font-weight: 700; color: var(--muted); }
+      .sb-hero-stat.is-warn { border-color: #C0435A; }
+      .sb-hero-stat.is-warn svg, .sb-hero-stat.is-warn b { color: #C0435A; }
 
       .sb-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 18px; }
       .sb-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 18px; }

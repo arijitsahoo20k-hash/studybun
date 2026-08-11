@@ -57,10 +57,15 @@ export default function Dashboard(p) {
       <div className="sb-dash-layout">
         <div className="sb-dash-main">
           <Card className="sb-hero" washi paper glass>
-            <div>
+            <div className="sb-hero-copy">
               <div className="sb-hero-greet">{greeting}, {p.profile.name || "friend"} 🌸</div>
               <div className="sb-hero-line sb-quote">{line}</div>
               <div className="sb-hero-meta">{formatISTCalendarDate(todayStr, { weekday: "long", month: "long", day: "numeric" })} · {p.profile.exam}</div>
+            </div>
+            <div className="sb-hero-stats">
+              <div className="sb-hero-stat"><Flame size={15} /><b>{p.streak}</b><span>streak</span></div>
+              <div className="sb-hero-stat"><BookOpen size={15} /><b>{backlogOpen}</b><span>backlog</span></div>
+              <div className="sb-hero-stat"><Clock3 size={15} /><b>{revisionsDue}</b><span>due</span></div>
             </div>
             <div className="sb-hero-mascot-wrap">
               <Mascot species={p.mascot} mood={mascotMood} energy={mascotEnergyLevel} size={84} pettable />
