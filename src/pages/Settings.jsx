@@ -9,6 +9,7 @@ import { hasUsableKeys, getModelPreference, setModelPreference } from "../servic
 import { MODEL_FAMILIES } from "../services/geminiModels";
 import FeatureGuideGrid from "./settings/FeatureGuideGrid";
 import SmartNotificationsCard from "../components/SmartNotificationsCard";
+import BackgroundCard from "./settings/BackgroundCard";
 
 function SmartBuddyCard() {
   const [ready] = useState(() => hasUsableKeys());
@@ -88,6 +89,7 @@ function DataBackupCard({ exportBackup, importBackup }) {
 const TABS = [
   { id: "profile", emoji: "👤", label: "Profile & account", sub: "You, your goals" },
   { id: "look", emoji: "🎀", label: "Mascot & theme", sub: "Make it yours" },
+  { id: "background", emoji: "🖼️", label: "Custom background", sub: "Paste your own image" },
   { id: "buddy", emoji: "🧠", label: "AI study buddy", sub: "Smart chat setup" },
   { id: "notify", emoji: "🔔", label: "Smart notifications", sub: "3x/day AI pushes" },
   { id: "data", emoji: "💾", label: "Data & backup", sub: "Export / import" },
@@ -178,6 +180,8 @@ export default function SettingsPage(p) {
               </Card>
             </>
           )}
+
+          {tab === "background" && <BackgroundCard />}
 
           {tab === "buddy" && <SmartBuddyCard />}
 

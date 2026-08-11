@@ -24,6 +24,7 @@ import { reactionMood, mascotEnergy, mascotTheme, MASCOTS } from "./data/mascots
 import PWAPrompt from "./components/PWAPrompt";
 import { Confetti, LoadingScreen, DecorLayer } from "./components/ui";
 import GlobalStyle from "./styles/GlobalStyle";
+import CustomBackgroundLayer from "./components/CustomBackgroundLayer";
 
 // Every page below is its own JS chunk, fetched only the moment it's
 // actually navigated to instead of all being parsed/executed up front --
@@ -972,6 +973,7 @@ export default function App() {
   return (
     <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"}>
       <GlobalStyle />
+      <CustomBackgroundLayer />
       <DecorLayer theme={theme} />
       <PWAPrompt />
       {celebrateType && <Confetti type={celebrateType} theme={theme} />}

@@ -81,6 +81,52 @@ export default function GlobalStyle() {
         transition: background-color 1.5s ease;
       }
 
+      /* ===== custom background image (Settings > Custom background) =====
+         Sits behind literally everything: <CustomBackgroundLayer/> is a
+         fixed, negative-z-index layer, and the moment it's active we drop
+         .sb-app's own opaque background (via the body class it toggles) so
+         the photo shows through the gaps around the sidebar/cards — those
+         keep their normal solid backgrounds untouched. Nothing else on any
+         page changes. */
+      .sb-custom-bg-layer { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+      .sb-custom-bg-img {
+        position: absolute; inset: -24px; /* bleed past the edges so blur never reveals a border */
+        background-size: cover; background-position: center; background-repeat: no-repeat;
+        transition: filter .25s ease;
+      }
+      .sb-custom-bg-overlay { position: absolute; inset: 0; background: #000; transition: opacity .25s ease; }
+      body.sb-custom-bg-active .sb-app { background-color: transparent; background-image: none; }
+
+      .sb-bg-url-row { display: flex; gap: 10px; align-items: stretch; }
+      .sb-bg-url-row .sb-input { flex: 1 1 auto; min-width: 0; }
+      .sb-bg-status-row { margin-top: 8px; font-size: 12px; font-weight: 700; }
+      .sb-bg-status-ok { display: inline-flex; align-items: center; gap: 6px; color: #4c9a6a; }
+      .sb-bg-status-error { display: inline-flex; align-items: center; gap: 6px; color: #e0736b; }
+      .sb-bg-preview {
+        margin-top: 16px; height: 120px; border-radius: 16px; border: 2px solid var(--mascot-outline);
+        background-size: cover; background-position: center; position: relative; overflow: hidden;
+        box-shadow: 3px 3px 0 var(--mascot-outline);
+      }
+      .sb-bg-preview-dim { position: absolute; inset: 0; background: #000; }
+      .sb-bg-sliders { margin-top: 16px; display: grid; gap: 14px; }
+      .sb-bg-slider-row { display: flex; flex-direction: column; gap: 6px; }
+      .sb-bg-slider-label {
+        display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; color: var(--muted);
+      }
+      .sb-bg-slider-value { margin-left: auto; color: var(--mascot-ink); font-weight: 700; }
+      .sb-bg-range {
+        -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px;
+        background: var(--mascot-inner); border: 1.5px solid var(--mascot-outline); cursor: pointer;
+      }
+      .sb-bg-range::-webkit-slider-thumb {
+        -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%;
+        background: var(--accent); border: 2px solid var(--mascot-outline); cursor: pointer; margin-top: -1px;
+      }
+      .sb-bg-range::-moz-range-thumb {
+        width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid var(--mascot-outline); cursor: pointer;
+      }
+      .sb-bg-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+
       /* kawaii custom cursors for anything interactive */
       .sb-btn, .sb-chip, .sb-nav-item, .sb-bottom-item, .sb-clickable, .sb-checkbox,
       .sb-theme-chip, .sb-icon-btn, .sb-mobile-toggle, select.sb-input, .sb-mascot-pick, .sb-theme-swatch {
@@ -622,6 +668,43 @@ export default function GlobalStyle() {
         .sb-track-timeline-actions .sb-btn { width: 100%; justify-content: center; }
         .sb-track-today-chips { flex-wrap: wrap; }
         .sb-track-today-chip { flex: 1 1 calc(50% - 4px); }
+      }
+
+      /* ---------- Backlog: side-by-side layout + pulse + overdue spotlight ---------- */
+      .sb-backlog-layout { display: flex; flex-direction: column; gap: 18px; align-items: start; }
+      .sb-backlog-left, .sb-backlog-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; width: 100%; }
+      @media (min-width: 900px) {
+        .sb-backlog-layout { display: grid; grid-template-columns: minmax(300px, 360px) 1fr; gap: 20px; align-items: start; }
+        .sb-backlog-left { position: sticky; top: 18px; }
+      }
+      @media (min-width: 1400px) {
+        .sb-backlog-layout { grid-template-columns: minmax(340px, 400px) 1fr; gap: 26px; }
+      }
+
+      .sb-backlog-pulse { display: flex; align-items: center; gap: 16px; }
+      .sb-backlog-ring-wrap { flex-shrink: 0; text-align: center; }
+      .sb-backlog-ring-label { font-size: 9.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
+      .sb-backlog-pulse-nums { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+      .sb-backlog-stat { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 7px 12px; background: var(--mascot-inner); border: 2px solid var(--mascot-outline); border-radius: 12px; }
+      .sb-backlog-stat-label { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+      .sb-backlog-stat-num { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--mascot-ink); }
+      .sb-backlog-stat.is-warn { background: #FFD9DF; border-color: #C0435A; }
+      .sb-backlog-stat.is-warn .sb-backlog-stat-num { color: #7A2436; }
+
+      /* Overdue spotlight -- deliberately loud (red border/wash) since its whole
+         job is to pull the eye before the student adds anything new to pile on
+         top of what's already late. */
+      .sb-overdue-card { border-color: #C0435A; background: color-mix(in srgb, #FFD9DF 32%, var(--card) 68%); }
+      .sb-overdue-card .sb-icon-badge { background: #FFD9DF; color: #7A2436; border-color: #C0435A; }
+      .sb-overdue-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 6px; border-radius: 14px; background: var(--bg); border-left: 4px solid #C0435A; }
+      .sb-overdue-row:last-child { margin-bottom: 0; }
+      .sb-overdue-info { flex: 1; min-width: 0; font-size: 13px; }
+      .sb-overdue-days { flex-shrink: 0; font-size: 10px; font-weight: 800; color: #7A2436; background: #FFD9DF; border: 1.5px solid #C0435A; border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
+      .sb-overdue-more { font-size: 11.5px; font-weight: 700; color: var(--muted); text-align: center; margin-top: 6px; }
+
+      @media (max-width: 520px) {
+        .sb-backlog-pulse { flex-direction: column; }
+        .sb-backlog-pulse-nums { width: 100%; }
       }
 
       .sb-timer-card { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 34px; }
