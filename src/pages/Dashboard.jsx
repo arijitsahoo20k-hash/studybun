@@ -62,7 +62,7 @@ export default function Dashboard(p) {
               <div className="sb-hero-line sb-quote">{line}</div>
               <div className="sb-hero-meta">{formatISTCalendarDate(todayStr, { weekday: "long", month: "long", day: "numeric" })} · {p.profile.exam}</div>
             </div>
-            <div style={{ position: "relative", display: "inline-flex" }}>
+            <div className="sb-hero-mascot-wrap">
               <Mascot species={p.mascot} mood={mascotMood} energy={mascotEnergyLevel} size={84} pettable />
             </div>
           </Card>
@@ -105,17 +105,19 @@ export default function Dashboard(p) {
           <div className="sb-grid-2">
             <Card paper>
               <SectionTitle icon={TrendingUp}>Weekly study hours</SectionTitle>
-              <ResponsiveContainer width="100%" height={window.innerWidth >= 1200 ? 260 : 190}>
-                <LineChart data={p.weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
-                  <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />
-                  <YAxis stroke="var(--muted)" fontSize={12} />
-                  <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} />
-                  <Legend wrapperStyle={{ fontSize: 11.5 }} />
-                  <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--outline)" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="sb-dash-chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={p.weeklyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
+                    <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />
+                    <YAxis stroke="var(--muted)" fontSize={12} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} />
+                    <Legend wrapperStyle={{ fontSize: 11.5 }} />
+                    <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--outline)" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </Card>
             <Card paper>
               <SectionTitle icon={BookOpen}>Subject split</SectionTitle>

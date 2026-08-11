@@ -397,11 +397,44 @@ export default function GlobalStyle() {
       .sb-page-transition { display: flex; justify-content: center; width: 100%; }
       .sb-page { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: clamp(680px, 92vw, 1480px); }
 
-      .sb-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-      .sb-hero-greet { font-family: var(--font-display); font-size: 23px; font-weight: 700; }
+      .sb-hero {
+        position: relative;
+        display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      }
+      /* Two soft color blobs behind the hero copy -- background-clip keeps
+         them contained to the card's own rounded corners (via
+         border-radius: inherit below) without needing overflow: hidden on
+         .sb-hero itself, which would otherwise clip the washi-tape sticker
+         (.sb-washi, positioned partly above the card's top edge). Only
+         ::after is used here (not ::before) because .sb-paper::before
+         already owns that pseudo-element on this same card for its base
+         paper texture -- claiming ::before too would silently drop one of
+         the two. */
+      .sb-hero::after {
+        content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+        border-radius: inherit;
+        background:
+          radial-gradient(220px 220px at 104% -16%, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 72%),
+          radial-gradient(170px 170px at -4% 130%, color-mix(in srgb, var(--p2) 26%, transparent) 0%, transparent 72%);
+      }
+      .sb-hero > * { position: relative; z-index: 1; }
+      .sb-hero-greet {
+        font-family: var(--font-display); font-weight: 800; letter-spacing: .1px;
+        font-size: clamp(20px, 2.6vw, 25px);
+      }
       .sb-hero-line { color: var(--muted); margin-top: 4px; font-weight: 700; font-size: 14px; max-width: 420px; }
       .sb-hero-meta { font-size: 12px; color: var(--muted); margin-top: 8px; font-weight: 700; }
       .sb-hero-nudge { margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--muted); background: var(--mascot-inner); display: inline-block; padding: 6px 12px; border-radius: 12px; border: 1.5px dashed var(--mascot-outline); }
+      /* Circular "sticker platform" behind the hero mascot -- same visual
+         language as .sb-icon-badge / pin-note borders (outline + flat
+         drop shadow) rather than a bare floating character. */
+      .sb-hero-mascot-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 8px; }
+      .sb-hero-mascot-wrap::before {
+        content: ""; position: absolute; inset: 2px; border-radius: 50%;
+        background: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--mascot-inner) 92%, white 8%), var(--mascot-inner));
+        border: 2.5px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline);
+      }
+      .sb-hero-mascot-wrap > * { position: relative; z-index: 1; }
 
       .sb-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 18px; }
       .sb-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 18px; }
@@ -410,15 +443,53 @@ export default function GlobalStyle() {
       /* ===== dashboard two-column layout: main stack + pinboard ===== */
       .sb-dash-layout { display: grid; grid-template-columns: 2.1fr 1fr; gap: 20px; align-items: stretch; }
       .sb-dash-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+      /* Between ~900-1250px (typical tablet landscape / laptop, and exactly
+         the range a lot of desks land in once the sidebar is collapsed) a
+         flat 2.1fr:1fr split leaves the pinboard column too narrow for its
+         own content -- ease it back towards 1:1 here before the >=1200px
+         "big screen" tier further down takes over. */
+      @media (min-width: 900px) and (max-width: 1249px) {
+        .sb-dash-layout { grid-template-columns: 1.5fr 1fr; }
+      }
       @media (max-width: 880px) { .sb-dash-layout { grid-template-columns: 1fr; } }
+
+      /* ===== weekly-hours chart: fluid height =====
+         Used to be a hardcoded height read once from window.innerWidth,
+         which only reacts to the *browser viewport* resizing -- not to the
+         chart's own card getting wider or narrower for any other reason
+         (grid reflow, the sidebar collapsing/expanding, etc). That mismatch
+         is exactly what made the card look awkward on tablets: collapsing
+         the sidebar changes the card's actual width without changing
+         window.innerWidth at all, so the chart kept the old height glued
+         to a now-wrong width. aspect-ratio ties height to the card's own
+         current width instead, so it re-proportions itself continuously no
+         matter what caused the resize; min/max-height plus the breakpoints
+         below just keep it from getting too squat or too tall at either
+         extreme. */
+      .sb-dash-chart { width: 100%; aspect-ratio: 2.15 / 1; min-height: 170px; max-height: 230px; }
+      @media (min-width: 900px) { .sb-dash-chart { aspect-ratio: 2.5 / 1; max-height: 260px; } }
+      @media (min-width: 1200px) { .sb-dash-chart { aspect-ratio: 2.9 / 1; max-height: 290px; } }
 
       .sb-pinboard {
         background: color-mix(in srgb, var(--soft) 45%, var(--card) 55%);
         border: 3px solid var(--mascot-outline); border-radius: 22px; padding: 22px 20px;
         box-shadow: 6px 6px 0 var(--mascot-outline); position: relative;
         display: flex; flex-direction: column; min-width: 0; height: 100%;
+        /* Makes the cqi units below measure THIS column's actual rendered
+           width, not the viewport -- so pin text sizes itself off the same
+           thing that determines whether it has room, which stays correct
+           whether the column got narrower/wider from a viewport resize, a
+           dashboard grid breakpoint, or the sidebar collapsing/expanding. */
+        container-type: inline-size;
       }
-      .sb-pinboard-title { font-family: var(--font-hand); font-size: 19px; font-weight: 700; color: var(--mascot-ink); text-align: center; margin-bottom: 22px; flex: 0 0 auto; }
+      /* Fluid pin text: two-point clamp()s (a + b*cqi, 1cqi = 1% of the
+         pinboard's own width) instead of fixed px per breakpoint -- scales
+         continuously with however wide the column actually is right now.
+         This also quietly retires the old "tablet landscape" special case
+         further down (a wide viewport with a narrow pinboard column used
+         to need its own override tier); a container query needs no such
+         special case since it was always measuring the wrong thing. */
+      .sb-pinboard-title { font-family: var(--font-hand); font-size: clamp(15px, 9.5px + 2.5cqi, 21px); font-weight: 700; color: var(--mascot-ink); text-align: center; margin-bottom: 22px; flex: 0 0 auto; }
       .sb-pin-note {
         border: 2.5px solid var(--mascot-outline); border-radius: 14px; padding: 14px 16px;
         box-shadow: 4px 4px 0 var(--mascot-outline); position: relative; margin: 0 6px 26px;
@@ -437,9 +508,10 @@ export default function GlobalStyle() {
       .sb-pin-note:nth-of-type(even) { transform: rotate(-2.2deg); }
       .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(2.2deg) translate(-2px, -3px); }
       .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-2.2deg) translate(-2px, -3px); }
-      .sb-pin-quote { background: var(--mascot-body); font-family: var(--font-hand); font-size: 17px; line-height: 1.4; font-weight: 700; flex: 1.4 1 0; }
-      .sb-pin-label { font-family: var(--font-hand); font-size: 16.5px; font-weight: 700; opacity: .85; }
-      .sb-pin-value { font-family: var(--font-display); font-size: 24px; font-weight: 800; margin-top: 3px; }
+      .sb-pin-quote { background: var(--mascot-body); font-family: var(--font-hand); font-size: clamp(14px, 9.6px + 2cqi, 18.5px); line-height: 1.4; font-weight: 700; flex: 1.4 1 0; }
+      .sb-pin-label { font-family: var(--font-hand); font-size: clamp(13.5px, 9.1px + 2cqi, 18px); font-weight: 700; opacity: .85; }
+      .sb-pin-value { font-family: var(--font-display); font-size: clamp(19px, 10.2px + 4cqi, 28px); font-weight: 800; margin-top: 3px; }
+
 
       /* ===== bigger cards on wide/PC screens =====
          On large monitors the dashboard's fixed-size cards left a big empty
@@ -465,29 +537,28 @@ export default function GlobalStyle() {
          where the pinboard column has tons of spare height. On tablet
          widths the column is narrower and shorter, so those same sizes
          made each pin note stretch too tall and overflow past the main
-         column. Scale the pinboard back down here so the four notes
-         fill the available height exactly, with no leftover gap and no
-         overflow. */
+         column. Scale the pinboard spacing back down here so the four
+         notes fill the available height exactly, with no leftover gap and
+         no overflow. (Font sizes no longer need a special case here --
+         .sb-pinboard's container-type above already shrinks them to match
+         this column's real width on its own.) */
       @media (min-width: 1200px) and (max-width: 1499px) {
         .sb-pinboard { padding: 20px 18px; }
-        .sb-pinboard-title { font-size: 17px; margin-bottom: 14px; }
+        .sb-pinboard-title { margin-bottom: 14px; }
         .sb-pin-note { padding: 13px 15px; margin: 0 5px 18px; }
         .sb-pin-note:last-child { margin-bottom: 5px; }
-        .sb-pin-quote { font-size: 16.5px; line-height: 1.35; }
-        .sb-pin-label { font-size: 16px; }
-        .sb-pin-value { font-size: 23px; margin-top: 3px; }
+        .sb-pin-quote { line-height: 1.35; }
       }
       /* Mobile pinboard: the desktop look leans on a fairly strong alternating
          rotate() per note plus generous margins to keep the rotated corners
          clear of each other. At phone widths there isn't enough room for
          that -- the rotation makes notes visually poke into their neighbours
          and the board reads as a jumbled mess. Cut the rotation down to a
-         subtle tilt, tighten the shadow/margin math to match, and shrink the
-         text so a longer label can't wrap and grow a note taller than its
-         neighbour expects. */
+         subtle tilt and tighten the shadow/margin math to match. (Text size
+         is handled by the container query above.) */
       @media (max-width: 640px) {
         .sb-pinboard { padding: 16px 14px; }
-        .sb-pinboard-title { font-size: 15px; margin-bottom: 10px; }
+        .sb-pinboard-title { margin-bottom: 10px; }
         .sb-pin-note { padding: 11px 13px; margin: 0 3px 14px; border-radius: 12px; }
         .sb-pin-note:last-child { margin-bottom: 3px; }
         .sb-pin-note::after { width: 10px; height: 10px; top: -6px; }
@@ -495,9 +566,6 @@ export default function GlobalStyle() {
         .sb-pin-note:nth-of-type(even) { transform: rotate(-1deg); }
         .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(1deg) translate(-1px, -2px); }
         .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-1deg) translate(-1px, -2px); }
-        .sb-pin-quote { font-size: 14.5px; line-height: 1.3; }
-        .sb-pin-label { font-size: 14px; }
-        .sb-pin-value { font-size: 20px; margin-top: 2px; }
       }
       /* Pinboard collapse fix (<=880px, phone + tablet-portrait): below this
          width .sb-dash-layout drops to one column, so the pinboard is no
