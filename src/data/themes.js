@@ -100,6 +100,38 @@ export const THEMES = {
     dot: "rgba(33,29,24,0.08)", emoji: "💿", y2k: true,
     decor: ["floppyDisk", "chromeBubble", "cdDisc", "retroMonitor"],
   },
+  "Terracotta Mesa": {
+    bg: "#FBF3EA", card: "#FFFBF5", outline: "#5C4432", ink: "#4A3524", muted: "#93795F",
+    accent: "#C1653D", accent2: "#7C9473", soft: "#E8C9A0",
+    palette: ["#E3B48C", "#A9C29A", "#F0D9A8", "#D98C6B", "#C7D6BE", "#EFE1C4"],
+    mascotFill: "#E8C9A0", mascotInner: "#FBEFDD", mascotBlush: "#D9825C",
+    dot: "rgba(92,68,50,0.06)", emoji: "🌵",
+    decor: ["cactus", "desertSun", "cactus", "sparkleStar"],
+  },
+  "Marigold Mela": {
+    bg: "#FFF8ED", card: "#FFFDF7", outline: "#6B3220", ink: "#5A2A1C", muted: "#9C7458",
+    accent: "#E8862E", accent2: "#C23B6B", soft: "#F6C244",
+    palette: ["#F3A94E", "#E45C86", "#F7D77A", "#D97A3E", "#F0A8C2", "#FBE7B8"],
+    mascotFill: "#F6C97A", mascotInner: "#FFF3D9", mascotBlush: "#E8749A",
+    dot: "rgba(107,50,32,0.06)", emoji: "🪔",
+    decor: ["marigoldFlower", "diyaLamp", "marigoldFlower", "sparkleStar"],
+  },
+  "Citrus Soda": {
+    bg: "#FAFCEF", card: "#FFFFFA", outline: "#4A5C2E", ink: "#3D4A26", muted: "#838F63",
+    accent: "#F2B705", accent2: "#F0883D", soft: "#C9E267",
+    palette: ["#F7D34E", "#F2A559", "#D9EC8C", "#F0C93E", "#BFE0A0", "#FCE8A8"],
+    mascotFill: "#F5E28A", mascotInner: "#FFFBE0", mascotBlush: "#F0A559",
+    dot: "rgba(74,92,46,0.06)", emoji: "🍋",
+    decor: ["lemonSlice", "mintSprig", "lemonSlice", "sparkleStar"],
+  },
+  "Harvest Ember": {
+    bg: "#FBF3E9", card: "#FFFAF2", outline: "#4A2E1E", ink: "#3D2617", muted: "#8C7360",
+    accent: "#B5541F", accent2: "#C98A2E", soft: "#E8A857",
+    palette: ["#D97C3E", "#E8B85C", "#7A8F4E", "#C4632E", "#EAD196", "#9C6B3A"],
+    mascotFill: "#E3B072", mascotInner: "#FBEEDA", mascotBlush: "#D97448",
+    dot: "rgba(74,46,30,0.06)", emoji: "🍂",
+    decor: ["mapleLeaf", "acorn", "mapleLeaf", "sparkleStar"],
+  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the

@@ -527,6 +527,150 @@ export function RetroMonitor() {
   );
 }
 
+/* ---------- desert (Terracotta Mesa) ---------- */
+
+export function Cactus() {
+  return (
+    <Svg>
+      <path
+        d="M20 44 V22 C20 22 12 22 12 16 C12 12 16 10 19 13 C19 13 19 8 24 8 C29 8 29 13 29 13 C32 10 36 12 36 16 C36 22 28 22 28 22 V44 Z"
+        fill={ACCENT2}
+        stroke={OUTLINE}
+        strokeWidth="1.6"
+        {...strokeCap}
+      />
+      <circle cx="24" cy="9" r="2.6" fill={ACCENT} stroke={OUTLINE} strokeWidth="1" />
+      <path d="M18 30 v8 M24 26 v14 M30 30 v8" stroke={OUTLINE} strokeWidth="1" opacity="0.35" {...strokeCap} />
+      <rect x="12" y="40" width="24" height="5" rx="2.5" fill={SOFT} stroke={OUTLINE} strokeWidth="1.4" />
+    </Svg>
+  );
+}
+
+export function DesertSun() {
+  return (
+    <Svg>
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
+        <path key={a} d="M24 8 L24 2" stroke={ACCENT2} strokeWidth="2.2" strokeLinecap="round" transform={`rotate(${a} 24 24)`} />
+      ))}
+      <circle cx="24" cy="24" r="10" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.6" />
+      <path d="M18 22 q2 2 4 0 M26 22 q2 2 4 0" fill="none" stroke={OUTLINE} strokeWidth="1.2" {...strokeCap} />
+      <path d="M19 27 q5 3 10 0" fill="none" stroke={OUTLINE} strokeWidth="1.1" {...strokeCap} />
+      <circle cx="17" cy="25" r="1.4" fill={SOFT} opacity="0.7" />
+      <circle cx="31" cy="25" r="1.4" fill={SOFT} opacity="0.7" />
+    </Svg>
+  );
+}
+
+/* ---------- festival (Marigold Mela) ---------- */
+
+export function MarigoldFlower() {
+  const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+  return (
+    <Svg>
+      {angles.map((a) => (
+        <path
+          key={a}
+          d="M24 24 C22 18 22 12 24 6 C26 12 26 18 24 24 Z"
+          fill={ACCENT}
+          stroke={OUTLINE}
+          strokeWidth="1.2"
+          {...strokeCap}
+          transform={`rotate(${a} 24 24)`}
+        />
+      ))}
+      {angles.map((a) => (
+        <path
+          key={`i${a}`}
+          d="M24 22 C23 18 23 14 24 10 C25 14 25 18 24 22 Z"
+          fill={ACCENT2}
+          opacity="0.85"
+          transform={`rotate(${a + 22.5} 24 24)`}
+        />
+      ))}
+      <circle cx="24" cy="24" r="4" fill={SOFT} stroke={OUTLINE} strokeWidth="1.1" />
+    </Svg>
+  );
+}
+
+export function DiyaLamp() {
+  return (
+    <Svg>
+      <path
+        d="M8 30 C8 26 14 24 24 24 C34 24 40 26 40 30 C40 34 33 37 24 37 C15 37 8 34 8 30 Z"
+        fill={ACCENT2}
+        stroke={OUTLINE}
+        strokeWidth="1.6"
+        {...strokeCap}
+      />
+      <ellipse cx="24" cy="29.5" rx="12" ry="3.2" fill={SOFT} opacity="0.7" />
+      <path d="M24 24 C22 18 24 14 24 10 C24 14 26 18 24 24 Z" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.2" {...strokeCap} />
+      <path d="M24 16 C23 13 24 10 24 7" fill="none" stroke={ACCENT} strokeWidth="1.6" strokeLinecap="round" opacity="0.85" />
+      <circle cx="16" cy="31" r="1.1" fill={OUTLINE} opacity="0.4" />
+      <circle cx="32" cy="31" r="1.1" fill={OUTLINE} opacity="0.4" />
+    </Svg>
+  );
+}
+
+/* ---------- citrus (Citrus Soda) ---------- */
+
+export function LemonSlice() {
+  return (
+    <Svg>
+      <circle cx="24" cy="24" r="18" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.8" />
+      <circle cx="24" cy="24" r="13" fill={SOFT} stroke={OUTLINE} strokeWidth="1.3" />
+      {[0, 60, 120, 180, 240, 300].map((a) => (
+        <path key={a} d="M24 24 L24 12" stroke={ACCENT} strokeWidth="1.3" opacity="0.7" transform={`rotate(${a} 24 24)`} {...strokeCap} />
+      ))}
+      <circle cx="24" cy="24" r="2.6" fill="#fff" opacity="0.6" />
+    </Svg>
+  );
+}
+
+export function MintSprig() {
+  return (
+    <Svg>
+      <path d="M24 42 V10" stroke={OUTLINE} strokeWidth="1.8" {...strokeCap} />
+      <path d="M24 34 C18 33 14 29 14 24 C20 25 24 28 24 34 Z" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.3" {...strokeCap} />
+      <path d="M24 26 C30 25 34 21 34 16 C28 17 24 20 24 26 Z" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.3" {...strokeCap} />
+      <path d="M24 18 C19 17 16 14 16 10 C21 11 24 14 24 18 Z" fill={SOFT} stroke={OUTLINE} strokeWidth="1.2" {...strokeCap} />
+    </Svg>
+  );
+}
+
+/* ---------- autumn (Harvest Ember) ---------- */
+
+export function MapleLeaf() {
+  return (
+    <Svg>
+      <path
+        d="M24 6 L27 16 L36 12 L31 20 L40 22 L30 26 L34 36 L24 30 L24 42 L21 30 L14 36 L18 26 L8 22 L17 20 L12 12 L21 16 Z"
+        fill={ACCENT}
+        stroke={OUTLINE}
+        strokeWidth="1.5"
+        {...strokeCap}
+      />
+      <path d="M24 24 V38" stroke={OUTLINE} strokeWidth="1.2" opacity="0.5" {...strokeCap} />
+    </Svg>
+  );
+}
+
+export function Acorn() {
+  return (
+    <Svg>
+      <path d="M14 20 C14 12 34 12 34 20 C34 20 26 16 24 16 C22 16 14 20 14 20 Z" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.5" {...strokeCap} />
+      <path d="M13 19 q11 5 22 0" fill="none" stroke={OUTLINE} strokeWidth="1" opacity="0.4" {...strokeCap} />
+      <path
+        d="M16 21 C16 32 20 40 24 42 C28 40 32 32 32 21 C32 21 28 24 24 24 C20 24 16 21 16 21 Z"
+        fill={ACCENT}
+        stroke={OUTLINE}
+        strokeWidth="1.5"
+        {...strokeCap}
+      />
+      <path d="M24 8 q3 -3 6 -1" fill="none" stroke={OUTLINE} strokeWidth="1.4" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export const MOTIFS = {
   blossom: Blossom,
   blossomSprig: BlossomSprig,
@@ -556,4 +700,12 @@ export const MOTIFS = {
   cdDisc: CdDisc,
   chromeBubble: ChromeBubble,
   retroMonitor: RetroMonitor,
+  cactus: Cactus,
+  desertSun: DesertSun,
+  marigoldFlower: MarigoldFlower,
+  diyaLamp: DiyaLamp,
+  lemonSlice: LemonSlice,
+  mintSprig: MintSprig,
+  mapleLeaf: MapleLeaf,
+  acorn: Acorn,
 };
