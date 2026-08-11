@@ -18,23 +18,23 @@ export default function CommunityStyle() {
       }
 
       .sb-community-page { max-width: 1180px; margin: 0 auto; }
-      .sb-community-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
-      .sb-community-col-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 
-      /* ---- tablet: still stacked, but roomier and side card up top ---- */
+      /* ---- settings-style side toggle: one card at a time ---- */
+      .sb-community-shell { margin-top: 16px; }
+      .sb-community-content { gap: 0; }
+
+      /* Chat is now its own tab instead of sharing space with check-ins and
+         the feed, so it gets a noticeably bigger, roomier list. */
+      .sb-community-content .sb-chat-list { max-height: min(52vh, 420px); }
+      .sb-community-content .sb-post-list { gap: 16px; }
+
       @media (min-width: 641px) and (max-width: 1023px) {
-        .sb-community-grid { gap: 22px; }
-        .sb-community-col-side { order: -1; }
         .sb-community-stats { gap: 18px; }
-        .sb-chat-list { max-height: min(46vh, 460px); }
-        .sb-post-list { gap: 16px; }
+        .sb-community-content .sb-chat-list { max-height: min(56vh, 500px); }
       }
 
-      /* ---- desktop: two columns, sidebar pinned ---- */
       @media (min-width: 1024px) {
-        .sb-community-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; align-items: start; }
-        .sb-community-col-side { position: sticky; top: 18px; }
-        .sb-chat-list { max-height: min(50vh, 480px); }
+        .sb-community-content .sb-chat-list { max-height: min(62vh, 620px); }
       }
 
       /* ---------- check-ins list ---------- */
