@@ -426,7 +426,17 @@ export default function GlobalStyle() {
           radial-gradient(220px 220px at 104% -16%, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 72%),
           radial-gradient(170px 170px at -4% 130%, color-mix(in srgb, var(--p2) 26%, transparent) 0%, transparent 72%);
       }
-      .sb-hero > * { position: relative; z-index: 1; }
+      /* :not(.sb-washi) is deliberate -- this rule exists to lift the
+         hero's real content above the ::after gradient blobs, but .sb-washi
+         is also a direct child of .sb-hero (it's the first thing Card
+         renders inside the card, hero or not). Without the exclusion, this
+         rule's position: relative clobbers .sb-washi's position: absolute
+         (same specificity, later in source order wins), turning the
+         corner-pinned tape sticker into a normal in-flow flex item that
+         drifts into the middle of the card instead of sitting on the
+         border. .sb-washi keeps its own absolute positioning + z-index: 2
+         from its dedicated rule above, so it still layers correctly. */
+      .sb-hero > *:not(.sb-washi) { position: relative; z-index: 1; }
       .sb-hero-copy { min-width: 0; }
       .sb-hero-greet {
         font-family: var(--font-display); font-weight: 800; letter-spacing: .1px;
