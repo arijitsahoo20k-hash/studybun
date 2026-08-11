@@ -440,6 +440,19 @@ export default function GlobalStyle() {
       .sb-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 18px; }
       .sb-grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 14px; }
 
+      /* ===== dashboard two-column layout: main stack + pinboard ===== */
+      .sb-dash-layout { display: grid; grid-template-columns: 2.1fr 1fr; gap: 20px; align-items: stretch; }
+      .sb-dash-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+      /* Between ~900-1250px (typical tablet landscape / laptop, and exactly
+         the range a lot of desks land in once the sidebar is collapsed) a
+         flat 2.1fr:1fr split leaves the pinboard column too narrow for its
+         own content -- ease it back towards 1:1 here before the >=1200px
+         "big screen" tier further down takes over. */
+      @media (min-width: 900px) and (max-width: 1249px) {
+        .sb-dash-layout { grid-template-columns: 1.5fr 1fr; }
+      }
+      @media (max-width: 880px) { .sb-dash-layout { grid-template-columns: 1fr; } }
+
       /* ===== weekly-hours chart: fluid height =====
          Used to be a hardcoded height read once from window.innerWidth,
          which only reacts to the *browser viewport* resizing -- not to the
@@ -457,6 +470,49 @@ export default function GlobalStyle() {
       @media (min-width: 900px) { .sb-dash-chart { aspect-ratio: 2.5 / 1; max-height: 260px; } }
       @media (min-width: 1200px) { .sb-dash-chart { aspect-ratio: 2.9 / 1; max-height: 290px; } }
 
+      .sb-pinboard {
+        background: color-mix(in srgb, var(--soft) 45%, var(--card) 55%);
+        border: 3px solid var(--mascot-outline); border-radius: 22px; padding: 22px 20px;
+        box-shadow: 6px 6px 0 var(--mascot-outline); position: relative;
+        display: flex; flex-direction: column; min-width: 0; height: 100%;
+        /* Makes the cqi units below measure THIS column's actual rendered
+           width, not the viewport -- so pin text sizes itself off the same
+           thing that determines whether it has room, which stays correct
+           whether the column got narrower/wider from a viewport resize, a
+           dashboard grid breakpoint, or the sidebar collapsing/expanding. */
+        container-type: inline-size;
+      }
+      /* Fluid pin text: two-point clamp()s (a + b*cqi, 1cqi = 1% of the
+         pinboard's own width) instead of fixed px per breakpoint -- scales
+         continuously with however wide the column actually is right now.
+         This also quietly retires the old "tablet landscape" special case
+         further down (a wide viewport with a narrow pinboard column used
+         to need its own override tier); a container query needs no such
+         special case since it was always measuring the wrong thing. */
+      .sb-pinboard-title { font-family: var(--font-hand); font-size: clamp(15px, 9.5px + 2.5cqi, 21px); font-weight: 700; color: var(--mascot-ink); text-align: center; margin-bottom: 22px; flex: 0 0 auto; }
+      .sb-pin-note {
+        border: 2.5px solid var(--mascot-outline); border-radius: 14px; padding: 14px 16px;
+        box-shadow: 4px 4px 0 var(--mascot-outline); position: relative; margin: 0 6px 26px;
+        transition: transform .15s ease, box-shadow .15s ease;
+        color: var(--pin-ink, var(--mascot-ink));
+        flex: 1 1 0; display: flex; flex-direction: column; justify-content: center; min-height: 0;
+      }
+      .sb-pin-note:last-child { margin-bottom: 6px; }
+      .sb-pin-note::after {
+        content: ""; position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+        width: 13px; height: 13px; border-radius: 50%; background: var(--mascot-outline);
+        box-shadow: 0 2px 2px rgba(0,0,0,.25);
+      }
+      .sb-pin-note.sb-clickable:hover { box-shadow: 6px 6px 0 var(--mascot-outline); }
+      .sb-pin-note:nth-of-type(odd) { transform: rotate(2.2deg); }
+      .sb-pin-note:nth-of-type(even) { transform: rotate(-2.2deg); }
+      .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(2.2deg) translate(-2px, -3px); }
+      .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-2.2deg) translate(-2px, -3px); }
+      .sb-pin-quote { background: var(--mascot-body); font-family: var(--font-hand); font-size: clamp(14px, 9.6px + 2cqi, 18.5px); line-height: 1.4; font-weight: 700; flex: 1.4 1 0; }
+      .sb-pin-label { font-family: var(--font-hand); font-size: clamp(13.5px, 9.1px + 2cqi, 18px); font-weight: 700; opacity: .85; }
+      .sb-pin-value { font-family: var(--font-display); font-size: clamp(19px, 10.2px + 4cqi, 28px); font-weight: 800; margin-top: 3px; }
+
+
       /* ===== bigger cards on wide/PC screens =====
          On large monitors the dashboard's fixed-size cards left a big empty
          gap below the grid. Scaling up padding, radius and the numbers
@@ -466,58 +522,70 @@ export default function GlobalStyle() {
       @media (min-width: 1200px) {
         .sb-page { max-width: clamp(680px, 92vw, 1680px); gap: 24px; }
         .sb-card { padding: 28px; border-radius: 28px; }
+        .sb-dash-layout { gap: 28px; }
+        .sb-dash-main { gap: 24px; }
         .sb-grid-3, .sb-grid-2 { gap: 24px; }
         .sb-hero { padding: 32px; }
         .sb-hero-greet { font-size: 27px; }
         .sb-hero-line { font-size: 15.5px; max-width: 480px; }
+        .sb-countdown-hero { font-size: 84px; }
         .sb-goal-num { font-size: 30px; }
+        .sb-pinboard { padding: 28px 24px; }
+      }
+      /* Tablet landscape (e.g. iPad Pro / Surface in landscape): the
+         >=1200px "big screen" sizing above is tuned for wide monitors
+         where the pinboard column has tons of spare height. On tablet
+         widths the column is narrower and shorter, so those same sizes
+         made each pin note stretch too tall and overflow past the main
+         column. Scale the pinboard spacing back down here so the four
+         notes fill the available height exactly, with no leftover gap and
+         no overflow. (Font sizes no longer need a special case here --
+         .sb-pinboard's container-type above already shrinks them to match
+         this column's real width on its own.) */
+      @media (min-width: 1200px) and (max-width: 1499px) {
+        .sb-pinboard { padding: 20px 18px; }
+        .sb-pinboard-title { margin-bottom: 14px; }
+        .sb-pin-note { padding: 13px 15px; margin: 0 5px 18px; }
+        .sb-pin-note:last-child { margin-bottom: 5px; }
+        .sb-pin-quote { line-height: 1.35; }
+      }
+      /* Mobile pinboard: the desktop look leans on a fairly strong alternating
+         rotate() per note plus generous margins to keep the rotated corners
+         clear of each other. At phone widths there isn't enough room for
+         that -- the rotation makes notes visually poke into their neighbours
+         and the board reads as a jumbled mess. Cut the rotation down to a
+         subtle tilt and tighten the shadow/margin math to match. (Text size
+         is handled by the container query above.) */
+      @media (max-width: 640px) {
+        .sb-pinboard { padding: 16px 14px; }
+        .sb-pinboard-title { margin-bottom: 10px; }
+        .sb-pin-note { padding: 11px 13px; margin: 0 3px 14px; border-radius: 12px; }
+        .sb-pin-note:last-child { margin-bottom: 3px; }
+        .sb-pin-note::after { width: 10px; height: 10px; top: -6px; }
+        .sb-pin-note:nth-of-type(odd) { transform: rotate(1deg); }
+        .sb-pin-note:nth-of-type(even) { transform: rotate(-1deg); }
+        .sb-pin-note.sb-clickable:nth-of-type(odd):hover { transform: rotate(1deg) translate(-1px, -2px); }
+        .sb-pin-note.sb-clickable:nth-of-type(even):hover { transform: rotate(-1deg) translate(-1px, -2px); }
+      }
+      /* Pinboard collapse fix (<=880px, phone + tablet-portrait): below this
+         width .sb-dash-layout drops to one column, so the pinboard is no
+         longer stretched to the height of a tall sibling column -- its
+         height becomes self-determined. The base rules above use
+         flex: 1 1 0 / flex: 1.4 1 0 with min-height: 0 to divide a
+         *borrowed* stretched height evenly, but that same "0 basis, 0
+         min-height" also tells the browser the notes have ~no intrinsic
+         content size, which collapses the now-auto pinboard height and
+         squeezes/overlaps the notes (labels rendering on top of the pill
+         above them). This must come AFTER the base rules in source order --
+         same specificity, so whichever is later in the file wins whenever
+         both are active. */
+      @media (max-width: 880px) {
+        .sb-pinboard { height: auto; }
+        .sb-pin-note, .sb-pin-quote { flex: none; min-height: 0; }
       }
       @media (min-width: 1500px) {
         .sb-card { padding: 32px; }
-      }
-
-      /* ===== dashboard: bold countdown banner =====
-         Replaces the old pinboard sidebar. One unmissable, full-width
-         "days left" banner up top -- the number is the whole point of the
-         card, so it's sized in vw so it's genuinely huge on desktop without
-         needing separate breakpoint rules, and clamped so it never
-         overflows a phone screen either. */
-      .sb-days-hero {
-        display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--card) 84%), color-mix(in srgb, var(--p2) 20%, var(--card) 80%));
-      }
-      .sb-days-hero-num-wrap { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-      .sb-days-hero-num {
-        font-family: var(--font-display); font-weight: 800; line-height: .9;
-        font-size: clamp(56px, 30px + 11vw, 128px);
-        color: var(--mascot-ink); text-shadow: 3px 3px 0 var(--mascot-inner);
-      }
-      .sb-days-hero-unit { font-family: var(--font-display); font-weight: 800; font-size: clamp(15px, 11px + 1.4vw, 22px); color: var(--muted); }
-      .sb-days-hero-side { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; min-width: 0; }
-      .sb-days-hero-exam { font-family: var(--font-display); font-weight: 800; font-size: clamp(14px, 11px + .8vw, 17px); color: var(--mascot-ink); }
-      .sb-days-hero-date { font-size: 12.5px; font-weight: 700; color: var(--muted); }
-      .sb-days-hero-weeks { font-size: 12.5px; font-weight: 800; color: var(--mascot-ink); background: var(--mascot-inner); border: 1.5px dashed var(--mascot-outline); border-radius: 12px; padding: 5px 12px; }
-      @media (min-width: 1200px) {
-        .sb-days-hero-exam { font-size: 19px; }
-        .sb-days-hero-date, .sb-days-hero-weeks { font-size: 13.5px; }
-      }
-
-      /* ===== dashboard: stat bento grid =====
-         A responsive, self-wrapping grid of small stat cards -- replaces
-         the fixed pinboard sidebar. auto-fit + minmax means it reflows to
-         however many columns actually fit (1 on a phone, 5-6 on an
-         ultrawide) with no manual breakpoint bookkeeping needed. */
-      .sb-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
-      .sb-stat-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-      .sb-stat-top { display: flex; align-items: center; gap: 8px; }
-      .sb-stat-label { font-family: var(--font-display); font-weight: 700; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .sb-stat-value { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 16px + 1.6vw, 27px); color: var(--mascot-ink); line-height: 1.1; }
-      .sb-stat-value span { font-size: 12.5px; font-weight: 700; color: var(--muted); margin-left: 2px; }
-      .sb-stat-value--warn { color: #B8280A; }
-      .sb-stat-sub { font-size: 11.5px; font-weight: 700; color: var(--muted); }
-      @media (min-width: 1200px) {
-        .sb-stat-grid { gap: 18px; }
-        .sb-stat-value { font-size: 28px; }
+        .sb-countdown-hero { font-size: 96px; }
       }
 
       /* ===== subject split: donut chart + legend =====
@@ -586,6 +654,20 @@ export default function GlobalStyle() {
 
       .sb-countdown { font-family: var(--font-display); font-size: 38px; font-weight: 800; color: var(--mascot-ink); display: flex; align-items: baseline; gap: 8px; text-shadow: 2px 2px 0 var(--mascot-inner); }
       .sb-countdown span { font-size: 13px; font-family: var(--font-body); color: var(--muted); font-weight: 700; text-shadow: none; }
+      /* Bigger + bolder right away (not just past 720px) so the countdown
+         reads as the headline stat on phones too, not just desktop. */
+      .sb-countdown-hero { font-size: 52px; }
+      @media (min-width: 720px) {
+        .sb-countdown-hero { font-size: 76px; }
+      }
+      /* Give the countdown card itself a bit more visual weight than its
+         neighbours -- a warm tint + slightly thicker outline, scoped only
+         to this one card (doesn't touch .sb-grid-3 or any other page that
+         reuses that grid). */
+      .sb-countdown-card {
+        background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--card) 86%), color-mix(in srgb, var(--p2) 16%, var(--card) 84%));
+        border-width: 3px;
+      }
 
       .sb-goal-row { display: flex; align-items: center; gap: 16px; }
       .sb-goal-num { font-family: var(--font-display); font-size: 22px; font-weight: 700; text-shadow: 1.5px 1.5px 0 var(--mascot-inner); }
