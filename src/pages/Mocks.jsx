@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from "react";
-import { ClipboardList, TrendingUp, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X, Search, Clock, Target, Award, Compass } from "lucide-react";
+import { ClipboardList, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X, Search, Clock, Target, Award, Compass } from "lucide-react";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { Card, SectionTitle, Btn, EmptyState, ProgressRing } from "../components/ui";
 import { formatISTCalendarDate, todayIST } from "../lib/dateIST";
@@ -112,17 +112,32 @@ export default function MocksPage(p) {
   const mainsMocks = p.mocks.filter((m) => (m.exam_type || "JEE Main") === "JEE Main");
   const advancedMocks = p.mocks.filter((m) => m.exam_type === "JEE Advanced");
 
-  const chartData = useMemo(() => {
+  const [trendView, setTrendView] = useState("pct"); // "pct" | "marks"
+
+  const trendData = useMemo(() => {
     const mSorted = [...mainsMocks].reverse();
     const aSorted = [...advancedMocks].reverse();
     const len = Math.max(mSorted.length, aSorted.length);
     return Array.from({ length: len }, (_, i) => ({
       name: `#${i + 1}`,
-      "JEE Main": mSorted[i] ? totalOf(mSorted[i]) : null,
-      "JEE Advanced": aSorted[i] ? totalOf(aSorted[i]) : null,
+      "JEE Main": mSorted[i] ? (trendView === "pct" ? pctOf(mSorted[i]) : totalOf(mSorted[i])) : null,
+      "JEE Advanced": aSorted[i] ? (trendView === "pct" ? pctOf(aSorted[i]) : totalOf(aSorted[i])) : null,
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.mocks]);
+  }, [p.mocks, trendView]);
+
+  const cmpStats = useMemo(() => {
+    const statsFor = (arr) => {
+      if (!arr.length) return null;
+      const pcts = arr.map(pctOf);
+      const best = Math.max(...pcts);
+      const avg = Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
+      const latest = pcts[0]; // arr is newest-first (p.mocks order)
+      const first = pcts[pcts.length - 1];
+      return { count: arr.length, best, avg, delta: arr.length > 1 ? latest - first : 0 };
+    };
+    return { mains: statsFor(mainsMocks), advanced: statsFor(advancedMocks) };
+  }, [mainsMocks, advancedMocks]);
 
   const pacingMocks = p.mocks.filter((m) => num(m.physics_minutes) + num(m.chemistry_minutes) + num(m.math_minutes) > 0);
   const pacingData = useMemo(() => {
@@ -168,17 +183,7 @@ export default function MocksPage(p) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.mockAnalysisMap]);
 
-  const cmpData = useMemo(() => {
-    const mSorted = [...mainsMocks].reverse();
-    const aSorted = [...advancedMocks].reverse();
-    const len = Math.max(mSorted.length, aSorted.length);
-    return Array.from({ length: len }, (_, i) => ({
-      name: `#${i + 1}`,
-      "JEE Main %": mSorted[i] ? pctOf(mSorted[i]) : null,
-      "JEE Advanced %": aSorted[i] ? pctOf(aSorted[i]) : null,
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.mocks]);
+
 
   const startEdit = (m) => {
     setEditingId(m.id);
@@ -383,47 +388,87 @@ export default function MocksPage(p) {
         {/* ---------- Right: trend, comparisons, AI insight, mistakes, history ---------- */}
         <div className="sb-mocks-right">
 
-      <Card>
-        <SectionTitle icon={TrendingUp}>Score trend</SectionTitle>
-        {chartData.length ? (
+      <Card className="sb-cmp-card">
+        <SectionTitle icon={Scale} right={
+          <div className="sb-cmp-toggle">
+            <button type="button" className={trendView === "pct" ? "active" : ""} onClick={() => setTrendView("pct")}>%</button>
+            <button type="button" className={trendView === "marks" ? "active" : ""} onClick={() => setTrendView("marks")}>Marks</button>
+          </div>
+        }>
+          Main vs Advanced
+        </SectionTitle>
+
+        {(cmpStats.mains || cmpStats.advanced) && (
+          <div className="sb-cmp-stats">
+            <div className="sb-cmp-stat-pill main">
+              <span className="sb-cmp-dot" />
+              <div className="sb-cmp-stat-body">
+                <div className="sb-cmp-stat-label">JEE Main <span className="sb-muted">· {cmpStats.mains?.count || 0} mocks</span></div>
+                {cmpStats.mains ? (
+                  <div className="sb-cmp-stat-nums">
+                    <span><b>{cmpStats.mains.avg}%</b> avg</span>
+                    <span><b>{cmpStats.mains.best}%</b> best</span>
+                    {cmpStats.mains.delta !== 0 && (
+                      <span className={cmpStats.mains.delta > 0 ? "up" : "down"}>
+                        {cmpStats.mains.delta > 0 ? "▲" : "▼"} {Math.abs(cmpStats.mains.delta)}%
+                      </span>
+                    )}
+                  </div>
+                ) : <div className="sb-cmp-stat-nums sb-muted">No mocks yet</div>}
+              </div>
+            </div>
+            <div className="sb-cmp-stat-pill advanced">
+              <span className="sb-cmp-dot" />
+              <div className="sb-cmp-stat-body">
+                <div className="sb-cmp-stat-label">JEE Advanced <span className="sb-muted">· {cmpStats.advanced?.count || 0} mocks</span></div>
+                {cmpStats.advanced ? (
+                  <div className="sb-cmp-stat-nums">
+                    <span><b>{cmpStats.advanced.avg}%</b> avg</span>
+                    <span><b>{cmpStats.advanced.best}%</b> best</span>
+                    {cmpStats.advanced.delta !== 0 && (
+                      <span className={cmpStats.advanced.delta > 0 ? "up" : "down"}>
+                        {cmpStats.advanced.delta > 0 ? "▲" : "▼"} {Math.abs(cmpStats.advanced.delta)}%
+                      </span>
+                    )}
+                  </div>
+                ) : <div className="sb-cmp-stat-nums sb-muted">No mocks yet</div>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {trendData.length ? (
           <>
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
-                <XAxis dataKey="name" stroke="var(--muted)" fontSize={12} />
-                <YAxis stroke="var(--muted)" fontSize={12} />
-                <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="JEE Main" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} connectNulls />
-                <Line type="monotone" dataKey="JEE Advanced" stroke="var(--p3, #8b5cf6)" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={trendData} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="sbMainGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.22} />
+                    <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" vertical={false} />
+                <XAxis dataKey="name" stroke="var(--muted)" fontSize={11.5} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--muted)" fontSize={11.5} tickLine={false} axisLine={false} unit={trendView === "pct" ? "%" : ""} width={40} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 14, border: "1.5px solid var(--mascot-outline)", background: "var(--card-bg, #fff)", fontSize: 12.5, boxShadow: "3px 3px 0 var(--mascot-outline)" }}
+                  labelStyle={{ fontWeight: 800, marginBottom: 4 }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} iconType="circle" />
+                <Line type="monotone" dataKey="JEE Main" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: "var(--bg)" }} activeDot={{ r: 6 }} connectNulls fill="url(#sbMainGrad)" />
+                <Line type="monotone" dataKey="JEE Advanced" stroke="var(--p3, #8b5cf6)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: "var(--bg)" }} activeDot={{ r: 6 }} connectNulls strokeDasharray={advancedMocks.length ? undefined : "4 4"} />
               </LineChart>
             </ResponsiveContainer>
             <p className="sb-muted" style={{ fontSize: 11.5, marginTop: 6 }}>
-              Plotted separately since Main (out of {MAINS_TOTAL_MARKS}) and Advanced (total varies per paper) aren't the same scale — mixing them into one line would've been misleading.
+              {trendView === "pct"
+                ? `Shown as % of each mock's total marks so Main (out of ${MAINS_TOTAL_MARKS}) and Advanced (total varies) sit on the same scale.`
+                : `Shown as raw marks — Main tops out at ${MAINS_TOTAL_MARKS}, Advanced's total varies per paper, so compare shapes, not absolute heights.`}
             </p>
           </>
         ) : <EmptyState mascot={p.mascot} mood="idle" text="No mocks logged yet." sub="Add your first mock to start tracking trends." />}
-      </Card>
 
-      <Card>
-        <SectionTitle icon={Scale}>JEE Main vs JEE Advanced</SectionTitle>
-        {mainsMocks.length > 0 && advancedMocks.length > 0 ? (
-          <>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={cmpData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
-                <XAxis dataKey="name" stroke="var(--muted)" fontSize={12} />
-                <YAxis stroke="var(--muted)" fontSize={12} unit="%" />
-                <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="JEE Main %" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} connectNulls />
-                <Line type="monotone" dataKey="JEE Advanced %" stroke="var(--p3, #8b5cf6)" strokeWidth={3} dot={{ r: 4 }} connectNulls />
-              </LineChart>
-            </ResponsiveContainer>
-            <p className="sb-muted" style={{ fontSize: 11.5, marginTop: 6 }}>Plotted as % of each mock's total marks so Main (300) and Advanced (varies) can sit on the same scale.</p>
-          </>
-        ) : (
-          <EmptyState mascot={p.mascot} mood="idle" text="Log mocks from both papers to compare." sub="Once you've got at least one JEE Main and one JEE Advanced mock, they'll show up here side by side." />
+        {!(mainsMocks.length > 0 && advancedMocks.length > 0) && trendData.length > 0 && (
+          <p className="sb-cmp-hint"><Sparkles size={12} /> Log mocks from both papers to unlock a full side-by-side comparison.</p>
         )}
       </Card>
 
