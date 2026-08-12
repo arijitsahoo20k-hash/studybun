@@ -76,9 +76,14 @@ export const FEATURE_GUIDE = [
   {
     emoji: "📝",
     label: "Mock Tests",
-    blurb: "Log a full mock's subject-wise marks and correct/incorrect counts.",
+    blurb: "Log a full mock's subject-wise marks and correct/incorrect counts, for JEE Main or JEE Advanced.",
     details: [
+      "JEE Main auto-calculates marks from your correct/incorrect counts (+4/-1, 300 total); JEE Advanced takes marks directly per subject since its marking scheme varies paper to paper.",
+      "The \"Main vs Advanced\" trend chart always plots the two exam types as separate lines — never mixed into one, since their totals aren't on the same scale. Toggle between % and raw marks, and see avg/best/trend-delta stat pills for each paper.",
+      "Smart AI Comparison (Groq-powered) does a head-to-head Main vs Advanced read when you've logged both, or a standalone evaluation benchmarked against real-world JEE trends if you've only logged one. The last result is saved to your account in Supabase, so it's still there next time you open the page — on this device or any other — until you re-run it.",
       "Mock scores feed both Analytics and the AI Insights snapshot, so your buddy's mock-related advice is grounded in the actual scores you've entered.",
+      "Optional per-subject time-spent minutes power the Pacing Check, which flags the subject where your time share and score share mismatch the most.",
+      "Tag mistakes on any reviewed mock (silly, concept gap, calculation, time pressure, guesswork) — this feeds Backlog's recovery priority, not just a static breakdown.",
     ],
   },
   {
@@ -115,6 +120,7 @@ export const FEATURE_GUIDE = [
       "Both features build their answers from the same compact data snapshot (today's hours, streak, subject backlog, mock scores, revision status) — so they can't drift into generic advice that ignores what you've actually logged.",
       "They only unlock once you've hit a 6-day study streak, so Gemini quota is spent on people actively using the app rather than being wide open from day one.",
       "Nothing is sent to Gemini in the background — a request only goes out when you open AI Insights or send a chat message.",
+      "AI Insights' last result is saved to your account in Supabase (not just this browser), so it's still there when you come back to the page, refresh, or switch devices — it only changes when you click \"Generate\" again.",
     ],
   },
   {
@@ -133,6 +139,7 @@ export const FEATURE_GUIDE = [
     details: [
       "Your score blends verified focus-timer minutes, self-reported minutes (weighted lower), questions, mocks, chapters completed, and streak — all within a rolling 30-day window.",
       "The streak shown here uses the exact same IST 2-day-grace rule as your personal streak, so the leaderboard never contradicts what you see on your own Dashboard.",
+      "The Top 3 get a podium — gold/silver/bronze tiers with your mascot, streak, and score — and the rest of the Top 20 lists below it.",
       "Only your display name, mascot, score, streak, and active-day count are public — nothing else from your account is exposed.",
     ],
   },

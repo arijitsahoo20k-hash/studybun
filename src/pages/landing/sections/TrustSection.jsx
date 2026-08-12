@@ -3,7 +3,7 @@ import { Lock, Ban, Download } from "lucide-react";
 import Reveal from "../Reveal";
 
 const CARDS = [
-  { icon: Lock, title: "Private, always", blurb: "Your study data lives in your account only. Nothing here is public, and nothing is shared without you asking." },
+  { icon: Lock, title: "Private, always", blurb: "Your study data lives in your account only. The one exception is the opt-in Leaderboard — enable it and your name, mascot, score, and streak become visible to others. Everything else stays private." },
   { icon: Ban, title: "Never sold, never advertised against", blurb: "This app doesn't have advertisers to sell data to in the first place — and never will." },
   { icon: Download, title: "Exportable anytime", blurb: "A full JSON backup is one click away in Settings, whenever you want it. No asking, no waiting." },
 ];

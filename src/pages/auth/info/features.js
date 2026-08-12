@@ -6,9 +6,10 @@
  */
 export const FEATURES = [
   { emoji: "⏱️", label: "Study timer & sessions", blurb: "Log focused sessions and watch your minutes stack up, subject by subject." },
-  { emoji: "✏️", label: "Questions & mocks", blurb: "Track questions solved and mock scores so your progress isn't just a feeling." },
+  { emoji: "✏️", label: "Questions & mocks", blurb: "Track questions solved and log JEE Main/Advanced mocks with auto-scoring." },
   { emoji: "🗓️", label: "Study calendar", blurb: "Your whole month at a glance, colour-dotted and satisfyingly clickable." },
   { emoji: "🔁", label: "Revision reminders", blurb: "Chapters quietly resurface before you forget them, not after." },
   { emoji: "🧠", label: "AI insights", blurb: "Gentle, Gemini-powered nudges based only on your own study data." },
+  { emoji: "👑", label: "Leaderboard", blurb: "Opt-in Top 20 ranking by a fair, anti-cheat Study Score." },
   { emoji: "🎨", label: "Mascots & themes", blurb: "Pick a buddy and a vibe — sakura, matcha, mossy blockland, and more." },
 ];

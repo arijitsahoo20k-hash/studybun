@@ -2,10 +2,11 @@ import React from "react";
 
 const STATS = [
   "🐰 6 mascots to choose from",
-  "🎨 10 aesthetic themes",
+  "🎨 16 aesthetic themes",
   "⏱️ Unlimited study sessions",
   "🧠 AI-powered insights",
   "🔁 Smart revision reminders",
+  "👑 Opt-in leaderboard",
   "💸 100% free, no premium tier",
   "📦 Your data, exportable anytime",
 ];

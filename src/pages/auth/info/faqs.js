@@ -12,12 +12,12 @@ export const FAQS = [
   {
     q: "Where does my data actually go?",
     emoji: "🗄️",
-    a: "It's saved in a private database (Supabase) under your account only. Nothing here is public, sold, or handed to advertisers — this app doesn't even have any.",
+    a: "It's saved in a private database (Supabase) under your account only. The only exception is the Leaderboard, which is opt-in — if you enable it, your display name, mascot, score, and streak become visible to other users. Nothing is sold or handed to advertisers — this app doesn't even have any.",
   },
   {
     q: "What happens when I use the AI features?",
     emoji: "🧠",
-    a: "AI Insights and the Study Buddy chat send the relevant bits of your study data to Google's Gemini API to write your tips — and only when you actually open those features, never in the background.",
+    a: "AI Insights and the Study Buddy chat send the relevant bits of your study data to Google's Gemini API to write your tips. The Mock Tests page also has a separate AI comparison (Main vs Advanced) powered by Groq. All three only run when you actually click to use them — never in the background — and the results are saved to your account so they stick around until you re-run them.",
   },
   {
     q: "Can I get my data out, or delete it?",
