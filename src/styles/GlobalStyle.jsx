@@ -1036,6 +1036,23 @@ export default function GlobalStyle() {
         .sb-plan-layout { grid-template-columns: 330px 1fr; gap: 26px; }
       }
 
+      /* ===== Revision planner: side-by-side layout on tablet/desktop =====
+         Left rail (plan form + at-a-glance stats + week strip) sticks
+         alongside the overdue/today/upcoming/completed shelves instead of
+         the old single stacked column, mirroring the Planner page pattern. */
+      .sb-revplan-layout { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: clamp(680px, 92vw, 1480px); margin: 0 auto; }
+      .sb-revplan-side { display: flex; flex-direction: column; gap: 18px; }
+      .sb-revplan-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+      @media (min-width: 900px) {
+        .sb-revplan-layout { display: grid; grid-template-columns: 310px 1fr; align-items: start; gap: 22px; }
+        .sb-revplan-side { position: sticky; top: 18px; }
+      }
+      @media (min-width: 1200px) {
+        .sb-revplan-layout { grid-template-columns: 340px 1fr; gap: 26px; max-width: clamp(680px, 92vw, 1680px); }
+      }
+      .sb-revplan-cycle-toggle { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; margin: 2px 0 4px; }
+      .sb-revplan-cycle-toggle input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+
       .sb-plan-stats { padding: 18px 20px; }
       .sb-plan-stat-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 2px; font-size: 13px; font-weight: 700; color: var(--muted); border-bottom: 1.5px dashed var(--mascot-outline); }
       .sb-plan-stat-row:last-of-type { border-bottom: none; }

@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   FolderClock, RotateCcw, Clock3, CheckCircle2, CalendarPlus, Trash2,
   Sparkles, RefreshCw, AlertTriangle, ChevronDown, ChevronUp, CalendarDays,
+  Repeat, Flame, ListFilter, Layers,
 } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
 import Mascot from "../components/Mascot";
@@ -10,6 +11,18 @@ import { generateRevisionSuggestions } from "../services/gemini";
 import { todayIST, daysAgoIST, toISTDateStr, formatISTCalendarDate } from "../lib/dateIST";
 
 const todayISO = todayIST;
+
+/** The classic spaced-repetition ladder JEE aspirants use: revise a chapter
+    again 1, 3, 7, 16 and 30 days after first touching it. Offered as one-tap
+    date chips and as an optional "plan the whole cycle" shortcut. */
+const SPACED_INTERVALS = [
+  { label: "+1d", days: 1 },
+  { label: "+3d", days: 3 },
+  { label: "+7d", days: 7 },
+  { label: "+16d", days: 16 },
+  { label: "+30d", days: 30 },
+];
+const addDaysISO = (days) => toISTDateStr(Date.now() + days * 86400000);
 
 const dayLabel = (d) => {
   const today = todayISO();
@@ -135,6 +148,59 @@ function WeekStrip({ revisions }) {
   );
 }
 
+/** Compact at-a-glance counters for the sidebar — overdue / today / upcoming
+    / completed — so the study-load is visible without scrolling the shelves. */
+function RevisionStats({ overdue, today, upcoming, completed }) {
+  const rows = [
+    { label: "Overdue", value: overdue, warn: overdue > 0 },
+    { label: "Due today", value: today },
+    { label: "Upcoming", value: upcoming },
+    { label: "Completed", value: completed },
+  ];
+  return (
+    <Card className="sb-plan-stats">
+      <SectionTitle icon={Flame}>At a glance</SectionTitle>
+      {rows.map((r) => (
+        <div key={r.label} className={`sb-plan-stat-row ${r.warn ? "warn" : ""}`}>
+          <span>{r.label}</span>
+          <b>{r.value}</b>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
+/** Subject chips to narrow the shelves down to one subject at a time —
+    handy once a student has 30+ revisions queued across three subjects. */
+function SubjectFilterBar({ subjects, active, onChange }) {
+  if (subjects.length <= 1) return null;
+  return (
+    <Card style={{ padding: "12px 16px" }}>
+      <div className="sb-chip-row">
+        <button
+          type="button"
+          className={`sb-chip small ${active === "All" ? "active" : ""}`}
+          onClick={() => onChange("All")}
+        >
+          <ListFilter size={12} style={{ marginRight: 3, verticalAlign: -2 }} />
+          All
+        </button>
+        {subjects.map((s) => (
+          <button
+            key={s}
+            type="button"
+            className={`sb-chip small ${active === s ? "active" : ""}`}
+            style={active === s ? { background: SYLLABUS[s]?.color || "var(--accent)", color: "#fff", borderColor: SYLLABUS[s]?.color } : undefined}
+            onClick={() => onChange(s)}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function RevisionCard({ r, onComplete, onDelete, showComplete, dashed }) {
   const kind = dueKind(r);
   const chip = DUE_CHIP[kind];
@@ -162,7 +228,9 @@ export default function RevisionPage(p) {
   const [chapter, setChapter] = useState(chaptersForSubject[0]?.name || "");
   const [dueDate, setDueDate] = useState(todayISO());
   const [revisionNumber, setRevisionNumber] = useState(1);
+  const [fullCycle, setFullCycle] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [filterSubject, setFilterSubject] = useState("All");
 
   const handleSubjectChange = (s) => {
     setSubject(s);
@@ -172,7 +240,17 @@ export default function RevisionPage(p) {
 
   const handlePlan = () => {
     if (!subject || !chapter || !dueDate) return;
-    p.addRevision({ subject, chapter, due_date: dueDate, revision_number: +revisionNumber || 1 });
+    if (fullCycle) {
+      // Lay down the whole 1-3-7-16-30 day spaced-repetition ladder in one go,
+      // anchored to the chosen due date instead of always starting from today.
+      const base = new Date(`${dueDate}T00:00:00`).getTime();
+      SPACED_INTERVALS.forEach((step, i) => {
+        const due = toISTDateStr(base + step.days * 86400000);
+        p.addRevision({ subject, chapter, due_date: due, revision_number: i + 1 });
+      });
+    } else {
+      p.addRevision({ subject, chapter, due_date: dueDate, revision_number: +revisionNumber || 1 });
+    }
     setDueDate(todayISO());
     setRevisionNumber(1);
   };
@@ -180,7 +258,18 @@ export default function RevisionPage(p) {
   const completedRevisions = p.revisions.filter((r) => r.status === "Completed");
   const pawTrail = "🐾".repeat(Math.min(completedRevisions.length, 12)) + (completedRevisions.length > 12 ? ` +${completedRevisions.length - 12}` : "");
 
-  const Shelf = ({ shelfKey, title, emoji, items, icon: Icon, showComplete, dashed, emptyMood, emptyText, emptySub, mascotMood }) => (
+  const revisionSubjects = useMemo(
+    () => [...new Set(p.revisions.map((r) => r.subject))].sort(),
+    [p.revisions]
+  );
+  const bySubject = (list) => (filterSubject === "All" ? list : list.filter((r) => r.subject === filterSubject));
+
+  const overdue = bySubject(p.overdueRevisions);
+  const dueToday = bySubject(p.dueRevisions);
+  const upcoming = bySubject(p.upcomingRevisions);
+  const completedFiltered = bySubject(completedRevisions);
+
+  const Shelf = ({ title, emoji, items, icon: Icon, showComplete, dashed, emptyMood, emptyText, emptySub, mascotMood }) => (
     <Card>
       <SectionTitle
         icon={Icon}
@@ -208,76 +297,117 @@ export default function RevisionPage(p) {
   );
 
   return (
-    <div className="sb-page">
-      <WeekStrip revisions={p.revisions} />
-
-      <Card>
-        <SectionTitle icon={CalendarPlus}>Plan a revision</SectionTitle>
-        <div className="sb-form-grid dense">
-          <div>
-            <label>Subject</label>
-            <select className="sb-input small" value={subject} onChange={(e) => handleSubjectChange(e.target.value)}>
-              {subjects.map((s) => <option key={s}>{s}</option>)}
-            </select>
+    <div className="sb-revplan-layout">
+      {/* Sidebar: planning + at-a-glance stats stay in view while the shelves scroll */}
+      <div className="sb-revplan-side">
+        <Card>
+          <SectionTitle icon={CalendarPlus}>Plan a revision</SectionTitle>
+          <div className="sb-form-grid dense">
+            <div>
+              <label>Subject</label>
+              <select className="sb-input small" value={subject} onChange={(e) => handleSubjectChange(e.target.value)}>
+                {subjects.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label>Chapter</label>
+              <select className="sb-input small" value={chapter} onChange={(e) => setChapter(e.target.value)}>
+                {chaptersForSubject.map((c) => <option key={c.name}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label>{fullCycle ? "Cycle starts" : "Due date"}</label>
+              <input type="date" className="sb-input small" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            </div>
+            {!fullCycle && (
+              <div>
+                <label>Revision #</label>
+                <input type="number" min="1" className="sb-input small" value={revisionNumber} onChange={(e) => setRevisionNumber(e.target.value)} />
+              </div>
+            )}
           </div>
-          <div>
-            <label>Chapter</label>
-            <select className="sb-input small" value={chapter} onChange={(e) => setChapter(e.target.value)}>
-              {chaptersForSubject.map((c) => <option key={c.name}>{c.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label>Due date</label>
-            <input type="date" className="sb-input small" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-          </div>
-          <div>
-            <label>Revision #</label>
-            <input type="number" min="1" className="sb-input small" value={revisionNumber} onChange={(e) => setRevisionNumber(e.target.value)} />
-          </div>
-        </div>
-        <Btn onClick={handlePlan} style={{ marginTop: 10 }}><CalendarPlus size={16} /> Add to plan</Btn>
-      </Card>
 
-      <AIRevisionRecommendations {...p} />
-
-      <Shelf
-        shelfKey="overdue" title="Overdue" emoji="🍂" icon={FolderClock} items={p.overdueRevisions} showComplete
-        mascotMood="reminder"
-        emptyMood="happy" emptyText="Nothing overdue — you're on top of it! 🎉" emptySub="Keep it that way, bun."
-      />
-      <Shelf
-        shelfKey="today" title="Due Today" emoji="☀️" icon={RotateCcw} items={p.dueRevisions} showComplete
-        emptyMood="idle" emptyText="Nothing due today." emptySub="Enjoy the calm ☁️"
-      />
-      <Shelf
-        shelfKey="upcoming" title="Upcoming" emoji="🌱" icon={Clock3} items={p.upcomingRevisions} dashed
-        emptyMood="idle" emptyText="Nothing scheduled yet." emptySub="Plan one above to get ahead 🌱"
-      />
-
-      <Card>
-        <SectionTitle icon={CheckCircle2}>
-          🌸 Completed <span className="sb-muted">({completedRevisions.length})</span>
-        </SectionTitle>
-        {completedRevisions.length > 0 && (
-          <button className="sb-collapse-toggle" onClick={() => setShowCompleted((v) => !v)}>
-            {showCompleted ? <><ChevronUp size={14} /> Hide completed</> : <><ChevronDown size={14} /> Show completed</>}
-          </button>
-        )}
-        {completedRevisions.length === 0 ? (
-          <EmptyState mascot={p.mascot} mood="idle" text="No revisions completed yet." sub="First one's the best feeling 🌸" />
-        ) : showCompleted ? (
-          <>
-            <div className="sb-paw-trail" style={{ margin: "10px 0" }}>{pawTrail}</div>
-            <div className="sb-chapter-grid">
-              {completedRevisions.map((r) => (
-                <RevisionCard key={r.id} r={r} showComplete={false} onDelete={() => p.deleteRevision(r.id)} />
+          {!fullCycle && (
+            <div className="sb-chip-row" style={{ marginBottom: 10 }}>
+              {SPACED_INTERVALS.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  className="sb-chip small"
+                  onClick={() => setDueDate(addDaysISO(s.days))}
+                  title={`Due date = today + ${s.days} day${s.days > 1 ? "s" : ""}`}
+                >
+                  {s.label}
+                </button>
               ))}
             </div>
-          </>
-        ) : (
-          <div className="sb-paw-trail" style={{ marginTop: 10 }}>{pawTrail}</div>
-        )}
-      </Card>
+          )}
+
+          <label className="sb-revplan-cycle-toggle">
+            <input type="checkbox" checked={fullCycle} onChange={(e) => setFullCycle(e.target.checked)} />
+            <span><Repeat size={13} style={{ verticalAlign: -2, marginRight: 4 }} />Plan the full 1-3-7-16-30 day cycle</span>
+          </label>
+
+          <Btn onClick={handlePlan} style={{ marginTop: 10 }}>
+            {fullCycle ? <><Layers size={16} /> Add 5 revisions</> : <><CalendarPlus size={16} /> Add to plan</>}
+          </Btn>
+        </Card>
+
+        <RevisionStats
+          overdue={p.overdueRevisions.length}
+          today={p.dueRevisions.length}
+          upcoming={p.upcomingRevisions.length}
+          completed={completedRevisions.length}
+        />
+
+        <WeekStrip revisions={p.revisions} />
+      </div>
+
+      {/* Main column: AI suggestions + the overdue / today / upcoming / completed shelves */}
+      <div className="sb-revplan-main">
+        <AIRevisionRecommendations {...p} />
+
+        <SubjectFilterBar subjects={revisionSubjects} active={filterSubject} onChange={setFilterSubject} />
+
+        <Shelf
+          title="Overdue" emoji="🍂" icon={FolderClock} items={overdue} showComplete
+          mascotMood="reminder"
+          emptyMood="happy" emptyText="Nothing overdue — you're on top of it! 🎉" emptySub="Keep it that way, bun."
+        />
+        <Shelf
+          title="Due Today" emoji="☀️" icon={RotateCcw} items={dueToday} showComplete
+          emptyMood="idle" emptyText="Nothing due today." emptySub="Enjoy the calm ☁️"
+        />
+        <Shelf
+          title="Upcoming" emoji="🌱" icon={Clock3} items={upcoming} dashed
+          emptyMood="idle" emptyText="Nothing scheduled yet." emptySub="Plan one above to get ahead 🌱"
+        />
+
+        <Card>
+          <SectionTitle icon={CheckCircle2}>
+            🌸 Completed <span className="sb-muted">({completedFiltered.length})</span>
+          </SectionTitle>
+          {completedFiltered.length > 0 && (
+            <button className="sb-collapse-toggle" onClick={() => setShowCompleted((v) => !v)}>
+              {showCompleted ? <><ChevronUp size={14} /> Hide completed</> : <><ChevronDown size={14} /> Show completed</>}
+            </button>
+          )}
+          {completedFiltered.length === 0 ? (
+            <EmptyState mascot={p.mascot} mood="idle" text="No revisions completed yet." sub="First one's the best feeling 🌸" />
+          ) : showCompleted ? (
+            <>
+              <div className="sb-paw-trail" style={{ margin: "10px 0" }}>{pawTrail}</div>
+              <div className="sb-chapter-grid">
+                {completedFiltered.map((r) => (
+                  <RevisionCard key={r.id} r={r} showComplete={false} onDelete={() => p.deleteRevision(r.id)} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="sb-paw-trail" style={{ marginTop: 10 }}>{pawTrail}</div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }
