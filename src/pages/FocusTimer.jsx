@@ -3,12 +3,30 @@ import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
   Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock,
 } from "lucide-react";
-import { Card, Btn, ProgressBar, SectionTitle } from "../components/ui";
+import { Card, Btn, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { SYLLABUS } from "../data/syllabus";
 import { RADIO_OPTIONS, RADIO_LINKS, extractYouTubeId, getActiveRadio } from "../lib/radio";
 
 const MODE_ORDER = ["Deep Focus", "Pomodoro", "Lecture", "Practice", "Revision"];
+
+// Fixed (non-random) slots so the sparkle motes never reshuffle position on
+// an unrelated re-render -- same pattern DecorLayer uses for its backdrop.
+const MOTE_SLOTS = [
+  { top: "10%", left: "16%" }, { top: "18%", left: "82%" },
+  { top: "50%", left: "6%" }, { top: "54%", left: "92%" },
+  { top: "86%", left: "22%" }, { top: "82%", left: "78%" },
+];
+
+// One short, mode-specific line for the companion rail on wide screens --
+// purely a bit of encouragement, not tied to the timer's own state.
+const MODE_TIPS = {
+  "Deep Focus": "Long, uninterrupted focus. Silence notifications and let one topic have your full attention.",
+  Pomodoro: "Short sharp bursts. Sprint for the interval, then actually take the break.",
+  Lecture: "Following along beats multitasking — pause the video if you need to catch up on notes.",
+  Practice: "Problems over passive reading. Attempt before you peek at the solution.",
+  Revision: "Recall first, reread second. Testing yourself sticks better than skimming.",
+};
 
 export default function FocusTimer(p) {
   const t = p.focusTimer;
@@ -54,8 +72,20 @@ export default function FocusTimer(p) {
   };
 
   return (
-    <div className="sb-page">
-      <Card className="sb-timer-card" glass>
+    <div className="sb-page sb-focus-page">
+      <div className="sb-focus-layout">
+      <Card className={`sb-focus-hero ${t.running ? "sb-focus-running" : ""}`} glass>
+        <span className="sb-focus-aura" aria-hidden="true" />
+        {t.running && (
+          <span className="sb-focus-motes" aria-hidden="true">
+            {MOTE_SLOTS.map((pos, i) => (
+              <span key={i} className="sb-focus-mote" style={{ ...pos, animationDelay: `${i * 0.7}s` }}>
+                {i % 2 === 0 ? "✦" : "✧"}
+              </span>
+            ))}
+          </span>
+        )}
+
         <div className="sb-timer-topbar">
           <div className="sb-chip-row">
             {MODE_ORDER.map((m) => {
@@ -63,7 +93,7 @@ export default function FocusTimer(p) {
               return (
                 <button
                   key={m}
-                  className={`sb-chip ${t.mode === m ? "active" : ""}`}
+                  className={`sb-chip sb-focus-mode-chip ${t.mode === m ? "active" : ""}`}
                   onClick={() => t.changeMode(m)}
                   disabled={blocked}
                   title={blocked ? "Finish, save, or reset your current session to switch modes" : undefined}
@@ -172,11 +202,22 @@ export default function FocusTimer(p) {
           </div>
         )}
 
-        <div className="sb-timer-display">
-          <Mascot species={p.mascot} mood={t.running ? "studying" : "idle"} size={90} pettable />
-          <div className="sb-timer-time">{mm}:{ss}</div>
+        <div className="sb-focus-stage">
+          <div className="sb-focus-mascot-wrap">
+            <span className="sb-focus-mascot-halo" aria-hidden="true" />
+            <Mascot species={p.mascot} mood={t.running ? "studying" : "idle"} size={90} pettable />
+          </div>
+          <span className="sb-focus-mode-label">{t.mode}</span>
+          <div className="sb-focus-time">
+            {mm}<span className="sb-focus-colon">:</span>{ss}
+          </div>
+          <div className="sb-focus-track">
+            <div className="sb-focus-fill" style={{ width: `${Math.min(100, Math.max(0, t.pct || 0))}%` }}>
+              {t.pct > 3 && <span className="sb-focus-fill-paw">🐾</span>}
+            </div>
+          </div>
         </div>
-        <ProgressBar pct={t.pct} />
+
         <div className="sb-timer-controls">
           {!t.running ? <Btn onClick={t.start}><Play size={16} /> Start</Btn> : <Btn variant="soft" onClick={t.pause}><Pause size={16} /> Pause</Btn>}
           {!t.askDone && (
@@ -194,6 +235,28 @@ export default function FocusTimer(p) {
           <Btn variant="ghost" onClick={t.reset}><RefreshCw size={16} /> Reset</Btn>
         </div>
       </Card>
+
+      <div className="sb-focus-side">
+        <Card className="sb-focus-side-card" glass>
+          <Mascot species={p.mascot} mood={t.running ? "studying" : "idle"} size={72} />
+          <p className="sb-focus-side-tip">{MODE_TIPS[t.mode]}</p>
+          <div className="sb-focus-side-stats">
+            {typeof p.todayTimerHours === "number" && (
+              <div className="sb-focus-stat">
+                <span className="sb-focus-stat-num">{p.todayTimerHours.toFixed(1)}h</span>
+                <span className="sb-focus-stat-label">Today</span>
+              </div>
+            )}
+            {typeof p.streak === "number" && (
+              <div className="sb-focus-stat">
+                <span className="sb-focus-stat-num">{p.streak}🔥</span>
+                <span className="sb-focus-stat-label">Streak</span>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+      </div>
 
       {t.askDone && (
         <Card>

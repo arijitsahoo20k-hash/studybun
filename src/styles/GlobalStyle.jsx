@@ -964,22 +964,149 @@ export default function GlobalStyle() {
 
       .sb-mistake-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 
-      .sb-timer-card { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 34px; }
+      /* =====================================================================
+         Focus Mode -- "focus sanctuary" redesign
+         Signature move: no ring. The centerpiece is a soft breathing aura
+         behind big glowing digits, a chunky paw-tipped progress pill, and a
+         handful of drifting sparkle motes that only appear while a session
+         is actually running -- so the *idle* screen stays calm and the
+         *running* screen visibly feels alive. Everything below reads its
+         color from the active theme's CSS vars (--accent/--accent2/--p1..6),
+         never a hardcoded hue, so it holds up across every theme. On wide
+         monitors the hero gets a quiet companion rail instead of just
+         growing emptier; below ~1080px it drops to one column. */
+
+      .sb-focus-layout { display: flex; flex-direction: column; gap: 18px; width: 100%; }
+
+      .sb-focus-hero {
+        position: relative; overflow: hidden;
+        display: flex; flex-direction: column; align-items: center; gap: 18px;
+        padding: 38px 30px; isolation: isolate;
+        background: linear-gradient(175deg, var(--card) 0%, var(--card) 62%, var(--mascot-inner) 145%);
+      }
+      /* glassmorphism: a light blur + translucent card so the app's ambient
+         dot/wash backdrop still breathes through, per the studio's usual
+         warm/glass direction -- kept subtle so text contrast never suffers. */
+      .sb-focus-hero.sb-card-glass { background-color: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+      .sb-focus-aura {
+        position: absolute; top: 50%; left: 50%; width: 62%; aspect-ratio: 1;
+        transform: translate(-50%, -54%); border-radius: 50%; pointer-events: none; z-index: 0;
+        background: radial-gradient(circle, var(--accent2) 0%, var(--soft) 42%, transparent 72%);
+        opacity: .28; filter: blur(6px);
+        transition: opacity .6s ease;
+      }
+      .sb-focus-hero.sb-focus-running .sb-focus-aura { opacity: .5; animation: sb-focus-breathe 4.2s ease-in-out infinite; }
+      @keyframes sb-focus-breathe {
+        0%, 100% { transform: translate(-50%, -54%) scale(1); }
+        50% { transform: translate(-50%, -54%) scale(1.12); }
+      }
+
+      .sb-focus-motes { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+      .sb-focus-mote {
+        position: absolute; font-size: 13px; color: var(--accent);
+        opacity: 0; animation: sb-focus-mote-drift 5.5s ease-in-out infinite;
+      }
+      @keyframes sb-focus-mote-drift {
+        0% { opacity: 0; transform: translateY(6px) scale(.7) rotate(0deg); }
+        20% { opacity: .85; }
+        50% { transform: translateY(-14px) scale(1.05) rotate(20deg); }
+        80% { opacity: .6; }
+        100% { opacity: 0; transform: translateY(-26px) scale(.8) rotate(40deg); }
+      }
+
+      .sb-focus-hero > *:not(.sb-focus-aura):not(.sb-focus-motes) { position: relative; z-index: 1; }
+
       .sb-timer-topbar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; width: 100%; }
+
+      .sb-focus-mode-chip { transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease, background-color .2s ease; }
+      .sb-focus-mode-chip.active { background: var(--accent); border-color: var(--mascot-outline); color: #fff; box-shadow: 2px 2px 0 var(--mascot-outline), 0 0 0 3px var(--soft); }
+      .sb-focus-mode-chip .sb-chip-mins { opacity: .75; font-weight: 700; font-size: 10.5px; margin-left: 3px; }
+      .sb-focus-mode-chip.active .sb-chip-mins { opacity: .85; }
+
       .sb-sound-toggle { display: inline-flex; align-items: center; gap: 6px; border: 2px solid var(--mascot-outline); background: var(--mascot-body); color: var(--muted); border-radius: 999px; padding: 6px 12px; font-weight: 800; font-size: 11.5px; cursor: pointer; box-shadow: 2px 2px 0 var(--mascot-outline); transition: transform .12s ease, box-shadow .12s ease, background-color .2s ease, color .2s ease; }
       .sb-sound-toggle:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--mascot-outline); }
       .sb-sound-toggle.on { background: var(--mascot-inner); color: var(--mascot-ink); }
-      .sb-timer-display { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-      .sb-timer-time { font-family: var(--font-display); font-size: 52px; font-weight: 800; text-shadow: 3px 3px 0 var(--mascot-inner); }
-      .sb-timer-controls { display: flex; gap: 10px; }
 
-      .sb-chip-mins { opacity: .6; font-weight: 700; font-size: 10.5px; margin-left: 3px; }
       .sb-timer-actions { display: flex; gap: 8px; }
-      .sb-icon-round { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--mascot-outline); background: var(--mascot-body); color: var(--mascot-ink); cursor: pointer; box-shadow: 2px 2px 0 var(--mascot-outline); transition: transform .12s ease, box-shadow .12s ease, background-color .2s ease; }
-      .sb-icon-round:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--mascot-outline); }
-      .sb-icon-round.on { background: var(--mascot-inner); }
+      .sb-icon-round { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--mascot-outline); background: var(--mascot-body); color: var(--mascot-ink); cursor: pointer; box-shadow: 2px 2px 0 var(--mascot-outline); transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .12s ease, background-color .2s ease; }
+      .sb-icon-round:hover { transform: translate(-1px,-1px) rotate(-6deg); box-shadow: 3px 3px 0 var(--mascot-outline); }
+      .sb-icon-round.on { background: var(--accent); color: #fff; }
 
-      .sb-duration-pop, .sb-timer-settings { width: 100%; max-width: 380px; background: var(--mascot-body); border: 2px solid var(--mascot-outline); border-radius: 18px; padding: 14px 16px; box-shadow: 3px 3px 0 var(--mascot-outline); display: flex; flex-direction: column; gap: 10px; animation: sb-pop .18s ease; }
+      /* ----- the stage: mascot + glowing digits + pill progress ----- */
+      .sb-focus-stage { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 2px; }
+      .sb-focus-mascot-wrap { position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: -6px; }
+      .sb-focus-mascot-halo {
+        position: absolute; width: 78px; height: 78px; border-radius: 50%;
+        background: radial-gradient(circle, var(--soft) 0%, transparent 70%); opacity: 0; transition: opacity .5s ease;
+      }
+      .sb-focus-hero.sb-focus-running .sb-focus-mascot-halo { opacity: .9; animation: sb-focus-breathe 3.2s ease-in-out infinite; }
+
+      .sb-focus-mode-label { font-family: var(--font-body); font-weight: 800; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+      .sb-focus-time {
+        font-family: var(--font-display); font-weight: 800; line-height: 1;
+        font-size: clamp(56px, 9vw, 78px); color: var(--mascot-ink);
+        text-shadow: 3px 3px 0 var(--mascot-inner); letter-spacing: .01em;
+        display: flex; align-items: baseline; transition: text-shadow .4s ease;
+      }
+      .sb-focus-hero.sb-focus-running .sb-focus-time { text-shadow: 3px 3px 0 var(--mascot-inner), 0 0 26px var(--soft); }
+      .sb-focus-colon { animation: none; opacity: .55; margin: 0 2px; }
+      .sb-focus-hero.sb-focus-running .sb-focus-colon { animation: sb-focus-blink 1s steps(1) infinite; }
+      @keyframes sb-focus-blink { 0%, 49% { opacity: .55; } 50%, 100% { opacity: 1; } }
+
+      .sb-focus-track {
+        width: min(100%, 420px); height: 16px; border-radius: 999px; margin-top: 6px;
+        background: var(--bg); border: 2.5px solid var(--mascot-outline); position: relative; overflow: hidden;
+      }
+      .sb-focus-fill {
+        height: 100%; border-radius: 999px; position: relative;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        transition: width .6s cubic-bezier(.4,0,.2,1); overflow: hidden;
+      }
+      .sb-focus-hero.sb-focus-running .sb-focus-fill::after {
+        content: ""; position: absolute; inset: 0;
+        background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,.55) 45%, transparent 70%);
+        background-size: 200% 100%; animation: sb-focus-shimmer 2.4s linear infinite;
+      }
+      @keyframes sb-focus-shimmer { 0% { background-position: 140% 0; } 100% { background-position: -60% 0; } }
+      .sb-focus-fill-paw { position: absolute; top: 50%; right: -1px; font-size: 12px; transform: translate(50%, -50%); filter: drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
+
+      .sb-timer-controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+      .sb-timer-controls .sb-btn-primary { padding: 10px 24px; font-size: 14.5px; }
+      .sb-timer-controls .sb-btn-primary:hover { box-shadow: 5px 5px 0 var(--accent2), 0 0 18px var(--soft); }
+
+      /* ----- companion rail (wide screens only) ----- */
+      .sb-focus-side { display: none; }
+      .sb-focus-side-card { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; height: 100%; justify-content: center; }
+      .sb-focus-side-tip { font-size: 13px; color: var(--muted); font-weight: 700; line-height: 1.5; margin: 0; max-width: 220px; }
+      .sb-focus-side-stats { display: flex; gap: 18px; margin-top: 4px; }
+      .sb-focus-stat { display: flex; flex-direction: column; align-items: center; }
+      .sb-focus-stat-num { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--mascot-ink); text-shadow: 1.5px 1.5px 0 var(--mascot-inner); }
+      .sb-focus-stat-label { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+
+      @media (min-width: 1080px) {
+        .sb-focus-layout { flex-direction: row; align-items: stretch; gap: 22px; }
+        .sb-focus-hero { flex: 1 1 auto; }
+        .sb-focus-side { display: flex; flex: 0 0 240px; }
+        .sb-focus-time { font-size: clamp(72px, 6vw, 92px); }
+        .sb-focus-hero { padding: 46px 40px; }
+      }
+      @media (min-width: 1500px) {
+        .sb-focus-side { flex-basis: 270px; }
+        .sb-focus-time { font-size: 104px; }
+        .sb-focus-track { max-width: 480px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-focus-hero.sb-focus-running .sb-focus-aura,
+        .sb-focus-hero.sb-focus-running .sb-focus-mascot-halo,
+        .sb-focus-mote, .sb-focus-hero.sb-focus-running .sb-focus-fill::after,
+        .sb-focus-hero.sb-focus-running .sb-focus-colon { animation: none; }
+        .sb-focus-mote { opacity: .5; }
+      }
+
+      .sb-duration-pop, .sb-timer-settings { width: 100%; max-width: 380px; background: var(--mascot-body); border: 2px solid var(--mascot-outline); border-radius: 18px; padding: 14px 16px; box-shadow: 3px 3px 0 var(--mascot-outline); display: flex; flex-direction: column; gap: 10px; animation: sb-focus-pop-in .22s cubic-bezier(.34,1.56,.64,1); }
+      @keyframes sb-focus-pop-in { from { transform: translateY(-10px) scale(.96); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
       .sb-duration-pop-title { font-weight: 800; font-size: 13px; }
       .sb-duration-stepper { display: flex; align-items: center; justify-content: center; gap: 10px; }
       .sb-duration-stepper button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--mascot-outline); background: var(--mascot-inner); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
@@ -991,7 +1118,7 @@ export default function GlobalStyle() {
       .sb-timer-settings-radio-head { margin-top: 2px; }
       .sb-radio-options { display: flex; flex-wrap: wrap; gap: 6px; }
       .sb-radio-chip { padding: 6px 12px; border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--mascot-body); color: var(--mascot-ink); font-weight: 700; font-size: 11.5px; cursor: pointer; }
-      .sb-radio-chip.active { background: var(--mascot-inner); }
+      .sb-radio-chip.active { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
       .sb-radio-chip { display: inline-flex; align-items: center; gap: 4px; }
       .sb-radio-custom-row { display: flex; gap: 6px; align-items: center; }
       .sb-radio-custom-row .sb-input { flex: 1; }
