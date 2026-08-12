@@ -3,7 +3,12 @@ import React from "react";
 export default function GlobalStyle() {
   return (
     <style>{`
-      @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&family=Caveat:wght@600;700&display=swap');
+      /* Font <link> now lives in index.html's <head> so it's discovered by
+         the HTML parser on the very first response, not after the whole JS
+         bundle loads and React renders this component. Do NOT re-add an
+         @import here -- that reintroduces a render-blocking, sequential
+         fetch chain (CSS -> @import'd CSS -> font files) that was adding
+         seconds to FCP/LCP on throttled mobile connections. */
 
       /* Hard viewport reset: the app owns the viewport, not the browser body.
          This removes the default document margin and prevents a white strip
