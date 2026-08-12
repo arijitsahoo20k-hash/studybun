@@ -1,16 +1,34 @@
 import React, { useState } from "react";
-import { Crown, Flame, Info, Sparkles } from "lucide-react";
+import { Crown, Flame, Info, Sparkles, Medal } from "lucide-react";
 import { Card, SectionTitle, EmptyState } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { useLeaderboard } from "../hooks/useLeaderboard";
 
 const MEDAL = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-function ScoreRow({ row, rank, isMe, isStudyingNow }) {
-  const medal = MEDAL[rank];
+function PodiumSpot({ row, rank, isMe, isStudyingNow }) {
+  if (!row) return <div className="sb-podium-spot empty" />;
   return (
-    <div className={`sb-lb-row ${isMe ? "me" : ""} ${medal ? `medal medal-${rank}` : ""}`} style={{ animationDelay: `${Math.min(rank, 14) * 0.03}s` }}>
-      <div className="sb-lb-rank">{medal || `#${rank}`}</div>
+    <div className={`sb-podium-spot p${rank} ${isMe ? "me" : ""}`} style={{ animationDelay: `${rank * 0.08}s` }}>
+      <div className="sb-podium-medal">{MEDAL[rank]}</div>
+      <div className="sb-podium-avatar-wrap">
+        <div className="sb-podium-avatar"><Mascot species={row.mascot} mood="happy" size={rank === 1 ? 52 : 42} ambient={false} /></div>
+        {isStudyingNow && <span className="sb-lb-online-dot" title="Studying right now" />}
+      </div>
+      <div className="sb-podium-name">{row.display_name}{isMe && <span className="sb-lb-you-tag">You</span>}</div>
+      {row.current_streak > 0 && (
+        <div className="sb-lb-streak"><Flame size={11} /> {row.current_streak}</div>
+      )}
+      <div className="sb-podium-score">{Math.round(row.study_score).toLocaleString()}<span>pts</span></div>
+      <div className="sb-podium-bar" />
+    </div>
+  );
+}
+
+function ScoreRow({ row, rank, isMe, isStudyingNow }) {
+  return (
+    <div className={`sb-lb-row ${isMe ? "me" : ""}`} style={{ animationDelay: `${Math.min(rank, 14) * 0.03}s` }}>
+      <div className="sb-lb-rank">#{rank}</div>
       <div className="sb-lb-avatar-wrap">
         <div className="sb-lb-avatar"><Mascot species={row.mascot} mood="happy" size={34} ambient={false} /></div>
         {isStudyingNow && <span className="sb-lb-online-dot" title="Studying right now" />}
@@ -69,29 +87,53 @@ export default function LeaderboardPage(p) {
         )}
       </Card>
 
-      <Card washi>
-        <SectionTitle icon={Crown}>Top 20</SectionTitle>
-        {error && <p className="sb-muted" style={{ fontSize: 12.5 }}>Couldn't load the leaderboard right now — try again in a moment.</p>}
-        {loading ? (
+      {error && (
+        <Card><p className="sb-muted" style={{ fontSize: 12.5 }}>Couldn't load the leaderboard right now — try again in a moment.</p></Card>
+      )}
+
+      {loading ? (
+        <Card washi>
+          <SectionTitle icon={Crown}>Top 20</SectionTitle>
           <div className="sb-lb-list">
             {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} i={i} />)}
           </div>
-        ) : top.length === 0 ? (
+        </Card>
+      ) : top.length === 0 ? (
+        <Card washi>
+          <SectionTitle icon={Crown}>Top 20</SectionTitle>
           <EmptyState mascot={p.mascot} mood="idle" text="No scores yet" sub="Be the first to log a study session and claim the crown 👑" />
-        ) : (
-          <div className="sb-lb-list">
-            {top.map((row, i) => (
-              <ScoreRow
-                key={row.user_id}
-                row={row}
-                rank={i + 1}
-                isMe={row.user_id === userId}
-                isStudyingNow={studyingIds.has(row.user_id)}
-              />
-            ))}
-          </div>
-        )}
-      </Card>
+        </Card>
+      ) : (
+        <>
+          {top.length >= 2 && (
+            <Card className="sb-podium-card" washi>
+              <div className="sb-podium">
+                <PodiumSpot row={top[1]} rank={2} isMe={top[1]?.user_id === userId} isStudyingNow={studyingIds.has(top[1]?.user_id)} />
+                <PodiumSpot row={top[0]} rank={1} isMe={top[0]?.user_id === userId} isStudyingNow={studyingIds.has(top[0]?.user_id)} />
+                <PodiumSpot row={top[2]} rank={3} isMe={top[2]?.user_id === userId} isStudyingNow={studyingIds.has(top[2]?.user_id)} />
+              </div>
+            </Card>
+          )}
+
+          <Card washi>
+            <SectionTitle icon={Medal}>{top.length > 3 ? "Rest of the Top 20" : "Top 20"}</SectionTitle>
+            <div className="sb-lb-list">
+              {(top.length > 3 ? top.slice(3) : top).map((row, i) => {
+                const rank = top.length > 3 ? i + 4 : i + 1;
+                return (
+                  <ScoreRow
+                    key={row.user_id}
+                    row={row}
+                    rank={rank}
+                    isMe={row.user_id === userId}
+                    isStudyingNow={studyingIds.has(row.user_id)}
+                  />
+                );
+              })}
+            </div>
+          </Card>
+        </>
+      )}
 
       {!loading && !amInTop && myRank && (
         <Card className="sb-lb-you-card">

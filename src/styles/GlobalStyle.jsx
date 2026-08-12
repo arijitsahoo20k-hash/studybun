@@ -1144,6 +1144,64 @@ export default function GlobalStyle() {
       .sb-achv-progress-label { font-size: 10.5px; color: var(--muted); font-weight: 700; text-align: right; }
 
       /* ---- Leaderboard ---- */
+      .sb-podium-card { padding-top: 28px; overflow: visible; }
+      .sb-podium {
+        display: flex; align-items: flex-end; justify-content: center; gap: 10px;
+        padding: 6px 4px 0;
+      }
+      .sb-podium-spot {
+        flex: 1; max-width: 148px; display: flex; flex-direction: column; align-items: center;
+        text-align: center; animation: sb-podium-in .5s cubic-bezier(.2,.8,.2,1) backwards;
+      }
+      .sb-podium-spot.empty { visibility: hidden; }
+      @keyframes sb-podium-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+      .sb-podium-medal { font-size: 22px; line-height: 1; margin-bottom: 2px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.12)); }
+      .sb-podium-spot.p1 .sb-podium-medal { font-size: 30px; }
+
+      .sb-podium-avatar-wrap { position: relative; }
+      .sb-podium-avatar {
+        border-radius: 50%; background: var(--mascot-body); border: 3px solid var(--mascot-outline);
+        display: flex; align-items: center; justify-content: center; overflow: hidden;
+        width: 62px; height: 62px; box-shadow: 3px 3px 0 var(--mascot-outline);
+      }
+      .sb-podium-spot.p1 .sb-podium-avatar { width: 76px; height: 76px; border-color: #E8B923; box-shadow: 3px 3px 0 #E8B923; }
+      .sb-podium-spot.p2 .sb-podium-avatar { border-color: #A7ADB8; box-shadow: 3px 3px 0 #A7ADB8; }
+      .sb-podium-spot.p3 .sb-podium-avatar { border-color: #C7864E; box-shadow: 3px 3px 0 #C7864E; }
+      .sb-podium-spot.me .sb-podium-avatar { outline: 2.5px dashed var(--accent); outline-offset: 3px; }
+
+      .sb-podium-name {
+        font-family: var(--font-display); font-weight: 800; font-size: 12.5px; margin-top: 8px;
+        max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        display: flex; align-items: center; gap: 4px; justify-content: center;
+      }
+      .sb-podium-spot.p1 .sb-podium-name { font-size: 14px; }
+
+      .sb-podium-score {
+        font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--mascot-ink);
+        margin-top: 6px;
+      }
+      .sb-podium-spot.p1 .sb-podium-score { font-size: 18px; }
+      .sb-podium-score span { display: block; font-family: var(--font-body); font-size: 9px; font-weight: 700; color: var(--muted); margin-top: -2px; }
+
+      .sb-podium-bar {
+        width: 100%; margin-top: 10px; border-radius: 10px 10px 0 0;
+        background: linear-gradient(180deg, var(--mascot-inner), transparent);
+        border: 1.5px solid var(--mascot-outline); border-bottom: none;
+      }
+      .sb-podium-spot.p1 .sb-podium-bar { height: 54px; background: linear-gradient(180deg, #FCEBB0, transparent); border-color: #E8B923; }
+      .sb-podium-spot.p2 .sb-podium-bar { height: 36px; background: linear-gradient(180deg, #E6E8EC, transparent); border-color: #A7ADB8; }
+      .sb-podium-spot.p3 .sb-podium-bar { height: 24px; background: linear-gradient(180deg, #F0DAC4, transparent); border-color: #C7864E; }
+
+      @media (max-width: 560px) {
+        .sb-podium-avatar { width: 50px; height: 50px; }
+        .sb-podium-spot.p1 .sb-podium-avatar { width: 62px; height: 62px; }
+        .sb-podium-name { font-size: 11px; }
+        .sb-podium-spot.p1 .sb-podium-name { font-size: 12.5px; }
+        .sb-podium-score { font-size: 13px; }
+        .sb-podium-spot.p1 .sb-podium-score { font-size: 15px; }
+      }
+
       .sb-lb-live-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; color: var(--accent); background: var(--mascot-inner); border: 1.5px solid var(--mascot-outline); border-radius: 999px; padding: 5px 12px; flex-shrink: 0; }
       .sb-lb-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: sb-lb-pulse 1.6s ease-in-out infinite; }
       @keyframes sb-lb-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: .45; } }
