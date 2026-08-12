@@ -11,6 +11,11 @@
     "api/cron/community-cleanup.js": { "maxDuration": 30 },
     "api/push/subscribe.js": { "maxDuration": 10 },
     "api/push/unsubscribe.js": { "maxDuration": 10 },
-    "api/push/test.js": { "maxDuration": 30 }
+    "api/push/test.js": { "maxDuration": 30 },
+    "api/ai/insights.js": { "maxDuration": 30 },
+    "api/ai/revision.js": { "maxDuration": 30 },
+    "api/ai/buddy.js": { "maxDuration": 30 },
+    "api/ai/mock-compare.js": { "maxDuration": 30 },
+    "api/ai/status.js": { "maxDuration": 10 }
   }
 }

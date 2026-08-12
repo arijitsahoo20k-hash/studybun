@@ -1,19 +1,23 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Settings, Sparkles, Rabbit, LogOut, UserCircle, GraduationCap, CheckCircle2, Circle, Download, Upload, DatabaseBackup, BookOpen } from "lucide-react";
 import { Card, SectionTitle, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { THEMES } from "../data/themes";
 import { MASCOTS } from "../data/mascots";
 import { useAuth } from "../lib/AuthContext";
-import { hasUsableKeys, getModelPreference, setModelPreference } from "../services/buddyKeyManager";
+import { getCachedAIStatus, fetchAIStatus, getModelPreference, setModelPreference } from "../services/buddyKeyManager";
 import { MODEL_FAMILIES } from "../services/geminiModels";
 import FeatureGuideGrid from "./settings/FeatureGuideGrid";
 import SmartNotificationsCard from "../components/SmartNotificationsCard";
 import BackgroundCard from "./settings/BackgroundCard";
 
 function SmartBuddyCard() {
-  const [ready] = useState(() => hasUsableKeys());
+  const [ready, setReady] = useState(() => getCachedAIStatus().geminiReady);
   const [modelPref, setModelPrefState] = useState(getModelPreference());
+
+  useEffect(() => {
+    fetchAIStatus().then((s) => setReady(s.geminiReady));
+  }, []);
 
   const onModelPref = (val) => { setModelPreference(val); setModelPrefState(val); };
 

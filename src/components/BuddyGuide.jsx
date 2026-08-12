@@ -3,7 +3,7 @@ import { X, Sparkles, Send, GraduationCap, Settings as SettingsIcon, RefreshCw, 
 import Mascot from "./Mascot";
 import { buddyLine, MASCOTS, mascotTheme } from "../data/mascots";
 import { askBuddy } from "../services/buddyAI";
-import { hasUsableKeys } from "../services/buddyKeyManager";
+import { getCachedAIStatus, fetchAIStatus } from "../services/buddyKeyManager";
 import { buildStatsSnapshot } from "../lib/statsSnapshot";
 import { ProgressBar } from "./ui";
 
@@ -25,7 +25,7 @@ export default function BuddyGuide(p) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
-  const [smartReady, setSmartReady] = useState(hasUsableKeys());
+  const [smartReady, setSmartReady] = useState(() => getCachedAIStatus().geminiReady);
   const listRef = useRef(null);
 
   const mascotLabel = MASCOTS[p.mascot]?.label || "Study Buddy";
@@ -59,8 +59,8 @@ export default function BuddyGuide(p) {
   const chatLocked = streakLocked || !smartReady;
 
   useEffect(() => {
-    // Re-check whenever the chat is opened, in case keys were just added in Settings.
-    if (chatOpen) setSmartReady(hasUsableKeys());
+    // Re-check whenever the chat is opened, in case the server config changed.
+    if (chatOpen) fetchAIStatus().then((s) => setSmartReady(s.geminiReady));
   }, [chatOpen]);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function BuddyGuide(p) {
   const openChat = () => {
     setOpen(true);
     setChatOpen(true);
-    setSmartReady(hasUsableKeys());
+    fetchAIStatus().then((s) => setSmartReady(s.geminiReady));
     if (messages.length === 0) {
       setMessages([{
         role: "buddy",
