@@ -109,10 +109,20 @@ export default function MocksPage(p) {
   };
   const mainsPreviewTotal = mainsPreview.physics + mainsPreview.chemistry + mainsPreview.math;
 
-  const chartData = [...p.mocks].reverse().map((m, i) => ({ name: `#${i + 1}`, score: totalOf(m) }));
-
   const mainsMocks = p.mocks.filter((m) => (m.exam_type || "JEE Main") === "JEE Main");
   const advancedMocks = p.mocks.filter((m) => m.exam_type === "JEE Advanced");
+
+  const chartData = useMemo(() => {
+    const mSorted = [...mainsMocks].reverse();
+    const aSorted = [...advancedMocks].reverse();
+    const len = Math.max(mSorted.length, aSorted.length);
+    return Array.from({ length: len }, (_, i) => ({
+      name: `#${i + 1}`,
+      "JEE Main": mSorted[i] ? totalOf(mSorted[i]) : null,
+      "JEE Advanced": aSorted[i] ? totalOf(aSorted[i]) : null,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.mocks]);
 
   const pacingMocks = p.mocks.filter((m) => num(m.physics_minutes) + num(m.chemistry_minutes) + num(m.math_minutes) > 0);
   const pacingData = useMemo(() => {
@@ -376,15 +386,22 @@ export default function MocksPage(p) {
       <Card>
         <SectionTitle icon={TrendingUp}>Score trend</SectionTitle>
         {chartData.length ? (
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
-              <XAxis dataKey="name" stroke="var(--muted)" fontSize={12} />
-              <YAxis stroke="var(--muted)" fontSize={12} />
-              <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
-              <Line type="monotone" dataKey="score" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          <>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
+                <XAxis dataKey="name" stroke="var(--muted)" fontSize={12} />
+                <YAxis stroke="var(--muted)" fontSize={12} />
+                <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Line type="monotone" dataKey="JEE Main" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+                <Line type="monotone" dataKey="JEE Advanced" stroke="var(--p3, #8b5cf6)" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+            <p className="sb-muted" style={{ fontSize: 11.5, marginTop: 6 }}>
+              Plotted separately since Main (out of {MAINS_TOTAL_MARKS}) and Advanced (total varies per paper) aren't the same scale — mixing them into one line would've been misleading.
+            </p>
+          </>
         ) : <EmptyState mascot={p.mascot} mood="idle" text="No mocks logged yet." sub="Add your first mock to start tracking trends." />}
       </Card>
 
