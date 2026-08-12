@@ -15,15 +15,29 @@
          HTML preloader can discover + start fetching them immediately,
          instead of waiting for the JS bundle to download, parse, execute,
          and render before the @import inside GlobalStyle is even seen.
-         preconnect warms the connection; the stylesheet link (with its own
-         font-display: swap already baked into the Google Fonts CSS) is what
-         actually kicks off the request. -->
+         preconnect warms the connection. The stylesheet itself uses the
+         classic preload+swap trick: `rel="preload" as="style"` fetches it
+         with high priority WITHOUT blocking rendering, then the
+         onload flips it to a real stylesheet the instant it lands. Text
+         paints immediately in a fallback font (font-display: swap in the
+         Google Fonts CSS) and reflows to Baloo/Nunito/Caveat once ready --
+         a plain <link rel="stylesheet"> here would otherwise sit in the
+         render-blocking path for however long that request takes. <noscript>
+         covers the (rare) no-JS case. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      rel="stylesheet"
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&family=Caveat:wght@600;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&family=Caveat:wght@600;700&display=swap"
+      />
+    </noscript>
     <title>StudyBun · Your Cozy JEE Study Companion</title>
   </head>
   <body>

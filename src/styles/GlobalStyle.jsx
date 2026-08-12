@@ -1426,6 +1426,23 @@ export default function GlobalStyle() {
         14%, 100% { transform: translateY(0); }
       }
 
+      /* Ambient idle sway/slump. Was a per-instance gsap.to() JS tween
+         (continuous RAF loop on the main thread, one per mounted mascot);
+         now a compositor-only CSS animation driven by custom properties
+         Mascot.jsx computes once per mount (--sb-bob-y/-rot/-dur/-delay).
+         Browsers automatically pause CSS animations on off-screen elements,
+         so mascots below the fold cost nothing until scrolled into view. */
+      .sb-mascot-idle {
+        animation: sb-mascot-bob var(--sb-bob-dur, 2.4s) ease-in-out var(--sb-bob-delay, 0s) infinite alternate;
+      }
+      @keyframes sb-mascot-bob {
+        0% { transform: translateY(0) rotate(0deg); }
+        100% { transform: translateY(var(--sb-bob-y, -4px)) rotate(var(--sb-bob-rot, 2deg)); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-mascot-idle { animation: none; }
+      }
+
       /* Pet the mascot: a little squish-bounce plus hearts/sparkles that
          float up and fade. Wrapper-level so it works on every species. */
       .sb-mascot-pet-wrap {

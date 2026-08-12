@@ -74,6 +74,36 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
   const liveliness = energy ?? DEFAULT_ENERGY[mood] ?? 0.5;
   const sad = mood === "sad";
 
+  // Randomized-per-instance idle bob timing, computed ONCE per mount/mood
+  // change (not per frame). Previously this fed a continuous gsap.to()
+  // yoyo/repeat tween that re-ran on the JS main thread every frame, for
+  // every mascot mounted at once -- on the landing page alone that's up to
+  // five concurrent RAF loops (Hero, NavBar, FeatureShowcase, ThemeGallery,
+  // ClosingCta), several of them off-screen, which is exactly the kind of
+  // work Lighthouse's "13 long tasks" / high TBT was catching. A plain CSS
+  // `animation` driven by these custom properties does the identical
+  // sway/slump visually but runs on the compositor thread, effectively free
+  // on main thread and paused by the browser automatically when the
+  // element is off-screen.
+  const idleBobVars = useMemo(() => {
+    if (sad) {
+      return {
+        "--sb-bob-y": "3.2px",
+        "--sb-bob-rot": "-2.6deg",
+        "--sb-bob-dur": `${(3.2 + Math.random() * 1.2).toFixed(2)}s`,
+        "--sb-bob-delay": `${(Math.random() * 0.6).toFixed(2)}s`,
+      };
+    }
+    return {
+      "--sb-bob-y": `${-(2.2 + liveliness * 4.5).toFixed(2)}px`,
+      "--sb-bob-rot": `${(1 + liveliness * 2).toFixed(2)}deg`,
+      "--sb-bob-dur": `${(Math.max(1, 2.9 - liveliness * 1.7) + Math.random() * 0.5).toFixed(2)}s`,
+      "--sb-bob-delay": `${(Math.random() * 0.7).toFixed(2)}s`,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sad, liveliness]);
+  const idleBobActive = !reduced && !hop && !hopLoop && ambient;
+
   // Spring pop-in on first mount, then settle. Skipped under
   // prefers-reduced-motion, which just shows the mascot in place.
   useEffect(() => {
@@ -91,15 +121,9 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
     };
   }, []);
 
-  // Ambient idle drift -- a slow GSAP loop on the *outer* wrapper, randomized
-  // per instance so a row of mascots never bobs in unison. Skipped whenever
-  // the species itself already owns a bounce (hop / hopLoop), whenever the
-  // caller passes ambient={false} (e.g. Leaderboard renders one Mascot per
-  // row -- spinning up a dozen-plus independent GSAP tweens at once, right
-  // as the page-transition is animating in, is exactly the kind of
-  // per-instance cost that adds up into visible jank on a list, for a sway
-  // that's barely perceptible at avatar size anyway), and entirely for
-  // reduced motion.
+  // Ambient idle drift now lives entirely in CSS (see idleBobVars /
+  // idleBobActive above + the .sb-mascot-idle rule in GlobalStyle) -- this
+  // effect only used to spin up the gsap tween and has been removed.
   //
   // This is where "energetic when you study, sad when you don't" actually
   // shows up as motion, not just a face: `liveliness` (0-1) speeds the loop
@@ -107,30 +131,6 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
   // mascot doesn't just get a smaller version of the happy bounce -- it gets
   // a different motion entirely: a slow downward slump instead of an upward
   // bob, like a shoulders-down sigh repeating on a long, heavy beat.
-  useEffect(() => {
-    if (reduced || hop || hopLoop || !ambient || !outerRef.current) return;
-    const el = outerRef.current;
-    const tween = sad
-      ? gsap.to(el, {
-          y: 3.2,
-          rotate: -2.6,
-          duration: 3.2 + Math.random() * 1.2,
-          delay: Math.random() * 0.6,
-          ease: "sine.inOut",
-          yoyo: true,
-          repeat: -1,
-        })
-      : gsap.to(el, {
-          y: -(2.2 + liveliness * 4.5),
-          rotate: 1 + liveliness * 2,
-          duration: Math.max(1, 2.9 - liveliness * 1.7) + Math.random() * 0.5,
-          delay: Math.random() * 0.7,
-          ease: "sine.inOut",
-          yoyo: true,
-          repeat: -1,
-        });
-    return () => tween.kill();
-  }, [reduced, hop, hopLoop, ambient, sad, liveliness]);
 
   // Celebrate flourish -- fires once whenever mood transitions *into*
   // "celebrate" (not on every re-render while it stays celebrate), using a
@@ -242,8 +242,16 @@ export default function Mascot({ species = "bunny", mood = "idle", size = 72, ho
   return (
     <span
       ref={outerRef}
-      className={pettable ? "sb-mascot-pet-wrap" : undefined}
-      style={{ display: "inline-flex", position: "relative", width: size, height: size, alignItems: "center", justifyContent: "center" }}
+      className={[pettable ? "sb-mascot-pet-wrap" : "", idleBobActive ? "sb-mascot-idle" : ""].filter(Boolean).join(" ") || undefined}
+      style={{
+        display: "inline-flex",
+        position: "relative",
+        width: size,
+        height: size,
+        alignItems: "center",
+        justifyContent: "center",
+        ...(idleBobActive ? idleBobVars : null),
+      }}
       {...wrapperProps}
     >
       {inner}
