@@ -155,6 +155,11 @@ export default function App() {
   // devices/browsers on the same account. Always-on like profiles/
   // user_settings since it's just one small row, not a page-gated list.
   const mockAiCompareRow = useDeviceRow("mock_ai_comparison", { result: null });
+  // Single-row cache of the last StudyBun AI (AI Insights page) result —
+  // same reasoning as mockAiCompareRow above. Previously this lived only
+  // in that page's local useState, so it disappeared the instant you left
+  // the page or refreshed; now it survives nav/refresh/devices.
+  const aiInsightsRow = useDeviceRow("ai_insights", { result: null, generated_at: null });
   const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true, enabled: page === "dashboard" || isPage("syllabus", "mocks", "backlog", "revision", "ai", "profile") });
   const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date", enabled: page === "dashboard" || isPage("backlog", "planner", "profile") });
   const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at", enabled: page === "dashboard" || isPage("backlog", "ai") });
@@ -826,6 +831,11 @@ export default function App() {
   // leaves whatever's already saved untouched.
   const saveMockAiComparison = async (result) => mockAiCompareRow.save({ result });
 
+  // Persists the StudyBun AI (AI Insights page) last result to Supabase —
+  // same reasoning as saveMockAiComparison above. Only called on a
+  // successful generation; a failed re-run leaves the last good result.
+  const saveAiInsights = async (result, generatedAt) => aiInsightsRow.save({ result, generated_at: generatedAt });
+
   const completeRevision = async (id) => {
     const priorStatus = revisions.find((r) => r.id === id)?.status || "Pending";
     await revisionsQ.update(id, { status: "Completed" });
@@ -1077,6 +1087,7 @@ export default function App() {
     questions, addQuestions, deleteQuestion: questionsQ.remove, mocks, addMock, updateMock, deleteMock,
     mockAnalysisMap: mockAnalysis.map, saveMockAnalysis,
     mockAiComparison: mockAiCompareRow.row, saveMockAiComparison,
+    aiInsights: aiInsightsRow.row, saveAiInsights,
     revisions, completeRevision, addRevision, deleteRevision,
     tasks, addTask, toggleTask, updateTask, deleteTask, backlogChapters, todayHours, todayMinutes,
     todayLoggedHours, todayTimerHours, totalLoggedHours, totalTimerHours,

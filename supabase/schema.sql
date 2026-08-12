@@ -316,6 +316,22 @@ create table if not exists mock_ai_comparison (
   updated_at timestamptz default now()
 );
 
+-- ---------- STUDYBUN AI: AI INSIGHTS CACHE ----------
+-- One row per user holding the *last* generated AI Insights result
+-- (AI Insights / "StudyBun AI" page). Same single-row-cache pattern as
+-- mock_ai_comparison above — previously this result only lived in local
+-- React state, so it vanished the moment the student left the page or
+-- refreshed. This table is what makes it persist across nav/refresh/
+-- devices; ai_insights_history above stays as the separate append-only
+-- log. Overwritten only when the student explicitly clicks "Generate AI
+-- Insights" again; a failed re-run leaves the last good result untouched.
+create table if not exists ai_insights (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  result jsonb,
+  generated_at timestamptz,
+  updated_at timestamptz default now()
+);
+
 -- ---------- THEMES / MASCOTS (reference tables; app also has built-in defaults) ----------
 create table if not exists themes (
   id text primary key,
@@ -357,7 +373,7 @@ begin
       'syllabus_subjects','syllabus_chapters','chapter_progress','backlog_items','goals',
       'question_logs','mock_tests','mock_analysis','revision_plans','revision_logs',
       'tasks','achievements','notifications','ai_insights_history','user_statistics',
-      'mock_ai_comparison'
+      'mock_ai_comparison','ai_insights'
     ])
   loop
     execute format('alter table %I enable row level security;', t);
@@ -390,6 +406,7 @@ alter publication supabase_realtime add table tasks;
 alter publication supabase_realtime add table achievements;
 alter publication supabase_realtime add table notifications;
 alter publication supabase_realtime add table mock_ai_comparison;
+alter publication supabase_realtime add table ai_insights;
 
 -- ============================================================
 -- LEADERBOARD (kawaii realtime Top 20 + anti-cheat Study Score)

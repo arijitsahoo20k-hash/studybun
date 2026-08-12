@@ -11,8 +11,12 @@ export default function AIInsightsPage(p) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [result, setResult] = useState(null);
-  const [generatedAt, setGeneratedAt] = useState(null);
+  // The result itself lives in Supabase (p.aiInsights, saved via
+  // p.saveAiInsights) so it survives leaving this page, refreshing, or
+  // switching devices — not just local state that vanished the moment you
+  // navigated away.
+  const result = p.aiInsights?.result || null;
+  const generatedAt = p.aiInsights?.generated_at ? new Date(p.aiInsights.generated_at) : null;
 
   const hasEnoughData = p.sessions.length > 0 || p.questions.length > 0 || p.mocks.length > 0;
   const unlockAt = p.featureUnlockStreak ?? 6;
@@ -51,9 +55,13 @@ export default function AIInsightsPage(p) {
     const snapshot = buildStatsSnapshot(p);
     try {
       const output = await generateAIInsights(snapshot);
-      setResult(output);
-      setGeneratedAt(new Date());
-      // Persist to history — non-blocking, failure here shouldn't hide the result the user already has.
+      const now = new Date();
+      // Persist the current result to Supabase so it's still here next
+      // time this page loads — on this device or any other — until it's
+      // regenerated. A failed re-run below leaves this untouched.
+      await p.saveAiInsights(output, now.toISOString());
+      // Also append to the separate history log (unchanged behaviour) —
+      // non-blocking, failure here shouldn't hide the result just saved.
       if (user?.id) {
         supabase.from("ai_insights_history").insert({ user_id: user.id, input_snapshot: snapshot, output }).then(({ error: err }) => {
           if (err) console.error("[StudyBun] failed to save AI insight history:", err.message);
@@ -83,9 +91,12 @@ export default function AIInsightsPage(p) {
 
       <Card>
         <Btn onClick={generate} disabled={loading}>
-          {loading ? <><RefreshCw size={16} className="sb-spin" /> Thinking...</> : <><Sparkles size={16} /> Generate AI Insights</>}
+          {loading ? <><RefreshCw size={16} className="sb-spin" /> Thinking...</> : <><Sparkles size={16} /> {result ? "Re-run AI Insights" : "Generate AI Insights"}</>}
         </Btn>
-        <div className="sb-muted" style={{ marginTop: 8, fontSize: 12 }}>Only calls Gemini when you click this — never automatically, never in the background.</div>
+        <div className="sb-muted" style={{ marginTop: 8, fontSize: 12 }}>
+          Only calls Gemini when you click this — never automatically, never in the background.
+          {result && <> Saved to your account, so it stays here until you run it again — on this device or any other.</>}
+        </div>
       </Card>
 
       {error && (
