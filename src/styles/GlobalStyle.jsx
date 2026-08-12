@@ -1145,6 +1145,8 @@ export default function GlobalStyle() {
 
       /* ---- Mocks: Main vs Advanced comparison ---- */
       .sb-cmp-card { overflow: visible; }
+      .sb-cmp-card .recharts-wrapper { overflow: visible; }
+      .sb-cmp-card .recharts-surface { overflow: visible; }
 
       .sb-cmp-toggle { display: inline-flex; border: 2px solid var(--mascot-outline); border-radius: 999px; overflow: hidden; background: var(--mascot-body); box-shadow: 2px 2px 0 var(--mascot-outline); }
       .sb-cmp-toggle button {

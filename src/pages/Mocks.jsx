@@ -439,8 +439,8 @@ export default function MocksPage(p) {
 
         {trendData.length ? (
           <>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={trendData} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={210}>
+              <LineChart data={trendData} margin={{ top: 6, right: 14, left: 4, bottom: 4 }}>
                 <defs>
                   <linearGradient id="sbMainGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.22} />
@@ -448,8 +448,8 @@ export default function MocksPage(p) {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" vertical={false} />
-                <XAxis dataKey="name" stroke="var(--muted)" fontSize={11.5} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--muted)" fontSize={11.5} tickLine={false} axisLine={false} unit={trendView === "pct" ? "%" : ""} width={40} />
+                <XAxis dataKey="name" stroke="var(--muted)" fontSize={11.5} tickLine={false} axisLine={false} padding={{ left: 12, right: 12 }} />
+                <YAxis stroke="var(--muted)" fontSize={11.5} tickLine={false} axisLine={false} unit={trendView === "pct" ? "%" : ""} width={44} />
                 <Tooltip
                   contentStyle={{ borderRadius: 14, border: "1.5px solid var(--mascot-outline)", background: "var(--card-bg, #fff)", fontSize: 12.5, boxShadow: "3px 3px 0 var(--mascot-outline)" }}
                   labelStyle={{ fontWeight: 800, marginBottom: 4 }}
