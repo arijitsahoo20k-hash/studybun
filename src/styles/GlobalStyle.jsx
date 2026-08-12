@@ -280,8 +280,19 @@ export default function GlobalStyle() {
         background: var(--mascot-body);
         border-right: 2.5px solid var(--mascot-outline); box-shadow: none;
         overflow: hidden;
-        transition: flex-basis .26s cubic-bezier(.4,0,.2,1), width .26s cubic-bezier(.4,0,.2,1), padding .26s ease;
+        /* contain:layout scopes this element's own layout work so the
+           per-frame width change during the collapse/expand transition
+           doesn't force the browser to re-check layout of unrelated
+           subtrees -- it still correctly reflows .sb-main (its flex
+           sibling), but skips redundant recalculation elsewhere.
+           padding is intentionally left out of the transition list: it
+           was animating alongside width/flex-basis for a barely-visible
+           4px difference, at the cost of a second layout-triggering
+           property recalculating every frame. It now snaps instantly. */
+        contain: layout;
+        transition: flex-basis .26s cubic-bezier(.4,0,.2,1), width .26s cubic-bezier(.4,0,.2,1);
       }
+      .sb-sidebar-animating { will-change: width, flex-basis; }
       .sb-sidebar-brand {
         display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px;
         flex: 0 0 auto;
@@ -338,14 +349,25 @@ export default function GlobalStyle() {
       .sb-sidebar-collapsed .sb-sidebar-item:hover:not(.active),
       .sb-sidebar-collapsed .sb-sidebar-item.active { transform: none; }
       /* Hover/focus tooltip for the icons-only rail. The rail itself stays
-         overflow:hidden the rest of the time (needed for its own vertical
-         scroll with 16 nav items on short viewports); it only pops open to
-         overflow:visible for the moment a tooltip needs to escape it,
-         via :has() -- same selector technique already used elsewhere in
-         this file (route-scoped .sb-main overrides below). */
-      .sb-sidebar-collapsed:has(.sb-sidebar-item:hover, .sb-sidebar-item:focus-visible),
-      .sb-sidebar-nav-collapsed:has(.sb-sidebar-item:hover, .sb-sidebar-item:focus-visible) {
-        overflow: visible;
+         overflow:hidden/auto the rest of the time (needed for its own
+         vertical scroll with 16 nav items on short viewports); it only
+         pops open to overflow:visible for the moment a tooltip needs to
+         escape it, via :has() -- same selector technique already used
+         elsewhere in this file (route-scoped .sb-main overrides below).
+         Scoped to hover-capable, fine-pointer devices only: on a touch
+         tablet, tapping a nav item leaves it in a "stuck" :hover/
+         :focus-visible state until the user taps elsewhere (a known
+         mobile Safari/Chrome quirk). Without this guard that stuck state
+         flips the nav's overflow-y:auto to overflow:visible on tap,
+         killing its scroll container the instant someone touches it --
+         so items below the fold (e.g. Profile/Settings) become
+         unreachable and untappable. Desktop/trackpad hover doesn't have
+         this "stuck" problem, so it keeps the tooltip escape behavior. */
+      @media (hover: hover) and (pointer: fine) {
+        .sb-sidebar-collapsed:has(.sb-sidebar-item:hover, .sb-sidebar-item:focus-visible),
+        .sb-sidebar-nav-collapsed:has(.sb-sidebar-item:hover, .sb-sidebar-item:focus-visible) {
+          overflow: visible;
+        }
       }
       .sb-sidebar-tooltip {
         position: absolute; left: calc(100% + 10px); top: 50%;
@@ -389,7 +411,7 @@ export default function GlobalStyle() {
       .sb-mobile-toggle { display: none; }
       .sb-mobile-nav { display: none; }
 
-      .sb-main { flex: 1 1 auto; min-width: 0; width: calc(100% - 244px); height: 100vh; padding: clamp(20px, 2.6vw, 40px) clamp(20px, 3vw, 44px) 90px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; }
+      .sb-main { flex: 1 1 auto; min-width: 0; width: calc(100% - 244px); height: 100vh; padding: clamp(20px, 2.6vw, 40px) clamp(20px, 3vw, 44px) 90px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; contain: layout; }
       /* One page's worth of content, wrapped so AnimatePresence in App.jsx
          has a single element to fade/slide in and out between nav switches.
          Mirrors .sb-main's own centering so the swap is otherwise invisible

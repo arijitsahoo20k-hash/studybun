@@ -232,7 +232,18 @@ export default function App() {
       return false;
     }
   });
+  // Tracks whether the sidebar is mid collapse/expand transition, so the
+  // .sb-sidebar-animating class (will-change: width/flex-basis) is only
+  // applied for the ~260ms of the transition itself rather than left on
+  // permanently -- a lingering will-change keeps the element on its own
+  // compositor layer at all times, which costs memory/GPU for no benefit
+  // once the animation has finished.
+  const [sidebarAnimating, setSidebarAnimating] = useState(false);
+  const sidebarAnimTimeoutRef = useRef(null);
   const toggleSidebarCollapsed = () => {
+    setSidebarAnimating(true);
+    if (sidebarAnimTimeoutRef.current) clearTimeout(sidebarAnimTimeoutRef.current);
+    sidebarAnimTimeoutRef.current = setTimeout(() => setSidebarAnimating(false), 300);
     setSidebarCollapsed((v) => {
       const next = !v;
       try {
@@ -244,6 +255,11 @@ export default function App() {
       return next;
     });
   };
+  useEffect(() => {
+    return () => {
+      if (sidebarAnimTimeoutRef.current) clearTimeout(sidebarAnimTimeoutRef.current);
+    };
+  }, []);
 
   const [toast, setToast] = useState(null); // { message, undo? }
   const [celebrateType, setCelebrateType] = useState(null); // null | "confetti" | "petals"
@@ -1114,7 +1130,7 @@ export default function App() {
       )}
 
       <aside
-        className={`sb-sidebar ${sidebarCollapsed ? "sb-sidebar-collapsed" : ""}`}
+        className={`sb-sidebar ${sidebarCollapsed ? "sb-sidebar-collapsed" : ""} ${sidebarAnimating ? "sb-sidebar-animating" : ""}`}
         aria-label="StudyBun navigation"
       >
         <div className="sb-sidebar-brand">
