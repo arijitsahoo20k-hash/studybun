@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
-import { attachProfiles } from "../lib/communityProfiles";
+import { attachProfiles, fetchOneProfile } from "../lib/communityProfiles";
 import { compressImage } from "../lib/compressImage";
 
 const PAGE_SIZE = 20;
@@ -64,7 +64,7 @@ export function useCommunityFeed() {
     const ch = supabase
       .channel("rt:community_posts")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "community_posts" }, async (payload) => {
-        const { data: prof } = await supabase.from("profiles").select("name, mascot").eq("user_id", payload.new.user_id).maybeSingle();
+        const prof = await fetchOneProfile(payload.new.user_id);
         setPosts((prev) => (prev.some((p) => p.id === payload.new.id) ? prev : [{ ...payload.new, profiles: prof }, ...prev]));
       })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "community_posts" }, (payload) => {

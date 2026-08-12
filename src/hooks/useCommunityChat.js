@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
-import { attachProfiles } from "../lib/communityProfiles";
+import { attachProfiles, fetchOneProfile } from "../lib/communityProfiles";
 
 const PAGE_SIZE = 50;
 const SELECT = "id, channel_id, user_id, content, created_at, expires_at";
@@ -79,8 +79,10 @@ export function useCommunityChat(channelId) {
         { event: "INSERT", schema: "public", table: "community_messages", filter: `channel_id=eq.${channelId}` },
         async (payload) => {
           // The realtime payload doesn't include the joined profile, so
-          // fetch just that row's display info once.
-          const { data: prof } = await supabase.from("profiles").select("name, mascot").eq("user_id", payload.new.user_id).maybeSingle();
+          // fetch just that row's display info once. Goes through the
+          // get_community_profiles RPC, not a direct profiles select —
+          // see attachProfiles() for why.
+          const prof = await fetchOneProfile(payload.new.user_id);
           setMessages((prev) => {
             if (prev.some((m) => m.id === payload.new.id)) return prev;
             return [...prev, { ...payload.new, profiles: prof }];

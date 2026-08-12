@@ -255,6 +255,14 @@ export default function CommunityStyle() {
         display: inline-flex; align-items: center; justify-content: center; border-radius: 8px;
       }
       .sb-cm-actions-trigger:hover { background: var(--mascot-inner); }
+
+      /* chat messages only have a delete button now (no report/block) */
+      .sb-chat-msg-delete {
+        background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px;
+        display: inline-flex; align-items: center; justify-content: center; border-radius: 8px;
+        align-self: flex-start;
+      }
+      .sb-chat-msg-delete:hover { background: var(--mascot-inner); color: #C24444; }
       .sb-cm-actions-backdrop { position: fixed; inset: 0; z-index: 40; }
       .sb-cm-actions-menu, .sb-cm-actions-panel {
         position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 41;

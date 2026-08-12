@@ -1,14 +1,19 @@
 import React from "react";
+import { Trash2 } from "lucide-react";
 import Mascot from "../Mascot";
-import ContentActions from "./ContentActions";
 
 function formatTime(iso) {
   return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-export default function ChatMessage({ message, isOwn, myProfile, currentUserId, isModerator, onReport, onBlock, onDelete }) {
+// Report and Block were removed from chat messages entirely (not just
+// hidden) — this component no longer takes onReport/onBlock props at
+// all. They're still available on feed posts (see CommunityPost.jsx),
+// which is a separate use of the shared ContentActions component.
+export default function ChatMessage({ message, isOwn, myProfile, isModerator, onDelete }) {
   const name = isOwn ? (myProfile?.name || "You") : (message.profiles?.name || "Study Buddy");
   const mascotSpecies = isOwn ? (myProfile?.mascot || "bunny") : (message.profiles?.mascot || "bunny");
+  const canDelete = isOwn || isModerator;
 
   return (
     <div className={`sb-chat-msg ${isOwn ? "own" : ""}`}>
@@ -20,16 +25,16 @@ export default function ChatMessage({ message, isOwn, myProfile, currentUserId, 
         </div>
         <div className="sb-chat-msg-content">{message.content}</div>
       </div>
-      <ContentActions
-        authorId={message.user_id}
-        currentUserId={currentUserId}
-        isModerator={isModerator}
-        targetType="message"
-        targetId={message.id}
-        onReport={onReport}
-        onBlock={() => onBlock(message.user_id)}
-        onDelete={() => onDelete(message.id)}
-      />
+      {canDelete && (
+        <button
+          type="button"
+          className="sb-chat-msg-delete"
+          aria-label="Delete message"
+          onClick={() => onDelete(message.id)}
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
     </div>
   );
 }

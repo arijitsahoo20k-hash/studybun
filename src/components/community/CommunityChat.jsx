@@ -70,10 +70,7 @@ export default function CommunityChat({
               message={m}
               isOwn={m.user_id === currentUserId}
               myProfile={myProfile}
-              currentUserId={currentUserId}
               isModerator={isModerator}
-              onReport={moderation.report}
-              onBlock={moderation.blockUser}
               onDelete={deleteMessage}
             />
           ))
