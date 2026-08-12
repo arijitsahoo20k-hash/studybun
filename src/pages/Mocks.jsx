@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from "react";
-import { ClipboardList, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X, Search, Clock, Target, Award, Compass } from "lucide-react";
+import { ClipboardList, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X, Search, Clock, Target, Award, Compass, Atom, FlaskConical, Calculator, Trophy, TrendingUp, TrendingDown, Minus, Lightbulb } from "lucide-react";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { Card, SectionTitle, Btn, EmptyState, ProgressRing } from "../components/ui";
 import { formatISTCalendarDate, todayIST } from "../lib/dateIST";
@@ -499,7 +499,7 @@ export default function MocksPage(p) {
         )}
       </Card>
 
-      <Card>
+      <Card washi className="sb-ai-card">
         <SectionTitle icon={Sparkles}>Smart AI Comparison</SectionTitle>
         <p className="sb-muted" style={{ fontSize: 12, marginBottom: 10 }}>
           Sends your real mock scores to a free-tier AI model. If you've logged both JEE Main and JEE Advanced, it compares
@@ -523,45 +523,72 @@ export default function MocksPage(p) {
         )}
 
         {aiResult && (
-          <div style={{ marginTop: 16 }}>
+          <div className="sb-ai-report">
             {aiResult.mode === "single" && (
-              <div className="sb-hero-meta" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+              <div className="sb-ai-notice">
                 <Compass size={14} /> Only {aiResult.exam_focus} mocks logged so far — this is a standalone evaluation, not a head-to-head.
               </div>
             )}
 
-            <div className="sb-grid-2">
-              <div className="sb-mini-stat">
-                <div className="sb-mini-num" style={{ fontSize: 15 }}>{aiResult.mode === "single" ? aiResult.exam_focus : aiResult.stronger_paper}</div>
-                <div className="sb-muted">{aiResult.mode === "single" ? "Focus exam" : "Stronger paper"}</div>
+            <div className="sb-ai-headline">
+              <div className="sb-ai-badge winner">
+                <Trophy size={16} />
+                <div>
+                  <div className="sb-ai-badge-label">{aiResult.mode === "single" ? "Focus exam" : "Stronger paper"}</div>
+                  <div className="sb-ai-badge-value">{aiResult.mode === "single" ? aiResult.exam_focus : aiResult.stronger_paper}</div>
+                </div>
               </div>
-              <div className="sb-mini-stat">
-                <div className="sb-mini-num" style={{ fontSize: 15 }}>{aiResult.mode === "single" ? aiResult.percentile_estimate : aiResult.score_gap_pct}</div>
-                <div className="sb-muted">{aiResult.mode === "single" ? "Est. percentile band" : "Score gap"}</div>
+              <div className="sb-ai-badge gap">
+                <Target size={16} />
+                <div>
+                  <div className="sb-ai-badge-label">{aiResult.mode === "single" ? "Est. percentile band" : "Score gap"}</div>
+                  <div className="sb-ai-badge-value">{aiResult.mode === "single" ? aiResult.percentile_estimate : aiResult.score_gap_pct}</div>
+                </div>
               </div>
             </div>
-            <p style={{ marginTop: 12 }}>{aiResult.summary}</p>
+
+            <p className="sb-ai-summary">{aiResult.summary}</p>
 
             {aiResult.subject_comparison && (
-              <div className="sb-grid-2" style={{ marginTop: 12 }}>
-                <div><b>Physics</b><p className="sb-muted" style={{ fontSize: 13 }}>{aiResult.subject_comparison.physics}</p></div>
-                <div><b>Chemistry</b><p className="sb-muted" style={{ fontSize: 13 }}>{aiResult.subject_comparison.chemistry}</p></div>
-                <div><b>Math</b><p className="sb-muted" style={{ fontSize: 13 }}>{aiResult.subject_comparison.math}</p></div>
+              <div className="sb-ai-subjects">
+                <div className="sb-ai-subject physics">
+                  <div className="sb-ai-subject-head"><Atom size={15} /> Physics</div>
+                  <p>{aiResult.subject_comparison.physics}</p>
+                </div>
+                <div className="sb-ai-subject chemistry">
+                  <div className="sb-ai-subject-head"><FlaskConical size={15} /> Chemistry</div>
+                  <p>{aiResult.subject_comparison.chemistry}</p>
+                </div>
+                <div className="sb-ai-subject math">
+                  <div className="sb-ai-subject-head"><Calculator size={15} /> Math</div>
+                  <p>{aiResult.subject_comparison.math}</p>
+                </div>
               </div>
             )}
 
             {aiResult.benchmark_context && (
-              <div className="sb-card-tinted" style={{ marginTop: 12, padding: 12, borderRadius: 14 }}>
-                <div className="sb-muted small" style={{ fontWeight: 800, marginBottom: 4, textTransform: "uppercase", letterSpacing: ".04em", fontSize: 10.5 }}>
+              <div className="sb-ai-benchmark">
+                <div className="sb-ai-benchmark-head">
+                  <Award size={13} />
                   Real-world benchmark {aiResult.mode === "compare" && aiResult.percentile_estimate ? `· ${aiResult.percentile_estimate}` : ""}
                 </div>
-                <p style={{ fontSize: 13 }}>{aiResult.benchmark_context}</p>
-                <p className="sb-muted" style={{ fontSize: 10.5, marginTop: 6 }}>General trend estimate from the model's own knowledge, not a live lookup — treat it as a rough compass, not an exact rank.</p>
+                <p>{aiResult.benchmark_context}</p>
+                <p className="sb-ai-benchmark-foot">General trend estimate from the model's own knowledge, not a live lookup — treat it as a rough compass, not an exact rank.</p>
               </div>
             )}
 
-            {aiResult.trend && <p style={{ marginTop: 12 }}><b>Trend:</b> {aiResult.trend}</p>}
-            {aiResult.recommendation && <p style={{ marginTop: 8 }}><b>Recommendation:</b> {aiResult.recommendation}</p>}
+            {aiResult.trend && (
+              <div className="sb-ai-line trend">
+                {/[+-]?\bimprov|\bup\b|widen(ing)? in your favou?r/i.test(aiResult.trend) ? <TrendingUp size={15} /> : /narrow|dip|declin|drop/i.test(aiResult.trend) ? <TrendingDown size={15} /> : <Minus size={15} />}
+                <div><b>Trend</b><p>{aiResult.trend}</p></div>
+              </div>
+            )}
+            {aiResult.recommendation && (
+              <div className="sb-ai-line rec">
+                <Lightbulb size={15} />
+                <div><b>Recommendation</b><p>{aiResult.recommendation}</p></div>
+              </div>
+            )}
           </div>
         )}
       </Card>

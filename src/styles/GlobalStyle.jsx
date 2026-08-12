@@ -1143,6 +1143,56 @@ export default function GlobalStyle() {
       .sb-achv-unlocked-row { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; color: var(--accent); }
       .sb-achv-progress-label { font-size: 10.5px; color: var(--muted); font-weight: 700; text-align: right; }
 
+      /* ---- Mocks: AI comparison report ---- */
+      .sb-ai-card { position: relative; }
+
+      .sb-ai-notice { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--mascot-inner); border: 1.5px dashed var(--mascot-outline); border-radius: 12px; padding: 8px 12px; margin-bottom: 14px; }
+
+      .sb-ai-report { margin-top: 16px; padding-top: 16px; border-top: 2px dashed var(--soft); }
+
+      .sb-ai-headline { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .sb-ai-badge {
+        display: flex; align-items: center; gap: 9px; padding: 11px 13px; border-radius: 16px;
+        border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline);
+      }
+      .sb-ai-badge.winner { background: linear-gradient(135deg, var(--mascot-inner), transparent); }
+      .sb-ai-badge.winner svg { color: #E8B923; flex-shrink: 0; }
+      .sb-ai-badge.gap { background: var(--bg); }
+      .sb-ai-badge.gap svg { color: var(--accent); flex-shrink: 0; }
+      .sb-ai-badge-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+      .sb-ai-badge-value { font-family: var(--font-display); font-weight: 800; font-size: 14.5px; margin-top: 1px; line-height: 1.2; }
+
+      .sb-ai-summary { font-size: 13.5px; line-height: 1.6; margin-top: 14px; }
+
+      .sb-ai-subjects { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+      .sb-ai-subject { border-radius: 14px; padding: 10px 11px; border: 1.5px solid var(--mascot-outline); background: var(--bg); }
+      .sb-ai-subject-head { display: flex; align-items: center; gap: 5px; font-family: var(--font-display); font-weight: 800; font-size: 12px; margin-bottom: 4px; }
+      .sb-ai-subject p { font-size: 11.5px; line-height: 1.5; color: var(--muted); margin: 0; }
+      .sb-ai-subject.physics .sb-ai-subject-head svg { color: #4A90D9; }
+      .sb-ai-subject.chemistry .sb-ai-subject-head svg { color: #59B37D; }
+      .sb-ai-subject.math .sb-ai-subject-head svg { color: #D9784A; }
+
+      .sb-ai-benchmark {
+        margin-top: 14px; padding: 13px 14px; border-radius: 16px;
+        background: linear-gradient(150deg, var(--mascot-inner), var(--bg));
+        border: 1.5px solid var(--mascot-outline);
+      }
+      .sb-ai-benchmark-head { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); margin-bottom: 5px; }
+      .sb-ai-benchmark p { font-size: 13px; line-height: 1.55; margin: 0; }
+      .sb-ai-benchmark-foot { font-size: 10.5px; color: var(--muted); margin-top: 7px !important; font-weight: 600; }
+
+      .sb-ai-line { display: flex; gap: 9px; margin-top: 12px; align-items: flex-start; }
+      .sb-ai-line svg { flex-shrink: 0; margin-top: 2px; }
+      .sb-ai-line b { font-family: var(--font-display); font-weight: 800; font-size: 12.5px; display: block; margin-bottom: 2px; }
+      .sb-ai-line p { font-size: 13px; line-height: 1.55; margin: 0; color: var(--mascot-ink); }
+      .sb-ai-line.trend svg { color: var(--accent); }
+      .sb-ai-line.rec svg { color: #E8A23A; }
+
+      @media (max-width: 560px) {
+        .sb-ai-headline { grid-template-columns: 1fr; }
+        .sb-ai-subjects { grid-template-columns: 1fr; }
+      }
+
       /* ---- Mocks: Main vs Advanced comparison ---- */
       .sb-cmp-card { overflow: visible; }
       .sb-cmp-card .recharts-wrapper { overflow: visible; }

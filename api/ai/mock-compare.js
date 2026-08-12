@@ -51,7 +51,7 @@ Return ONLY valid JSON (no markdown fences, no preamble) matching this exact sha
   "benchmark_context": "1-2 sentences positioning these scores against general real-world JEE percentile/cutoff trends, per the instruction above",
   "percentile_estimate": "a short approximate percentile/rank-band string for this student's general level right now, or 'not confident enough to estimate'",
   "trend": "1-2 sentences on whether the gap between the two papers is widening, narrowing, or steady over time",
-  "recommendation": "1-3 concrete, actionable sentences on what to focus on given this specific gap (e.g. which paper's style/difficulty/negative-marking needs more targeted practice)"
+  "recommendation": "1-3 concrete, actionable sentences on what to focus on given this specific gap — reference real JEE-specific factors where relevant (Advanced's partial-marking and multi-correct/numerical formats vs Main's straight MCQ negative marking, Advanced's tougher conceptual depth vs Main's speed-and-accuracy emphasis, or a specific subject/topic pattern visible in the data)"
 }`;
 }
 
@@ -84,7 +84,7 @@ Return ONLY valid JSON (no markdown fences, no preamble) matching this exact sha
   "benchmark_context": "1-2 sentences positioning these scores against general real-world ${examFocus} percentile/cutoff trends, per the instruction above",
   "percentile_estimate": "a short approximate percentile/rank-band string for this student's general level right now, or 'not confident enough to estimate'",
   "trend": "1-2 sentences on whether their ${examFocus} scores are improving, dipping, or steady over time",
-  "recommendation": "1-3 concrete, actionable sentences on what to focus on next — and mention that logging a ${other} mock would unlock a direct Main-vs-Advanced comparison"
+  "recommendation": "1-3 concrete, actionable sentences on what to focus on next, referencing real ${examFocus}-specific factors where relevant (marking scheme, question style, typical weak-topic patterns for aspirants at this score level) — and mention that logging a ${other} mock would unlock a direct Main-vs-Advanced comparison"
 }`;
 }
 
