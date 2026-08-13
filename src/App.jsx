@@ -148,22 +148,26 @@ export default function App() {
   const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || isPage("questions", "syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
   const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date", enabled: page === "dashboard" || isPage("syllabus", "mocks", "backlog", "analytics", "ai", "leaderboard", "profile") });
   // Backlog's recovery engine reads mock mistake tags directly, so it needs
-  // mock_analysis live too — not just on the Mocks page itself.
-  const mockAnalysis = useMockAnalysis({ enabled: page === "dashboard" || page === "mocks" || page === "backlog" });
+  // mock_analysis live too — not just on the Mocks page itself. Not needed
+  // on Dashboard: no dashboard card or the achievement-unlock engine below
+  // reads mockAnalysis, only mocks.length (mocksQ) does.
+  const mockAnalysis = useMockAnalysis({ enabled: page === "mocks" || page === "backlog" });
   // Single-row cache of the last Smart AI Comparison result (Mock Tests
   // page) — lives in Supabase, not localStorage, so it survives switching
-  // devices/browsers on the same account. Always-on like profiles/
-  // user_settings since it's just one small row, not a page-gated list.
-  const mockAiCompareRow = useDeviceRow("mock_ai_comparison", { result: null });
+  // devices/browsers on the same account. Only relevant on the Mocks page
+  // itself — no other page or background effect reads it — so it's gated
+  // like everything else instead of staying open for the whole session.
+  const mockAiCompareRow = useDeviceRow("mock_ai_comparison", { result: null }, { enabled: page === "mocks" });
   // Single-row cache of the last StudyBun AI (AI Insights page) result —
-  // same reasoning as mockAiCompareRow above. Previously this lived only
-  // in that page's local useState, so it disappeared the instant you left
-  // the page or refreshed; now it survives nav/refresh/devices.
-  const aiInsightsRow = useDeviceRow("ai_insights", { result: null, generated_at: null });
+  // same reasoning as mockAiCompareRow above, gated to the AI Insights
+  // page. Previously this lived only in that page's local useState, so it
+  // disappeared the instant you left the page or refreshed; now it
+  // survives nav/refresh/devices while still only staying open when needed.
+  const aiInsightsRow = useDeviceRow("ai_insights", { result: null, generated_at: null }, { enabled: page === "ai" });
   const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true, enabled: page === "dashboard" || isPage("syllabus", "mocks", "backlog", "revision", "ai", "profile") });
   const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date", enabled: page === "dashboard" || isPage("backlog", "planner", "profile") });
   const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at", enabled: page === "dashboard" || isPage("backlog", "ai") });
-  const goalsQ = useRealtimeTable("goals", { orderBy: "created_at", ascending: true, enabled: page === "dashboard" || isPage("goals", "achievements") });
+  const goalsQ = useRealtimeTable("goals", { orderBy: "created_at", ascending: true, enabled: isPage("goals", "achievements") });
   const achievementsQ = useRealtimeTable("achievements", { orderBy: "unlocked_at", enabled: page === "dashboard" || page === "achievements" });
   // Streak-freeze tokens: see supabase/migration_streak_freeze.sql. A frozen
   // date is treated exactly like a genuine study day (folded into

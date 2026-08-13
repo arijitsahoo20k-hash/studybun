@@ -121,7 +121,7 @@ export function useRealtimeTable(table, { orderBy = "created_at", ascending = fa
 }
 
 /** Single-row-per-user table (profiles, user_settings, user_statistics). */
-export function useDeviceRow(table, defaults = {}) {
+export function useDeviceRow(table, defaults = {}, { enabled = true } = {}) {
   const { user } = useAuth();
   const userId = user?.id;
   const [row, setRow] = useState(null);
@@ -134,6 +134,16 @@ export function useDeviceRow(table, defaults = {}) {
     if (!userId) {
       setRow(null);
       setLoading(false);
+      return () => { active = false; };
+    }
+
+    if (!enabled) {
+      // Same "keep the last snapshot, just pause the network" behavior as
+      // useRealtimeTable's enabled flag — lets a page-scoped single-row
+      // cache (e.g. mock_ai_comparison, ai_insights) skip its query/channel
+      // entirely while some other page is open.
+      setLoading(false);
+      loadRef.current = null;
       return () => { active = false; };
     }
 
@@ -166,7 +176,7 @@ export function useDeviceRow(table, defaults = {}) {
 
     return () => { active = false; supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table, userId]);
+  }, [table, userId, enabled]);
 
   const save = useCallback(
     async (patch) => {
