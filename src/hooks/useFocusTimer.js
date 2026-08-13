@@ -127,6 +127,19 @@ export function useFocusTimer({ onComplete } = {}) {
   const [radioChoice, setRadioChoice] = useState(persisted?.radioChoice || "none");
   const [radioCustomUrl, setRadioCustomUrl] = useState(persisted?.radioCustomUrl || "");
   const [startedMinutes, setStartedMinutes] = useState(persisted?.startedMinutes || 0);
+  // Explicit source of truth for "is a real session in progress" (running,
+  // or paused mid-session, or awaiting the post-session log). Only ever set
+  // by start()/reset()/resetForNewSession() below — deliberately NOT derived
+  // from comparing startedMinutes/secondsLeft, because that comparison goes
+  // stale (e.g. after a mode switch or a custom-duration edit) and used to
+  // cause modes to appear "locked" even though the timer was never started.
+  // Falls back to running/askDone for state persisted before this field
+  // existed, so it self-heals for anyone already carrying the stale bug.
+  const [sessionInProgress, setSessionInProgress] = useState(
+    typeof persisted?.sessionInProgress === "boolean"
+      ? persisted.sessionInProgress
+      : !!(persisted?.running || persisted?.askDone)
+  );
 
   const endAtRef = useRef(persisted?.running ? persisted?.endAt || null : null);
   const [secondsLeft, setSecondsLeft] = useState(() => {
@@ -148,9 +161,9 @@ export function useFocusTimer({ onComplete } = {}) {
   useEffect(() => {
     savePersisted({
       modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
-      secondsLeft, endAt: endAtRef.current,
+      secondsLeft, endAt: endAtRef.current, sessionInProgress,
     });
-  }, [modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes, secondsLeft]);
+  }, [modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes, secondsLeft, sessionInProgress]);
 
   useEffect(() => () => stopDroneOsc(audioCtxRef.current, droneRef), []);
 
@@ -221,25 +234,30 @@ export function useFocusTimer({ onComplete } = {}) {
     document.title = `${mm}:${ss} · ${mode} — StudyBun`;
   }, [secondsLeft, running, mode]);
 
-  const elapsedSeconds = startedMinutes > 0 ? Math.max(0, startedMinutes * 60 - secondsLeft) : 0;
+  const elapsedSeconds = sessionInProgress && startedMinutes > 0
+    ? Math.max(0, startedMinutes * 60 - secondsLeft)
+    : 0;
   // A session is "in progress" (and other modes should be blocked) once it's
   // running, paused with some real progress, or sitting at the "what did you
-  // study" step waiting to be logged/discarded.
-  const sessionActive = running || askDone || elapsedSeconds > 0;
+  // study" step waiting to be logged/discarded. Driven by the explicit
+  // sessionInProgress flag (see its declaration above) rather than derived
+  // arithmetic, which is what used to cause modes to lock without the timer
+  // ever being started.
+  const sessionActive = running || askDone || sessionInProgress;
   // Guard against losing a real chunk of a session (>5 min) to an accidental
   // mode tap — same threshold as the manual Save button below.
   const canSave = !askDone && elapsedSeconds >= 300;
 
   const changeMode = useCallback((m) => {
     if (m === mode) return;
-    if (running || askDone || elapsedSeconds > 0) return; // blocked — finish, save, or reset first
+    if (running || askDone || sessionInProgress) return; // blocked — finish, save, or reset first
     setModeRaw(m);
     setRunning(false);
     endAtRef.current = null;
     finishedRef.current = false;
     setSecondsLeft((modeMinutes[m] ?? 25) * 60);
     stopDroneOsc(audioCtxRef.current, droneRef);
-  }, [mode, modeMinutes, running, askDone, elapsedSeconds]);
+  }, [mode, modeMinutes, running, askDone, sessionInProgress]);
 
   const setCustomMinutes = useCallback((m, mins) => {
     const clamped = Math.max(1, Math.min(240, Math.round(mins) || 1));
@@ -257,6 +275,7 @@ export function useFocusTimer({ onComplete } = {}) {
     finishedRef.current = false;
     setAskDone(false);
     setStartedMinutes(modeMinutes[mode] ?? (Math.round(secondsLeft / 60) || 1));
+    setSessionInProgress(true);
     endAtRef.current = Date.now() + secondsLeft * 1000;
     setRunning(true);
     if (soundOn) {
@@ -277,6 +296,8 @@ export function useFocusTimer({ onComplete } = {}) {
     endAtRef.current = null;
     finishedRef.current = false;
     setSecondsLeft((modeMinutes[mode] ?? 25) * 60);
+    setStartedMinutes(0);
+    setSessionInProgress(false);
     stopDroneOsc(audioCtxRef.current, droneRef);
   }, [mode, modeMinutes]);
 
@@ -303,6 +324,8 @@ export function useFocusTimer({ onComplete } = {}) {
   const resetForNewSession = useCallback(() => {
     setAskDone(false);
     setSecondsLeft((modeMinutes[mode] ?? 25) * 60);
+    setStartedMinutes(0);
+    setSessionInProgress(false);
   }, [mode, modeMinutes]);
 
   const toggleSound = useCallback(() => {
