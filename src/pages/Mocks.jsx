@@ -631,9 +631,12 @@ export default function MocksPage(p) {
           return (
           <div key={m.id} className="sb-mock-block" style={{ marginBottom: 10 }}>
             <div className="sb-mock-row">
-              <div>
-                <b>{m.exam_name}</b> <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }}>{m.exam_type || "JEE Main"}</span>
-                {analysis && <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }} title="Mistakes reviewed">🔍 reviewed</span>}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                  <b>{m.exam_name}</b>
+                  <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }}>{m.exam_type || "JEE Main"}</span>
+                  {analysis && <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }} title="Mistakes reviewed">🔍 reviewed</span>}
+                </div>
                 <div className="sb-muted">{dayLabel(m.mock_date)}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

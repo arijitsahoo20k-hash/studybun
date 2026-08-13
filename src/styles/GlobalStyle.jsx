@@ -1162,6 +1162,18 @@ export default function GlobalStyle() {
       .sb-mock-score { font-family: var(--font-display); font-size: 20px; font-weight: 800; }
       .sb-mock-score span { font-size: 12px; color: var(--muted); font-family: var(--font-body); }
 
+      /* Mock history rows: on narrow screens the title/chip block can wrap to
+         multiple lines while the score+action buttons stay vertically centered
+         on the row, so the search/edit/delete icons end up overlapping a
+         wrapped chip (e.g. the "reviewed" tag). Stack the row into two lines
+         on mobile instead, with the score+actions pinned to their own
+         right-aligned line below the title/chips, so nothing can overlap. */
+      @media (max-width: 480px) {
+        .sb-mock-row { flex-direction: column; align-items: stretch; gap: 8px; }
+        .sb-mock-row > div:first-child { min-width: 0; }
+        .sb-mock-row > div:last-child { align-self: flex-end; flex-wrap: nowrap; }
+      }
+
       .sb-task-row { gap: 10px; }
       .sb-task-info { flex: 1; }
       .sb-task-row.done { opacity: .6; }
