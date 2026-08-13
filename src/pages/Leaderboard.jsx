@@ -52,7 +52,7 @@ function SkeletonRow({ i }) {
 }
 
 export default function LeaderboardPage(p) {
-  const { top, myRank, amInTop, pointsToTop20, loading, error } = useLeaderboard();
+  const { top, myRank, amInTop, pointsToTop20, loading, error, refetch } = useLeaderboard();
   const [showInfo, setShowInfo] = useState(false);
   const userId = p.userId;
   const studyingIds = p.studyingIds || new Set();
@@ -88,7 +88,10 @@ export default function LeaderboardPage(p) {
       </Card>
 
       {error && (
-        <Card><p className="sb-muted" style={{ fontSize: 12.5 }}>Couldn't load the leaderboard right now — try again in a moment.</p></Card>
+        <Card>
+          <p className="sb-muted" style={{ fontSize: 12.5, marginBottom: 8 }}>Couldn't load the leaderboard right now — try again in a moment.</p>
+          <button className="sb-chip small" onClick={refetch}>Retry</button>
+        </Card>
       )}
 
       {loading ? (
