@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Crown, Flame, Info, Sparkles, Medal } from "lucide-react";
-import { Card, SectionTitle, EmptyState } from "../components/ui";
+import { Card, SectionTitle, EmptyState, FounderBadge } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { useLeaderboard } from "../hooks/useLeaderboard";
+import { useFounderIds } from "../hooks/useFounderIds";
 
 const MEDAL = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-function PodiumSpot({ row, rank, isMe, isStudyingNow }) {
+function PodiumSpot({ row, rank, isMe, isStudyingNow, isFounder }) {
   if (!row) return <div className="sb-podium-spot empty" />;
   return (
     <div className={`sb-podium-spot p${rank} ${isMe ? "me" : ""}`} style={{ animationDelay: `${rank * 0.08}s` }}>
@@ -16,6 +17,7 @@ function PodiumSpot({ row, rank, isMe, isStudyingNow }) {
         {isStudyingNow && <span className="sb-lb-online-dot" title="Studying right now" />}
       </div>
       <div className="sb-podium-name">{row.display_name}{isMe && <span className="sb-lb-you-tag">You</span>}</div>
+      {isFounder && <FounderBadge />}
       {row.current_streak > 0 && (
         <div className="sb-lb-streak"><Flame size={11} /> {row.current_streak}</div>
       )}
@@ -25,7 +27,7 @@ function PodiumSpot({ row, rank, isMe, isStudyingNow }) {
   );
 }
 
-function ScoreRow({ row, rank, isMe, isStudyingNow }) {
+function ScoreRow({ row, rank, isMe, isStudyingNow, isFounder }) {
   return (
     <div className={`sb-lb-row ${isMe ? "me" : ""}`} style={{ animationDelay: `${Math.min(rank, 14) * 0.03}s` }}>
       <div className="sb-lb-rank">#{rank}</div>
@@ -34,7 +36,7 @@ function ScoreRow({ row, rank, isMe, isStudyingNow }) {
         {isStudyingNow && <span className="sb-lb-online-dot" title="Studying right now" />}
       </div>
       <div className="sb-lb-who">
-        <div className="sb-lb-name">{row.display_name}{isMe && <span className="sb-lb-you-tag">You</span>}</div>
+        <div className="sb-lb-name">{row.display_name}{isMe && <span className="sb-lb-you-tag">You</span>}{isFounder && <FounderBadge />}</div>
         {row.current_streak > 0 && (
           <div className="sb-lb-streak"><Flame size={11} /> {row.current_streak}-day streak</div>
         )}
@@ -53,6 +55,7 @@ function SkeletonRow({ i }) {
 
 export default function LeaderboardPage(p) {
   const { top, myRank, amInTop, pointsToTop20, loading, error, refetch } = useLeaderboard();
+  const founderIds = useFounderIds();
   const [showInfo, setShowInfo] = useState(false);
   const userId = p.userId;
   const studyingIds = p.studyingIds || new Set();
@@ -111,9 +114,9 @@ export default function LeaderboardPage(p) {
           {top.length >= 2 && (
             <Card className="sb-podium-card" washi>
               <div className="sb-podium">
-                <PodiumSpot row={top[1]} rank={2} isMe={top[1]?.user_id === userId} isStudyingNow={studyingIds.has(top[1]?.user_id)} />
-                <PodiumSpot row={top[0]} rank={1} isMe={top[0]?.user_id === userId} isStudyingNow={studyingIds.has(top[0]?.user_id)} />
-                <PodiumSpot row={top[2]} rank={3} isMe={top[2]?.user_id === userId} isStudyingNow={studyingIds.has(top[2]?.user_id)} />
+                <PodiumSpot row={top[1]} rank={2} isMe={top[1]?.user_id === userId} isStudyingNow={studyingIds.has(top[1]?.user_id)} isFounder={founderIds.has(top[1]?.user_id)} />
+                <PodiumSpot row={top[0]} rank={1} isMe={top[0]?.user_id === userId} isStudyingNow={studyingIds.has(top[0]?.user_id)} isFounder={founderIds.has(top[0]?.user_id)} />
+                <PodiumSpot row={top[2]} rank={3} isMe={top[2]?.user_id === userId} isStudyingNow={studyingIds.has(top[2]?.user_id)} isFounder={founderIds.has(top[2]?.user_id)} />
               </div>
             </Card>
           )}
@@ -130,6 +133,7 @@ export default function LeaderboardPage(p) {
                     rank={rank}
                     isMe={row.user_id === userId}
                     isStudyingNow={studyingIds.has(row.user_id)}
+                    isFounder={founderIds.has(row.user_id)}
                   />
                 );
               })}
@@ -146,7 +150,7 @@ export default function LeaderboardPage(p) {
               <div className="sb-lb-avatar"><Mascot species={p.mascot} mood="happy" size={40} /></div>
             </div>
             <div className="sb-lb-who">
-              <div className="sb-lb-name">#{myRank.rank.toLocaleString()} <span className="sb-muted small">of {myRank.total_users.toLocaleString()}</span></div>
+              <div className="sb-lb-name">#{myRank.rank.toLocaleString()} <span className="sb-muted small">of {myRank.total_users.toLocaleString()}</span>{userId && founderIds.has(userId) && <FounderBadge />}</div>
               {myRank.current_streak > 0 && (
                 <div className="sb-lb-streak"><Flame size={11} /> {myRank.current_streak}-day streak</div>
               )}

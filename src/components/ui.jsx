@@ -14,6 +14,13 @@ export const Btn = ({ children, variant = "primary", onClick, style, type = "but
   <button type={type} disabled={disabled} className={`sb-btn sb-btn-${variant}`} onClick={onClick} style={style}>{children}</button>
 );
 
+// Small "Founder" pill — shown next to a name wherever founderIds has that
+// user_id (Leaderboard rows/podium, Community posts/replies/chat). Purely
+// cosmetic; see useFounderIds.
+export const FounderBadge = () => (
+  <span className="sb-founder-badge" title="StudyBun founder">👑 Founder</span>
+);
+
 export const ProgressBar = ({ pct, color, paw = true }) => {
   const clamped = Math.min(100, Math.max(0, pct || 0));
   return (

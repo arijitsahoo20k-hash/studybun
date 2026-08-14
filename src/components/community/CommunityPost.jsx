@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { HeartHandshake, Lightbulb, Rocket, MessageSquare } from "lucide-react";
 import Mascot from "../Mascot";
 import ContentActions from "./ContentActions";
+import { FounderBadge } from "../ui";
 
 const TYPE_LABEL = { CHECK_IN: "CHECK-IN", PROGRESS: "PROGRESS", QUESTION: "QUESTION", TIP: "TIP", MILESTONE: "MILESTONE" };
 const REACTIONS = [
@@ -19,13 +20,14 @@ function timeAgo(iso) {
   return `${Math.round(hrs / 24)}d ago`;
 }
 
-export default function CommunityPost({ post, reactions, currentUserId, myProfile, isModerator, moderation, onToggleReaction, replies, onLoadReplies, onAddReply, onDelete }) {
+export default function CommunityPost({ post, reactions, currentUserId, myProfile, isModerator, moderation, founderIds, onToggleReaction, replies, onLoadReplies, onAddReply, onDelete, onDeleteReply }) {
   const [showReplies, setShowReplies] = useState(false);
   const [replyText, setReplyText] = useState("");
   const isOwn = post.user_id === currentUserId;
   const name = isOwn ? (myProfile?.name || "You") : (post.profiles?.name || "Study Buddy");
   const mascotSpecies = isOwn ? (myProfile?.mascot || "bunny") : (post.profiles?.mascot || "bunny");
   const r = reactions || { support: 0, helpful: 0, lets_go: 0, mine: new Set() };
+  const founders = founderIds || new Set();
 
   const toggleReplies = () => {
     setShowReplies((v) => !v);
@@ -45,7 +47,7 @@ export default function CommunityPost({ post, reactions, currentUserId, myProfil
       <div className="sb-post-head">
         <Mascot species={mascotSpecies} mood="happy" size={30} ambient={false} />
         <div className="sb-post-who">
-          <div className="sb-post-name">{name}</div>
+          <div className="sb-post-name">{name}{founders.has(post.user_id) && <FounderBadge />}</div>
           <div className="sb-post-meta"><span className="sb-post-type">{TYPE_LABEL[post.type]}</span> · {timeAgo(post.created_at)}</div>
         </div>
         <ContentActions
@@ -89,8 +91,23 @@ export default function CommunityPost({ post, reactions, currentUserId, myProfil
         <div className="sb-post-replies">
           {(replies || []).map((rp) => (
             <div key={rp.id} className="sb-post-reply">
-              <span className="sb-post-reply-name">{rp.user_id === currentUserId ? (myProfile?.name || "You") : (rp.profiles?.name || "Study Buddy")}:</span>
-              <span>{rp.content}</span>
+              <div className="sb-post-reply-text">
+                <span className="sb-post-reply-name">
+                  {rp.user_id === currentUserId ? (myProfile?.name || "You") : (rp.profiles?.name || "Study Buddy")}
+                  {founders.has(rp.user_id) && <FounderBadge />}:
+                </span>
+                <span>{rp.content}</span>
+              </div>
+              <ContentActions
+                authorId={rp.user_id}
+                currentUserId={currentUserId}
+                isModerator={isModerator}
+                targetType="reply"
+                targetId={rp.id}
+                onReport={moderation.report}
+                onBlock={() => moderation.blockUser(rp.user_id)}
+                onDelete={() => onDeleteReply(post.id, rp.id)}
+              />
             </div>
           ))}
           <form className="sb-post-reply-form" onSubmit={submitReply}>

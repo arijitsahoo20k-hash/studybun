@@ -164,6 +164,13 @@ export function useCommunityFeed() {
     [userId]
   );
 
+  const deleteReply = useCallback(async (postId, replyId) => {
+    const { error: err } = await supabase.from("community_replies").delete().eq("id", replyId);
+    if (err) return { ok: false };
+    setRepliesByPost((prev) => ({ ...prev, [postId]: (prev[postId] || []).filter((r) => r.id !== replyId) }));
+    return { ok: true };
+  }, []);
+
   const toggleReaction = useCallback(
     async (postId, reactionType) => {
       if (!userId) return;
@@ -185,5 +192,5 @@ export function useCommunityFeed() {
     [userId, reactionsByPost]
   );
 
-  return { posts, loading, hasMore, loadMore, createPost, deletePost, repliesByPost, loadReplies, addReply, reactionsByPost, toggleReaction, refetch: load };
+  return { posts, loading, hasMore, loadMore, createPost, deletePost, repliesByPost, loadReplies, addReply, deleteReply, reactionsByPost, toggleReaction, refetch: load };
 }

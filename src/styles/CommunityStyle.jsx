@@ -109,7 +109,7 @@ export default function CommunityStyle() {
       .sb-chat-msg.own .sb-chat-msg-body { text-align: right; }
       .sb-chat-msg-meta { display: flex; gap: 6px; align-items: baseline; font-size: 10.5px; color: var(--muted); }
       .sb-chat-msg.own .sb-chat-msg-meta { justify-content: flex-end; }
-      .sb-chat-msg-name { font-weight: 800; color: var(--mascot-ink); }
+      .sb-chat-msg-name { font-weight: 800; color: var(--mascot-ink); display: inline-flex; align-items: center; gap: 4px; }
       .sb-chat-msg-content {
         display: inline-block; margin-top: 3px; padding: 8px 12px; border-radius: 14px;
         background: var(--card); border: 2px solid var(--mascot-outline); font-size: 13px;
@@ -236,8 +236,9 @@ export default function CommunityStyle() {
       }
       .sb-post-reaction.active { background: var(--mascot-inner); }
       .sb-post-replies { margin-top: 10px; padding-top: 10px; border-top: 1.5px dashed var(--mascot-outline); display: flex; flex-direction: column; gap: 6px; }
-      .sb-post-reply { font-size: 12px; }
-      .sb-post-reply-name { font-weight: 800; margin-right: 4px; }
+      .sb-post-reply { font-size: 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+      .sb-post-reply-text { flex: 1; min-width: 0; }
+      .sb-post-reply-name { font-weight: 800; margin-right: 4px; display: inline-flex; align-items: center; gap: 4px; }
       .sb-post-reply-form { display: flex; gap: 6px; margin-top: 4px; }
       .sb-post-reply-form input {
         flex: 1; border: 2px solid var(--mascot-outline); border-radius: 999px; padding: 6px 12px;
