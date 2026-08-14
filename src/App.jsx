@@ -1109,7 +1109,7 @@ export default function App() {
   };
 
   return (
-    <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"}>
+    <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"} data-paper={theme.paper ? "true" : "false"}>
       <GlobalStyle />
       <CustomBackgroundLayer />
       <DecorLayer theme={theme} />

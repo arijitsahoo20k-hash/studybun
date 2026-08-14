@@ -132,6 +132,38 @@ export const THEMES = {
     dot: "rgba(74,46,30,0.06)", emoji: "🍂",
     decor: ["mapleLeaf", "acorn", "mapleLeaf", "sparkleStar"],
   },
+  "Kraft & Compass": {
+    bg: "#F4EEDD", card: "#FFFBF0", outline: "#3A2E1F", ink: "#2E2418", muted: "#8C7C63",
+    accent: "#5B7052", accent2: "#B5602E", soft: "#E3C98C",
+    palette: ["#C9BFA0", "#8FAE7C", "#D98F52", "#B7A67E", "#6E8B6A", "#EAD9AE"],
+    mascotFill: "#E3C98C", mascotInner: "#FBF3DD", mascotBlush: "#C97B4E",
+    dot: "rgba(58,46,31,0.06)", emoji: "🧭", paper: true,
+    decor: ["compass", "mapPin", "compass", "mapleLeaf"],
+  },
+  "Whiskey Barrel": {
+    bg: "#F7EEE0", card: "#FFF9EF", outline: "#4A2E1E", ink: "#3D2617", muted: "#8F7862",
+    accent: "#9C5A28", accent2: "#7A2E28", soft: "#D9A458",
+    palette: ["#C98A44", "#8A4A3A", "#E3C48A", "#B5703A", "#5E3826", "#EEDCB8"],
+    mascotFill: "#DDB07C", mascotInner: "#FBEFD9", mascotBlush: "#B5603A",
+    dot: "rgba(74,46,30,0.06)", emoji: "🥃", paper: true,
+    decor: ["barrel", "rivetStud", "barrel", "oakLeaf"],
+  },
+  "Denim & Rust": {
+    bg: "#F2EEE4", card: "#FFFDF8", outline: "#2E3A44", ink: "#26313A", muted: "#7C8791",
+    accent: "#3F5C76", accent2: "#B5562E", soft: "#A9C2D6",
+    palette: ["#5D7C99", "#C97347", "#9CB3C4", "#D9A97C", "#3F5266", "#E8D9C2"],
+    mascotFill: "#A9C2D6", mascotInner: "#F0F6FA", mascotBlush: "#C97347",
+    dot: "rgba(46,58,68,0.06)", emoji: "🔧", paper: true,
+    decor: ["wrench", "rivetStud", "wrench", "gear"],
+  },
+  "Gunmetal Press": {
+    bg: "#F3F0E8", card: "#FCFAF3", outline: "#2A2A28", ink: "#242422", muted: "#847E70",
+    accent: "#4A5560", accent2: "#35485E", soft: "#C7BFA8",
+    palette: ["#5C6672", "#8A97A3", "#C4AE7E", "#3A4A5A", "#9A8F73", "#D8D0BC"],
+    mascotFill: "#C7CDD3", mascotInner: "#F4F5F6", mascotBlush: "#5C6672",
+    dot: "rgba(42,42,40,0.07)", emoji: "🖋️", paper: true,
+    decor: ["quillInk", "gear", "quillInk", "rivetStud"],
+  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the

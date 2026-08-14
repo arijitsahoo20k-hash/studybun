@@ -270,6 +270,20 @@ export default function GlobalStyle() {
       @media (prefers-reduced-motion: reduce) {
         .sb-app[data-y2k="true"] .sb-card::before { animation: none; opacity: .55; }
       }
+      /* worn paper / vintage look for themes that opt in (e.g. Kraft & Compass,
+         Whiskey Barrel) -- the same rough-fiber grain used by .sb-paper cards
+         is laid over every card's ::before, plus a faint sepia edge vignette,
+         so the whole app reads like it's printed on stock paper. Static
+         data-URI + opacity only, no blend mode on the card itself, no
+         per-frame cost. */
+      .sb-app[data-paper="true"] .sb-card { box-shadow: 4px 4px 0 var(--mascot-outline); }
+      .sb-app[data-paper="true"] .sb-card::before {
+        content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+        border-radius: inherit; opacity: .45; mix-blend-mode: multiply;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-size: 140px 140px;
+      }
+
       .sb-app[data-y2k="true"] .sb-brand-title {
         background: linear-gradient(180deg, #fff 0%, var(--accent) 55%, var(--accent2) 100%);
         -webkit-background-clip: text; background-clip: text; color: transparent;

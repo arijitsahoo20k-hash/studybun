@@ -671,6 +671,122 @@ export function Acorn() {
   );
 }
 
+/* ---------- vintage / workshop ---------- */
+
+export function Compass() {
+  return (
+    <Svg>
+      <circle cx="24" cy="24" r="18" fill={SOFT} stroke={OUTLINE} strokeWidth="1.6" />
+      <circle cx="24" cy="24" r="13" fill="none" stroke={OUTLINE} strokeWidth="1" opacity="0.4" />
+      {[0, 90, 180, 270].map((a) => (
+        <path key={a} d="M24 6 L24 10" stroke={OUTLINE} strokeWidth="1.3" strokeLinecap="round" transform={`rotate(${a} 24 24)`} />
+      ))}
+      <path d="M24 24 L30 15 L24 24 L18 33 Z" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.2" {...strokeCap} />
+      <path d="M24 24 L18 15 L24 24 L30 33 Z" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.2" {...strokeCap} />
+      <circle cx="24" cy="24" r="2.4" fill={OUTLINE} />
+    </Svg>
+  );
+}
+
+export function MapPin() {
+  return (
+    <Svg>
+      <path
+        d="M24 5 C33 5 39 12 39 20 C39 30 24 43 24 43 C24 43 9 30 9 20 C9 12 15 5 24 5 Z"
+        fill={ACCENT}
+        stroke={OUTLINE}
+        strokeWidth="1.6"
+        {...strokeCap}
+      />
+      <circle cx="24" cy="19" r="6.5" fill={SOFT} stroke={OUTLINE} strokeWidth="1.3" />
+      <path d="M20 17 q4 -3 8 0" fill="none" stroke={OUTLINE} strokeWidth="1" opacity="0.4" {...strokeCap} />
+    </Svg>
+  );
+}
+
+export function Barrel() {
+  return (
+    <Svg>
+      <path d="M14 10 C14 8 34 8 34 10 L36 24 L34 38 C34 40 14 40 14 38 L12 24 Z" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.6" {...strokeCap} />
+      <path d="M12.6 16 L35.4 16" stroke={OUTLINE} strokeWidth="1.8" opacity="0.55" />
+      <path d="M12.2 32 L35.8 32" stroke={OUTLINE} strokeWidth="1.8" opacity="0.55" />
+      <path d="M18 10 C16 18 16 30 18 38" fill="none" stroke={OUTLINE} strokeWidth="1" opacity="0.35" {...strokeCap} />
+      <path d="M30 10 C32 18 32 30 30 38" fill="none" stroke={OUTLINE} strokeWidth="1" opacity="0.35" {...strokeCap} />
+    </Svg>
+  );
+}
+
+export function OakLeaf() {
+  return (
+    <Svg>
+      <path
+        d="M24 6 C30 10 30 14 27 17 C32 17 33 22 29 25 C33 26 33 31 28 33 C25 40 24 42 24 42 C24 42 23 40 20 33 C15 31 15 26 19 25 C15 22 16 17 21 17 C18 14 18 10 24 6 Z"
+        fill={ACCENT}
+        stroke={OUTLINE}
+        strokeWidth="1.5"
+        {...strokeCap}
+      />
+      <path d="M24 15 V38" stroke={OUTLINE} strokeWidth="1.1" opacity="0.45" {...strokeCap} />
+    </Svg>
+  );
+}
+
+export function RivetStud() {
+  return (
+    <Svg>
+      <circle cx="24" cy="24" r="14" fill={SOFT} stroke={OUTLINE} strokeWidth="1.6" />
+      <circle cx="24" cy="24" r="7" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.4" />
+      <circle cx="21" cy="21" r="1.8" fill={CARD} opacity="0.7" />
+    </Svg>
+  );
+}
+
+export function Wrench() {
+  return (
+    <Svg>
+      <path
+        d="M32 6 C37 6 41 10 41 15 C41 17.5 40 19.7 38.4 21.3 L23 36.7 C21.6 38.1 19.3 38.1 17.9 36.7 C16.5 35.3 16.5 33 17.9 31.6 L33.3 16.2 C31.7 14.6 31.7 12 33.3 10.4 C34.5 9.2 36.3 8.9 37.8 9.6"
+        fill={ACCENT}
+        stroke={OUTLINE}
+        strokeWidth="1.6"
+        {...strokeCap}
+      />
+      <circle cx="12" cy="41" r="5.4" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.5" />
+      <path d="M15.5 37.5 L21 32" stroke={OUTLINE} strokeWidth="1.6" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function Gear() {
+  const teeth = [0, 45, 90, 135, 180, 225, 270, 315];
+  return (
+    <Svg>
+      {teeth.map((a) => (
+        <rect key={a} x="21.5" y="3" width="5" height="8" rx="1.2" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.1" transform={`rotate(${a} 24 24)`} />
+      ))}
+      <circle cx="24" cy="24" r="13" fill={ACCENT} stroke={OUTLINE} strokeWidth="1.6" />
+      <circle cx="24" cy="24" r="5.5" fill={CARD} stroke={OUTLINE} strokeWidth="1.5" />
+    </Svg>
+  );
+}
+
+export function QuillInk() {
+  return (
+    <Svg>
+      <ellipse cx="14" cy="38" rx="9" ry="6" fill={ACCENT2} stroke={OUTLINE} strokeWidth="1.5" />
+      <ellipse cx="14" cy="36.5" rx="5.5" ry="3" fill="none" stroke={OUTLINE} strokeWidth="1" opacity="0.35" />
+      <path
+        d="M17 33 C24 26 34 16 41 7 C42 10 42 14 39 17 C31 25 22 32 17 36 Z"
+        fill={SOFT}
+        stroke={OUTLINE}
+        strokeWidth="1.5"
+        {...strokeCap}
+      />
+      <path d="M20 30 L37 12" stroke={OUTLINE} strokeWidth="1" opacity="0.4" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export const MOTIFS = {
   blossom: Blossom,
   blossomSprig: BlossomSprig,
@@ -708,4 +824,12 @@ export const MOTIFS = {
   mintSprig: MintSprig,
   mapleLeaf: MapleLeaf,
   acorn: Acorn,
+  compass: Compass,
+  mapPin: MapPin,
+  barrel: Barrel,
+  oakLeaf: OakLeaf,
+  rivetStud: RivetStud,
+  wrench: Wrench,
+  gear: Gear,
+  quillInk: QuillInk,
 };
