@@ -2439,6 +2439,18 @@ export default function GlobalStyle() {
       }
 
       .sb-pv-stage-card { display: flex; flex-direction: column; gap: 12px; }
+      /* The 4 paper themes (Kraft & Compass / Whiskey Barrel / Denim & Rust /
+         Gunmetal Press -- the only themes with paper:true) put a grain
+         texture on every .sb-card via mix-blend-mode (see the shared
+         .sb-app[data-paper="true"] .sb-card::before rule above). Blend modes
+         force the browser to recomposite that layer every time the content
+         underneath repaints. Every other card in the app is static, so that
+         cost is paid once -- but Tertiary/Quaternary render a live three.js
+         canvas at ~60fps, so combined with the blend it visibly lags, and
+         only in these 4 themes. Scoped to just this card: every other card
+         (this feature's own header/info panels included) keeps its grain,
+         and every other theme is untouched. */
+      .sb-app[data-paper="true"] .sb-pv-stage-card::before { display: none; }
       .sb-pv-controls { display: flex; flex-wrap: wrap; gap: 8px; }
       .sb-pv-stage {
         min-height: 260px; display: flex; align-items: center; justify-content: center;

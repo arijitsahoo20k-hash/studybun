@@ -21,10 +21,10 @@ export default function QuaternaryStructure({ autoRotate, paused, exploded, rese
       const color = resolveCssColor(el, sub.color);
       const material = new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.08 });
       const mesh = new THREE.Mesh(geometry, material);
-      mesh.scale.setScalar(0.48);
+      mesh.scale.setScalar(0.6);
       const sg = new THREE.Group();
       sg.add(mesh);
-      const base = new THREE.Vector3(sub.offset[0] * 0.72, sub.offset[1] * 0.72, sub.offset[2] * 0.72);
+      const base = new THREE.Vector3(sub.offset[0] * 0.34, sub.offset[1] * 0.34, sub.offset[2] * 0.34);
       const full = new THREE.Vector3(sub.offset[0] * 1.7, sub.offset[1] * 1.7, sub.offset[2] * 1.7);
       sg.position.copy(base);
       group.add(sg);
