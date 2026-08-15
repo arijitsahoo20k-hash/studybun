@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
   RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, Crown, User, Settings, Menu,
-  NotebookPen, ChevronsLeft, ChevronsRight, Users,
+  NotebookPen, ChevronsLeft, ChevronsRight, Users, Layers,
 } from "lucide-react";
 
 import { THEMES, themeVars, timeWash } from "./data/themes";
@@ -44,6 +44,7 @@ const MocksPage = lazy(() => import("./pages/Mocks"));
 const RevisionPage = lazy(() => import("./pages/Revision"));
 const PlannerPage = lazy(() => import("./pages/Planner"));
 const AnalyticsPage = lazy(() => import("./pages/Analytics"));
+const StudyStuffsPage = lazy(() => import("./pages/StudyStuffs"));
 const AchievementsPage = lazy(() => import("./pages/Achievements"));
 const LeaderboardPage = lazy(() => import("./pages/Leaderboard"));
 const CommunityPage = lazy(() => import("./pages/Community"));
@@ -67,6 +68,7 @@ const PAGE_LOADERS = {
   revision: () => import("./pages/Revision"),
   planner: () => import("./pages/Planner"),
   analytics: () => import("./pages/Analytics"),
+  studystuffs: () => import("./pages/StudyStuffs"),
   ai: () => import("./pages/AIInsights"),
   achievements: () => import("./pages/Achievements"),
   leaderboard: () => import("./pages/Leaderboard"),
@@ -87,6 +89,7 @@ const NAV = [
   { id: "revision", label: "Revision Planner", icon: RotateCcw },
   { id: "planner", label: "Daily Planner", icon: CheckSquare },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "studystuffs", label: "Study Stuffs", icon: Layers },
   { id: "ai", label: "AI Insights", icon: Sparkles },
   { id: "achievements", label: "Achievements", icon: Trophy },
   { id: "leaderboard", label: "Leaderboard", icon: Crown },
@@ -1215,6 +1218,7 @@ export default function App() {
             {page === "revision" && <RevisionPage {...pageProps} />}
             {page === "planner" && <PlannerPage {...pageProps} />}
             {page === "analytics" && <AnalyticsPage {...pageProps} />}
+            {page === "studystuffs" && <StudyStuffsPage {...pageProps} />}
             {page === "ai" && <AIInsightsPage {...pageProps} />}
             {page === "achievements" && <AchievementsPage {...pageProps} />}
             {page === "leaderboard" && <LeaderboardPage {...pageProps} />}

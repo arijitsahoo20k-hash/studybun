@@ -2166,6 +2166,7 @@ export default function GlobalStyle() {
       .sb-app:has(.sb-route-revision) .sb-page,
       .sb-app:has(.sb-route-planner) .sb-page,
       .sb-app:has(.sb-route-analytics) .sb-page,
+      .sb-app:has(.sb-route-studystuffs) .sb-page,
       .sb-app:has(.sb-route-ai) .sb-page,
       .sb-app:has(.sb-route-achievements) .sb-page,
       .sb-app:has(.sb-route-leaderboard) .sb-page,
@@ -2202,6 +2203,7 @@ export default function GlobalStyle() {
         .sb-app:has(.sb-route-revision) .sb-page,
         .sb-app:has(.sb-route-planner) .sb-page,
         .sb-app:has(.sb-route-analytics) .sb-page,
+        .sb-app:has(.sb-route-studystuffs) .sb-page,
         .sb-app:has(.sb-route-ai) .sb-page,
         .sb-app:has(.sb-route-achievements) .sb-page,
         .sb-app:has(.sb-route-leaderboard) .sb-page,
@@ -2265,7 +2267,148 @@ export default function GlobalStyle() {
       .sb-pwa-banner { }
       .sb-page-loading { min-height: 34vh; }
 
-      
+      /* ===== Study Stuffs — tool list ===== */
+      .sb-stuff-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+      .sb-stuff-card { display: flex; flex-direction: column; gap: 8px; }
+      .sb-stuff-card-top { display: flex; align-items: center; justify-content: space-between; }
+      .sb-stuff-icon { width: 34px; height: 34px; border-radius: 12px; }
+      .sb-stuff-chevron { color: var(--muted); transition: transform .15s ease; }
+      .sb-stuff-card:hover .sb-stuff-chevron { transform: translateX(3px); color: var(--mascot-ink); }
+      .sb-stuff-title { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; color: var(--mascot-ink); margin: 2px 0 0; }
+      .sb-stuff-blurb { font-size: 12.5px; line-height: 1.55; color: var(--muted); margin: 0; }
+      .sb-page-studystuffs-detail { gap: 14px; }
+
+      /* ===== Periodic Table ===== */
+      /* Fixed reference-data palette, deliberately independent of the active
+         theme -- see the big comment at the top of src/data/periodicTable.js
+         for why. Tile text/border colors below are likewise fixed, not
+         theme tokens, so contrast stays correct (~8:1+, checked) no matter
+         which of the 21 app themes is on. */
+      .sb-pt-wrap { display: flex; flex-direction: column; gap: 14px; width: 100%; min-width: 0; }
+      .sb-pt-table-card { display: flex; flex-direction: column; gap: 10px; }
+      @media (max-width: 640px) {
+        .sb-pt-table-card { padding-left: 8px; padding-right: 8px; }
+      }
+      .sb-pt-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+      .sb-pt-back {
+        display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-body); font-weight: 800;
+        font-size: 12.5px; color: var(--mascot-ink); background: var(--mascot-body); border: 2px solid var(--mascot-outline);
+        border-radius: 999px; padding: 8px 14px; cursor: pointer; box-shadow: 2px 2px 0 var(--mascot-outline);
+        transition: transform .12s ease, box-shadow .12s ease; flex-shrink: 0;
+      }
+      .sb-pt-back:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--mascot-outline); }
+      .sb-pt-search {
+        display: flex; align-items: center; gap: 8px; flex: 1 1 220px; min-width: 0; background: var(--bg);
+        border: 2px solid var(--mascot-outline); border-radius: 999px; padding: 8px 14px; color: var(--muted);
+      }
+      .sb-pt-search-input { flex: 1 1 auto; min-width: 0; border: none; background: none; outline: none; font-family: var(--font-body); font-weight: 600; font-size: 13px; color: var(--mascot-ink); }
+      .sb-pt-search-input::placeholder { color: var(--muted); }
+      .sb-pt-search-clear { display: inline-flex; background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px; flex-shrink: 0; }
+      .sb-pt-search-clear:hover { color: var(--mascot-ink); }
+      .sb-pt-modes { display: inline-flex; gap: 4px; background: var(--mascot-body); border: 2px solid var(--mascot-outline); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+      .sb-pt-mode-btn {
+        font-family: var(--font-body); font-weight: 800; font-size: 12px; color: var(--mascot-ink); background: none;
+        border: none; border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: background-color .15s ease, color .15s ease;
+      }
+      .sb-pt-mode-btn.active { background: var(--mascot-outline); color: var(--bg); }
+
+      .sb-pt-scroll {
+        width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
+        padding: 4px 4px 10px; scrollbar-width: thin;
+      }
+      .sb-pt-grid {
+        --pt-cell: 56px; --pt-gap: 5px;
+        display: grid; grid-template-columns: repeat(var(--pt-cols), var(--pt-cell));
+        grid-template-rows: repeat(7, var(--pt-cell)) 16px repeat(2, var(--pt-cell));
+        gap: var(--pt-gap); width: max-content; margin: 0 auto;
+      }
+      .sb-pt-cell {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+        border: 2px solid; border-radius: 8px; cursor: pointer; color: #241E1A; font-family: var(--font-body);
+        padding: 0; margin: 0; width: 100%; height: 100%; box-sizing: border-box;
+        transition: transform .12s ease, box-shadow .12s ease, opacity .15s ease; position: relative;
+      }
+      .sb-pt-cell:hover, .sb-pt-cell:focus-visible { transform: translateY(-2px) scale(1.06); box-shadow: 2px 3px 0 rgba(36,30,26,.35); z-index: 2; }
+      .sb-pt-cell-dim { opacity: .18; }
+      .sb-pt-cell-num { font-size: 8px; font-weight: 700; position: absolute; top: 3px; left: 5px; opacity: .8; }
+      .sb-pt-cell-sym { font-size: 15px; font-weight: 800; line-height: 1; }
+      .sb-pt-cell-mass { font-size: 6.5px; font-weight: 700; opacity: .75; display: none; }
+      .sb-pt-marker {
+        display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 8px;
+        border: 2px dashed var(--muted); color: var(--muted); font-size: 8.5px; font-weight: 800; line-height: 1.2; padding: 2px;
+      }
+      .sb-pt-scroll-hint { display: block; text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); margin: -6px 0 0; }
+
+      .sb-pt-legend { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+      .sb-pt-legend-chip {
+        font-family: var(--font-body); font-weight: 800; font-size: 11px; color: #241E1A; border: 2px solid;
+        border-radius: 999px; padding: 5px 11px; cursor: pointer; transition: transform .12s ease, opacity .15s ease; opacity: .85;
+      }
+      .sb-pt-legend-chip:hover { transform: translateY(-1px); opacity: 1; }
+      .sb-pt-legend-chip.active { opacity: 1; box-shadow: 2px 2px 0 rgba(36,30,26,.3); }
+      .sb-pt-legend-reset { font-family: var(--font-body); font-weight: 800; font-size: 11px; color: var(--muted); background: none; border: none; cursor: pointer; text-decoration: underline; padding: 5px 4px; }
+      .sb-pt-legend-reset:hover { color: var(--mascot-ink); }
+
+      @media (min-width: 900px) {
+        .sb-pt-grid { --pt-cell: 60px; --pt-gap: 6px; }
+        .sb-pt-cell-mass { display: block; }
+      }
+      @media (min-width: 1300px) {
+        .sb-pt-grid { --pt-cell: 66px; --pt-gap: 7px; }
+      }
+      @media (max-width: 640px) {
+        .sb-pt-toolbar { flex-direction: column; align-items: stretch; }
+        .sb-pt-back { align-self: flex-start; }
+        /* .sb-pt-search carries flex: 1 1 220px for the row-direction desktop
+           toolbar; once the toolbar above flips to flex-direction: column its
+           flex-basis applies to height instead of width, ballooning the
+           search bar into a ~220px-tall oval. Reset the basis here so it
+           just sizes to its content, same as every other stacked toolbar
+           item. */
+        .sb-pt-search { flex: 1 1 auto; }
+        .sb-pt-grid { --pt-cell: 42px; --pt-gap: 3px; }
+        .sb-pt-cell-num { font-size: 6.5px; top: 2px; left: 3px; }
+        .sb-pt-cell-sym { font-size: 12px; }
+      }
+      /* ===== Periodic Table — element detail dialog ===== */
+      .sb-pt-overlay {
+        position: fixed; inset: 0; z-index: 90; background: rgba(20,16,14,.5);
+        display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(2px);
+      }
+      .sb-pt-dialog {
+        width: min(440px, 100%); max-height: 88vh; overflow-y: auto; background: var(--card); color: var(--mascot-ink);
+        border: 2.5px solid var(--mascot-outline); border-radius: 22px; padding: 22px; position: relative;
+        box-shadow: 6px 6px 0 var(--mascot-outline);
+      }
+      .sb-pt-dialog:focus { outline: none; }
+      .sb-pt-dialog-close {
+        position: absolute; top: 14px; right: 14px; background: var(--mascot-body); border: 2px solid var(--mascot-outline);
+        border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; color: var(--mascot-ink);
+      }
+      .sb-pt-dialog-close:hover { transform: rotate(90deg); transition: transform .2s ease; }
+      .sb-pt-dialog-top { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding-top: 6px; }
+      .sb-pt-dialog-tile {
+        width: 56px; height: 56px; border-radius: 12px; border: 2.5px solid; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; color: #241E1A; flex-shrink: 0;
+      }
+      .sb-pt-dialog-num { font-size: 9px; font-weight: 700; opacity: .8; }
+      .sb-pt-dialog-sym { font-size: 20px; font-weight: 800; line-height: 1; }
+      .sb-pt-dialog-heading { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      .sb-pt-dialog-heading h2 { font-family: var(--font-display); font-size: 20px; font-weight: 800; margin: 0; }
+      .sb-pt-bohr { margin-top: 4px; }
+      .sb-pt-predicted-note {
+        display: flex; align-items: flex-start; gap: 7px; font-size: 11.5px; line-height: 1.55; color: var(--muted);
+        background: var(--mascot-inner); border: 1.5px solid var(--mascot-outline); border-radius: 12px; padding: 9px 12px; margin: 0;
+      }
+      .sb-pt-predicted-note svg { flex-shrink: 0; margin-top: 2px; }
+      .sb-pt-fact-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 14px; margin-top: 4px; }
+      .sb-pt-fact { display: flex; flex-direction: column; gap: 2px; }
+      .sb-pt-fact-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+      .sb-pt-fact-value { font-size: 13px; font-weight: 700; color: var(--mascot-ink); word-break: break-word; }
+      @media (max-width: 400px) {
+        .sb-pt-fact-grid { grid-template-columns: 1fr; }
+      }
     `}</style>
   );
 }
