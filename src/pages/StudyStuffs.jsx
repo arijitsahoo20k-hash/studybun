@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Layers, Atom, ChevronRight } from "lucide-react";
+import { Layers, Atom, Dna, ChevronRight } from "lucide-react";
 import { Card, SectionTitle } from "../components/ui";
 import PeriodicTable from "../components/PeriodicTable";
+import ProteinVisualizer from "../components/protein/ProteinVisualizer";
 
-/* Every reference tool StudyBun offers lives here. Right now there's just
- * the one (Periodic Table), but this list is the whole point of the page --
- * new graphs/reference charts get a new entry here and nothing else about
- * the page needs to change. `render` gets the onBack callback used to
- * return to the list. */
+/* Every reference tool StudyBun offers lives here. This list is the whole
+ * point of the page -- new graphs/reference charts get a new entry here and
+ * nothing else about the page needs to change. `render` gets the onBack
+ * callback used to return to the list. */
 const TOOLS = [
   {
     id: "periodic-table",
@@ -15,6 +15,13 @@ const TOOLS = [
     blurb: "All 118 elements — searchable, colour-coded by category, block, or phase, with a full detail card and Bohr shell diagram for each one.",
     icon: Atom,
     render: (onBack) => <PeriodicTable onBack={onBack} />,
+  },
+  {
+    id: "protein-structure",
+    title: "Protein Structure",
+    blurb: "See a protein fold from amino-acid chain to full 3D assembly — primary, secondary, tertiary and quaternary, with an interactive rotate-and-zoom model.",
+    icon: Dna,
+    render: (onBack) => <ProteinVisualizer onBack={onBack} />,
   },
 ];
 

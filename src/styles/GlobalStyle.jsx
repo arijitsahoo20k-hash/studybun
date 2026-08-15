@@ -2409,6 +2409,136 @@ export default function GlobalStyle() {
       @media (max-width: 400px) {
         .sb-pt-fact-grid { grid-template-columns: 1fr; }
       }
+
+      /* ===== Protein Structure Visualizer ===== */
+      /* Uses the same theme tokens as the rest of the app (--accent, --p1..p6,
+         --mascot-ink etc.) so it reskins automatically across all 21 themes --
+         unlike the Periodic Table, this feature carries no fixed palette of
+         its own. Toolbar/back-button/step-pill markup deliberately reuses
+         .sb-pt-back / .sb-pt-modes / .sb-pt-mode-btn / .sb-pt-overlay /
+         .sb-pt-dialog-close so it stays pixel-identical to the Periodic Table
+         tool without duplicating those rules. */
+      .sb-pv-wrap { display: flex; flex-direction: column; gap: 14px; width: 100%; min-width: 0; }
+      .sb-pv-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      .sb-pv-title { font-family: var(--font-display); font-weight: 800; font-size: 19px; color: var(--mascot-ink); margin: 12px 0 0; }
+      .sb-pv-progress { display: flex; flex-direction: column; align-items: flex-end; text-align: right; line-height: 1.25; }
+      .sb-pv-progress-count { font-family: var(--font-display); font-weight: 800; font-size: 13px; color: var(--mascot-ink); }
+      .sb-pv-progress-name { font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
+      .sb-pv-steps { margin-top: 12px; flex-wrap: wrap; }
+      /* .sb-pt-modes is a stadium shape (border-radius: 999px) tuned for
+         Periodic Table's short single-row list. This step nav has 4 labels
+         and wraps to two rows on narrow phones, where a 999px radius looks
+         broken (huge corner cut into the second row). Override to a fixed
+         radius + full-width flex only for this instance -- .sb-pt-modes
+         itself (and Periodic Table's use of it) is untouched. */
+      .sb-pv-steps { display: flex; width: 100%; border-radius: 18px; }
+      .sb-pv-steps .sb-pt-mode-btn { flex: 1 1 auto; text-align: center; }
+      @media (max-width: 480px) {
+        .sb-pv-steps { flex-wrap: wrap; }
+        .sb-pv-steps .sb-pt-mode-btn { flex: 1 1 calc(50% - 4px); }
+      }
+
+      .sb-pv-stage-card { display: flex; flex-direction: column; gap: 12px; }
+      .sb-pv-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+      .sb-pv-stage {
+        min-height: 260px; display: flex; align-items: center; justify-content: center;
+        background: var(--mascot-inner); border: 2px solid var(--mascot-outline); border-radius: 18px;
+        padding: 22px 16px; position: relative; overflow: hidden;
+      }
+      .sb-pv-stage-lg { min-height: 420px; padding: 10px; }
+      @media (min-width: 720px) {
+        .sb-pv-stage-lg { min-height: 560px; }
+      }
+
+      /* --- Primary: bead chain --- */
+      .sb-pv-primary { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+      .sb-pv-chain { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0; max-width: 100%; }
+      .sb-pv-bond { width: 12px; height: 2.5px; background: var(--mascot-outline); opacity: .4; flex-shrink: 0; }
+      .sb-pv-bead {
+        width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid var(--mascot-outline); color: #241E1A;
+        font-family: var(--font-display); font-weight: 800; font-size: 12px; display: inline-flex; align-items: center;
+        justify-content: center; cursor: pointer; position: relative; flex-shrink: 0;
+        animation: sb-pv-bob 2.6s ease-in-out infinite;
+        transition: transform .15s cubic-bezier(.34,1.56,.64,1);
+      }
+      .sb-pv-bead:hover, .sb-pv-bead.active { transform: translateY(-4px) scale(1.08); z-index: 2; }
+      .sb-pv-anim-paused .sb-pv-bead { animation-play-state: paused; }
+      @keyframes sb-pv-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-pv-bead { animation: none; }
+      }
+      .sb-pv-bead-tip {
+        position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); white-space: nowrap;
+        background: var(--card); border: 2px solid var(--mascot-outline); border-radius: 12px; padding: 6px 10px;
+        display: flex; flex-direction: column; gap: 1px; font-family: var(--font-body); z-index: 5;
+        box-shadow: 3px 3px 0 var(--mascot-outline);
+      }
+      .sb-pv-bead-tip strong { font-size: 11.5px; color: var(--mascot-ink); }
+      .sb-pv-bead-tip span { font-size: 10px; color: var(--muted); font-weight: 700; }
+      .sb-pv-sequence { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; font-family: var(--font-hand); font-size: 17px; font-weight: 700; }
+      .sb-pv-legend { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+      .sb-pv-legend-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--muted); }
+      .sb-pv-legend-dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--mascot-outline); }
+
+      /* --- Secondary: helix / sheet diagram --- */
+      .sb-pv-secondary { display: flex; flex-direction: column; gap: 16px; width: 100%; align-items: center; }
+      .sb-pv-sec-toggle { display: inline-flex; gap: 4px; background: var(--mascot-body); border: 2px solid var(--mascot-outline); border-radius: 999px; padding: 3px; }
+      .sb-pv-sec-btn { font-family: var(--font-body); font-weight: 700; font-size: 12px; padding: 7px 14px; border-radius: 999px; border: none; background: transparent; color: var(--mascot-ink); cursor: pointer; }
+      .sb-pv-sec-btn.active { background: var(--mascot-outline); color: var(--bg); }
+      .sb-pv-sec-stage { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: 460px; }
+      .sb-pv-sec-block { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+      .sb-pv-sec-svg { width: 100%; height: auto; }
+      .sb-pv-sec-strand { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; }
+      .sb-pv-sec-strand-back { stroke: var(--accent2); opacity: .55; }
+      .sb-pv-sec-hbond { stroke: var(--muted); stroke-width: 1.4; stroke-dasharray: 3 3; opacity: .6; }
+      .sb-pv-sec-arrow { fill: var(--accent); stroke: var(--mascot-outline); stroke-width: 1; }
+      .sb-pv-sec-caption { font-size: 12px; line-height: 1.55; color: var(--muted); text-align: center; margin: 0; max-width: 400px; }
+      .sb-pv-sec-caption strong { color: var(--mascot-ink); }
+
+      /* --- Tertiary / Quaternary: three.js canvas --- */
+      .sb-pv-3d { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
+      .sb-pv-canvas { width: 100%; height: 320px; border-radius: 14px; cursor: grab; touch-action: none; }
+      .sb-pv-canvas:active { cursor: grabbing; }
+      .sb-pv-stage-lg .sb-pv-canvas { height: 460px; }
+      @media (min-width: 720px) {
+        .sb-pv-stage-lg .sb-pv-canvas { height: 600px; }
+      }
+      .sb-pv-canvas.fullscreen { height: 100%; }
+      .sb-pv-canvas canvas { display: block; width: 100% !important; height: 100% !important; }
+      .sb-pv-canvas-loading { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 200px; font-size: 12.5px; font-weight: 700; color: var(--muted); text-align: center; padding: 20px; }
+      .sb-pv-hint { font-size: 11px; font-weight: 700; color: var(--muted); text-align: center; margin: 0; }
+      .sb-pv-interaction-panel {
+        display: flex; align-items: flex-start; gap: 10px; background: var(--card); border: 2px solid var(--mascot-outline);
+        border-radius: 16px; padding: 12px 14px; max-width: 460px; width: 100%; position: relative;
+        box-shadow: 3px 3px 0 var(--mascot-outline);
+      }
+      .sb-pv-interaction-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; border: 1.5px solid var(--mascot-outline); }
+      .sb-pv-interaction-panel strong { font-size: 12.5px; color: var(--mascot-ink); display: block; margin-bottom: 3px; }
+      .sb-pv-interaction-panel p { font-size: 11.5px; line-height: 1.55; color: var(--muted); margin: 0; }
+      .sb-pv-interaction-close {
+        position: absolute; top: 8px; right: 8px; background: var(--mascot-inner); border: 1.5px solid var(--mascot-outline);
+        border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; color: var(--mascot-ink); flex-shrink: 0;
+      }
+
+      /* --- Fullscreen overlay (reuses .sb-pt-overlay / .sb-pt-dialog-close) --- */
+      .sb-pv-fs-dialog {
+        width: min(1100px, 96vw); height: min(860px, 92vh); background: var(--card); border: 2.5px solid var(--mascot-outline);
+        border-radius: 22px; padding: 16px; position: relative; box-shadow: 6px 6px 0 var(--mascot-outline);
+        display: flex; flex-direction: column;
+      }
+      .sb-pv-fs-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+      .sb-pv-fs-body .sb-pv-stage { flex: 1 1 auto; min-height: 0; }
+      .sb-pv-fs-body .sb-pv-canvas { height: 100%; }
+
+      /* --- Info panel ("What's happening / Why it matters / Key concept") --- */
+      .sb-pv-info-card { display: flex; flex-direction: column; }
+      .sb-pv-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      .sb-pv-info-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); display: block; margin-bottom: 4px; }
+      .sb-pv-info-grid p { font-size: 12.5px; line-height: 1.6; color: var(--mascot-ink); margin: 0; }
+      @media (max-width: 720px) {
+        .sb-pv-info-grid { grid-template-columns: 1fr; gap: 16px; }
+      }
     `}</style>
   );
 }
