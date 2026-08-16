@@ -186,6 +186,7 @@ export function useFocusTimer({ onComplete } = {}) {
       mode,
       plannedMinutes: modeMinutes[mode] ?? 25,
       actualMinutes: startedMinutes || modeMinutes[mode] || 25,
+      completed: true,
     });
   }, [soundOn, mode, modeMinutes, startedMinutes]);
 
@@ -306,6 +307,20 @@ export function useFocusTimer({ onComplete } = {}) {
   // once real progress (5+ min) has been made — reuses the same "what did
   // you study" logging step that a natural finish triggers, but credits the
   // actual elapsed time instead of the full planned duration.
+  //
+  // Must fire onComplete just like finish() does — this is the actual bug
+  // that was here before: the "what did you study" card claims the minutes
+  // are "already counted in today's study hours" (see FocusTimer.jsx), but
+  // nothing had ever written a timer_sessions row for an early save, so
+  // those minutes silently vanished from Dashboard/Study Tracker (both of
+  // which total timer_sessions.actual_minutes, not the study_sessions row
+  // the "what did you study" card logs afterward — that row is deliberately
+  // excluded from totals for any Focus Timer session to avoid double
+  // counting once timer_sessions holds the real minutes). completed: false
+  // (unlike finish()'s completed: true) so this still correctly stays out
+  // of the streak/leaderboard "genuine full session" bucket — only the
+  // personal Dashboard/Study Tracker totals, which don't filter on
+  // `completed`, pick it up.
   const saveEarly = useCallback(() => {
     const elapsed = Math.max(0, startedMinutes * 60 - secondsLeft);
     const elapsedMinutes = Math.round(elapsed / 60);
@@ -318,8 +333,14 @@ export function useFocusTimer({ onComplete } = {}) {
     setSecondsLeft(0);
     setAskDone(true);
     if (soundOn) playEndChime(makeCtx(audioCtxRef));
+    onCompleteRef.current && onCompleteRef.current({
+      mode,
+      plannedMinutes: modeMinutes[mode] ?? 25,
+      actualMinutes: elapsedMinutes,
+      completed: false,
+    });
     return true;
-  }, [startedMinutes, secondsLeft, soundOn]);
+  }, [mode, modeMinutes, startedMinutes, secondsLeft, soundOn]);
 
   const resetForNewSession = useCallback(() => {
     setAskDone(false);

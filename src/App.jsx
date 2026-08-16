@@ -178,12 +178,18 @@ export default function App() {
   const streakFreezesQ = useRealtimeTable("streak_freezes", { orderBy: "frozen_date", enabled: page === "dashboard" || page === "planner" || page === "profile" });
 
   // Lives here (not inside FocusTimer) so switching pages never resets it.
-  // Every completed session is logged to timer_sessions automatically —
-  // that's what lets focus-timer time count toward study hours even if the
-  // user never fills in the "what did you study" card afterward.
+  // Every session — whether it runs to the end naturally or is ended early
+  // via the timer's manual Save button — is logged to timer_sessions
+  // automatically here, which is what lets focus-timer time count toward
+  // study hours even if the user never fills in the "what did you study"
+  // card afterward. `completed` (true for a natural finish, false for an
+  // early save) is passed straight through from the hook instead of being
+  // hardcoded, since only a genuine full completion should count toward the
+  // streak/leaderboard's "trusted timer session" bucket — see
+  // supabase/schema.sql's lb_calc_streak/lb_recompute.
   const focusTimer = useFocusTimer({
-    onComplete: ({ mode, plannedMinutes, actualMinutes }) => {
-      timerSessionsQ.insert({ mode, planned_minutes: plannedMinutes, actual_minutes: actualMinutes, completed: true });
+    onComplete: ({ mode, plannedMinutes, actualMinutes, completed }) => {
+      timerSessionsQ.insert({ mode, planned_minutes: plannedMinutes, actual_minutes: actualMinutes, completed });
     },
   });
   // Derived here (not inside FocusTimer's page component) for the same
