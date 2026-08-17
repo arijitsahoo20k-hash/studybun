@@ -147,8 +147,8 @@ export default function App() {
   const isPage = (...ids) => pageData[page] && ids.includes(page);
   const sessionsQ = useRealtimeTable("study_sessions", { orderBy: "session_date", enabled: page === "dashboard" || isPage("study", "backlog", "analytics", "ai", "leaderboard", "profile") });
   const timerSessionsQ = useRealtimeTable("timer_sessions", { orderBy: "created_at", enabled: page === "dashboard" || isPage("timer", "analytics", "leaderboard", "profile") });
-  const chapters = useChapterProgress({ enabled: page === "dashboard" || isPage("study", "timer", "syllabus", "mocks", "revision", "ai", "leaderboard") });
-  const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || isPage("questions", "syllabus", "mocks", "analytics", "ai", "leaderboard", "profile") });
+  const chapters = useChapterProgress({ enabled: page === "dashboard" || isPage("study", "timer", "syllabus", "mocks", "revision", "backlog", "ai", "leaderboard") });
+  const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || isPage("questions", "syllabus", "mocks", "backlog", "analytics", "ai", "leaderboard", "profile") });
   const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date", enabled: page === "dashboard" || isPage("syllabus", "mocks", "backlog", "analytics", "ai", "leaderboard", "profile") });
   // Backlog's recovery engine reads mock mistake tags directly, so it needs
   // mock_analysis live too — not just on the Mocks page itself. Not needed

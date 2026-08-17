@@ -6,6 +6,7 @@ import {
 import { Card, SectionTitle, Btn, EmptyState, ProgressRing } from "../components/ui";
 import { todayIST, formatISTCalendarDate, formatISTTimestamp, tsToISTDateStr, daysBetweenDateStrs } from "../lib/dateIST";
 import { buildRecoverySignals, mergeWithPersisted, buildTodayPlan, computeScoreLeakage, buildChapterMap } from "../lib/recoveryEngine";
+import { buildProactiveSyllabusSignals } from "../lib/priorityEngine";
 
 const SUBJECTS = ["Physics", "Chemistry", "Maths", "Other"];
 const CATEGORIES = ["Full Chapter", "Lecture", "Notes", "Questions", "DPP", "Module", "Revision", "Mock Analysis", "Custom"];
@@ -152,11 +153,25 @@ export default function BacklogPage(p) {
   const revisions = p.revisions || [];
 
   // ---------- Layer A → B → C: the recovery queue ----------
-  const liveSignals = useMemo(
+  // Reactive half: driven by mock mistakes / overdue revisions (unchanged).
+  const reactiveSignals = useMemo(
     () => buildRecoverySignals({ mocks, mockAnalysisMap, revisions }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mocks, mockAnalysisMap, revisions]
   );
+  // Proactive half: chapters the Syllabus priority engine already flags as
+  // Critical/blocked, even before any mock has caught it. Never duplicates
+  // a chapter that already has a reactive card.
+  const syllabusSignals = useMemo(() => {
+    if (!p.allChapters || !p.getChStatus) return [];
+    const excludeChapterKeys = new Set(reactiveSignals.filter((s) => s.chapter).map((s) => `${s.subject}::${s.chapter}`));
+    return buildProactiveSyllabusSignals({
+      allChapters: p.allChapters, getChStatus: p.getChStatus, questions: p.questions || [],
+      excludeChapterKeys, limit: 5,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reactiveSignals, p.allChapters, p.getChStatus, p.questions]);
+  const liveSignals = useMemo(() => [...reactiveSignals, ...syllabusSignals], [reactiveSignals, syllabusSignals]);
   const { merged: queue, toReopen } = useMemo(() => mergeWithPersisted(liveSignals, allItems), [liveSignals, allItems]);
 
   // A mistake that repeats after being marked Recovered/Dismissed reopens the

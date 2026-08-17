@@ -147,3 +147,56 @@ export function computeAllPriorities(chapterList, deps) {
     ))
     .sort((a, b) => b.score - a.score);
 }
+
+// ---------- Bridge into the Backlog recovery queue ----------
+// recoveryEngine.js's queue is entirely *reactive* — it only surfaces a
+// chapter once a mock mistake or an overdue revision has already happened.
+// This adds a small, capped set of *proactive* cards for chapters that this
+// engine already knows are Critical or blocked on a prerequisite, even if
+// no mock has caught that yet. Shaped identically to recoveryEngine's
+// signal objects (sourceKey, priorityScore, impactTier, etc.) so Backlog.jsx
+// can render both kinds of card through the same component.
+//
+// `excludeChapterKeys` should be the set of "Subject::Chapter" pairs already
+// covered by a reactive (mock-mistake) signal — never show two cards for
+// the same chapter. `limit` keeps this proactive, not overwhelming: a
+// handful of the highest-signal chapters, not the whole syllabus.
+const SUBJECT_DISPLAY = { Mathematics: "Maths" };
+const displaySubject = (s) => SUBJECT_DISPLAY[s] || s;
+
+export function buildProactiveSyllabusSignals({ allChapters, getChStatus, questions, excludeChapterKeys = new Set(), limit = 5 }) {
+  const candidates = [];
+  (allChapters || []).forEach((c) => {
+    const st = getChStatus(c.key);
+    // Not Started isn't a recovery problem yet — that's just "still to
+    // study". Mastered chapters already resolved to "Maintain" upstream.
+    if (st.status === "Not Started" || st.status === "Mastered") return;
+    const auto = computeChapterPriority({ subject: c.subject, chapter: c.name, ...st }, { getChStatus, questions });
+    if (auto.tier !== "Critical" && auto.tier !== "Foundation") return;
+    const subject = displaySubject(c.subject);
+    if (excludeChapterKeys.has(`${subject}::${c.name}`)) return;
+
+    const isBlocked = auto.tier === "Foundation";
+    const sourceKey = `${subject}::${c.name}::${isBlocked ? "syllabus_blocked" : "syllabus_critical"}`.toLowerCase().replace(/\s+/g, "_");
+    candidates.push({
+      sourceKey,
+      sourceType: "syllabus",
+      subject,
+      chapter: c.name,
+      problemType: isBlocked ? "prerequisite_gap" : "syllabus_critical",
+      problemLabel: isBlocked ? "Prerequisite gap" : "Critical chapter",
+      evidenceCount: 1,
+      mockOccurrences: 0,
+      lastEvidenceAt: todayIST(),
+      priorityScore: auto.score,
+      impactTier: isBlocked ? "medium" : (auto.score >= 80 ? "high" : "medium"),
+      recommendedAction: auto.nextAction,
+      effortMin: isBlocked ? 60 : 45,
+      why: isBlocked
+        ? `Blocked on "${auto.blockedBy[0]}" — clear that first, this chapter depends on it.`
+        : `Priority score ${auto.score}/100 — high exam weight and currently weak, no mock mistake needed to flag this.`,
+      title: `${c.name} — ${isBlocked ? "Prerequisite gap" : "Critical priority"}`,
+    });
+  });
+  return candidates.sort((a, b) => b.priorityScore - a.priorityScore).slice(0, limit);
+}
