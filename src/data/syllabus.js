@@ -86,6 +86,47 @@ export const CHAPTER_WEIGHTAGE = {
 
 export const weightageFor = (chapterName) => CHAPTER_WEIGHTAGE[chapterName] ?? 5;
 
+// ---------- Prerequisite graph ----------
+// Not exhaustive — only the dependencies that genuinely gate understanding
+// (the ones JEE teachers actually warn students about), keyed in the same
+// "Subject::Chapter" format as ALL_CHAPTERS/getChStatus so cross-subject
+// links (e.g. a Physics chapter needing a Maths tool) work out of the box.
+// Consumed by src/lib/priorityEngine.js — pure lookup data, no logic here.
+export const PREREQUISITES = {
+  "Physics::Motion in 2 Dimensions": ["Mathematics::Vector Algebra"],
+  "Physics::Laws of Motion & Friction": ["Physics::Motion in 1 Dimension"],
+  "Physics::Center of Mass & Collision": ["Physics::Laws of Motion & Friction"],
+  "Physics::Rotational Motion": ["Physics::Center of Mass & Collision"],
+  "Physics::Oscillations (SHM)": ["Physics::Motion in 1 Dimension"],
+  "Physics::Electrostatic Potential & Capacitance": ["Physics::Electric Charges and Fields"],
+  "Physics::Current Electricity": ["Physics::Electric Charges and Fields"],
+  "Physics::Moving Charges and Magnetism": ["Physics::Current Electricity"],
+  "Physics::Magnetism and Matter": ["Physics::Moving Charges and Magnetism"],
+  "Physics::Electromagnetic Induction": ["Physics::Moving Charges and Magnetism"],
+  "Physics::Alternating Current": ["Physics::Electromagnetic Induction"],
+  "Physics::Wave Optics": ["Physics::Ray Optics and Optical Instruments"],
+  "Physics::Dual Nature of Radiation and Matter": ["Physics::Ray Optics and Optical Instruments"],
+  "Physics::Atomic Physics": ["Physics::Dual Nature of Radiation and Matter"],
+  "Physics::Nuclear Physics": ["Physics::Atomic Physics"],
+  "Chemistry::Ionic Equilibrium": ["Chemistry::Chemical Equilibrium"],
+  "Chemistry::Electrochemistry": ["Chemistry::Redox Reactions"],
+  "Chemistry::Coordination Compounds": ["Chemistry::Chemical Bonding & Molecular Structure"],
+  "Chemistry::d- and f-Block Elements": ["Chemistry::Classification & Periodicity"],
+  "Chemistry::Hydrocarbons": ["Chemistry::GOC & Isomerism"],
+  "Chemistry::Haloalkanes and Haloarenes": ["Chemistry::Hydrocarbons"],
+  "Chemistry::Alcohols, Phenols, and Ethers": ["Chemistry::Haloalkanes and Haloarenes"],
+  "Chemistry::Aldehydes, Ketones, Carboxylic Acids": ["Chemistry::Alcohols, Phenols, and Ethers"],
+  "Chemistry::Nitrogen Compounds (Amines)": ["Chemistry::Aldehydes, Ketones, Carboxylic Acids"],
+  "Mathematics::Applications of Derivatives": ["Mathematics::Differentiation"],
+  "Mathematics::Definite Integration": ["Mathematics::Indefinite Integration"],
+  "Mathematics::Area Under Curves": ["Mathematics::Definite Integration"],
+  "Mathematics::Differential Equations": ["Mathematics::Definite Integration"],
+  "Mathematics::Three-Dimensional Geometry": ["Mathematics::Vector Algebra"],
+  "Mathematics::Trigonometric Equations": ["Mathematics::Trigonometric Ratios and Identities"],
+};
+
+export const prerequisitesFor = (subject, chapterName) => PREREQUISITES[`${subject}::${chapterName}`] || [];
+
 export const ALL_CHAPTERS = (() => {
   const list = [];
   Object.entries(SYLLABUS).forEach(([subject, data]) => {

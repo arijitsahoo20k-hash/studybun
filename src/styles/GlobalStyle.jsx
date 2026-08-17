@@ -1160,6 +1160,17 @@ export default function GlobalStyle() {
       .sb-tag.priority-high { color: #7A2436; background: #FFD9DF; border-color: #C0435A; }
       .sb-tag.priority-medium { color: #6B4A0E; background: #FFEBC2; border-color: #A67A2E; }
       .sb-tag.priority-low { color: #285C3A; background: #D6F0DC; border-color: #4E8F63; }
+      .sb-tag.tier-critical { color: #7A2436; background: #FFD9DF; border-color: #C0435A; display: inline-flex; align-items: center; gap: 3px; }
+      .sb-tag.tier-high-roi { color: #6B4A0E; background: #FFEBC2; border-color: #A67A2E; display: inline-flex; align-items: center; gap: 3px; }
+      .sb-tag.tier-foundation { color: #2F3E7A; background: #DDE3FA; border-color: #5A6FB0; display: inline-flex; align-items: center; gap: 3px; }
+      .sb-tag.tier-strengthen { color: #4A2E6B; background: #EADCF8; border-color: #8B6BAE; display: inline-flex; align-items: center; gap: 3px; }
+      .sb-tag.tier-maintain { color: #285C3A; background: #D6F0DC; border-color: #4E8F63; display: inline-flex; align-items: center; gap: 3px; }
+      .sb-tag.tier-low-priority { color: var(--muted); background: var(--mascot-body); border-color: var(--mascot-outline); display: inline-flex; align-items: center; gap: 3px; }
+      .sb-next-action { border-radius: 12px; padding: 8px 10px; margin-bottom: 10px; font-size: 11.5px; font-weight: 600; border: 1.5px solid var(--mascot-outline); background: var(--mascot-body); }
+      .sb-next-action-head { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; color: var(--muted); }
+      .sb-next-action.tier-critical { border-color: #C0435A; background: #FFF3F4; }
+      .sb-next-action.tier-high-roi { border-color: #A67A2E; background: #FFFAF0; }
+      .sb-next-action.tier-foundation { border-color: #5A6FB0; background: #F3F5FE; }
       .sb-star { border: none; background: transparent; color: var(--muted); cursor: pointer; padding: 2px; flex-shrink: 0; }
       .sb-star.active { color: #FFB84D; }
       .sb-chapter-progress-row { display: flex; flex-direction: column; gap: 3px; }

@@ -1,7 +1,10 @@
-import React, { useState } from "react";
-import { Search, Star, Library } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Search, Star, Library, Sparkles, Lock } from "lucide-react";
 import { Card, ProgressBar, SectionTitle } from "../components/ui";
 import { SYLLABUS } from "../data/syllabus";
+import { computeChapterPriority } from "../lib/priorityEngine";
+
+const tierSlug = (tier) => tier.toLowerCase().replace(/\s+/g, "-");
 
 export default function SyllabusPage(p) {
   const [openSubject, setOpenSubject] = useState("Physics");
@@ -18,12 +21,20 @@ export default function SyllabusPage(p) {
           const mastered = chs.filter((c) => p.getChStatus(`${subject}::${c}`).status === "Mastered").length;
           const questionsSolved = p.questions.filter((q) => q.subject === subject).reduce((a, q) => a + Number(q.count || 0), 0);
           const pct = (done / chs.length) * 100;
+          const criticalCount = chs.filter((c) => {
+            const t = computeChapterPriority(
+              { subject, chapter: c, ...p.getChStatus(`${subject}::${c}`) },
+              { getChStatus: p.getChStatus, questions: p.questions }
+            ).tier;
+            return t === "Critical";
+          }).length;
           return (
             <Card key={subject} className={`sb-clickable ${openSubject === subject ? "sb-card-active" : ""}`} onClick={() => setOpenSubject(subject)}>
               <div className="sb-subject-head"><span style={{ color: data.color }}>{subject}</span><span className="sb-muted">{done}/{chs.length}</span></div>
               <ProgressBar pct={pct} color={data.color} />
               <div className="sb-subject-meta">
                 <span>{mastered} mastered</span><span>·</span><span>{questionsSolved} questions</span>
+                {criticalCount > 0 && <><span>·</span><span className="sb-tag tier-critical" style={{ padding: "1px 6px" }}>{criticalCount} critical</span></>}
               </div>
             </Card>
           );
@@ -55,15 +66,23 @@ export default function SyllabusPage(p) {
                   const key = `${openSubject}::${c}`;
                   const st = p.getChStatus(key);
                   const isOpen = expanded === key;
+                  const auto = computeChapterPriority(
+                    { subject: openSubject, chapter: c, ...st },
+                    { getChStatus: p.getChStatus, questions: p.questions }
+                  );
                   return (
                     <div key={c} className={`sb-chapter-card ${isOpen ? "sb-chapter-card-open" : ""}`}>
                       <div className="sb-chapter-card-top" onClick={() => setExpanded(isOpen ? null : key)}>
                         <div>
                           <div className="sb-chapter-name">{c}</div>
                           <div className="sb-chapter-tags">
+                            <span className={`sb-tag tier-${tierSlug(auto.tier)}`} title="Auto-computed from weightage, accuracy, prerequisites & revision freshness">
+                              {auto.tier === "Foundation" ? <Lock size={9} /> : <Sparkles size={9} />} {auto.tier}
+                            </span>
                             <span className={`sb-tag priority-${st.priority?.toLowerCase()}`}>{st.priority}</span>
                             <span className="sb-tag">{st.difficulty}</span>
                             <span className="sb-tag">W:{st.weightage}/10</span>
+                            {auto.accuracy !== null && <span className="sb-tag">Acc:{auto.accuracy}%</span>}
                             {st.personal_notes && <span className="sb-tag" title="Has quick-revision notes">📝 notes</span>}
                           </div>
                         </div>
@@ -86,6 +105,12 @@ export default function SyllabusPage(p) {
 
                       {isOpen && (
                         <div className="sb-chapter-detail">
+                          <div className={`sb-next-action tier-${tierSlug(auto.tier)}`}>
+                            <div className="sb-next-action-head">
+                              <Sparkles size={13} /> Next action <span className="sb-muted small">· auto-computed, score {auto.score}/100</span>
+                            </div>
+                            <div>{auto.nextAction}</div>
+                          </div>
                           <div className="sb-form-grid dense">
                             <div><label>Priority</label>
                               <select className="sb-input small" value={st.priority} onChange={(e) => p.setChapterField(openSubject, c, { priority: e.target.value })}>
