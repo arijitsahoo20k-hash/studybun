@@ -164,6 +164,51 @@ export const THEMES = {
     dot: "rgba(42,42,40,0.07)", emoji: "🖋️", paper: true,
     decor: ["quillInk", "gear", "quillInk", "rivetStud"],
   },
+
+  /* ===== photo-backdrop themes =====
+   * These four keep the same near-white card/bg rule as every other theme
+   * above (so cards, chips, and text stay exactly as legible as always) but
+   * add a `bgImage` + `photoBg: true` pair. App.jsx reads `photoBg` to flip
+   * on a fixed, full-viewport pixel-art backdrop behind the whole app (see
+   * .sb-app[data-photo-bg] in GlobalStyle.jsx) -- the photo shows only in the
+   * gaps around cards/sidebar, the same visual slot the existing Settings >
+   * Custom Background feature uses, just theme-driven instead of user-URL-
+   * driven, and the two never conflict (custom bg always wins if active --
+   * see z-index note in GlobalStyle.jsx). accent/accent2/soft/palette below
+   * are hand-picked from each image so chips, buttons and the decor layer
+   * read as part of the scene instead of clashing with it. */
+  "Wildwood CRT": {
+    bg: "#FBF3E6", card: "#FFFAF1", outline: "#4A3B2E", ink: "#3D3226", muted: "#8C7C68",
+    accent: "#E8863E", accent2: "#6B9C5A", soft: "#F6D28A",
+    palette: ["#F3B77A", "#8FBF6E", "#F6D8A8", "#E88A6B", "#6E9C82", "#F2E3B8"],
+    mascotFill: "#F6D8A8", mascotInner: "#FDF3DE", mascotBlush: "#E88A6B",
+    dot: "rgba(74,59,46,0.05)", emoji: "🖥️", photoBg: true, bgImage: "/theme-bg/wildwood-crt.webp",
+    decor: ["pixelTree", "retroMonitor", "pixelTree", "sparkleStar"],
+  },
+  "Midnight Express": {
+    bg: "#F4F6FC", card: "#FFFFFF", outline: "#2C3454", ink: "#2A2E4A", muted: "#767DA0",
+    accent: "#F0B85C", accent2: "#C23B45", soft: "#C9D3F0",
+    palette: ["#8C97C9", "#F0B85C", "#C23B45", "#E7ECFA", "#5A6491", "#F6D9A0"],
+    mascotFill: "#C9D3F0", mascotInner: "#EEF1FB", mascotBlush: "#C23B45",
+    dot: "rgba(44,52,84,0.05)", emoji: "🚄", photoBg: true, bgImage: "/theme-bg/midnight-express.webp",
+    decor: ["crescentMoon", "twinkleStar", "shootingStar", "gear"],
+  },
+  "Windmill Meadow": {
+    bg: "#FFF7EA", card: "#FFFDF6", outline: "#5A3620", ink: "#4A2C1A", muted: "#977C60",
+    accent: "#E8752E", accent2: "#7C9A4E", soft: "#F6D66E",
+    palette: ["#F0954A", "#8FAE5E", "#F6E08A", "#D97A3E", "#5E7A3E", "#FBE9C2"],
+    mascotFill: "#F6E08A", mascotInner: "#FEF6DE", mascotBlush: "#F0954A",
+    dot: "rgba(90,54,32,0.05)", emoji: "🌾", photoBg: true, bgImage: "/theme-bg/windmill-meadow.webp",
+    decor: ["tulip", "desertSun", "marigoldFlower", "sparkleStar"],
+  },
+  "Sunset Drift": {
+    bg: "#FDF6EC", card: "#FFFCF6", outline: "#3E2E4A", ink: "#382A44", muted: "#8C7F9C",
+    accent: "#F0733E", accent2: "#8A6FB0", soft: "#FBC98A",
+    palette: ["#F09A5C", "#9C82C4", "#F4C77A", "#5E4E78", "#E86B4A", "#FCE3C0"],
+    mascotFill: "#FBC98A", mascotInner: "#FEF1DC", mascotBlush: "#E86B4A",
+    dot: "rgba(62,46,74,0.05)", emoji: "🏎️", photoBg: true, bgImage: "/theme-bg/sunset-drift.webp",
+    decor: ["gear", "desertSun", "wrench", "sparkleStar"],
+  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the

@@ -185,7 +185,7 @@ export default function SettingsPage(p) {
             </>
           )}
 
-          {tab === "background" && <BackgroundCard />}
+          {tab === "background" && <BackgroundCard currentTheme={THEMES[profile.theme]} />}
 
           {tab === "buddy" && <SmartBuddyCard />}
 

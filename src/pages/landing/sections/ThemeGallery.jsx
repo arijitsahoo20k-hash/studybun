@@ -18,7 +18,7 @@ export default function ThemeGallery() {
       <Reveal className="sb-land-section-head">
         <span className="sb-land-eyebrow">🎨 Make it yours</span>
         <h2 className="sb-land-h2">Pick a buddy, pick a vibe</h2>
-        <p className="sb-land-h2-sub">Twenty themes, six mascots — swap them anytime, no commitment.</p>
+        <p className="sb-land-h2-sub">Twenty-four themes, six mascots — swap them anytime, no commitment.</p>
       </Reveal>
 
       <Reveal className="sb-land-mascot-strip" style={{ marginBottom: 40 }}>

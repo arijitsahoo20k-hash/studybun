@@ -132,6 +132,39 @@ export default function GlobalStyle() {
       }
       .sb-bg-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
 
+      /* ===== theme photo-backdrop (Wildwood CRT / Midnight Express /
+         Windmill Meadow / Sunset Drift) =====
+         Same fixed full-viewport slot as .sb-custom-bg-layer above, one
+         z-index further back (-2 vs -1) so a user's own Settings > Custom
+         Background photo -- if they've turned that on -- always paints over
+         this one automatically, no JS needed. .sb-app only drops its own
+         opaque paint (background-color/background-image) when
+         data-photo-bg="true", i.e. only for these four themes -- every
+         other theme's .sb-app keeps its normal solid --bg + dot pattern,
+         completely untouched. Cards, sidebar, nav and every other surface
+         already have their own opaque backgrounds and don't change at all;
+         the photo only shows through the gaps around them, exactly like
+         the custom-bg feature. */
+      .sb-theme-photo-layer { position: fixed; inset: 0; z-index: -2; overflow: hidden; pointer-events: none; }
+      .sb-theme-photo-img {
+        position: absolute; inset: -24px;
+        background-size: cover; background-position: center; background-repeat: no-repeat;
+      }
+      /* soft tint (bg -> transparent -> bg) so the photo reads as a layer
+         behind the UI rather than a flat wallpaper, and so the very edges
+         -- where a card or the nav might butt right up against it -- ease
+         into the theme's own cream tone instead of cutting hard. */
+      .sb-theme-photo-scrim {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse at center, transparent 40%, var(--bg) 145%);
+        opacity: .55;
+      }
+      .sb-app[data-photo-bg="true"] { background-color: transparent; background-image: none; }
+      /* body still needs a non-white fallback for the overscroll sliver on
+         mobile while a photo theme is active, same reasoning as html's own
+         fallback near the top of this file. */
+      body:has(.sb-app[data-photo-bg="true"]) { background: #2A2420; }
+
       /* kawaii custom cursors for anything interactive */
       .sb-btn, .sb-chip, .sb-nav-item, .sb-bottom-item, .sb-clickable, .sb-checkbox,
       .sb-theme-chip, .sb-icon-btn, .sb-mobile-toggle, select.sb-input, .sb-mascot-pick, .sb-theme-swatch {

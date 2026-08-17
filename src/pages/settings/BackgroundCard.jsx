@@ -47,11 +47,12 @@ function Slider({ icon: Icon, label, valueLabel, id, min, max, step, value, onCh
   );
 }
 
-export default function BackgroundCard() {
+export default function BackgroundCard({ currentTheme }) {
   const { settings, update, reset } = useCustomBackground();
   const [draftUrl, setDraftUrl] = useState(settings.url);
   const preloadStatus = useUrlPreload(draftUrl);
   const isDirty = draftUrl.trim() !== (settings.url || "");
+  const themeHasOwnPhoto = Boolean(currentTheme?.photoBg);
 
   // If the setting changes elsewhere (e.g. "Remove background"), keep the
   // input in sync instead of showing a stale URL.
@@ -77,6 +78,11 @@ export default function BackgroundCard() {
         Paste an image URL to use it as the app's backdrop. Every card, the sidebar, and every page stay exactly
         as they are — only the space behind them changes. This is saved on this device only, not synced to your account.
       </p>
+      {themeHasOwnPhoto && !active && (
+        <p className="sb-muted" style={{ fontSize: 12.5, marginTop: -10, marginBottom: 16 }}>
+          Your current theme already has its own backdrop — applying a custom one here will replace it.
+        </p>
+      )}
 
       <div className="sb-bg-url-row">
         <input
