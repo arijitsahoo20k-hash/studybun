@@ -1200,6 +1200,8 @@ export default function GlobalStyle() {
       .sb-tag.tier-strengthen { color: #4A2E6B; background: #EADCF8; border-color: #8B6BAE; display: inline-flex; align-items: center; gap: 3px; }
       .sb-tag.tier-maintain { color: #285C3A; background: #D6F0DC; border-color: #4E8F63; display: inline-flex; align-items: center; gap: 3px; }
       .sb-tag.tier-low-priority { color: var(--muted); background: var(--mascot-body); border-color: var(--mascot-outline); display: inline-flex; align-items: center; gap: 3px; }
+      .sb-recurring-badge { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; vertical-align: middle; text-transform: none; font-weight: 700; }
+      .sb-recurring-badge-muted { opacity: 0.55; padding: 2px 5px; }
       .sb-next-action { border-radius: 12px; padding: 8px 10px; margin-bottom: 10px; font-size: 11.5px; font-weight: 600; border: 1.5px solid var(--mascot-outline); background: var(--mascot-body); }
       .sb-next-action-head { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; color: var(--muted); }
       .sb-next-action.tier-critical { border-color: #C0435A; background: #FFF3F4; }

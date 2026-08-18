@@ -48,7 +48,7 @@ export const tsToISTDateStr = (input) => (input ? toISTDateStr(input) : "");
 // `new Date(examDate) - new Date()` directly (as the app used to) drifts
 // by up to a day depending what time it currently is, since one side has a
 // midnight timestamp and the other doesn't. This just counts calendar days.
-const dateStrToUTCms = (s) => { const [y, m, d] = s.split("-").map(Number); return Date.UTC(y, m - 1, d); };
+export const dateStrToUTCms = (s) => { const [y, m, d] = s.split("-").map(Number); return Date.UTC(y, m - 1, d); };
 export const daysBetweenDateStrs = (targetStr, fromStr) =>
   Math.round((dateStrToUTCms(targetStr) - dateStrToUTCms(fromStr)) / 86400000);
 
@@ -77,3 +77,11 @@ export const formatISTTimestamp = (iso, opts) => {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString(undefined, { ...opts, timeZone: "Asia/Kolkata" });
 };
+
+// 3-letter weekday ("Sun".."Sat") for a "YYYY-MM-DD" calendar-date string,
+// computed off the same UTC-midnight parse `dateStrToUTCms` uses internally
+// so it lines up with every other date-string comparison in the app —
+// never through `new Date("YYYY-MM-DD")` directly, which can shift a day
+// depending on the device's local timezone.
+const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+export const weekdayShortIST = (dateStr) => WEEKDAY_SHORT[new Date(dateStrToUTCms(dateStr)).getUTCDay()];

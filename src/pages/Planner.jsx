@@ -1,15 +1,17 @@
 import React, { useMemo, useState } from "react";
 import {
   CheckSquare, CheckCircle2, X, Plus, Pencil, Check,
-  ChevronDown, AlertTriangle, CalendarClock, CalendarDays,
+  ChevronDown, AlertTriangle, CalendarClock, CalendarDays, Repeat, XCircle,
 } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
 import { SYLLABUS } from "../data/syllabus";
-import { todayIST, formatISTCalendarDate, daysBetweenDateStrs } from "../lib/dateIST";
+import { todayIST, formatISTCalendarDate, daysBetweenDateStrs, weekdayShortIST } from "../lib/dateIST";
 
 const SUBJECT_OPTIONS = [...Object.keys(SYLLABUS), "Personal"];
 const PRIORITY_OPTIONS = ["Low", "Medium", "High"];
 const PRIORITY_RANK = { High: 0, Medium: 1, Low: 2 };
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const RECURRING_MARKER_PREFIX = "__recurring_from:";
 
 function dateGroupLabel(dateStr, today) {
   const diff = daysBetweenDateStrs(dateStr, today);
@@ -84,11 +86,13 @@ function EditTaskRow({ task, onSave, onCancel }) {
   );
 }
 
-function TaskRow({ t, editing, onEdit, onCancelEdit, onSave, onToggle, onDelete, showDate, today }) {
+function TaskRow({ t, editing, onEdit, onCancelEdit, onSave, onToggle, onDelete, onStopRepeat, showDate, today }) {
   if (editing) return <EditTaskRow task={t} onSave={onSave} onCancel={onCancelEdit} />;
 
   const overdue = t.status === "Pending" && t.due_date && t.due_date < today;
   const done = t.status === "Completed";
+  const isRecurringTemplate = !!t.recurring;
+  const isRecurringChild = (t.description || "").startsWith(RECURRING_MARKER_PREFIX);
 
   return (
     <div className={`sb-task-row sb-plan-row ${done ? "done" : ""} ${overdue ? "overdue" : ""}`}>
@@ -100,13 +104,28 @@ function TaskRow({ t, editing, onEdit, onCancelEdit, onSave, onToggle, onDelete,
         </>)}
       </button>
       <div className="sb-task-info">
-        <b>{t.title}</b>
+        <b>
+          {t.title}
+          {isRecurringTemplate && (
+            <span className="sb-tag sb-recurring-badge" title={t.recurring === "Daily" ? "Repeats daily" : `Repeats weekly on ${t.recurring.split(":")[1]}`}>
+              <Repeat size={11} /> repeating
+            </span>
+          )}
+          {isRecurringChild && (
+            <span className="sb-tag sb-recurring-badge sb-recurring-badge-muted" title="Spawned from a repeating task">
+              <Repeat size={11} />
+            </span>
+          )}
+        </b>
         <div className="sb-muted sb-plan-meta">
           <span className={`sb-tag priority-${(t.priority || "medium").toLowerCase()}`}>{t.priority}</span>
           <span className="sb-tag">{t.subject}</span>
           {showDate && t.due_date && <span className="sb-tag">{overdue ? "was due " : "due "}{formatISTCalendarDate(t.due_date, { month: "short", day: "numeric" })}</span>}
         </div>
       </div>
+      {isRecurringTemplate && (
+        <button className="sb-icon-btn" title="Stop repeating" onClick={() => onStopRepeat(t.id)}><XCircle size={15} /></button>
+      )}
       <button className="sb-icon-btn" title="Edit task" onClick={() => onEdit(t.id)}><Pencil size={15} /></button>
       <button className="sb-icon-btn" title="Delete task" onClick={() => onDelete(t.id)}><X size={16} /></button>
     </div>
@@ -138,11 +157,20 @@ export default function PlannerPage(p) {
   const [subject, setSubject] = useState("Physics");
   const [priority, setPriority] = useState("Medium");
   const [dueDate, setDueDate] = useState(today);
+  const [repeat, setRepeat] = useState("None");
+  const [repeatDay, setRepeatDay] = useState(weekdayShortIST(today));
   const [editingId, setEditingId] = useState(null);
   const [openGroups, setOpenGroups] = useState(() => new Set(["overdue", today]));
   const [completedOpen, setCompletedOpen] = useState(false);
 
-  const pending = p.tasks.filter((t) => t.status === "Pending");
+  // Recurring templates never move their own due_date (see materializeRecurringTasks
+  // in App.jsx — that's what keeps spawned-child completion history independent).
+  // Once a template's own day has passed, it's just a pattern-holder for the
+  // generation logic, not a real overdue item, so it's dropped from the
+  // grouped Pending/Overdue view. Its spawned children still show normally.
+  const pending = p.tasks.filter((t) =>
+    t.status === "Pending" && !(t.recurring && t.due_date && t.due_date < today)
+  );
   const done = p.tasks.filter((t) => t.status === "Completed");
 
   const todaysTasks = p.tasks.filter((t) => t.due_date === today);
@@ -162,14 +190,22 @@ export default function PlannerPage(p) {
 
   const submitAdd = () => {
     if (!title.trim()) return;
-    p.addTask({ title: title.trim(), subject, priority, due_date: dueDate || today, category: subject === "Personal" ? "Personal" : "Study" });
+    const recurring = repeat === "Daily" ? "Daily" : repeat === "Weekly" ? `Weekly:${repeatDay}` : null;
+    p.addTask({
+      title: title.trim(), subject, priority, due_date: dueDate || today,
+      category: subject === "Personal" ? "Personal" : "Study",
+      ...(recurring ? { recurring } : {}),
+    });
     setTitle("");
+    setRepeat("None");
   };
 
   const rowProps = {
     onEdit: setEditingId, onCancelEdit: () => setEditingId(null),
     onSave: (patch) => saveEdit(editingId, patch),
-    onToggle: p.toggleTask, onDelete: p.deleteTask, today,
+    onToggle: p.toggleTask, onDelete: p.deleteTask,
+    onStopRepeat: (id) => p.updateTask(id, { recurring: null }),
+    today,
   };
 
   return (
@@ -200,6 +236,26 @@ export default function PlannerPage(p) {
                 <label>Due date</label>
                 <input type="date" className="sb-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
               </div>
+              <div>
+                <label>Repeat</label>
+                <select className="sb-input" value={repeat} onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "Weekly") setRepeatDay(weekdayShortIST(dueDate || today));
+                  setRepeat(val);
+                }}>
+                  <option>None</option>
+                  <option>Daily</option>
+                  <option>Weekly</option>
+                </select>
+              </div>
+              {repeat === "Weekly" && (
+                <div>
+                  <label>On</label>
+                  <select className="sb-input" value={repeatDay} onChange={(e) => setRepeatDay(e.target.value)}>
+                    {WEEKDAYS.map((d) => <option key={d}>{d}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
             <Btn onClick={submitAdd}><Plus size={16} /> Add task</Btn>
           </Card>

@@ -15,7 +15,7 @@ import { getActiveRadio } from "./lib/radio";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { useAuth } from "./lib/AuthContext";
 import { buildExportPayload, downloadJSON, readFileAsJSON, importPayload, totalImported } from "./lib/dataPortability";
-import { todayIST, toISTDateStr, tsToISTDateStr, daysFromNowIST, daysUntilIST, formatISTCalendarDate, istHour } from "./lib/dateIST";
+import { todayIST, toISTDateStr, tsToISTDateStr, daysFromNowIST, daysUntilIST, formatISTCalendarDate, istHour, weekdayShortIST } from "./lib/dateIST";
 
 import Mascot from "./components/Mascot";
 import TopNav from "./components/TopNav";
@@ -774,6 +774,44 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataReady, user?.id, profile?.streak_freeze_tokens, streakDays]);
 
+  // Recurring planner tasks (`tasks.recurring` — an existing-but-unused
+  // schema column, see supabase/schema.sql). A "template" task with
+  // `recurring` set to "Daily" or "Weekly:<Sun..Sat>" spawns one ordinary
+  // child row for "today" when due; the template row itself never moves,
+  // so completion history and streak logic for spawned instances behave
+  // exactly like any other task. `description` doubles as a lightweight
+  // parent-link marker ("__recurring_from:<template_id>") since it's
+  // otherwise unused in the UI — this avoids a migration for the 105
+  // users already in production. Existing rows all have `recurring: null`,
+  // so this is a no-op until a user creates a new recurring task.
+  //
+  // Runs once per IST calendar day per session (guarded by
+  // materializedForDate) rather than on every render/reload; there's no
+  // backfill for missed days, matching how most habit trackers behave.
+  const materializedForDate = useRef(null);
+  useEffect(() => {
+    if (!dataReady || !user) return;
+    const today = todayStr();
+    if (materializedForDate.current === today) return;
+    materializedForDate.current = today;
+
+    const templates = tasks.filter((t) => t.recurring && !(t.description || "").startsWith("__recurring_from:"));
+    templates.forEach((t) => {
+      if (today <= t.due_date) return; // template's own day already represents that occurrence
+      const isDue = t.recurring === "Daily" || t.recurring === `Weekly:${weekdayShortIST(today)}`;
+      if (!isDue) return;
+      const alreadyExists = t.due_date === today ||
+        tasks.some((x) => x.due_date === today && x.description === `__recurring_from:${t.id}`);
+      if (alreadyExists) return;
+      tasksQ.insert({
+        title: t.title, subject: t.subject, priority: t.priority, category: t.category,
+        due_date: today, status: "Pending", recurring: null,
+        description: `__recurring_from:${t.id}`,
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataReady, user?.id, tasks]);
+
   /* ---------- actions ---------- */
   const addSession = async (payload) => {
     const row = await sessionsQ.insert({ session_date: todayStr(), ...payload });
@@ -897,7 +935,7 @@ export default function App() {
     const row = tasks.find((t) => t.id === id);
     if (!row) return;
     await tasksQ.update(id, patch);
-    showToast("Task updated ✏️", () => tasksQ.update(id, { title: row.title, subject: row.subject, priority: row.priority, category: row.category }));
+    showToast("Task updated ✏️", () => tasksQ.update(id, { title: row.title, subject: row.subject, priority: row.priority, category: row.category, recurring: row.recurring }));
   };
   const deleteTask = async (id) => {
     const row = tasks.find((t) => t.id === id);
