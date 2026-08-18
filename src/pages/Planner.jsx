@@ -124,7 +124,9 @@ function TaskRow({ t, editing, onEdit, onCancelEdit, onSave, onToggle, onDelete,
         </div>
       </div>
       {isRecurringTemplate && (
-        <button className="sb-icon-btn" title="Stop repeating" onClick={() => onStopRepeat(t.id)}><XCircle size={15} /></button>
+        <button className="sb-icon-btn sb-stop-repeat-btn" title="Stop repeating" onClick={() => onStopRepeat(t.id)}>
+          <XCircle size={13} /> <span>Stop</span>
+        </button>
       )}
       <button className="sb-icon-btn" title="Edit task" onClick={() => onEdit(t.id)}><Pencil size={15} /></button>
       <button className="sb-icon-btn" title="Delete task" onClick={() => onDelete(t.id)}><X size={16} /></button>

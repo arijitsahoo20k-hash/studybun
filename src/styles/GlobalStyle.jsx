@@ -1202,6 +1202,7 @@ export default function GlobalStyle() {
       .sb-tag.tier-low-priority { color: var(--muted); background: var(--mascot-body); border-color: var(--mascot-outline); display: inline-flex; align-items: center; gap: 3px; }
       .sb-recurring-badge { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; vertical-align: middle; text-transform: none; font-weight: 700; }
       .sb-recurring-badge-muted { opacity: 0.55; padding: 2px 5px; }
+      .sb-stop-repeat-btn { width: auto; display: inline-flex; align-items: center; gap: 3px; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; }
       .sb-next-action { border-radius: 12px; padding: 8px 10px; margin-bottom: 10px; font-size: 11.5px; font-weight: 600; border: 1.5px solid var(--mascot-outline); background: var(--mascot-body); }
       .sb-next-action-head { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; color: var(--muted); }
       .sb-next-action.tier-critical { border-color: #C0435A; background: #FFF3F4; }
