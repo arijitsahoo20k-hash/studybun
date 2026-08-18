@@ -2078,7 +2078,9 @@ export default function GlobalStyle() {
         font-size: 12.5px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 4px 2px 10px;
       }
       .sb-journal-close:hover { color: var(--mascot-ink); }
-      .sb-spiral-book { left: 4px; top: 46px; }
+
+      .sb-journal-stage-wrap { position: relative; }
+      .sb-spiral-book { left: 4px; top: 22px; bottom: 22px; }
 
       .sb-journal-stage {
         position: relative; aspect-ratio: 3 / 4; border-radius: 20px; border: 2.5px solid var(--mascot-outline);

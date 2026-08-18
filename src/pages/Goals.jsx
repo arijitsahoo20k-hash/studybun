@@ -399,36 +399,38 @@ export default function GoalsPage(p) {
               <ArrowLeft size={16} /> Close
             </button>
 
-            <div className="sb-spiral sb-spiral-book" aria-hidden="true">
-              {Array.from({ length: 16 }).map((_, i) => <span key={i} />)}
-            </div>
+            <div className="sb-journal-stage-wrap">
+              <div className="sb-spiral sb-spiral-book" aria-hidden="true">
+                {Array.from({ length: 16 }).map((_, i) => <span key={i} />)}
+              </div>
 
-            <div className="sb-journal-stage">
-              <AnimatePresence custom={direction} initial={false} mode="popLayout">
-                <motion.div
-                  key={safeIndex}
-                  custom={direction}
-                  variants={pageVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={transition}
-                  className="sb-journal-page"
-                >
-                  {current ? (
-                    <GoalPage
-                      goal={current}
-                      pageNumber={safeIndex + 1}
-                      onComplete={handleComplete}
-                      onDelete={handleDelete}
-                      onToggleStar={handleToggleStar}
-                      animating={animatingId === current.id}
-                    />
-                  ) : (
-                    <NewGoalPage pageNumber={pageCount} onAdd={handleAdd} />
-                  )}
-                </motion.div>
-              </AnimatePresence>
+              <div className="sb-journal-stage">
+                <AnimatePresence custom={direction} initial={false} mode="popLayout">
+                  <motion.div
+                    key={safeIndex}
+                    custom={direction}
+                    variants={pageVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={transition}
+                    className="sb-journal-page"
+                  >
+                    {current ? (
+                      <GoalPage
+                        goal={current}
+                        pageNumber={safeIndex + 1}
+                        onComplete={handleComplete}
+                        onDelete={handleDelete}
+                        onToggleStar={handleToggleStar}
+                        animating={animatingId === current.id}
+                      />
+                    ) : (
+                      <NewGoalPage pageNumber={pageCount} onAdd={handleAdd} />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
 
             <div className="sb-journal-nav">
