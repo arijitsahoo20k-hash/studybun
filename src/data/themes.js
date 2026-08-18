@@ -166,8 +166,9 @@ export const THEMES = {
   },
 
   /* ===== photo-backdrop themes =====
-   * These four keep the same near-white card/bg rule as every other theme
-   * above (so cards, chips, and text stay exactly as legible as always) but
+   * These seven (four below + three more further down) keep the same
+   * near-white card/bg rule as every other theme above (so cards, chips,
+   * and text stay exactly as legible as always) but
    * add a `bgImage` + `photoBg: true` pair. App.jsx reads `photoBg` to flip
    * on a fixed, full-viewport pixel-art backdrop behind the whole app (see
    * .sb-app[data-photo-bg] in GlobalStyle.jsx) -- the photo shows only in the
@@ -208,6 +209,35 @@ export const THEMES = {
     mascotFill: "#FBC98A", mascotInner: "#FEF1DC", mascotBlush: "#E86B4A",
     dot: "rgba(62,46,74,0.05)", emoji: "🏎️", photoBg: true, bgImage: "/theme-bg/sunset-drift.webp",
     decor: ["gear", "desertSun", "wrench", "sparkleStar"],
+  },
+
+  /* ===== photo-backdrop themes, batch 2 =====
+   * Same rules as the four above -- near-white bg/card, hand-picked
+   * accent/accent2/soft/palette from each source photo so the UI reads as
+   * part of the scene. Nothing else about the photo-bg system changes. */
+  "Pixel Garden": {
+    bg: "#FBF6E9", card: "#FFFCF3", outline: "#3B3223", ink: "#332C1E", muted: "#8C8268",
+    accent: "#C96A32", accent2: "#667A45", soft: "#F1D39A",
+    palette: ["#E6B978", "#667A45", "#F1D39A", "#C96A32", "#354832", "#D8C9A0"],
+    mascotFill: "#E6B978", mascotInner: "#FBF3DE", mascotBlush: "#C96A32",
+    dot: "rgba(59,50,35,0.06)", emoji: "🌼", photoBg: true, bgImage: "/theme-bg/pixel-garden.webp",
+    decor: ["pixelBlock", "blossom", "pixelBlock", "sparkleStar"],
+  },
+  "Dusk Alley": {
+    bg: "#FBF2E6", card: "#FFFAF3", outline: "#3A2E24", ink: "#332920", muted: "#8F7C68",
+    accent: "#C75F35", accent2: "#70432F", soft: "#E3A06A",
+    palette: ["#E3A06A", "#C69A5C", "#70432F", "#C75F35", "#8A6F5A", "#F0DEC4"],
+    mascotFill: "#E3A06A", mascotInner: "#FCEFDE", mascotBlush: "#C75F35",
+    dot: "rgba(58,46,36,0.06)", emoji: "🌇", photoBg: true, bgImage: "/theme-bg/dusk-alley.webp",
+    decor: ["cloud", "crescentMoon", "cloud", "twinkleStar"],
+  },
+  "Paper Sky": {
+    bg: "#F3F1E2", card: "#FCFAF0", outline: "#2E3A38", ink: "#293633", muted: "#66736D",
+    accent: "#3F7775", accent2: "#D67A3E", soft: "#E7C583",
+    palette: ["#7FA3A0", "#E7C583", "#D67A3E", "#A84F38", "#3F7775", "#EDE3C6"],
+    mascotFill: "#7FA3A0", mascotInner: "#F5F1DF", mascotBlush: "#D67A3E",
+    dot: "rgba(41,54,51,0.06)", emoji: "✈️", photoBg: true, bgImage: "/theme-bg/paper-sky.webp",
+    decor: ["cloud", "mapPin", "cloud", "sparkleStar"],
   },
 };
 

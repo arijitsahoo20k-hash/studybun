@@ -133,14 +133,15 @@ export default function GlobalStyle() {
       .sb-bg-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
 
       /* ===== theme photo-backdrop (Wildwood CRT / Midnight Express /
-         Windmill Meadow / Sunset Drift) =====
+         Windmill Meadow / Sunset Drift / Pixel Garden / Dusk Alley /
+         Paper Sky) =====
          Same fixed full-viewport slot as .sb-custom-bg-layer above, one
          z-index further back (-2 vs -1) so a user's own Settings > Custom
          Background photo -- if they've turned that on -- always paints over
          this one automatically, no JS needed. .sb-app only drops its own
          opaque paint (background-color/background-image) when
-         data-photo-bg="true", i.e. only for these four themes -- every
-         other theme's .sb-app keeps its normal solid --bg + dot pattern,
+         data-photo-bg="true", i.e. only for these photo-backdrop themes --
+         every other theme's .sb-app keeps its normal solid --bg + dot pattern,
          completely untouched. Cards, sidebar, nav and every other surface
          already have their own opaque backgrounds and don't change at all;
          the photo only shows through the gaps around them, exactly like
