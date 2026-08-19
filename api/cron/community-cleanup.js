@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
+import { todayIST } from "../../src/lib/dateIST.js";
 
 // Physically deletes chat messages whose expires_at has passed. Uses the
 // service-role admin client (bypasses RLS by design — this is the one job
@@ -10,6 +11,21 @@ import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
 // React query — so `DELETE FROM community_messages WHERE expires_at <=
 // now()` really does remove the rows, and Supabase Realtime broadcasts a
 // DELETE event to every connected client's chat subscription.
+//
+// Also expires stale accountability goals: nothing previously flipped a
+// goal a student never reported back on, so it just sat showing
+// "Studying" forever on their card and everyone else's check-ins list.
+// This runs at 20:00 UTC (1:30am IST) — well after IST midnight — and
+// marks anything from a past IST calendar day still in "planned" or
+// "studying" as "missed", same as if the student had reported it
+// themselves.
+//
+// Deliberately forward-only: goals from before this fix shipped are left
+// exactly as they are (some students genuinely finished those and just
+// never clicked "complete") — only goal_date values from GOALS_EXPIRE_FROM
+// onward get auto-expired. Set to the deploy date; bump it if this file
+// is redeployed later and you don't want the cutoff to move.
+const GOALS_EXPIRE_FROM = "2026-08-19";
 
 function isAuthorized(req) {
   const secret = process.env.CRON_SECRET;
@@ -43,9 +59,31 @@ export default async function handler(req, res) {
     deleted = count ?? ids.length;
   }
 
+  const today = todayIST();
+  const { data: staleGoals, error: staleSelErr } = await admin
+    .from("accountability_goals")
+    .select("id")
+    .gte("goal_date", GOALS_EXPIRE_FROM)
+    .lt("goal_date", today)
+    .in("status", ["planned", "studying"]);
+  if (staleSelErr) return res.status(500).json({ error: staleSelErr.message });
+
+  const staleIds = (staleGoals || []).map((r) => r.id);
+  let goalsExpired = 0;
+  if (staleIds.length > 0) {
+    const { error: expireErr, count } = await admin
+      .from("accountability_goals")
+      .update({ status: "missed", completed_at: nowIso }, { count: "exact" })
+      .in("id", staleIds);
+    if (expireErr) return res.status(500).json({ error: expireErr.message });
+    goalsExpired = count ?? staleIds.length;
+  }
+
   return res.status(200).json({
     ranAt: nowIso,
     expiredMessagesFound: ids.length,
     deleted,
+    staleGoalsFound: staleIds.length,
+    goalsExpired,
   });
 }

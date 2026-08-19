@@ -32,7 +32,10 @@ export default function CommunityPage(p) {
   const [tab, setTab] = useState("checkins");
 
   const studyingIds = p.studyingIds || new Set();
-  const checkedInToday = accountability.activeGoals.length + (accountability.myGoal ? 1 : 0);
+  // activeGoals is already grouped one-entry-per-person, so its length is
+  // a distinct-person count on its own (a person with several goals today
+  // still only counts once here).
+  const checkedInToday = accountability.activeGoals.length + (accountability.myGoals.length > 0 ? 1 : 0);
 
   return (
     <div className="sb-page sb-community-page">
@@ -67,10 +70,11 @@ export default function CommunityPage(p) {
 
           {tab === "accountability" && (
             <AccountabilityCard
-              myGoal={accountability.myGoal}
+              myGoals={accountability.myGoals}
               weekly={accountability.weekly}
-              checkIn={accountability.checkIn}
+              addGoal={accountability.addGoal}
               updateStatus={accountability.updateStatus}
+              deleteGoal={accountability.deleteGoal}
               mascot={p.mascot}
             />
           )}

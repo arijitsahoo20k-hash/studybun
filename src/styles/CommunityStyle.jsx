@@ -53,6 +53,7 @@ export default function CommunityStyle() {
       .sb-community-content .sb-checkins-name { font-size: 14px; }
       .sb-community-content .sb-checkins-goal { font-size: 13px; }
       .sb-community-content .sb-checkin-goal-text { font-size: 15px; }
+      .sb-community-content .sb-goal-item-text { font-size: 15px; }
       .sb-community-content .sb-checkin-form label,
       .sb-community-content .sb-checkin-report label { font-size: 12px; }
 
@@ -75,14 +76,17 @@ export default function CommunityStyle() {
       /* ---------- check-ins list ---------- */
       .sb-checkins-list { display: flex; flex-direction: column; gap: 8px; }
       .sb-checkins-row {
-        display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+        display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px;
         border: 2px solid var(--mascot-outline); border-radius: 14px; background: var(--mascot-body);
       }
+      .sb-checkins-row > span:first-child { margin-top: 2px; }
       .sb-checkins-body { flex: 1; min-width: 0; }
-      .sb-checkins-name { font-weight: 800; font-size: 12.5px; color: var(--mascot-ink); }
-      .sb-checkins-goal { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .sb-checkins-name { font-weight: 800; font-size: 12.5px; color: var(--mascot-ink); margin-bottom: 3px; }
+      .sb-checkins-goals { display: flex; flex-direction: column; gap: 4px; }
+      .sb-checkins-goal-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .sb-checkins-goal { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
       .sb-checkins-status {
-        font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+        font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
         background: var(--mascot-inner); color: var(--mascot-ink); border: 1.5px solid var(--mascot-outline);
       }
       .sb-checkins-status.status-completed { background: #B8E6C1; }
@@ -159,7 +163,7 @@ export default function CommunityStyle() {
       .sb-chat-expiry-note { margin-top: 6px; text-align: center; }
 
       /* ---------- accountability card ---------- */
-      .sb-checkin-form, .sb-checkin-active, .sb-checkin-report { display: flex; flex-direction: column; gap: 13px; }
+      .sb-checkin-form, .sb-checkin-report { display: flex; flex-direction: column; gap: 13px; }
       .sb-checkin-form label, .sb-checkin-report label {
         display: flex; flex-direction: column; gap: 5px; font-size: 11px; font-weight: 800;
         color: var(--muted); letter-spacing: .02em; text-transform: uppercase;
@@ -178,13 +182,49 @@ export default function CommunityStyle() {
         background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 30px;
       }
       .sb-checkin-form input::placeholder { font-weight: 500; opacity: .55; }
-      .sb-checkin-form > .sb-btn { margin-top: 2px; }
-      .sb-checkin-active { padding-top: 2px; gap: 10px; }
-      .sb-checkin-active-line strong { color: var(--mascot-ink); }
-      .sb-checkin-goal-text { font-weight: 700; font-size: 13.5px; }
+      .sb-checkin-form > .sb-checkin-btn-row { margin-top: 2px; }
       .sb-checkin-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
-      .sb-checkin-done { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--mascot-ink); padding: 6px 0; }
-      .sb-checkin-weekly { margin-top: 16px; padding-top: 13px; border-top: 1.5px dashed var(--mascot-outline); font-size: 13px; font-weight: 700; }
+      .sb-checkin-error { font-size: 12px; font-weight: 700; color: #C24444; }
+
+      /* today's goal checklist */
+      .sb-goal-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+      .sb-goal-item {
+        border: 2px solid var(--mascot-outline); border-radius: 12px; padding: 11px 13px;
+        background: var(--card); display: flex; flex-direction: column; gap: 9px;
+      }
+      .sb-goal-item.status-completed { background: var(--mascot-inner); }
+      .sb-goal-item.status-missed { opacity: .7; }
+      .sb-goal-item-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+      .sb-goal-item-body { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+      .sb-goal-item-tag { font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: .01em; }
+      .sb-goal-item-text { font-weight: 700; font-size: 13.5px; color: var(--mascot-ink); line-height: 1.35; }
+      .sb-goal-item-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+      .sb-goal-status-pill {
+        font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
+        border: 1.5px solid var(--mascot-outline); background: var(--mascot-body); color: var(--mascot-ink);
+        white-space: nowrap;
+      }
+      .sb-goal-status-pill.status-completed { background: #B8E6C1; }
+      .sb-goal-status-pill.status-partial { background: #FCE3A5; }
+      .sb-goal-status-pill.status-missed { background: transparent; opacity: .75; }
+      .sb-goal-icon-btn {
+        border: none; background: transparent; color: var(--muted); cursor: pointer;
+        padding: 4px; display: flex; align-items: center; border-radius: 6px;
+      }
+      .sb-goal-icon-btn:hover { color: #C24444; }
+      .sb-goal-add-btn {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        width: 100%; padding: 10px; border-radius: 12px; border: 2px dashed var(--mascot-outline);
+        background: transparent; color: var(--mascot-ink); font-weight: 800; font-size: 13px; cursor: pointer;
+      }
+      .sb-goal-add-btn:hover { background: var(--mascot-inner); }
+      .sb-goal-cap-note { text-align: center; padding: 8px 0; }
+
+      .sb-checkin-weekly {
+        margin-top: 16px; padding-top: 13px; border-top: 1.5px dashed var(--mascot-outline);
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      }
+      .sb-checkin-weekly-count { font-size: 13px; font-weight: 800; color: var(--mascot-ink); }
 
       /* ---------- feed ---------- */
       .sb-composer-trigger {

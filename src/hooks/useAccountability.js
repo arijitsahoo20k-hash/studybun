@@ -6,17 +6,24 @@ import { attachProfiles } from "../lib/communityProfiles";
 
 const SELECT = "id, user_id, goal_date, subject, chapter, goal_type, goal_text, target_value, actual_value, estimated_minutes, status, result_note, created_at, completed_at";
 
+// Soft UX cap on how many goals someone can stack in one day — the table
+// itself has no limit (no unique constraint on user_id+goal_date), this is
+// purely to stop the checklist from growing unreasonably long.
+export const MAX_GOALS_PER_DAY = 5;
+
 /**
- * Daily accountability check-ins: the student's own goal for today plus
- * a live feed of other students' active commitments (what the Community
- * page's "Today's check-ins" section renders). Real Supabase data only —
- * no fabricated counts.
+ * Daily accountability check-ins. A student can log several goals for
+ * today (not just one) — `myGoals` is every one of today's rows for the
+ * signed-in user, oldest first. `activeGoals` is everyone else's today
+ * rows, grouped by person (one entry per person, each holding their list
+ * of goals) for the Community page's "Today's check-ins" section. Real
+ * Supabase data only — no fabricated counts.
  */
 export function useAccountability() {
   const { user } = useAuth();
   const userId = user?.id;
-  const [myGoal, setMyGoal] = useState(null); // today's row, or null
-  const [activeGoals, setActiveGoals] = useState([]); // everyone's today rows (excluding own)
+  const [myGoals, setMyGoals] = useState([]); // today's rows, oldest first
+  const [activeGoals, setActiveGoals] = useState([]); // [{ user_id, profiles, goals: [...] }]
   const [weekly, setWeekly] = useState({ total: 0, completed: 0 });
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
@@ -28,17 +35,30 @@ export function useAccountability() {
     const weekAgo = daysAgoIST(6);
 
     const [mineRes, othersRes, weekRes] = await Promise.all([
-      supabase.from("accountability_goals").select(SELECT).eq("user_id", userId).eq("goal_date", today).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("accountability_goals").select(SELECT).eq("goal_date", today).neq("user_id", userId).order("created_at", { ascending: false }).limit(30),
+      supabase.from("accountability_goals").select(SELECT).eq("user_id", userId).eq("goal_date", today).order("created_at", { ascending: true }),
+      supabase.from("accountability_goals").select(SELECT).eq("goal_date", today).neq("user_id", userId).order("created_at", { ascending: false }).limit(60),
       supabase.from("accountability_goals").select("id, status").eq("user_id", userId).gte("goal_date", weekAgo),
     ]);
 
     if (!mounted.current) return;
-    if (!mineRes.error) setMyGoal(mineRes.data || null);
+    if (!mineRes.error) setMyGoals(mineRes.data || []);
     if (!othersRes.error) {
       const withProfiles = await attachProfiles(othersRes.data || []);
       if (!mounted.current) return;
-      setActiveGoals(withProfiles);
+      // Group into one card per person, newest activity first, each
+      // holding all of that person's goals for today in the order they
+      // were created.
+      const order = [];
+      const byUser = new Map();
+      for (const row of withProfiles) {
+        if (!byUser.has(row.user_id)) {
+          byUser.set(row.user_id, { user_id: row.user_id, profiles: row.profiles, goals: [] });
+          order.push(row.user_id);
+        }
+        byUser.get(row.user_id).goals.push(row);
+      }
+      for (const uid of order) byUser.get(uid).goals.reverse(); // oldest-first within a person
+      setActiveGoals(order.map((uid) => byUser.get(uid)));
     }
     if (!weekRes.error) {
       const rows = weekRes.data || [];
@@ -61,10 +81,17 @@ export function useAccountability() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, load]);
 
-  const checkIn = useCallback(
+  // Always adds a new goal for today rather than replacing an existing
+  // one — a student can now stack several goals in one day.
+  const addGoal = useCallback(
     async (form) => {
       if (!userId) return { ok: false };
+      if (myGoals.length >= MAX_GOALS_PER_DAY) {
+        return { ok: false, error: `You can track up to ${MAX_GOALS_PER_DAY} goals a day.` };
+      }
       const payload = {
+        user_id: userId,
+        goal_date: todayIST(),
         subject: form.subject || null,
         chapter: form.chapter || null,
         goal_type: form.goalType || "custom",
@@ -74,31 +101,16 @@ export function useAccountability() {
         status: "studying",
       };
 
-      // One commitment per day: replace today's goal if one already exists
-      // (e.g. the student changes their mind about what they're studying)
-      // rather than creating a second row for the same day.
-      if (myGoal?.id) {
-        const { data, error: err } = await supabase
-          .from("accountability_goals")
-          .update(payload)
-          .eq("id", myGoal.id)
-          .select(SELECT)
-          .single();
-        if (err) return { ok: false, error: "Couldn't save your goal. Try again." };
-        setMyGoal(data);
-        return { ok: true, data };
-      }
-
       const { data, error: err } = await supabase
         .from("accountability_goals")
-        .insert({ user_id: userId, goal_date: todayIST(), ...payload })
+        .insert(payload)
         .select(SELECT)
         .single();
       if (err) return { ok: false, error: "Couldn't save your goal. Try again." };
-      setMyGoal(data);
+      setMyGoals((prev) => [...prev, data]);
       return { ok: true, data };
     },
-    [userId, myGoal]
+    [userId, myGoals]
   );
 
   const updateStatus = useCallback(
@@ -109,11 +121,23 @@ export function useAccountability() {
       }
       const { data, error: err } = await supabase.from("accountability_goals").update(patch).eq("id", id).select(SELECT).single();
       if (err) return { ok: false, error: "Couldn't update that goal." };
-      setMyGoal(data);
+      setMyGoals((prev) => prev.map((g) => (g.id === id ? data : g)));
       return { ok: true, data };
     },
     []
   );
 
-  return { myGoal, activeGoals, weekly, loading, checkIn, updateStatus, refetch: load };
+  // Lets a student remove a goal they added by mistake today. Own rows
+  // only (RLS already restricts delete to auth.uid() = user_id).
+  const deleteGoal = useCallback(
+    async (id) => {
+      const { error: err } = await supabase.from("accountability_goals").delete().eq("id", id);
+      if (err) return { ok: false, error: "Couldn't remove that goal." };
+      setMyGoals((prev) => prev.filter((g) => g.id !== id));
+      return { ok: true };
+    },
+    []
+  );
+
+  return { myGoals, activeGoals, weekly, loading, addGoal, updateStatus, deleteGoal, refetch: load };
 }

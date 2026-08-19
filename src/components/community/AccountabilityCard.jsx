@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Target, Sparkles } from "lucide-react";
-import { Card, SectionTitle, Btn } from "../ui";
+import { Target, Plus, Trash2 } from "lucide-react";
+import { Card, SectionTitle, Btn, EmptyState } from "../ui";
+import { MAX_GOALS_PER_DAY } from "../../hooks/useAccountability";
 
 const GOAL_TYPES = [
   { value: "minutes", label: "Study for X minutes" },
@@ -14,13 +15,15 @@ const GOAL_TYPES = [
   { value: "custom", label: "Something else" },
 ];
 
-const STATUS_COPY = {
+const STATUS_LABEL = {
   planned: "Planned",
   studying: "Studying",
   completed: "Completed",
-  partial: "Partially completed",
-  missed: "Missed today. Reset and try again tomorrow.",
+  partial: "Partial",
+  missed: "Missed",
 };
+
+const RESOLVED = new Set(["completed", "partial", "missed"]);
 
 function timeAgo(iso) {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -30,7 +33,7 @@ function timeAgo(iso) {
   return `${hrs}h ago`;
 }
 
-function CheckInForm({ onSubmit, submitting }) {
+function AddGoalForm({ onSubmit, onCancel, submitting, error }) {
   const [goalType, setGoalType] = useState("minutes");
   const [subject, setSubject] = useState("");
   const [chapter, setChapter] = useState("");
@@ -67,7 +70,7 @@ function CheckInForm({ onSubmit, submitting }) {
         </label>
       </div>
       <label>
-        What will you finish today?
+        What will you finish?
         <input value={goalText} onChange={(e) => setGoalText(e.target.value)} placeholder="Solve 30 PYQs" maxLength={200} />
       </label>
       <div className="sb-checkin-row">
@@ -80,90 +83,152 @@ function CheckInForm({ onSubmit, submitting }) {
           <input type="number" min="0" value={estimatedMinutes} onChange={(e) => setEstimatedMinutes(e.target.value)} placeholder="60" />
         </label>
       </div>
-      <Btn type="submit" disabled={submitting}>{submitting ? "Checking in..." : "Check in"}</Btn>
+      {error && <div className="sb-checkin-error">{error}</div>}
+      <div className="sb-checkin-btn-row">
+        <Btn variant="soft" type="button" onClick={onCancel}>Cancel</Btn>
+        <Btn type="submit" disabled={submitting}>{submitting ? "Adding..." : "Add goal"}</Btn>
+      </div>
     </form>
   );
 }
 
-export default function AccountabilityCard({ myGoal, weekly, checkIn, updateStatus, mascot }) {
-  const [submitting, setSubmitting] = useState(false);
-  const [reporting, setReporting] = useState(false);
+function GoalReportControls({ goal, onSave, onCancel }) {
   const [resultChoice, setResultChoice] = useState("completed");
   const [actualValue, setActualValue] = useState("");
 
-  const handleCheckIn = async (form) => {
+  return (
+    <div className="sb-checkin-report">
+      <div className="sb-checkin-btn-row">
+        {["completed", "partial", "missed"].map((r) => (
+          <button
+            key={r}
+            type="button"
+            className={`sb-chip small ${resultChoice === r ? "active" : ""}`}
+            onClick={() => setResultChoice(r)}
+          >
+            {r === "completed" ? "Completed" : r === "partial" ? "Partially" : "Couldn't"}
+          </button>
+        ))}
+      </div>
+      {goal.target_value != null && (
+        <input
+          type="number"
+          min="0"
+          placeholder={`Completed out of ${goal.target_value}`}
+          value={actualValue}
+          onChange={(e) => setActualValue(e.target.value)}
+        />
+      )}
+      <div className="sb-checkin-btn-row">
+        <Btn variant="soft" onClick={onCancel}>Cancel</Btn>
+        <Btn onClick={() => onSave(resultChoice, actualValue ? Number(actualValue) : null)}>Save</Btn>
+      </div>
+    </div>
+  );
+}
+
+function GoalItem({ goal, reporting, onStartReport, onCancelReport, onSave, onDelete }) {
+  const resolved = RESOLVED.has(goal.status);
+  return (
+    <div className={`sb-goal-item status-${goal.status}`}>
+      <div className="sb-goal-item-top">
+        <div className="sb-goal-item-body">
+          {goal.subject && (
+            <div className="sb-goal-item-tag">{goal.subject}{goal.chapter ? ` → ${goal.chapter}` : ""}</div>
+          )}
+          <div className="sb-goal-item-text">{goal.goal_text}</div>
+          <div className="sb-muted small">{timeAgo(goal.created_at)}</div>
+        </div>
+        <div className="sb-goal-item-right">
+          <span className={`sb-goal-status-pill status-${goal.status}`}>{STATUS_LABEL[goal.status] || goal.status}</span>
+          {!resolved && (
+            <button type="button" className="sb-goal-icon-btn" title="Remove goal" onClick={() => onDelete(goal.id)}>
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!resolved && !reporting && (
+        <div className="sb-checkin-btn-row">
+          <Btn variant="soft" onClick={() => onStartReport(goal.id)}>Mark today's result</Btn>
+        </div>
+      )}
+
+      {!resolved && reporting && (
+        <GoalReportControls
+          goal={goal}
+          onCancel={onCancelReport}
+          onSave={(status, actual) => onSave(goal.id, status, actual)}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function AccountabilityCard({ myGoals, weekly, addGoal, updateStatus, deleteGoal, mascot }) {
+  const [adding, setAdding] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [addError, setAddError] = useState("");
+  const [reportingId, setReportingId] = useState(null);
+
+  const atCap = myGoals.length >= MAX_GOALS_PER_DAY;
+
+  const handleAdd = async (form) => {
     setSubmitting(true);
-    await checkIn(form);
+    setAddError("");
+    const res = await addGoal(form);
     setSubmitting(false);
+    if (res.ok) setAdding(false);
+    else setAddError(res.error || "Couldn't save that goal.");
   };
 
-  const handleReport = async () => {
-    await updateStatus(myGoal.id, resultChoice, {
-      actual_value: actualValue ? Number(actualValue) : null,
-    });
-    setReporting(false);
+  const handleSaveReport = async (id, status, actualValue) => {
+    await updateStatus(id, status, { actual_value: actualValue });
+    setReportingId(null);
   };
 
   return (
     <Card washi>
       <SectionTitle icon={Target}>My Accountability</SectionTitle>
 
-      {!myGoal && <CheckInForm onSubmit={handleCheckIn} submitting={submitting} />}
+      {myGoals.length === 0 && !adding && (
+        <EmptyState mascot={mascot} mood="idle" text="No goals set for today yet." sub="Add what you want to get done and check it off as you go." />
+      )}
 
-      {myGoal && myGoal.status !== "completed" && myGoal.status !== "partial" && myGoal.status !== "missed" && (
-        <div className="sb-checkin-active">
-          <div className="sb-checkin-active-line">
-            {myGoal.subject && <strong>{myGoal.subject}{myGoal.chapter ? ` → ${myGoal.chapter}` : ""}</strong>}
-          </div>
-          <div className="sb-checkin-goal-text">{myGoal.goal_text}</div>
-          <div className="sb-muted small">Started {timeAgo(myGoal.created_at)}</div>
-
-          {!reporting ? (
-            <div className="sb-checkin-btn-row">
-              <Btn variant="soft" onClick={() => setReporting(true)}>I completed today's goal</Btn>
-            </div>
-          ) : (
-            <div className="sb-checkin-report">
-              <div className="sb-checkin-btn-row">
-                {["completed", "partial", "missed"].map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    className={`sb-chip small ${resultChoice === r ? "active" : ""}`}
-                    onClick={() => setResultChoice(r)}
-                  >
-                    {r === "completed" ? "Completed" : r === "partial" ? "Partially completed" : "Could not complete"}
-                  </button>
-                ))}
-              </div>
-              {myGoal.target_value != null && (
-                <input
-                  type="number"
-                  min="0"
-                  placeholder={`Completed out of ${myGoal.target_value}`}
-                  value={actualValue}
-                  onChange={(e) => setActualValue(e.target.value)}
-                />
-              )}
-              <div className="sb-checkin-btn-row">
-                <Btn variant="soft" onClick={() => setReporting(false)}>Cancel</Btn>
-                <Btn onClick={handleReport}>Save</Btn>
-              </div>
-            </div>
-          )}
+      {myGoals.length > 0 && (
+        <div className="sb-goal-list">
+          {myGoals.map((g) => (
+            <GoalItem
+              key={g.id}
+              goal={g}
+              reporting={reportingId === g.id}
+              onStartReport={setReportingId}
+              onCancelReport={() => setReportingId(null)}
+              onSave={handleSaveReport}
+              onDelete={deleteGoal}
+            />
+          ))}
         </div>
       )}
 
-      {myGoal && ["completed", "partial", "missed"].includes(myGoal.status) && (
-        <div className="sb-checkin-done">
-          <Sparkles size={16} />
-          <span>{STATUS_COPY[myGoal.status]}</span>
-        </div>
+      {adding && (
+        <AddGoalForm onSubmit={handleAdd} onCancel={() => { setAdding(false); setAddError(""); }} submitting={submitting} error={addError} />
+      )}
+
+      {!adding && !atCap && (
+        <button type="button" className="sb-goal-add-btn" onClick={() => setAdding(true)}>
+          <Plus size={16} /> Add a goal
+        </button>
+      )}
+
+      {!adding && atCap && (
+        <div className="sb-muted small sb-goal-cap-note">That's a solid list for today — {MAX_GOALS_PER_DAY} goals tracked.</div>
       )}
 
       <div className="sb-checkin-weekly">
-        <div className="sb-muted small">This week</div>
-        <div>Goals completed: {weekly.completed}/{weekly.total || 0}</div>
+        <span className="sb-muted small">This week</span>
+        <span className="sb-checkin-weekly-count">{weekly.completed}/{weekly.total || 0} goals completed</span>
       </div>
     </Card>
   );
