@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { MessageCircle, Send } from "lucide-react";
+import { MessageCircle, Send, X } from "lucide-react";
 import { Card, SectionTitle, EmptyState } from "../ui";
 import ChatMessage from "./ChatMessage";
 import ChannelSelector from "./ChannelSelector";
@@ -14,14 +14,40 @@ export default function CommunityChat({
 }) {
   const [draft, setDraft] = useState("");
   const [err, setErr] = useState(null);
+  const [replyTo, setReplyTo] = useState(null); // { id, user_id, name, content } | null
+  const [highlightedId, setHighlightedId] = useState(null);
   const listRef = useRef(null);
   const textareaRef = useRef(null);
   const submittingRef = useRef(false);
+  const msgRefs = useRef({});
+  const highlightTimeoutRef = useRef(null);
 
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length, activeChannelId]);
+
+  useEffect(() => {
+    msgRefs.current = {};
+    setReplyTo(null);
+  }, [activeChannelId]);
+
+  useEffect(() => {
+    return () => window.clearTimeout(highlightTimeoutRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (replyTo) textareaRef.current?.focus();
+  }, [replyTo]);
+
+  const scrollToMessage = (id) => {
+    const el = msgRefs.current[id];
+    if (!el) return; // not currently loaded (e.g. older page) — no-op for v1
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedId(id);
+    window.clearTimeout(highlightTimeoutRef.current);
+    highlightTimeoutRef.current = window.setTimeout(() => setHighlightedId(null), 1200);
+  };
 
   // Auto-grow the textarea with content instead of staying a fixed
   // 2-row box — it now behaves like a real chat input (grows up to ~5
@@ -41,9 +67,9 @@ export default function CommunityChat({
     if (!text) return;
     submittingRef.current = true;
     setErr(null);
-    const res = await sendMessage(text);
+    const res = await sendMessage(text, replyTo);
     submittingRef.current = false;
-    if (res.ok) setDraft("");
+    if (res.ok) { setDraft(""); setReplyTo(null); }
     else setErr(res.error || "Couldn't send that.");
   };
 
@@ -67,6 +93,7 @@ export default function CommunityChat({
           visible.map((m) => (
             <ChatMessage
               key={m.id}
+              ref={(el) => { msgRefs.current[m.id] = el; }}
               message={m}
               isOwn={m.user_id === currentUserId}
               myProfile={myProfile}
@@ -74,11 +101,25 @@ export default function CommunityChat({
               founderIds={founderIds}
               memberIds={memberIds}
               onDelete={deleteMessage}
+              onReply={setReplyTo}
+              onJumpToReply={scrollToMessage}
+              highlighted={highlightedId === m.id}
             />
           ))
         )}
       </div>
 
+      {replyTo && (
+        <div className="sb-chat-reply-bar">
+          <div className="sb-chat-reply-bar-info">
+            <span className="sb-chat-reply-bar-name">Replying to {replyTo.name}</span>
+            <span className="sb-chat-reply-bar-text">{replyTo.content}</span>
+          </div>
+          <button type="button" className="sb-chat-reply-bar-cancel" onClick={() => setReplyTo(null)} aria-label="Cancel reply">
+            <X size={16} />
+          </button>
+        </div>
+      )}
       <form className="sb-chat-composer" onSubmit={handleSend}>
         <textarea
           ref={textareaRef}

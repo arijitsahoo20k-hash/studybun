@@ -4,7 +4,7 @@ import { useAuth } from "../lib/AuthContext";
 import { attachProfiles, fetchOneProfile } from "../lib/communityProfiles";
 
 const PAGE_SIZE = 50;
-const SELECT = "id, channel_id, user_id, content, created_at, expires_at";
+const SELECT = "id, channel_id, user_id, content, created_at, expires_at, reply_to_id, reply_to_user_id, reply_to_name, reply_to_content";
 
 /**
  * Realtime chat for one community channel. Unlike useRealtimeTable (which
@@ -96,6 +96,18 @@ export function useCommunityChat(channelId) {
           setMessages((prev) => prev.filter((m) => m.id !== payload.old.id));
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "community_messages", filter: `channel_id=eq.${channelId}` },
+        (payload) => {
+          // Fires when the scrub_reply_snapshot() trigger nulls out
+          // reply_to_id/reply_to_content on rows that quoted a message
+          // which just got deleted (self-delete, mod delete, or the
+          // 5-day expiry cron) — flips the quote to "Message removed"
+          // live, on every connected client.
+          setMessages((prev) => prev.map((m) => (m.id === payload.new.id ? { ...m, ...payload.new } : m)));
+        }
+      )
       .subscribe();
 
     return () => {
@@ -106,20 +118,30 @@ export function useCommunityChat(channelId) {
   }, [channelId, userId]);
 
   const sendMessage = useCallback(
-    async (content) => {
+    async (content, replyTo) => {
       const trimmed = (content || "").trim();
       if (!trimmed || !channelId || !userId || sending) return { ok: false };
       if (trimmed.length > 1000) return { ok: false, error: "Message is too long (max 1000 characters)." };
       setSending(true);
       const { data, error: err } = await supabase
         .from("community_messages")
-        .insert({ channel_id: channelId, user_id: userId, content: trimmed })
-        .select("id, channel_id, user_id, content, created_at, expires_at")
+        .insert({
+          channel_id: channelId,
+          user_id: userId,
+          content: trimmed,
+          reply_to_id: replyTo?.id ?? null,
+          reply_to_user_id: replyTo?.user_id ?? null,
+          reply_to_name: replyTo?.name ?? null,
+          reply_to_content: replyTo?.content ?? null,
+        })
+        .select("id, channel_id, user_id, content, created_at, expires_at, reply_to_id, reply_to_user_id, reply_to_name, reply_to_content")
         .single();
       setSending(false);
       if (err) {
         const friendly = err.message?.includes("rate_limited")
           ? "You're sending messages too fast — take a breath and try again in a bit."
+          : err.message?.includes("invalid_reply")
+          ? "That message isn't available to reply to anymore."
           : "Couldn't send that message. Try again.";
         return { ok: false, error: friendly };
       }

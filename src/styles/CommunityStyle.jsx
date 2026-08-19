@@ -121,6 +121,61 @@ export default function CommunityStyle() {
       }
       .sb-chat-msg.own .sb-chat-msg-content { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
 
+      /* ---------- chat: reply ---------- */
+      .sb-chat-msg.own .sb-chat-msg-meta .sb-cm-actions { order: -1; }
+
+      .sb-chat-reply-quote {
+        display: flex; flex-direction: column; gap: 1px; text-align: left;
+        max-width: 100%; margin-top: 4px; padding: 5px 9px;
+        border-left: 3px solid var(--accent); border-radius: 8px;
+        background: var(--mascot-inner); cursor: pointer; font: inherit;
+      }
+      .sb-chat-msg.own .sb-chat-reply-quote { text-align: right; border-left: none; border-right: 3px solid rgba(255,255,255,.6); }
+      .sb-chat-reply-quote-name { font-size: 10.5px; font-weight: 800; color: var(--mascot-ink); }
+      .sb-chat-reply-quote-text {
+        font-size: 11.5px; color: var(--muted);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;
+      }
+      .sb-chat-msg.own .sb-chat-reply-quote-text { color: rgba(255,255,255,.85); margin-left: auto; }
+
+      @keyframes sbChatHighlight {
+        0% { background: var(--mascot-inner); }
+        30% { background: var(--accent2); }
+        100% { background: var(--mascot-inner); }
+      }
+      @keyframes sbChatHighlightOwn {
+        0% { background: var(--accent); }
+        30% { background: var(--accent2); }
+        100% { background: var(--accent); }
+      }
+      /* own bubbles sit on --accent normally, not --mascot-inner — a
+         dedicated keyframe keeps the flash starting/ending on the right
+         base color instead of visibly jumping to the wrong one */
+      .sb-chat-msg.highlight:not(.own) .sb-chat-msg-content { animation: sbChatHighlight 1.2s ease; }
+      .sb-chat-msg.own.highlight .sb-chat-msg-content { animation: sbChatHighlightOwn 1.2s ease; }
+
+      .sb-chat-reply-bar {
+        display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+        margin-bottom: 8px; padding: 8px 12px;
+        border: 2px solid var(--mascot-outline); border-left: 4px solid var(--accent); border-radius: 12px;
+        background: var(--mascot-body);
+      }
+      .sb-chat-reply-bar-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+      .sb-chat-reply-bar-name { font-size: 11px; font-weight: 800; color: var(--mascot-ink); }
+      .sb-chat-reply-bar-text {
+        font-size: 12px; color: var(--muted);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .sb-chat-reply-bar-cancel {
+        flex-shrink: 0; background: none; border: none; cursor: pointer; color: var(--muted);
+        padding: 6px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+      }
+      .sb-chat-reply-bar-cancel:hover { background: var(--mascot-inner); color: #C24444; }
+
+      @media (max-width: 640px) {
+        .sb-chat-reply-quote-text { max-width: 150px; }
+      }
+
       /* Composer: the actual thing that was left half-finished before —
          a real full-width input bar with an auto-growing textarea (up to
          5 lines), a proper counter, and a send button that matches the
@@ -297,13 +352,6 @@ export default function CommunityStyle() {
       }
       .sb-cm-actions-trigger:hover { background: var(--mascot-inner); }
 
-      /* chat messages only have a delete button now (no report/block) */
-      .sb-chat-msg-delete {
-        background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px;
-        display: inline-flex; align-items: center; justify-content: center; border-radius: 8px;
-        align-self: flex-start;
-      }
-      .sb-chat-msg-delete:hover { background: var(--mascot-inner); color: #C24444; }
       .sb-cm-actions-backdrop { position: fixed; inset: 0; z-index: 40; }
       .sb-cm-actions-menu, .sb-cm-actions-panel {
         position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 41;
