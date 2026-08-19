@@ -5,14 +5,10 @@ import {
   ELEMENTS, COLOR_MODES, elementColor, kToC, MAX_GROUP,
 } from "../data/periodicTable";
 
-/* Two non-element placeholder cells sitting inside the main 7-row grid at
- * (period 6, group 3) and (period 7, group 3) -- the classic "57-71" /
- * "89-103" marker convention pointing down at the detached lanthanide /
- * actinide rows below, since ELEMENTS itself only carries real elements. */
-const FBLOCK_MARKERS = [
-  { x: 3, y: 6, label: "57–71", sub: "Lanthanides" },
-  { x: 3, y: 7, label: "89–103", sub: "Actinides" },
-];
+/* La and Ac now sit as real elements in the main 7-row grid at
+ * (period 6, group 3) and (period 7, group 3) -- the standard JEE/NCERT
+ * convention, since their differentiating electron goes into d, not f.
+ * The lanthanide/actinide footnote rows below run Ce→Lu and Th→Lr. */
 
 function fmtNum(v, digits = 2) {
   if (v === null || v === undefined) return "—";
@@ -245,11 +241,6 @@ export default function PeriodicTable({ onBack }) {
                 onOpen={setSelected}
                 style={{ gridColumn: el.x, gridRow: el.y }}
               />
-            ))}
-            {FBLOCK_MARKERS.map((m) => (
-              <div key={m.label} className="sb-pt-marker" style={{ gridColumn: m.x, gridRow: m.y }}>
-                <span>{m.label}</span>
-              </div>
             ))}
           </div>
         </div>

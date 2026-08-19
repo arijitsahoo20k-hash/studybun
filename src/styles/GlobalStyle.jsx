@@ -2384,10 +2384,6 @@ export default function GlobalStyle() {
       .sb-pt-cell-num { font-size: 8px; font-weight: 700; position: absolute; top: 3px; left: 5px; opacity: .8; }
       .sb-pt-cell-sym { font-size: 15px; font-weight: 800; line-height: 1; }
       .sb-pt-cell-mass { font-size: 6.5px; font-weight: 700; opacity: .75; display: none; }
-      .sb-pt-marker {
-        display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 8px;
-        border: 2px dashed var(--muted); color: var(--muted); font-size: 8.5px; font-weight: 800; line-height: 1.2; padding: 2px;
-      }
       .sb-pt-scroll-hint { display: block; text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); margin: -6px 0 0; }
 
       .sb-pt-legend { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
