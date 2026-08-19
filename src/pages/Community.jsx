@@ -11,6 +11,7 @@ import { useAccountability } from "../hooks/useAccountability";
 import { useCommunityFeed } from "../hooks/useCommunityFeed";
 import { useCommunityModeration } from "../hooks/useCommunityModeration";
 import { useFounderIds } from "../hooks/useFounderIds";
+import { useStreakMemberIds } from "../hooks/useStreakMemberIds";
 
 // Same tab shape as Settings' TABS — each card that used to be stacked on
 // one long page now lives behind its own side-nav entry, so only one card
@@ -29,6 +30,7 @@ export default function CommunityPage(p) {
   const feed = useCommunityFeed();
   const moderation = useCommunityModeration();
   const founderIds = useFounderIds();
+  const memberIds = useStreakMemberIds();
   const [tab, setTab] = useState("checkins");
 
   const studyingIds = p.studyingIds || new Set();
@@ -96,6 +98,7 @@ export default function CommunityPage(p) {
               isModerator={moderation.isModerator}
               moderation={moderation}
               founderIds={founderIds}
+              memberIds={memberIds}
               mascot={p.mascot}
             />
           )}
@@ -108,6 +111,7 @@ export default function CommunityPage(p) {
               isModerator={moderation.isModerator}
               moderation={moderation}
               founderIds={founderIds}
+              memberIds={memberIds}
               mascot={p.mascot}
             />
           )}

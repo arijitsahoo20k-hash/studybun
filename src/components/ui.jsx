@@ -21,6 +21,37 @@ export const FounderBadge = () => (
   <span className="sb-founder-badge" title="StudyBun founder">👑 Founder</span>
 );
 
+// Small "Member" pill — shown next to a name wherever founderIds does NOT
+// have that user_id but they have a 3+ day real-activity streak (see
+// useStreakMemberIds). Same spots as FounderBadge: Leaderboard
+// podium/rows/my-rank, Community posts/replies, Community chat.
+export const MemberBadge = () => (
+  <span className="sb-member-badge" title="3+ day streak">🔥 Member</span>
+);
+
+// Single source of truth for the streak threshold — used here and by
+// useStreakMemberIds.js's query. Change it in exactly one place.
+export const MEMBER_STREAK_MIN = 3;
+
+// Single source of truth for "which pill (if any) goes next to this
+// user_id". Handles both call shapes: pass `memberIds` (a Set, for
+// Community posts/replies/chat) OR `streak` (a number, for Leaderboard
+// rows which already carry current_streak inline and don't need a
+// separate query). Founder always wins over Member if somehow both are
+// true. Renders nothing at all — not even a guess — until founderIds has
+// actually loaded (it starts as `null`, see useFounderIds), which is what
+// stops a founder from seeing a stray Member badge flash on their own name
+// before their founder status comes back.
+export const PersonBadge = ({ founderIds, memberIds, userId, streak }) => {
+  if (!userId || !founderIds) return null; // founderIds still loading (null/undefined) — show nothing, not a guess
+  if (founderIds.has(userId)) return <FounderBadge />;
+  if (memberIds !== undefined) {
+    if (!memberIds) return null; // memberIds query also still loading
+    return memberIds.has(userId) ? <MemberBadge /> : null;
+  }
+  return typeof streak === "number" && streak >= MEMBER_STREAK_MIN ? <MemberBadge /> : null;
+};
+
 export const ProgressBar = ({ pct, color, paw = true }) => {
   const clamped = Math.min(100, Math.max(0, pct || 0));
   return (

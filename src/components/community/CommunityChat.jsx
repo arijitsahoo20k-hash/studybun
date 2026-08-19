@@ -10,7 +10,7 @@ const TEXTAREA_MAX_HEIGHT = 140;
 export default function CommunityChat({
   channels, activeChannelId, onSelectChannel,
   messages, loading, sending, sendMessage, deleteMessage, hasMore, loadOlder,
-  currentUserId, myProfile, isModerator, moderation, founderIds, mascot,
+  currentUserId, myProfile, isModerator, moderation, founderIds, memberIds, mascot,
 }) {
   const [draft, setDraft] = useState("");
   const [err, setErr] = useState(null);
@@ -72,6 +72,7 @@ export default function CommunityChat({
               myProfile={myProfile}
               isModerator={isModerator}
               founderIds={founderIds}
+              memberIds={memberIds}
               onDelete={deleteMessage}
             />
           ))

@@ -6,7 +6,12 @@ import { supabase } from "../lib/supabaseClient";
  * delete/moderation power comes from is_moderator()/is_admin() on the
  * backend (see useCommunityModeration), not from this list. */
 export function useFounderIds() {
-  const [founderIds, setFounderIds] = useState(new Set());
+  // Starts as `null` (status unknown), not an empty Set — an empty Set
+  // would make everyone look like "not a founder" for the brief window
+  // before the RPC resolves, which is exactly the flash that let the
+  // Member badge show on a founder's own name for a moment. Consumers
+  // (see PersonBadge in ui.jsx) render nothing until this is a real Set.
+  const [founderIds, setFounderIds] = useState(null);
 
   useEffect(() => {
     let mounted = true;
