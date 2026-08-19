@@ -239,6 +239,24 @@ export const THEMES = {
     dot: "rgba(41,54,51,0.06)", emoji: "✈️", photoBg: true, bgImage: "/theme-bg/paper-sky.webp",
     decor: ["cloud", "mapPin", "cloud", "sparkleStar"],
   },
+
+  /* ===== photo-backdrop theme, batch 3 =====
+   * Same rules as the seven above -- near-white bg/card, hand-picked
+   * accent/accent2/soft/palette from the source photo (rusty countryside
+   * postbox + wildflowers + blue sky) so the UI reads as part of the scene
+   * instead of the photo's own blue/green being dumped onto cards/buttons.
+   * Rust is the hero accent (not green, since the photo is already mostly
+   * green), sky blue is secondary, wheat/marigold is the soft/highlight
+   * tone, and the outline goes dark forest-charcoal instead of the usual
+   * brown so the UI border reads as part of the landscape. */
+  "Meadow Post": {
+    bg: "#F3EBDD", card: "#FFF9EC", outline: "#263A2D", ink: "#304536", muted: "#71806A",
+    accent: "#B95732", accent2: "#4D8799", soft: "#E8C98B",
+    palette: ["#D6B875", "#87996B", "#4D8799", "#B95732", "#365844", "#D9A63A"],
+    mascotFill: "#D6B875", mascotInner: "#FFF4DA", mascotBlush: "#D98A68",
+    dot: "rgba(38,58,45,0.055)", emoji: "📮", photoBg: true, bgImage: "/theme-bg/meadow-post.webp",
+    decor: ["marigoldFlower", "blossom", "marigoldFlower", "sparkleStar"],
+  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the

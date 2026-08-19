@@ -2,7 +2,7 @@ import React from "react";
 
 /* Purely decorative, self-contained layer for the "photo-backdrop" themes
    (Wildwood CRT, Midnight Express, Windmill Meadow, Sunset Drift, Pixel
-   Garden, Dusk Alley, Paper Sky — see src/data/themes.js). Mounted once in
+   Garden, Dusk Alley, Paper Sky, Meadow Post — see src/data/themes.js). Mounted once in
    App.jsx, right next to <CustomBackgroundLayer/>, and just as inert
    everywhere else:
 
