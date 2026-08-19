@@ -30,6 +30,11 @@ export function AuthProvider({ children }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (event === "PASSWORD_RECOVERY") setPasswordRecovery(true);
+      // A recovery session that ends any other way (user signs out instead
+      // of setting a new password) must also clear the flag — otherwise it
+      // stays stuck true with no session behind it, and Gate keeps routing
+      // back to the reset-password form forever.
+      if (event === "SIGNED_OUT") setPasswordRecovery(false);
       setSession(newSession);
       setLoading(false);
     });

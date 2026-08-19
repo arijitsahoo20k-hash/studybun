@@ -20,7 +20,7 @@ const App = lazy(() => import("./App"));
 const DEFAULT_THEME = THEMES["Sakura Bloom"];
 
 function Gate() {
-  const { user, loading } = useAuth();
+  const { user, loading, passwordRecovery, signOut } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
   const cssVars = themeVars(DEFAULT_THEME);
 
@@ -44,8 +44,13 @@ function Gate() {
     );
   }
 
-  if (!user) {
-    if (!showAuth) {
+  // A password-reset link signs the user in (Supabase needs a session to let
+  // them set a new password), so `user` is already truthy at this point.
+  // Without this check, Gate falls through to the normal dashboard below and
+  // the "choose a new password" form (rendered inside <Auth />) never mounts
+  // — the user just lands on their existing account, old password unchanged.
+  if (!user || passwordRecovery) {
+    if (!showAuth && !passwordRecovery) {
       return (
         <div style={cssVars}>
           <GlobalStyle />
@@ -57,9 +62,27 @@ function Gate() {
       <div className="sb-onboard sb-auth-page" style={cssVars}>
         <GlobalStyle />
         <DecorLayer theme={DEFAULT_THEME} />
-        <button className="sb-land-back-btn" onClick={() => setShowAuth(false)}>
-          <ArrowLeft size={14} /> Back to explore
-        </button>
+        {passwordRecovery ? (
+          // Regular "Back to explore" would be a dead click here: Gate's
+          // condition above (`!user || passwordRecovery`) keeps showing this
+          // same screen no matter what showAuth is set to, since the recovery
+          // session makes `user` truthy. Give the user a real way out instead
+          // — sign out drops the recovery session, so Gate re-evaluates and
+          // sends them to the landing page.
+          <button
+            className="sb-land-back-btn"
+            onClick={async () => {
+              await signOut();
+              setShowAuth(false);
+            }}
+          >
+            <ArrowLeft size={14} /> Cancel & sign out
+          </button>
+        ) : (
+          <button className="sb-land-back-btn" onClick={() => setShowAuth(false)}>
+            <ArrowLeft size={14} /> Back to explore
+          </button>
+        )}
         <div className="sb-flow-shell">
           <Suspense fallback={<LoadingScreen message="Waking up your study buddy..." />}>
             <Auth />
