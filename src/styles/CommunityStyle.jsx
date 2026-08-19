@@ -130,13 +130,13 @@ export default function CommunityStyle() {
         border-left: 3px solid var(--accent); border-radius: 8px;
         background: var(--mascot-inner); cursor: pointer; font: inherit;
       }
-      .sb-chat-msg.own .sb-chat-reply-quote { text-align: right; border-left: none; border-right: 3px solid rgba(255,255,255,.6); }
+      .sb-chat-msg.own .sb-chat-reply-quote { text-align: right; border-left: none; border-right: 3px solid var(--accent); }
       .sb-chat-reply-quote-name { font-size: 10.5px; font-weight: 800; color: var(--mascot-ink); }
       .sb-chat-reply-quote-text {
         font-size: 11.5px; color: var(--muted);
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;
       }
-      .sb-chat-msg.own .sb-chat-reply-quote-text { color: rgba(255,255,255,.85); margin-left: auto; }
+      .sb-chat-msg.own .sb-chat-reply-quote-text { margin-left: auto; }
 
       @keyframes sbChatHighlight {
         0% { background: var(--mascot-inner); }
