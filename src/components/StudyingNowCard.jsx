@@ -21,7 +21,7 @@ const MAX_VISIBLE = 12;
  * so re-renders (the set changes constantly as people start/stop) don't
  * re-fetch anyone already resolved.
  */
-export default function StudyingNowCard({ studyingIds, userId }) {
+export default function StudyingNowCard({ studyingIds, userId, bare = false }) {
   const ids = Array.from(studyingIds || []);
   const idsKey = [...ids].sort().join(",");
 
@@ -57,8 +57,8 @@ export default function StudyingNowCard({ studyingIds, userId }) {
   const visible = people.slice(0, MAX_VISIBLE);
   const overflow = people.length - visible.length;
 
-  return (
-    <Card className="sb-studying-now">
+  const content = (
+    <>
       <SectionTitle icon={Users} right={<span className="sb-studying-live-badge"><span className="sb-studying-live-dot" />{people.length} live</span>}>
         Studying Now
       </SectionTitle>
@@ -85,6 +85,9 @@ export default function StudyingNowCard({ studyingIds, userId }) {
           )}
         </div>
       )}
-    </Card>
+    </>
   );
+
+  if (bare) return content;
+  return <Card className="sb-studying-now">{content}</Card>;
 }

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
-  Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock, ShieldAlert,
+  Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock, ShieldAlert, Users,
 } from "lucide-react";
 import { Card, Btn, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
@@ -34,8 +34,22 @@ export default function FocusTimer(p) {
   const [editingDuration, setEditingDuration] = useState(false);
   const [durationDraft, setDurationDraft] = useState(t.modeMinutes[t.mode]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [studyingOpen, setStudyingOpen] = useState(false);
+  const studyingCount = p.studyingIds ? p.studyingIds.size : 0;
+  const studyingDialogRef = useRef(null);
 
   useEffect(() => { setDurationDraft(t.modeMinutes[t.mode]); }, [t.mode, t.modeMinutes]);
+
+  // Same Escape-to-close + initial-focus pattern as the Periodic Table's
+  // element dialog (see ElementDetail in PeriodicTable.jsx) so every popup
+  // dialog in the app behaves identically.
+  useEffect(() => {
+    if (!studyingOpen) return;
+    studyingDialogRef.current?.focus();
+    const onKey = (e) => { if (e.key === "Escape") setStudyingOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [studyingOpen]);
 
   const mm = String(Math.floor(t.secondsLeft / 60)).padStart(2, "0");
   const ss = String(t.secondsLeft % 60).padStart(2, "0");
@@ -109,6 +123,16 @@ export default function FocusTimer(p) {
           <div className="sb-timer-actions">
             <button className="sb-icon-round" title="Set a custom time for this mode" onClick={() => setEditingDuration((v) => !v)}>
               <Pencil size={15} />
+            </button>
+            <button
+              className={`sb-icon-round sb-studying-btn ${studyingOpen ? "on" : ""}`}
+              title={studyingCount > 0 ? `${studyingCount} studying right now` : "See who's studying now"}
+              onClick={() => setStudyingOpen((v) => !v)}
+            >
+              <Users size={15} />
+              {studyingCount > 0 && (
+                <span className="sb-studying-btn-badge">{studyingCount > 99 ? "99+" : studyingCount}</span>
+              )}
             </button>
             <button className={`sb-icon-round ${settingsOpen ? "on" : ""}`} title="Timer settings" onClick={() => setSettingsOpen((v) => !v)}>
               <Settings size={15} />
@@ -281,7 +305,23 @@ export default function FocusTimer(p) {
       </div>
       </div>
 
-      <StudyingNowCard studyingIds={p.studyingIds} userId={p.userId} />
+      {studyingOpen && (
+        <div className="sb-pt-overlay sb-studying-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setStudyingOpen(false); }}>
+          <div
+            className="sb-pt-dialog sb-studying-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Who's studying now"
+            ref={studyingDialogRef}
+            tabIndex={-1}
+          >
+            <button className="sb-pt-dialog-close" title="Close" aria-label="Close" onClick={() => setStudyingOpen(false)}>
+              <X size={15} />
+            </button>
+            <StudyingNowCard studyingIds={p.studyingIds} userId={p.userId} bare />
+          </div>
+        </div>
+      )}
 
       {t.askDone && (
         <Card>

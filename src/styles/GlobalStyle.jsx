@@ -1080,6 +1080,13 @@ export default function GlobalStyle() {
       .sb-icon-round { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--mascot-outline); background: var(--mascot-body); color: var(--mascot-ink); cursor: pointer; box-shadow: 2px 2px 0 var(--mascot-outline); transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .12s ease, background-color .2s ease; }
       .sb-icon-round:hover { transform: translate(-1px,-1px) rotate(-6deg); box-shadow: 3px 3px 0 var(--mascot-outline); }
       .sb-icon-round.on { background: var(--accent); color: #fff; }
+      .sb-studying-btn { position: relative; }
+      .sb-studying-btn-badge {
+        position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; padding: 0 3px;
+        display: inline-flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 800;
+        line-height: 1; border-radius: 999px; background: var(--accent); color: #fff;
+        border: 1.5px solid var(--mascot-body); animation: sb-lb-pulse 1.8s ease-in-out infinite;
+      }
 
       /* ----- the stage: mascot + glowing digits + pill progress ----- */
       .sb-focus-stage { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 2px; }
@@ -1158,6 +1165,12 @@ export default function GlobalStyle() {
          it shows on every breakpoint, including the phone widths where the
          companion rail itself is hidden entirely (see .sb-focus-side above). */
       .sb-studying-now { margin-top: 4px; }
+      /* Popup card opened from the Focus Timer's "who's studying" icon --
+         reuses the .sb-pt-overlay/.sb-pt-dialog chrome (Periodic Table
+         dialog) so it doesn't need its own overlay styling, just a width
+         cap since this content is narrower than a Periodic Table element
+         card. */
+      .sb-studying-dialog { width: min(420px, 100%); }
       .sb-studying-live-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; color: var(--accent); background: var(--mascot-inner); border: 1.5px solid var(--mascot-outline); border-radius: 999px; padding: 5px 12px; flex-shrink: 0; }
       .sb-studying-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: sb-lb-pulse 1.6s ease-in-out infinite; }
 
