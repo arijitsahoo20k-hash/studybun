@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
-  Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock,
+  Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock, ShieldAlert,
 } from "lucide-react";
 import { Card, Btn, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
+import StudyingNowCard from "../components/StudyingNowCard";
 import { SYLLABUS } from "../data/syllabus";
 import { RADIO_OPTIONS, RADIO_LINKS, extractYouTubeId, getActiveRadio } from "../lib/radio";
 
@@ -152,6 +153,28 @@ export default function FocusTimer(p) {
               </button>
             </div>
 
+            <div className="sb-timer-settings-row">
+              <span className="sb-timer-settings-label">
+                <ShieldAlert size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
+                Aggressive mode
+              </span>
+              <button
+                className={`sb-sound-toggle sb-aggressive-toggle ${t.aggressiveMode ? "on" : ""}`}
+                onClick={t.toggleAggressiveMode}
+                title="Blocks switching to other pages while a session is running"
+              >
+                {t.aggressiveMode ? <Lock size={16} /> : <ShieldAlert size={16} />}
+                <span>{t.aggressiveMode ? "Locked while running" : "Off"}</span>
+              </button>
+            </div>
+            <p className="sb-aggressive-hint">
+              {t.aggressiveMode
+                ? (t.running
+                  ? "You're locked to this page until you pause, save, or finish the session."
+                  : "Armed — the moment you hit Start, other pages will be blocked until you pause or finish.")
+                : "When on, you can't wander off to other pages while a session is actively running — pausing always lets you leave."}
+            </p>
+
             <div className="sb-timer-settings-row sb-timer-settings-radio-head">
               <span className="sb-timer-settings-label"><Radio size={14} /> Focus radio</span>
             </div>
@@ -257,6 +280,8 @@ export default function FocusTimer(p) {
         </Card>
       </div>
       </div>
+
+      <StudyingNowCard studyingIds={p.studyingIds} userId={p.userId} />
 
       {t.askDone && (
         <Card>

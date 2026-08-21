@@ -124,6 +124,12 @@ export function useFocusTimer({ onComplete } = {}) {
   const [running, setRunning] = useState(!!persisted?.running);
   const [askDone, setAskDone] = useState(!!persisted?.askDone);
   const [soundOn, setSoundOn] = useState(persisted?.soundOn ?? true);
+  // Aggressive Focus Mode -- opt-in, off by default, persisted per-device
+  // exactly like soundOn/radioChoice above. When on AND a session is
+  // actually running, App.jsx's setPage wrapper blocks switching to any
+  // other page. Purely a UI-layer guard -- never touches Supabase, so
+  // there's nothing here that can break for anyone who never turns it on.
+  const [aggressiveMode, setAggressiveMode] = useState(!!persisted?.aggressiveMode);
   const [radioChoice, setRadioChoice] = useState(persisted?.radioChoice || "none");
   const [radioCustomUrl, setRadioCustomUrl] = useState(persisted?.radioCustomUrl || "");
   const [startedMinutes, setStartedMinutes] = useState(persisted?.startedMinutes || 0);
@@ -161,9 +167,9 @@ export function useFocusTimer({ onComplete } = {}) {
   useEffect(() => {
     savePersisted({
       modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
-      secondsLeft, endAt: endAtRef.current, sessionInProgress,
+      secondsLeft, endAt: endAtRef.current, sessionInProgress, aggressiveMode,
     });
-  }, [modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes, secondsLeft, sessionInProgress]);
+  }, [modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes, secondsLeft, sessionInProgress, aggressiveMode]);
 
   useEffect(() => () => stopDroneOsc(audioCtxRef.current, droneRef), []);
 
@@ -358,13 +364,17 @@ export function useFocusTimer({ onComplete } = {}) {
     });
   }, [running]);
 
+  const toggleAggressiveMode = useCallback(() => {
+    setAggressiveMode((v) => !v);
+  }, []);
+
   const total = (modeMinutes[mode] ?? 25) * 60;
   const pct = total > 0 ? ((total - secondsLeft) / total) * 100 : 0;
 
   return {
     modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
-    secondsLeft, total, pct, elapsedSeconds, canSave, sessionActive,
+    secondsLeft, total, pct, elapsedSeconds, canSave, sessionActive, aggressiveMode,
     changeMode, setCustomMinutes, start, pause, reset, resetForNewSession, saveEarly,
-    toggleSound, setRadioChoice, setRadioCustomUrl,
+    toggleSound, setRadioChoice, setRadioCustomUrl, toggleAggressiveMode,
   };
 }

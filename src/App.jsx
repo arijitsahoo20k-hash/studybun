@@ -131,7 +131,7 @@ export const FEATURE_UNLOCK_STREAK = 6;
 
 export default function App() {
   const { user } = useAuth();
-  const [page, setPage] = useState("dashboard");
+  const [page, setPageRaw] = useState("dashboard");
   const { row: profile, loading: profileLoading, save: saveProfile, refetch: refetchProfile } = useDeviceRow("profiles", {
     name: "", exam: "JEE Main", exam_date: "2027-01-24", daily_goal: 6, theme: "Sakura Bloom", mascot: "bunny",
     streak_freeze_tokens: 1, streak_freeze_granted_days: 0,
@@ -204,6 +204,32 @@ export default function App() {
   // from a completely different page.
   const studyingIds = useStudyPresence(focusTimer.running);
 
+  // Aggressive Focus Mode: an opt-in Focus Timer setting (see useFocusTimer)
+  // that blocks switching to any other page while a session is actively
+  // running, so a stray/distracted tap can't pull someone out of it. This
+  // is the single place every navigation path in the app funnels through
+  // (sidebar, mobile nav, dashboard shortcuts, buddy tips, recovery-item
+  // shortcuts, push-notification deep links) — wrapping it here means none
+  // of those call sites need their own guard. Deliberately never blocks
+  // returning to the timer itself, and clears the instant the session is
+  // paused, finished, or reset (sessionActive/running goes false), so no
+  // one can ever get stuck on one page.
+  const setPage = (id) => {
+    if (id !== "timer" && focusTimer.running && focusTimer.aggressiveMode) {
+      showToast("Aggressive mode is on — pause or finish your session to leave 🐰");
+      return;
+    }
+    setPageRaw(id);
+  };
+  // The push-notification listener below is registered once (mount-only
+  // effect, see its own comment) and could otherwise keep calling a stale
+  // setPage closure -- one that was still holding whatever
+  // running/aggressiveMode looked like at mount -- for as long as the tab
+  // stays open. Routing every call through a ref instead means it always
+  // uses this render's guard logic, no matter how long the app has been open.
+  const setPageRef = useRef(setPage);
+  useEffect(() => { setPageRef.current = setPage; });
+
   const reducedMotion = useMemo(prefersReducedMotion, []);
   // <main> is the app's only scroll container, so without this a nav switch
   // could land you mid-scroll on the new page if the old one had you scrolled
@@ -219,7 +245,7 @@ export default function App() {
   //     force-navigating it (see notificationclick in sw.js).
   useEffect(() => {
     const validPages = new Set(NAV.map((n) => n.id));
-    const applyPage = (id) => { if (validPages.has(id)) setPage(id); };
+    const applyPage = (id) => { if (validPages.has(id)) setPageRef.current(id); };
 
     const params = new URLSearchParams(window.location.search);
     const fromUrl = params.get("page");

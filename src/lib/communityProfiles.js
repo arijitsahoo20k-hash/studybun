@@ -28,3 +28,14 @@ export async function fetchOneProfile(userId) {
   const { data } = await supabase.rpc("get_community_profiles", { uids: [userId] });
   return data?.[0] || null;
 }
+
+// Batched lookup returning a Map(user_id -> {name, mascot}) instead of
+// merging into rows — used by StudyingNowCard, which has bare ids from the
+// presence channel (see useStudyPresence) and nothing else to merge them
+// into.
+export async function fetchProfilesByIds(userIds) {
+  const ids = [...new Set((userIds || []).filter(Boolean))];
+  if (!ids.length) return new Map();
+  const { data } = await supabase.rpc("get_community_profiles", { uids: ids });
+  return new Map((data || []).map((p) => [p.user_id, p]));
+}

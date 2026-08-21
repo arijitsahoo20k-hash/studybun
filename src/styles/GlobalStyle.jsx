@@ -1145,6 +1145,64 @@ export default function GlobalStyle() {
         .sb-focus-time { font-size: 104px; }
         .sb-focus-track { max-width: 480px; }
       }
+
+      /* ----- Aggressive Mode toggle (timer settings panel) ----- */
+      .sb-aggressive-toggle.on { background: var(--accent); color: #fff; }
+      .sb-aggressive-hint { font-size: 11.5px; color: var(--muted); font-weight: 700; line-height: 1.5; margin: -2px 2px 2px; }
+
+      /* ----- "Studying Now" card -----
+         Same washi/glass-card language as the rest of the app, with a
+         pill of avatar "bubbles" (reusing Mascot at a small size) instead
+         of the plain numeric count Community/Leaderboard use elsewhere.
+         Sits as its own full-width block below the timer hero/side rail so
+         it shows on every breakpoint, including the phone widths where the
+         companion rail itself is hidden entirely (see .sb-focus-side above). */
+      .sb-studying-now { margin-top: 4px; }
+      .sb-studying-live-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; color: var(--accent); background: var(--mascot-inner); border: 1.5px solid var(--mascot-outline); border-radius: 999px; padding: 5px 12px; flex-shrink: 0; }
+      .sb-studying-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: sb-lb-pulse 1.6s ease-in-out infinite; }
+
+      .sb-studying-bubbles {
+        display: flex; flex-wrap: wrap; gap: 14px 10px; margin-top: 6px;
+        max-height: 216px; overflow-y: auto; padding: 4px 2px 6px;
+      }
+      .sb-studying-bubble {
+        display: flex; flex-direction: column; align-items: center; gap: 5px;
+        width: 66px; flex-shrink: 0; animation: sb-studying-pop .3s cubic-bezier(.34,1.56,.64,1) backwards;
+      }
+      @keyframes sb-studying-pop { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
+      .sb-studying-bubble-ring {
+        position: relative; display: flex; align-items: center; justify-content: center;
+        width: 52px; height: 52px; border-radius: 50%;
+        background: var(--mascot-body); border: 2.5px solid var(--mascot-outline);
+        box-shadow: 2px 2px 0 var(--mascot-outline);
+      }
+      .sb-studying-bubble-ring::after {
+        content: ""; position: absolute; bottom: -1px; right: -1px;
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #59C97A; border: 2px solid var(--card);
+        animation: sb-lb-pulse 1.6s ease-in-out infinite;
+      }
+      .sb-studying-bubble.me .sb-studying-bubble-ring { border-color: var(--accent); box-shadow: 2px 2px 0 var(--accent), 0 0 0 3px var(--soft); }
+      .sb-studying-bubble-name {
+        font-size: 10.5px; font-weight: 800; color: var(--mascot-ink); text-align: center;
+        max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .sb-studying-bubble.me .sb-studying-bubble-name { color: var(--accent); }
+      .sb-studying-overflow-ring {
+        font-family: var(--font-display); font-size: 14px; font-weight: 800; color: var(--muted);
+      }
+      .sb-studying-overflow-ring::after { display: none; }
+
+      @media (min-width: 640px) {
+        .sb-studying-bubbles { gap: 16px 14px; }
+        .sb-studying-bubble { width: 74px; }
+        .sb-studying-bubble-ring { width: 58px; height: 58px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-studying-bubble { animation: none; }
+        .sb-studying-bubble-ring::after, .sb-studying-live-dot { animation: none; }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         .sb-focus-hero.sb-focus-running .sb-focus-aura,
         .sb-focus-hero.sb-focus-running .sb-focus-mascot-halo,
