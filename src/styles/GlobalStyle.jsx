@@ -1190,13 +1190,20 @@ export default function GlobalStyle() {
 
       @media (min-width: 1080px) {
         .sb-focus-layout { flex-direction: row; align-items: stretch; gap: 22px; }
-        .sb-focus-hero { flex: 1 1 auto; }
+        /* Baseline height bumped up (independent of the settings popup --
+           see .sb-timer-settings-dialog above, which no longer affects this
+           layout at all) so the companion rail's portrait photo has enough
+           vertical room to show the full scene instead of a tight crop. */
+        .sb-focus-hero { flex: 1 1 auto; min-height: 640px; justify-content: center; }
         .sb-focus-side { display: flex; flex: 0 0 260px; }
+        .sb-focus-side-img { min-height: 420px; }
         .sb-focus-time { font-size: clamp(72px, 6vw, 92px); }
         .sb-focus-hero { padding: 46px 40px; }
       }
       @media (min-width: 1500px) {
+        .sb-focus-hero { min-height: 700px; }
         .sb-focus-side { flex-basis: 300px; }
+        .sb-focus-side-img { min-height: 460px; }
         .sb-focus-time { font-size: 104px; }
         .sb-focus-track { max-width: 480px; }
         .sb-focus-side-panel { padding: 20px 20px 22px; gap: 12px; }
@@ -1274,7 +1281,7 @@ export default function GlobalStyle() {
         .sb-focus-mote { opacity: .5; }
       }
 
-      .sb-duration-pop, .sb-timer-settings { width: 100%; max-width: 380px; background: var(--mascot-body); border: 2px solid var(--mascot-outline); border-radius: 18px; padding: 14px 16px; box-shadow: 3px 3px 0 var(--mascot-outline); display: flex; flex-direction: column; gap: 10px; animation: sb-focus-pop-in .22s cubic-bezier(.34,1.56,.64,1); }
+      .sb-duration-pop { width: 100%; max-width: 380px; background: var(--mascot-body); border: 2px solid var(--mascot-outline); border-radius: 18px; padding: 14px 16px; box-shadow: 3px 3px 0 var(--mascot-outline); display: flex; flex-direction: column; gap: 10px; animation: sb-focus-pop-in .22s cubic-bezier(.34,1.56,.64,1); }
       @keyframes sb-focus-pop-in { from { transform: translateY(-10px) scale(.96); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
       .sb-duration-pop-title { font-weight: 800; font-size: 13px; }
       .sb-duration-stepper { display: flex; align-items: center; justify-content: center; gap: 10px; }
@@ -1282,23 +1289,40 @@ export default function GlobalStyle() {
       .sb-duration-stepper input { width: 64px; text-align: center; font-family: var(--font-display); font-size: 20px; font-weight: 800; border: 2px solid var(--mascot-outline); border-radius: 10px; padding: 4px 2px; background: var(--mascot-body); color: var(--mascot-ink); }
       .sb-duration-pop-actions { display: flex; justify-content: center; gap: 8px; }
 
-      .sb-timer-settings-row { display: flex; align-items: center; justify-content: space-between; }
-      .sb-timer-settings-label { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: 12.5px; color: var(--muted); }
-      .sb-timer-settings-radio-head { margin-top: 2px; }
-      .sb-radio-options { display: flex; flex-wrap: wrap; gap: 6px; }
-      .sb-radio-chip { padding: 6px 12px; border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--mascot-body); color: var(--mascot-ink); font-weight: 700; font-size: 11.5px; cursor: pointer; }
+      /* ----- Timer settings dialog -----
+         Used to live inline inside the hero card (see .sb-focus-layout
+         comment above) which made the hero grow past the fixed-height
+         companion rail every time it opened. Now it's its own popup --
+         reuses .sb-pt-overlay/.sb-pt-dialog chrome, same as the "who's
+         studying" and Periodic Table dialogs -- sized generously and with
+         larger type throughout since it's no longer squeezed into the
+         narrow inline pop-under. */
+      .sb-timer-settings-dialog { width: min(480px, 100%); }
+      .sb-timer-settings { display: flex; flex-direction: column; gap: 16px; }
+      .sb-timer-settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      .sb-timer-settings-label { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: 15px; color: var(--muted); }
+      .sb-timer-settings-radio-head { margin-top: 4px; }
+      .sb-sound-toggle { padding: 8px 16px; font-size: 13.5px; }
+      .sb-radio-options { display: flex; flex-wrap: wrap; gap: 8px; }
+      .sb-radio-chip { padding: 8px 15px; border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--mascot-body); color: var(--mascot-ink); font-weight: 700; font-size: 13.5px; cursor: pointer; }
       .sb-radio-chip.active { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
-      .sb-radio-chip { display: inline-flex; align-items: center; gap: 4px; }
-      .sb-radio-custom-row { display: flex; gap: 6px; align-items: center; }
-      .sb-radio-custom-row .sb-input { flex: 1; }
-      .sb-radio-error { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #d1495b; margin: 0; }
+      .sb-radio-chip { display: inline-flex; align-items: center; gap: 5px; }
+      .sb-radio-custom-row { display: flex; gap: 8px; align-items: center; }
+      .sb-radio-custom-row .sb-input { flex: 1; font-size: 14px; padding: 10px 12px; }
+      .sb-radio-error { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #d1495b; margin: 0; }
       .sb-radio-embed-wrap { display: flex; flex-direction: column; gap: 4px; }
       .sb-radio-embed-tucked { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
       .sb-radio-embed { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; border: 2px solid var(--mascot-outline); }
-      .sb-radio-hint { font-size: 10.5px; color: var(--muted); text-align: center; }
-      .sb-radio-links { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; border-top: 2px dashed var(--mascot-outline); }
-      .sb-radio-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: var(--muted); text-decoration: none; }
+      .sb-radio-hint { font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.5; }
+      .sb-radio-links { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 6px; border-top: 2px dashed var(--mascot-outline); }
+      .sb-radio-link { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; color: var(--muted); text-decoration: none; }
       .sb-radio-link:hover { color: var(--mascot-ink); text-decoration: underline; }
+      .sb-aggressive-hint { font-size: 13px; }
+      @media (max-width: 420px) {
+        .sb-timer-settings-dialog { padding: 20px 16px; }
+        .sb-timer-settings-label { font-size: 13.5px; }
+        .sb-radio-chip { font-size: 12.5px; padding: 7px 12px; }
+      }
       .sb-timer-logged-note { font-size: 12.5px; color: var(--muted); margin: -4px 0 4px; }
 
       .sb-subject-head { display: flex; justify-content: space-between; font-family: var(--font-display); font-weight: 700; margin-bottom: 4px; }

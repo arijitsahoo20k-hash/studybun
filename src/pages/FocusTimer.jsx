@@ -64,6 +64,7 @@ export default function FocusTimer(p) {
   const [studyingOpen, setStudyingOpen] = useState(false);
   const studyingCount = p.studyingIds ? p.studyingIds.size : 0;
   const studyingDialogRef = useRef(null);
+  const settingsDialogRef = useRef(null);
 
   useEffect(() => { setDurationDraft(t.modeMinutes[t.mode]); }, [t.mode, t.modeMinutes]);
 
@@ -77,6 +78,20 @@ export default function FocusTimer(p) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [studyingOpen]);
+
+  // Timer settings used to render inline inside the hero card, which made
+  // the hero grow taller than the companion rail every time it opened
+  // (rail stayed fixed height -> mismatched card bottoms, broken look on
+  // every breakpoint). It now pops up in its own dialog -- same
+  // Escape-to-close + initial-focus pattern as the "who's studying" and
+  // Periodic Table dialogs -- so the hero/side layout never shifts.
+  useEffect(() => {
+    if (!settingsOpen) return;
+    settingsDialogRef.current?.focus();
+    const onKey = (e) => { if (e.key === "Escape") setSettingsOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [settingsOpen]);
 
   const mm = String(Math.floor(t.secondsLeft / 60)).padStart(2, "0");
   const ss = String(t.secondsLeft % 60).padStart(2, "0");
@@ -198,89 +213,6 @@ export default function FocusTimer(p) {
           </div>
         )}
 
-        {settingsOpen && (
-          <div className="sb-timer-settings">
-            <div className="sb-timer-settings-row">
-              <span className="sb-timer-settings-label">Alert sounds</span>
-              <button className={`sb-sound-toggle ${t.soundOn ? "on" : ""}`} onClick={t.toggleSound}
-                title={t.soundOn ? "Kawaii chime on start/finish, soft drone while focusing" : "Sound off"}>
-                {t.soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                <span>{t.soundOn ? "Sound on" : "Sound off"}</span>
-              </button>
-            </div>
-
-            <div className="sb-timer-settings-row">
-              <span className="sb-timer-settings-label">
-                <ShieldAlert size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
-                Aggressive mode
-              </span>
-              <button
-                className={`sb-sound-toggle sb-aggressive-toggle ${t.aggressiveMode ? "on" : ""}`}
-                onClick={t.toggleAggressiveMode}
-                title="Blocks switching to other pages while a session is running"
-              >
-                {t.aggressiveMode ? <Lock size={16} /> : <ShieldAlert size={16} />}
-                <span>{t.aggressiveMode ? "Locked while running" : "Off"}</span>
-              </button>
-            </div>
-            <p className="sb-aggressive-hint">
-              {t.aggressiveMode
-                ? (t.running
-                  ? "You're locked to this page until you pause, save, or finish the session."
-                  : "Armed — the moment you hit Start, other pages will be blocked until you pause or finish.")
-                : "When on, you can't wander off to other pages while a session is actively running — pausing always lets you leave."}
-            </p>
-
-            <div className="sb-timer-settings-row sb-timer-settings-radio-head">
-              <span className="sb-timer-settings-label"><Radio size={14} /> Focus radio</span>
-            </div>
-            <div className="sb-radio-options">
-              <button className={`sb-radio-chip ${t.radioChoice === "none" ? "active" : ""}`} onClick={() => t.setRadioChoice("none")}>No music</button>
-              {RADIO_OPTIONS.map((r) => (
-                <button key={r.id} className={`sb-radio-chip ${t.radioChoice === r.id ? "active" : ""}`} onClick={() => t.setRadioChoice(r.id)}>
-                  {r.label}
-                </button>
-              ))}
-              <button className={`sb-radio-chip ${t.radioChoice === "custom" ? "active" : ""}`} onClick={() => t.setRadioChoice("custom")}>
-                <Link2 size={12} /> Custom link
-              </button>
-            </div>
-
-            {t.radioChoice === "custom" && (
-              <div className="sb-radio-custom-row">
-                <input
-                  className="sb-input"
-                  placeholder="Paste any YouTube video or live link…"
-                  value={customDraft}
-                  onChange={(e) => { setCustomDraft(e.target.value); setCustomError(false); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") saveCustomUrl(); }}
-                />
-                <Btn variant="soft" onClick={saveCustomUrl}>Use</Btn>
-              </div>
-            )}
-            {t.radioChoice === "custom" && customError && (
-              <p className="sb-radio-error"><AlertTriangle size={13} /> Couldn't read a video from that link — try copying it straight from YouTube's address bar or share button.</p>
-            )}
-
-            {activeEmbedSrc ? (
-              <p className="sb-radio-hint">
-                Now playing: {t.radioChoice === "custom" ? "your link" : activePreset?.label}
-                {" — keeps playing in the background across pages and even after you close this panel. If it shows \"Video unavailable\", the stream itself has ended; paste a fresh link above."}
-              </p>
-            ) : (t.radioChoice !== "none" && t.radioChoice !== "custom") ? (
-              <p className="sb-radio-hint">Pick a station above, or paste your own link.</p>
-            ) : null}
-            <div className="sb-radio-links">
-              {RADIO_LINKS.map((l) => (
-                <a key={l.label} className="sb-radio-link" target="_blank" rel="noopener noreferrer"
-                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(l.query)}`}>
-                  {l.label} <ExternalLink size={12} />
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="sb-focus-stage">
           <div className="sb-focus-mascot-wrap">
             <span className="sb-focus-mascot-halo" aria-hidden="true" />
@@ -386,6 +318,105 @@ export default function FocusTimer(p) {
               <X size={15} />
             </button>
             <StudyingNowCard studyingIds={p.studyingIds} userId={p.userId} bare />
+          </div>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div className="sb-pt-overlay sb-timer-settings-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setSettingsOpen(false); }}>
+          <div
+            className="sb-pt-dialog sb-timer-settings-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Timer settings"
+            ref={settingsDialogRef}
+            tabIndex={-1}
+          >
+            <button className="sb-pt-dialog-close" title="Close" aria-label="Close" onClick={() => setSettingsOpen(false)}>
+              <X size={15} />
+            </button>
+            <SectionTitle icon={Settings}>Timer Settings</SectionTitle>
+
+            <div className="sb-timer-settings">
+              <div className="sb-timer-settings-row">
+                <span className="sb-timer-settings-label">Alert sounds</span>
+                <button className={`sb-sound-toggle ${t.soundOn ? "on" : ""}`} onClick={t.toggleSound}
+                  title={t.soundOn ? "Kawaii chime on start/finish, soft drone while focusing" : "Sound off"}>
+                  {t.soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                  <span>{t.soundOn ? "Sound on" : "Sound off"}</span>
+                </button>
+              </div>
+
+              <div className="sb-timer-settings-row">
+                <span className="sb-timer-settings-label">
+                  <ShieldAlert size={16} style={{ marginRight: 4, verticalAlign: -3 }} />
+                  Aggressive mode
+                </span>
+                <button
+                  className={`sb-sound-toggle sb-aggressive-toggle ${t.aggressiveMode ? "on" : ""}`}
+                  onClick={t.toggleAggressiveMode}
+                  title="Blocks switching to other pages while a session is running"
+                >
+                  {t.aggressiveMode ? <Lock size={18} /> : <ShieldAlert size={18} />}
+                  <span>{t.aggressiveMode ? "Locked while running" : "Off"}</span>
+                </button>
+              </div>
+              <p className="sb-aggressive-hint">
+                {t.aggressiveMode
+                  ? (t.running
+                    ? "You're locked to this page until you pause, save, or finish the session."
+                    : "Armed — the moment you hit Start, other pages will be blocked until you pause or finish.")
+                  : "When on, you can't wander off to other pages while a session is actively running — pausing always lets you leave."}
+              </p>
+
+              <div className="sb-timer-settings-row sb-timer-settings-radio-head">
+                <span className="sb-timer-settings-label"><Radio size={16} /> Focus radio</span>
+              </div>
+              <div className="sb-radio-options">
+                <button className={`sb-radio-chip ${t.radioChoice === "none" ? "active" : ""}`} onClick={() => t.setRadioChoice("none")}>No music</button>
+                {RADIO_OPTIONS.map((r) => (
+                  <button key={r.id} className={`sb-radio-chip ${t.radioChoice === r.id ? "active" : ""}`} onClick={() => t.setRadioChoice(r.id)}>
+                    {r.label}
+                  </button>
+                ))}
+                <button className={`sb-radio-chip ${t.radioChoice === "custom" ? "active" : ""}`} onClick={() => t.setRadioChoice("custom")}>
+                  <Link2 size={14} /> Custom link
+                </button>
+              </div>
+
+              {t.radioChoice === "custom" && (
+                <div className="sb-radio-custom-row">
+                  <input
+                    className="sb-input"
+                    placeholder="Paste any YouTube video or live link…"
+                    value={customDraft}
+                    onChange={(e) => { setCustomDraft(e.target.value); setCustomError(false); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") saveCustomUrl(); }}
+                  />
+                  <Btn variant="soft" onClick={saveCustomUrl}>Use</Btn>
+                </div>
+              )}
+              {t.radioChoice === "custom" && customError && (
+                <p className="sb-radio-error"><AlertTriangle size={14} /> Couldn't read a video from that link — try copying it straight from YouTube's address bar or share button.</p>
+              )}
+
+              {activeEmbedSrc ? (
+                <p className="sb-radio-hint">
+                  Now playing: {t.radioChoice === "custom" ? "your link" : activePreset?.label}
+                  {" — keeps playing in the background across pages and even after you close this panel. If it shows \"Video unavailable\", the stream itself has ended; paste a fresh link above."}
+                </p>
+              ) : (t.radioChoice !== "none" && t.radioChoice !== "custom") ? (
+                <p className="sb-radio-hint">Pick a station above, or paste your own link.</p>
+              ) : null}
+              <div className="sb-radio-links">
+                {RADIO_LINKS.map((l) => (
+                  <a key={l.label} className="sb-radio-link" target="_blank" rel="noopener noreferrer"
+                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(l.query)}`}>
+                    {l.label} <ExternalLink size={13} />
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
