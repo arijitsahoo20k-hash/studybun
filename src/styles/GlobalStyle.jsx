@@ -1193,19 +1193,35 @@ export default function GlobalStyle() {
         /* Baseline height bumped up (independent of the settings popup --
            see .sb-timer-settings-dialog above, which no longer affects this
            layout at all) so the companion rail's portrait photo has enough
-           vertical room to show the full scene instead of a tight crop. */
-        .sb-focus-hero { flex: 1 1 auto; min-height: 640px; justify-content: center; }
+           vertical room to show the full scene instead of a tight crop.
+           justify-content: space-between (not center) so the extra height
+           reads as "topbar up top, controls down low, roomy stage in
+           between" -- the same spread the card had while the old inline
+           settings panel was open -- instead of one compact content block
+           floating in the middle with big dead margins above and below. */
+        .sb-focus-hero { flex: 1 1 auto; min-height: 640px; justify-content: space-between; }
         .sb-focus-side { display: flex; flex: 0 0 260px; }
         .sb-focus-side-img { min-height: 420px; }
-        .sb-focus-time { font-size: clamp(72px, 6vw, 92px); }
         .sb-focus-hero { padding: 46px 40px; }
+
+        /* Stage elements scaled up to match the taller card -- otherwise
+           the mascot/time/track stay phone-sized and the space-between
+           gaps end up doing all the work instead of the content itself. */
+        .sb-focus-stage { gap: 16px; padding: 0; }
+        .sb-focus-mascot-wrap { transform: scale(1.25); margin-bottom: 4px; }
+        .sb-focus-time { font-size: clamp(84px, 6.5vw, 104px); }
+        .sb-focus-track { max-width: 460px; height: 18px; }
+        .sb-timer-topbar { gap: 16px; }
+        .sb-timer-controls { gap: 14px; margin-top: 8px; }
+        .sb-timer-controls .sb-btn-primary { padding: 12px 28px; font-size: 15.5px; }
       }
       @media (min-width: 1500px) {
         .sb-focus-hero { min-height: 700px; }
         .sb-focus-side { flex-basis: 300px; }
         .sb-focus-side-img { min-height: 460px; }
-        .sb-focus-time { font-size: 104px; }
-        .sb-focus-track { max-width: 480px; }
+        .sb-focus-mascot-wrap { transform: scale(1.4); }
+        .sb-focus-time { font-size: 116px; }
+        .sb-focus-track { max-width: 520px; height: 20px; }
         .sb-focus-side-panel { padding: 20px 20px 22px; gap: 12px; }
         .sb-focus-side-title { font-size: 20px; }
       }
