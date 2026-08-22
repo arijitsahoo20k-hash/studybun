@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
   Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock, ShieldAlert, Users,
+  Clock3, Flame,
 } from "lucide-react";
 import { Card, Btn, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
 import StudyingNowCard from "../components/StudyingNowCard";
 import { SYLLABUS } from "../data/syllabus";
 import { RADIO_OPTIONS, RADIO_LINKS, extractYouTubeId, getActiveRadio } from "../lib/radio";
+import { todayIST } from "../lib/dateIST";
 
 const MODE_ORDER = ["Deep Focus", "Pomodoro", "Lecture", "Practice", "Revision"];
 
@@ -28,6 +30,31 @@ const MODE_TIPS = {
   Practice: "Problems over passive reading. Attempt before you peek at the solution.",
   Revision: "Recall first, reread second. Testing yourself sticks better than skimming.",
 };
+
+// One static scene per mascot species (see /public/focus-scenes) for the
+// companion rail's photo card on wide screens. Falls back to bunny if a
+// species somehow has no matching file so the rail never renders broken.
+const FOCUS_SCENES = {
+  bunny: "/focus-scenes/bunny.jpeg",
+  cat: "/focus-scenes/cat.jpeg",
+  fox: "/focus-scenes/fox.jpeg",
+  bear: "/focus-scenes/bear.jpeg",
+  hamster: "/focus-scenes/hamster.jpeg",
+  penguin: "/focus-scenes/penguin.jpeg",
+};
+
+// Small rotating set of quotes for the companion rail's quote card -- picked
+// deterministically off the day of month (same pattern Dashboard.jsx uses
+// for its own MOTIVATIONAL line) so it's stable all day and changes daily.
+const FOCUS_QUOTES = [
+  { text: "The future depends on what you do today.", author: "Mahatma Gandhi" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+  { text: "Well begun is half done.", author: "Aristotle" },
+  { text: "Small daily improvements are the key to staggering long-term results.", author: "Anonymous" },
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Discipline is choosing between what you want now and what you want most.", author: "Anonymous" },
+  { text: "You don't have to see the whole staircase, just take the first step.", author: "Martin Luther King Jr." },
+];
 
 export default function FocusTimer(p) {
   const t = p.focusTimer;
@@ -53,6 +80,11 @@ export default function FocusTimer(p) {
 
   const mm = String(Math.floor(t.secondsLeft / 60)).padStart(2, "0");
   const ss = String(t.secondsLeft % 60).padStart(2, "0");
+
+  // Same "day of month indexes into a fixed list" approach as Dashboard's
+  // MOTIVATIONAL line -- deterministic, no extra state, changes once a day.
+  const focusQuote = FOCUS_QUOTES[Number(todayIST().slice(8, 10)) % FOCUS_QUOTES.length];
+  const focusScene = FOCUS_SCENES[p.mascot] || FOCUS_SCENES.bunny;
 
   const saveDuration = () => {
     t.setCustomMinutes(t.mode, durationDraft);
@@ -285,21 +317,56 @@ export default function FocusTimer(p) {
 
       <div className="sb-focus-side">
         <Card className="sb-focus-side-card" glass>
-          <Mascot species={p.mascot} mood={t.running ? "studying" : "idle"} size={72} />
-          <p className="sb-focus-side-tip">{MODE_TIPS[t.mode]}</p>
-          <div className="sb-focus-side-stats">
-            {typeof p.todayTimerHours === "number" && (
-              <div className="sb-focus-stat">
-                <span className="sb-focus-stat-num">{p.todayTimerHours.toFixed(1)}h</span>
-                <span className="sb-focus-stat-label">Today</span>
+          <div
+            className="sb-focus-side-img"
+            style={{ backgroundImage: `url(${focusScene})` }}
+            role="img"
+            aria-label={`${p.mascot || "Mascot"} studying at a window`}
+          />
+          <div className="sb-focus-side-panel">
+            <div className="sb-focus-side-heading">
+              <span className="sb-focus-side-title">{t.mode}</span>
+              <span className="sb-focus-side-title-bar" aria-hidden="true" />
+            </div>
+            <p className="sb-focus-side-tip">{MODE_TIPS[t.mode]}</p>
+
+            {(typeof p.todayTimerHours === "number" || typeof p.streak === "number") && (
+              <div className="sb-focus-side-stats">
+                {typeof p.todayTimerHours === "number" && (
+                  <div className="sb-focus-stat-chip">
+                    <span className="sb-focus-stat-chip-top"><Clock3 size={12} /> Today</span>
+                    <span className="sb-focus-stat-chip-num">{p.todayTimerHours.toFixed(1)}h</span>
+                  </div>
+                )}
+                {typeof p.streak === "number" && (
+                  <div className="sb-focus-stat-chip">
+                    <span className="sb-focus-stat-chip-top"><Flame size={12} /> Streak</span>
+                    <span className="sb-focus-stat-chip-num">{p.streak}</span>
+                  </div>
+                )}
               </div>
             )}
-            {typeof p.streak === "number" && (
-              <div className="sb-focus-stat">
-                <span className="sb-focus-stat-num">{p.streak}🔥</span>
-                <span className="sb-focus-stat-label">Streak</span>
+
+            {Array.isArray(p.weeklyData) && p.weeklyData.length > 0 && (
+              <div className="sb-focus-side-week">
+                {p.weeklyData.map((d, i) => {
+                  const isToday = i === p.weeklyData.length - 1;
+                  const active = (Number(d.hours) || 0) + (Number(d.timerHours) || 0) > 0;
+                  return (
+                    <div key={i} className={`sb-focus-week-day ${isToday ? "today" : ""}`}>
+                      <span className="sb-focus-week-letter">{(d.day || "?").charAt(0)}</span>
+                      <span className={`sb-focus-week-dot ${active ? "done" : ""}`} />
+                    </div>
+                  );
+                })}
               </div>
             )}
+
+            <div className="sb-focus-side-quote">
+              <span className="sb-focus-side-quote-mark" aria-hidden="true">&ldquo;</span>
+              <span className="sb-focus-side-quote-text">{focusQuote.text}</span>
+              <span className="sb-focus-side-quote-author">— {focusQuote.author}</span>
+            </div>
           </div>
         </Card>
       </div>

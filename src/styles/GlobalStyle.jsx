@@ -1131,26 +1131,76 @@ export default function GlobalStyle() {
       .sb-timer-controls .sb-btn-primary { padding: 10px 24px; font-size: 14.5px; }
       .sb-timer-controls .sb-btn-primary:hover { box-shadow: 5px 5px 0 var(--accent2), 0 0 18px var(--soft); }
 
-      /* ----- companion rail (wide screens only) ----- */
+      /* ----- companion rail (wide screens only) -----
+         A tall photo card: a per-mascot illustrated study scene (see
+         /public/focus-scenes) fills the top, with a glass panel of live
+         info (mode, tip, today/streak stats, a 7-day dot tracker, and a
+         rotating quote) overlapping its bottom edge. Photo + panel stretch
+         to fill the rail's full height (matched to the hero via
+         .sb-focus-layout's align-items: stretch) instead of floating
+         centered with dead space above/below like the old plain card did. */
       .sb-focus-side { display: none; }
-      .sb-focus-side-card { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; height: 100%; justify-content: center; }
-      .sb-focus-side-tip { font-size: 13px; color: var(--muted); font-weight: 700; line-height: 1.5; margin: 0; max-width: 220px; }
-      .sb-focus-side-stats { display: flex; gap: 18px; margin-top: 4px; }
-      .sb-focus-stat { display: flex; flex-direction: column; align-items: center; }
-      .sb-focus-stat-num { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--mascot-ink); text-shadow: 1.5px 1.5px 0 var(--mascot-inner); }
-      .sb-focus-stat-label { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+      .sb-focus-side-card {
+        display: flex; flex-direction: column; height: 100%;
+        padding: 0; overflow: hidden; text-align: left;
+      }
+      .sb-focus-side-img {
+        flex: 1 1 auto; min-height: 260px; width: 100%;
+        background-size: cover; background-position: center bottom;
+        background-color: var(--mascot-inner);
+      }
+      .sb-focus-side-panel {
+        position: relative; z-index: 1; flex: 0 0 auto;
+        margin-top: -26px; border-radius: 22px 22px 0 0;
+        background: color-mix(in srgb, var(--card) 93%, transparent);
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        box-shadow: 0 -8px 16px -10px rgba(0,0,0,.22);
+        padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 10px;
+      }
+      .sb-focus-side-heading { display: flex; flex-direction: column; gap: 5px; }
+      .sb-focus-side-title { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--mascot-ink); line-height: 1; }
+      .sb-focus-side-title-bar { width: 30px; height: 3px; border-radius: 2px; background: var(--accent); }
+      .sb-focus-side-tip { font-size: 12.5px; color: var(--muted); font-weight: 700; line-height: 1.5; margin: 0; }
+
+      .sb-focus-side-stats { display: flex; gap: 8px; }
+      .sb-focus-stat-chip {
+        flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 3px;
+        background: var(--mascot-inner); border: 1.5px solid var(--mascot-outline);
+        border-radius: 13px; padding: 7px 10px;
+      }
+      .sb-focus-stat-chip-top { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+      .sb-focus-stat-chip-num { font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--mascot-ink); }
+
+      .sb-focus-side-week { display: flex; justify-content: space-between; padding: 0 1px; }
+      .sb-focus-week-day { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      .sb-focus-week-letter { font-size: 10px; font-weight: 800; color: var(--muted); }
+      .sb-focus-week-day.today .sb-focus-week-letter { color: var(--mascot-ink); }
+      .sb-focus-week-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--mascot-outline); opacity: .3; }
+      .sb-focus-week-dot.done { background: var(--accent); opacity: 1; }
+      .sb-focus-week-day.today .sb-focus-week-dot { box-shadow: 0 0 0 2.5px var(--soft); }
+
+      .sb-focus-side-quote {
+        position: relative; background: var(--mascot-inner); border: 1.5px dashed var(--mascot-outline);
+        border-radius: 13px; padding: 10px 12px 9px; font-size: 11.5px; font-weight: 700;
+        color: var(--mascot-ink); line-height: 1.45;
+      }
+      .sb-focus-side-quote-mark { font-family: var(--font-display); font-size: 20px; color: var(--accent); line-height: 0; vertical-align: -6px; margin-right: 1px; opacity: .8; }
+      .sb-focus-side-quote-text { }
+      .sb-focus-side-quote-author { display: block; margin-top: 5px; font-size: 10px; font-weight: 800; color: var(--muted); text-align: right; }
 
       @media (min-width: 1080px) {
         .sb-focus-layout { flex-direction: row; align-items: stretch; gap: 22px; }
         .sb-focus-hero { flex: 1 1 auto; }
-        .sb-focus-side { display: flex; flex: 0 0 240px; }
+        .sb-focus-side { display: flex; flex: 0 0 260px; }
         .sb-focus-time { font-size: clamp(72px, 6vw, 92px); }
         .sb-focus-hero { padding: 46px 40px; }
       }
       @media (min-width: 1500px) {
-        .sb-focus-side { flex-basis: 270px; }
+        .sb-focus-side { flex-basis: 300px; }
         .sb-focus-time { font-size: 104px; }
         .sb-focus-track { max-width: 480px; }
+        .sb-focus-side-panel { padding: 20px 20px 22px; gap: 12px; }
+        .sb-focus-side-title { font-size: 20px; }
       }
 
       /* ----- Aggressive Mode toggle (timer settings panel) ----- */
