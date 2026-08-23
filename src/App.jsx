@@ -179,15 +179,16 @@ export default function App() {
   const streakFreezesQ = useRealtimeTable("streak_freezes", { orderBy: "frozen_date", enabled: page === "dashboard" || page === "planner" || page === "profile" });
 
   // Lives here (not inside FocusTimer) so switching pages never resets it.
-  // Every session — whether it runs to the end naturally or is ended early
-  // via the timer's manual Save button — is logged to timer_sessions
-  // automatically here, which is what lets focus-timer time count toward
-  // study hours even if the user never fills in the "what did you study"
-  // card afterward. `completed` (true for a natural finish, false for an
-  // early save) is passed straight through from the hook instead of being
-  // hardcoded, since only a genuine full completion should count toward the
-  // streak/leaderboard's "trusted timer session" bucket — see
-  // supabase/schema.sql's lb_calc_streak/lb_recompute.
+  // Every session — whether it runs to the end naturally, is ended early via
+  // the timer's manual Save button, or is a Stopwatch session stopped by the
+  // user — is logged to timer_sessions automatically here, which is what
+  // lets focus-timer time count toward study hours even if the user never
+  // fills in the "what did you study" card afterward. `completed` is always
+  // true for anything the hook reports here (see useFocusTimer.js's finish/
+  // saveEarly) — the leaderboard's own anti-cheat check in
+  // supabase/migration_leaderboard.sql (lb_recompute's planned-vs-actual
+  // tolerance) is what fairly distinguishes a full completion from an early
+  // save, not this flag.
   const focusTimer = useFocusTimer({
     onComplete: ({ mode, plannedMinutes, actualMinutes, completed }) => {
       timerSessionsQ.insert({ mode, planned_minutes: plannedMinutes, actual_minutes: actualMinutes, completed });

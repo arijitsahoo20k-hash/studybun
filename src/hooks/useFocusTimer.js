@@ -10,6 +10,23 @@ export const DEFAULT_MODE_MINUTES = {
   Revision: 20,
 };
 
+// Stopwatch is intentionally NOT in DEFAULT_MODE_MINUTES/modeMinutes — it has
+// no fixed duration by design (counts up, stopped manually), unlike every
+// other mode which counts down from a set number of minutes. Every branch
+// below that treats mode === STOPWATCH_MODE differently is there because of
+// this one structural difference; everything else about the session
+// lifecycle (pause/resume/save/reset, persistence, points) is shared.
+export const STOPWATCH_MODE = "Stopwatch";
+
+// Hard ceiling matching the DB's CHECK constraints on timer_sessions and
+// study_sessions (see supabase/migration_leaderboard.sql —
+// timer_sessions_actual_range / study_sessions_minutes_range both cap at
+// 600). A countdown mode can never exceed this (setCustomMinutes clamps
+// every mode to <=240 min), but an indefinite Stopwatch left running by
+// accident could — clamping defensively here means a forgotten Stopwatch
+// can NEVER produce an insert that the database rejects.
+const MAX_LOGGABLE_MINUTES = 600;
+
 function loadPersisted() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -147,8 +164,24 @@ export function useFocusTimer({ onComplete } = {}) {
       : !!(persisted?.running || persisted?.askDone)
   );
 
-  const endAtRef = useRef(persisted?.running ? persisted?.endAt || null : null);
+  const endAtRef = useRef(
+    persisted?.running && persisted?.mode !== STOPWATCH_MODE ? persisted?.endAt || null : null
+  );
+  // Stopwatch's equivalent of endAtRef: an absolute "counting started at"
+  // timestamp that elapsed time is derived from, so (like the countdown's
+  // endAt) it self-corrects after a throttled/backgrounded tab and survives
+  // a full reload instead of drifting from decrementing/incrementing a
+  // plain counter every tick.
+  const stopwatchAnchorRef = useRef(
+    persisted?.running && persisted?.mode === STOPWATCH_MODE ? persisted?.stopwatchAnchor || null : null
+  );
   const [secondsLeft, setSecondsLeft] = useState(() => {
+    if (persisted?.mode === STOPWATCH_MODE) {
+      if (persisted?.running && persisted?.stopwatchAnchor) {
+        return Math.max(0, Math.round((Date.now() - persisted.stopwatchAnchor) / 1000));
+      }
+      return typeof persisted?.secondsLeft === "number" ? persisted.secondsLeft : 0;
+    }
     if (persisted?.running && persisted?.endAt) {
       return Math.max(0, Math.round((persisted.endAt - Date.now()) / 1000));
     }
@@ -167,7 +200,8 @@ export function useFocusTimer({ onComplete } = {}) {
   useEffect(() => {
     savePersisted({
       modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
-      secondsLeft, endAt: endAtRef.current, sessionInProgress, aggressiveMode,
+      secondsLeft, endAt: endAtRef.current, stopwatchAnchor: stopwatchAnchorRef.current,
+      sessionInProgress, aggressiveMode,
     });
   }, [modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes, secondsLeft, sessionInProgress, aggressiveMode]);
 
@@ -190,21 +224,31 @@ export function useFocusTimer({ onComplete } = {}) {
     }
     onCompleteRef.current && onCompleteRef.current({
       mode,
-      plannedMinutes: modeMinutes[mode] ?? 25,
-      actualMinutes: startedMinutes || modeMinutes[mode] || 25,
+      plannedMinutes: Math.min(MAX_LOGGABLE_MINUTES, modeMinutes[mode] ?? 25),
+      actualMinutes: Math.min(MAX_LOGGABLE_MINUTES, startedMinutes || modeMinutes[mode] || 25),
       completed: true,
     });
   }, [soundOn, mode, modeMinutes, startedMinutes]);
 
-  // Recompute remaining time from the absolute end timestamp. Safe to call
-  // often — on every tick, and also on visibility/focus changes so the
-  // countdown snaps to the correct value the instant the app is reopened.
+  // Recompute the displayed time from the absolute anchor timestamp. Safe to
+  // call often — on every tick, and also on visibility/focus changes so the
+  // number snaps to the correct value the instant the app is reopened.
+  // Countdown modes derive remaining time from endAtRef and auto-finish at
+  // 0; Stopwatch derives elapsed time from stopwatchAnchorRef and NEVER
+  // auto-finishes — by design it only ever ends when the user hits Save/Stop.
   const resync = useCallback(() => {
-    if (!running || !endAtRef.current) return;
+    if (!running) return;
+    if (mode === STOPWATCH_MODE) {
+      if (!stopwatchAnchorRef.current) return;
+      const elapsed = Math.max(0, Math.round((Date.now() - stopwatchAnchorRef.current) / 1000));
+      setSecondsLeft(elapsed);
+      return;
+    }
+    if (!endAtRef.current) return;
     const remaining = Math.max(0, Math.round((endAtRef.current - Date.now()) / 1000));
     setSecondsLeft(remaining);
     if (remaining <= 0) finish();
-  }, [running, finish]);
+  }, [running, finish, mode]);
 
   useEffect(() => {
     if (!running) {
@@ -241,9 +285,14 @@ export function useFocusTimer({ onComplete } = {}) {
     document.title = `${mm}:${ss} · ${mode} — StudyBun`;
   }, [secondsLeft, running, mode]);
 
-  const elapsedSeconds = sessionInProgress && startedMinutes > 0
-    ? Math.max(0, startedMinutes * 60 - secondsLeft)
-    : 0;
+  // For every countdown mode, elapsed = planned total minus what's left.
+  // For Stopwatch there is no planned total — secondsLeft IS the elapsed
+  // count (see resync above) — so it's used directly.
+  const elapsedSeconds = !sessionInProgress
+    ? 0
+    : mode === STOPWATCH_MODE
+      ? secondsLeft
+      : (startedMinutes > 0 ? Math.max(0, startedMinutes * 60 - secondsLeft) : 0);
   // A session is "in progress" (and other modes should be blocked) once it's
   // running, paused with some real progress, or sitting at the "what did you
   // study" step waiting to be logged/discarded. Driven by the explicit
@@ -261,8 +310,9 @@ export function useFocusTimer({ onComplete } = {}) {
     setModeRaw(m);
     setRunning(false);
     endAtRef.current = null;
+    stopwatchAnchorRef.current = null;
     finishedRef.current = false;
-    setSecondsLeft((modeMinutes[m] ?? 25) * 60);
+    setSecondsLeft(m === STOPWATCH_MODE ? 0 : (modeMinutes[m] ?? 25) * 60);
     stopDroneOsc(audioCtxRef.current, droneRef);
   }, [mode, modeMinutes, running, askDone, sessionInProgress]);
 
@@ -281,9 +331,19 @@ export function useFocusTimer({ onComplete } = {}) {
     }
     finishedRef.current = false;
     setAskDone(false);
-    setStartedMinutes(modeMinutes[mode] ?? (Math.round(secondsLeft / 60) || 1));
+    const isStopwatch = mode === STOPWATCH_MODE;
+    setStartedMinutes(isStopwatch ? 0 : modeMinutes[mode] ?? (Math.round(secondsLeft / 60) || 1));
     setSessionInProgress(true);
-    endAtRef.current = Date.now() + secondsLeft * 1000;
+    if (isStopwatch) {
+      // secondsLeft holds whatever elapsed count we're resuming from (0 on a
+      // fresh start, or the paused value on resume) — anchor "now" to that
+      // so counting continues seamlessly rather than restarting from 0.
+      stopwatchAnchorRef.current = Date.now() - secondsLeft * 1000;
+      endAtRef.current = null;
+    } else {
+      endAtRef.current = Date.now() + secondsLeft * 1000;
+      stopwatchAnchorRef.current = null;
+    }
     setRunning(true);
     if (soundOn) {
       const ctx = makeCtx(audioCtxRef);
@@ -295,45 +355,55 @@ export function useFocusTimer({ onComplete } = {}) {
   const pause = useCallback(() => {
     setRunning(false);
     endAtRef.current = null;
+    stopwatchAnchorRef.current = null;
     stopDroneOsc(audioCtxRef.current, droneRef);
   }, []);
 
   const reset = useCallback(() => {
     setRunning(false);
     endAtRef.current = null;
+    stopwatchAnchorRef.current = null;
     finishedRef.current = false;
-    setSecondsLeft((modeMinutes[mode] ?? 25) * 60);
+    setSecondsLeft(mode === STOPWATCH_MODE ? 0 : (modeMinutes[mode] ?? 25) * 60);
     setStartedMinutes(0);
     setSessionInProgress(false);
     stopDroneOsc(audioCtxRef.current, droneRef);
   }, [mode, modeMinutes]);
 
   // Ends the session early (e.g. a 40-min timer wrapped up in 30) without
-  // forcing the user to sit through the rest of the countdown. Only counts
-  // once real progress (5+ min) has been made — reuses the same "what did
-  // you study" logging step that a natural finish triggers, but credits the
-  // actual elapsed time instead of the full planned duration.
+  // forcing the user to sit through the rest of the countdown — or, for
+  // Stopwatch, this IS the normal way a session ends at all, since it has
+  // no countdown to run out. Only fires once real progress (5+ min) has
+  // been made — reuses the same "what did you study" logging step that a
+  // natural finish triggers, but credits the actual elapsed time instead of
+  // the full planned duration.
   //
-  // Must fire onComplete just like finish() does — this is the actual bug
-  // that was here before: the "what did you study" card claims the minutes
-  // are "already counted in today's study hours" (see FocusTimer.jsx), but
-  // nothing had ever written a timer_sessions row for an early save, so
-  // those minutes silently vanished from Dashboard/Study Tracker (both of
-  // which total timer_sessions.actual_minutes, not the study_sessions row
-  // the "what did you study" card logs afterward — that row is deliberately
-  // excluded from totals for any Focus Timer session to avoid double
-  // counting once timer_sessions holds the real minutes). completed: false
-  // (unlike finish()'s completed: true) so this still correctly stays out
-  // of the streak/leaderboard "genuine full session" bucket — only the
-  // personal Dashboard/Study Tracker totals, which don't filter on
-  // `completed`, pick it up.
+  // completed: true — same as finish(). An earlier version of this function
+  // marked early saves completed: false specifically to keep them out of
+  // the leaderboard/streak "genuine session" bucket, but that threw away
+  // real, honestly-earned study time for no good reason: the database's own
+  // scoring function (lb_recompute in supabase/migration_leaderboard.sql)
+  // already has purpose-built anti-cheat tolerance for exactly this case —
+  // a session whose actual_minutes doesn't closely match planned_minutes
+  // (which is always true for an early save) simply doesn't earn the flat
+  // "+3 per completed session" bonus, but its minutes still correctly earn
+  // the per-minute score (+0.5/min) and count toward the streak/active-day
+  // once actual_minutes >= 10. So marking this completed: true now gives
+  // early saves fair, proportional credit without opening any new way to
+  // game the leaderboard — the existing DB-side check already handles it.
+  // For Stopwatch, plannedMinutes is sent as null (there was never a
+  // target), which the same DB check treats as an automatic pass — a full
+  // Stopwatch session earns the flat completion bonus too, since by
+  // definition it can only ever end when the user decides it's done.
   const saveEarly = useCallback(() => {
-    const elapsed = Math.max(0, startedMinutes * 60 - secondsLeft);
-    const elapsedMinutes = Math.round(elapsed / 60);
+    const isStopwatch = mode === STOPWATCH_MODE;
+    const elapsed = isStopwatch ? secondsLeft : Math.max(0, startedMinutes * 60 - secondsLeft);
+    const elapsedMinutes = Math.min(MAX_LOGGABLE_MINUTES, Math.round(elapsed / 60));
     if (elapsedMinutes < 5) return false;
     finishedRef.current = true;
     setRunning(false);
     endAtRef.current = null;
+    stopwatchAnchorRef.current = null;
     stopDroneOsc(audioCtxRef.current, droneRef);
     setStartedMinutes(elapsedMinutes);
     setSecondsLeft(0);
@@ -341,16 +411,16 @@ export function useFocusTimer({ onComplete } = {}) {
     if (soundOn) playEndChime(makeCtx(audioCtxRef));
     onCompleteRef.current && onCompleteRef.current({
       mode,
-      plannedMinutes: modeMinutes[mode] ?? 25,
+      plannedMinutes: isStopwatch ? null : Math.min(MAX_LOGGABLE_MINUTES, modeMinutes[mode] ?? 25),
       actualMinutes: elapsedMinutes,
-      completed: false,
+      completed: true,
     });
     return true;
   }, [mode, modeMinutes, startedMinutes, secondsLeft, soundOn]);
 
   const resetForNewSession = useCallback(() => {
     setAskDone(false);
-    setSecondsLeft((modeMinutes[mode] ?? 25) * 60);
+    setSecondsLeft(mode === STOPWATCH_MODE ? 0 : (modeMinutes[mode] ?? 25) * 60);
     setStartedMinutes(0);
     setSessionInProgress(false);
   }, [mode, modeMinutes]);
@@ -368,12 +438,17 @@ export function useFocusTimer({ onComplete } = {}) {
     setAggressiveMode((v) => !v);
   }, []);
 
-  const total = (modeMinutes[mode] ?? 25) * 60;
-  const pct = total > 0 ? ((total - secondsLeft) / total) * 100 : 0;
+  // Stopwatch has no target duration, so "percent complete" is a meaningless
+  // (and, past 25 minutes of a fallback 1500s total, actively wrong/negative)
+  // concept for it — total/pct are reported as null so the UI knows to hide
+  // the progress bar rather than render a broken one.
+  const isStopwatch = mode === STOPWATCH_MODE;
+  const total = isStopwatch ? null : (modeMinutes[mode] ?? 25) * 60;
+  const pct = isStopwatch ? null : (total > 0 ? ((total - secondsLeft) / total) * 100 : 0);
 
   return {
     modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
-    secondsLeft, total, pct, elapsedSeconds, canSave, sessionActive, aggressiveMode,
+    secondsLeft, total, pct, elapsedSeconds, canSave, sessionActive, aggressiveMode, isStopwatch,
     changeMode, setCustomMinutes, start, pause, reset, resetForNewSession, saveEarly,
     toggleSound, setRadioChoice, setRadioCustomUrl, toggleAggressiveMode,
   };

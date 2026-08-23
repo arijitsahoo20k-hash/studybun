@@ -10,8 +10,9 @@ import StudyingNowCard from "../components/StudyingNowCard";
 import { SYLLABUS } from "../data/syllabus";
 import { RADIO_OPTIONS, RADIO_LINKS, extractYouTubeId, getActiveRadio } from "../lib/radio";
 import { todayIST } from "../lib/dateIST";
+import { STOPWATCH_MODE } from "../hooks/useFocusTimer";
 
-const MODE_ORDER = ["Deep Focus", "Pomodoro", "Lecture", "Practice", "Revision"];
+const MODE_ORDER = ["Deep Focus", "Pomodoro", "Lecture", "Practice", "Revision", STOPWATCH_MODE];
 
 // Fixed (non-random) slots so the sparkle motes never reshuffle position on
 // an unrelated re-render -- same pattern DecorLayer uses for its backdrop.
@@ -29,6 +30,7 @@ const MODE_TIPS = {
   Lecture: "Following along beats multitasking — pause the video if you need to catch up on notes.",
   Practice: "Problems over passive reading. Attempt before you peek at the solution.",
   Revision: "Recall first, reread second. Testing yourself sticks better than skimming.",
+  [STOPWATCH_MODE]: "No fixed end time — just start, study, and hit Save whenever you're done.",
 };
 
 // One static scene per mascot species (see /public/focus-scenes) for the
@@ -162,15 +164,17 @@ export default function FocusTimer(p) {
                   style={blocked ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
                 >
                   {m === t.mode && blocked ? <Lock size={11} style={{ marginRight: 3, verticalAlign: -1 }} /> : null}
-                  {m} <span className="sb-chip-mins">{t.modeMinutes[m]}m</span>
+                  {m} <span className="sb-chip-mins">{m === STOPWATCH_MODE ? "∞" : `${t.modeMinutes[m]}m`}</span>
                 </button>
               );
             })}
           </div>
           <div className="sb-timer-actions">
-            <button className="sb-icon-round" title="Set a custom time for this mode" onClick={() => setEditingDuration((v) => !v)}>
-              <Pencil size={15} />
-            </button>
+            {t.mode !== STOPWATCH_MODE && (
+              <button className="sb-icon-round" title="Set a custom time for this mode" onClick={() => setEditingDuration((v) => !v)}>
+                <Pencil size={15} />
+              </button>
+            )}
             <button
               className={`sb-icon-round sb-studying-btn ${studyingOpen ? "on" : ""}`}
               title={studyingCount > 0 ? `${studyingCount} studying right now` : "See who's studying now"}
@@ -194,7 +198,7 @@ export default function FocusTimer(p) {
           </p>
         )}
 
-        {editingDuration && (
+        {editingDuration && t.mode !== STOPWATCH_MODE && (
           <div className="sb-duration-pop">
             <span className="sb-duration-pop-title">{t.mode} duration</span>
             <div className="sb-duration-stepper">
@@ -222,11 +226,17 @@ export default function FocusTimer(p) {
           <div className="sb-focus-time">
             {mm}<span className="sb-focus-colon">:</span>{ss}
           </div>
-          <div className="sb-focus-track">
-            <div className="sb-focus-fill" style={{ width: `${Math.min(100, Math.max(0, t.pct || 0))}%` }}>
-              {t.pct > 3 && <span className="sb-focus-fill-paw">🐾</span>}
+          {t.mode === STOPWATCH_MODE ? (
+            <p className="sb-muted" style={{ fontSize: 11.5, marginTop: 4 }}>
+              ⏱️ Counting up — no fixed end. Save whenever you're done.
+            </p>
+          ) : (
+            <div className="sb-focus-track">
+              <div className="sb-focus-fill" style={{ width: `${Math.min(100, Math.max(0, t.pct || 0))}%` }}>
+                {t.pct > 3 && <span className="sb-focus-fill-paw">🐾</span>}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="sb-timer-controls">
