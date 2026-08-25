@@ -2291,15 +2291,16 @@ export default function GlobalStyle() {
       .sb-goal-deadline-chip.is-overdue { background: #FFC9C9; }
 
       .sb-goal-notes {
-        font-family: var(--font-body); font-size: 14.5px; color: var(--muted); line-height: 1.6; margin: 0;
-        white-space: pre-wrap;
+        font-family: var(--font-body); font-size: 15.5px; font-weight: 600; color: var(--mascot-ink);
+        line-height: 1.6; margin: 0; white-space: pre-wrap; letter-spacing: .1px;
       }
       .sb-goal-notes-list {
-        font-family: var(--font-body); font-size: 14.5px; color: var(--muted); line-height: 1.55;
-        margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px;
+        font-family: var(--font-body); font-size: 15.5px; font-weight: 600; color: var(--mascot-ink);
+        line-height: 1.55; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column;
+        gap: 7px; letter-spacing: .1px;
       }
       .sb-goal-notes-list li {
-        position: relative; padding-left: 18px;
+        position: relative; padding-left: 19px;
       }
       .sb-goal-notes-list li::before {
         content: "•"; position: absolute; left: 2px; top: 0; color: var(--accent); font-weight: 800;
@@ -2349,9 +2350,9 @@ export default function GlobalStyle() {
         font-weight: 700; font-size: 12.5px; background: var(--mascot-body); color: var(--mascot-ink);
       }
       .sb-goal-input-notes {
-        font-family: var(--font-body); font-size: 14.5px; color: var(--mascot-ink); border: 2px solid var(--mascot-outline);
-        border-radius: 12px; padding: 10px 12px; background: var(--mascot-body); resize: vertical; outline: none;
-        line-height: 1.55;
+        font-family: var(--font-body); font-size: 15.5px; font-weight: 600; color: var(--mascot-ink);
+        border: 2px solid var(--mascot-outline); border-radius: 12px; padding: 10px 12px; background: var(--mascot-body);
+        resize: vertical; outline: none; line-height: 1.6; letter-spacing: .1px;
       }
 
       .sb-notes-block { display: flex; flex-direction: column; gap: 8px; }
@@ -2373,9 +2374,9 @@ export default function GlobalStyle() {
       .sb-bullet-row { display: flex; align-items: center; gap: 8px; }
       .sb-bullet-dot { color: var(--accent); font-weight: 800; font-size: 15px; line-height: 1; flex-shrink: 0; }
       .sb-bullet-input {
-        flex: 1; min-width: 0; font-family: var(--font-body); font-size: 14.5px; color: var(--mascot-ink);
-        border: none; border-bottom: 1.5px dashed var(--mascot-outline); background: transparent; outline: none;
-        padding: 4px 2px;
+        flex: 1; min-width: 0; font-family: var(--font-body); font-size: 15.5px; font-weight: 600;
+        color: var(--mascot-ink); border: none; border-bottom: 1.5px dashed var(--mascot-outline);
+        background: transparent; outline: none; padding: 4px 2px; letter-spacing: .1px;
       }
       .sb-bullet-input::placeholder { color: var(--muted); opacity: .6; }
       .sb-bullet-remove {
@@ -2421,8 +2422,8 @@ export default function GlobalStyle() {
         .sb-journal-shell { width: min(640px, 42vw); padding-left: 18px; }
         .sb-journal-page-inner { padding: 30px 30px 22px; gap: 14px; }
         .sb-goal-title { font-size: 40px; }
-        .sb-goal-notes, .sb-goal-notes-list { font-size: 16px; }
-        .sb-goal-input-notes, .sb-bullet-input { font-size: 15.5px; }
+        .sb-goal-notes, .sb-goal-notes-list { font-size: 17px; }
+        .sb-goal-input-notes, .sb-bullet-input { font-size: 16.5px; }
         .sb-goal-input-title { font-size: 32px; }
         .sb-goal-cover { width: min(480px, 40vw); }
         .sb-goal-cover-title { font-size: 52px; }
