@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import gsap from "gsap";
 import {
   NotebookPen, Star, Flag, Pencil, Trash2, ChevronLeft, ChevronRight,
-  ArrowLeft, Plus, RotateCcw, StickyNote,
+  ArrowLeft, Plus, RotateCcw, StickyNote, List, AlignLeft, X,
 } from "lucide-react";
 import Mascot from "../components/Mascot";
 import { SparkleStar } from "../components/decor/Motifs";
@@ -12,6 +12,35 @@ import { formatISTCalendarDate, todayIST } from "../lib/dateIST";
 const fmtDeadline = (d) => (d ? formatISTCalendarDate(d, { month: "short", day: "numeric", year: "numeric" }) : null);
 const isOverdue = (goal) => goal.status !== "Completed" && !!goal.deadline && goal.deadline < todayIST();
 const emptyDraft = () => ({ title: "", deadline: "", starred: false, notes: "" });
+
+/* ------------------------------------------------------------------ *
+ * Bullet-notes helpers. Bullets are stored as plain text on the
+ * existing `notes` column ("• line one\n• line two"), so nothing in
+ * the database or on old goals needs to change — this is purely a
+ * richer way to write into the same field.
+ * ------------------------------------------------------------------ */
+const BULLET_PREFIX = "• ";
+const isBulletNotes = (text) => {
+  if (!text) return false;
+  const lines = text.split("\n").filter((l) => l.trim().length > 0);
+  return lines.length > 0 && lines.every((l) => l.trimStart().startsWith(BULLET_PREFIX));
+};
+const notesToBullets = (text) => {
+  if (!text) return [""];
+  const lines = text.split("\n").map((l) => l.trimStart().replace(/^•\s?/, ""));
+  return lines.length ? lines : [""];
+};
+const bulletsToNotes = (bullets) => {
+  const clean = bullets.map((b) => b.trim()).filter(Boolean);
+  return clean.length ? clean.map((b) => `${BULLET_PREFIX}${b}`).join("\n") : "";
+};
+// Plain join for handing bullet content back to the paragraph textarea —
+// deliberately drops the "• " markers so free-form mode stays free-form.
+const bulletsToParagraph = (bullets) => bullets.map((b) => b.trim()).filter(Boolean).join("\n");
+const paragraphToBullets = (text) => {
+  const lines = (text || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  return lines.length ? lines : [""];
+};
 
 /* ------------------------------------------------------------------ *
  * Pencil-strike + celebration animation for marking a goal complete.
@@ -196,7 +225,15 @@ function GoalPage({ goal, pageNumber, onComplete, onDelete, onToggleStar, animat
         </span>
       )}
 
-      {goal.notes && <p className="sb-goal-notes">{goal.notes}</p>}
+      {goal.notes && (
+        isBulletNotes(goal.notes) ? (
+          <ul className="sb-goal-notes-list">
+            {notesToBullets(goal.notes).map((line, i) => <li key={i}>{line}</li>)}
+          </ul>
+        ) : (
+          <p className="sb-goal-notes">{goal.notes}</p>
+        )
+      )}
 
       <div className="sb-goal-page-foot">
         {!isDone ? (
@@ -231,17 +268,61 @@ function GoalPage({ goal, pageNumber, onComplete, onDelete, onToggleStar, animat
  * ------------------------------------------------------------------ */
 function NewGoalPage({ pageNumber, onAdd }) {
   const [draft, setDraft] = useState(emptyDraft());
+  const [notesMode, setNotesMode] = useState("paragraph"); // "paragraph" | "bullets"
+  const [bullets, setBullets] = useState([""]);
+  const bulletRefs = useRef([]);
   const set = (k) => (e) => setDraft((s) => ({ ...s, [k]: e.target.value }));
+
+  const switchMode = (mode) => {
+    if (mode === notesMode) return;
+    if (mode === "bullets") {
+      setBullets(paragraphToBullets(draft.notes));
+    } else {
+      setDraft((s) => ({ ...s, notes: bulletsToParagraph(bullets) }));
+    }
+    setNotesMode(mode);
+  };
+
+  const updateBullet = (i, value) => {
+    setBullets((arr) => arr.map((b, idx) => (idx === i ? value : b)));
+  };
+  const addBulletAfter = (i) => {
+    setBullets((arr) => {
+      const next = [...arr];
+      next.splice(i + 1, 0, "");
+      return next;
+    });
+    requestAnimationFrame(() => bulletRefs.current[i + 1]?.focus());
+  };
+  const removeBullet = (i) => {
+    if (bullets.length === 1) {
+      setBullets([""]);
+      return;
+    }
+    setBullets((arr) => arr.filter((_, idx) => idx !== i));
+    requestAnimationFrame(() => bulletRefs.current[Math.max(0, i - 1)]?.focus());
+  };
+  const handleBulletKeyDown = (i) => (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addBulletAfter(i);
+    } else if (e.key === "Backspace" && bullets[i] === "" && bullets.length > 1) {
+      e.preventDefault();
+      removeBullet(i);
+    }
+  };
 
   const submit = () => {
     if (!draft.title.trim()) return;
+    const notes = notesMode === "bullets" ? bulletsToNotes(bullets) : draft.notes.trim();
     onAdd({
       title: draft.title.trim(),
       deadline: draft.deadline || null,
       starred: draft.starred,
-      notes: draft.notes.trim() || null,
+      notes: notes || null,
     });
     setDraft(emptyDraft());
+    setBullets([""]);
   };
 
   return (
@@ -273,13 +354,66 @@ function NewGoalPage({ pageNumber, onAdd }) {
         <input type="date" className="sb-goal-input-small" value={draft.deadline} onChange={set("deadline")} />
       </div>
 
-      <textarea
-        className="sb-goal-input-notes"
-        placeholder="Any notes? (optional)"
-        rows={3}
-        value={draft.notes}
-        onChange={set("notes")}
-      />
+      <div className="sb-notes-block">
+        <div className="sb-notes-mode-toggle" role="tablist" aria-label="Notes style">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={notesMode === "paragraph"}
+            className={notesMode === "paragraph" ? "is-active" : ""}
+            onClick={() => switchMode("paragraph")}
+          >
+            <AlignLeft size={13} /> Notes
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={notesMode === "bullets"}
+            className={notesMode === "bullets" ? "is-active" : ""}
+            onClick={() => switchMode("bullets")}
+          >
+            <List size={13} /> Bullets
+          </button>
+        </div>
+
+        {notesMode === "paragraph" ? (
+          <textarea
+            className="sb-goal-input-notes"
+            placeholder="Any notes? (optional)"
+            rows={3}
+            value={draft.notes}
+            onChange={set("notes")}
+          />
+        ) : (
+          <div className="sb-bullet-editor">
+            {bullets.map((b, i) => (
+              <div className="sb-bullet-row" key={i}>
+                <span className="sb-bullet-dot" aria-hidden="true">•</span>
+                <input
+                  ref={(el) => { bulletRefs.current[i] = el; }}
+                  className="sb-bullet-input"
+                  placeholder={i === 0 ? "First point..." : "Next point..."}
+                  value={b}
+                  onChange={(e) => updateBullet(i, e.target.value)}
+                  onKeyDown={handleBulletKeyDown(i)}
+                />
+                <button
+                  type="button"
+                  className="sb-bullet-remove"
+                  onClick={() => removeBullet(i)}
+                  aria-label="Remove this point"
+                  tabIndex={-1}
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
+            <button type="button" className="sb-bullet-add" onClick={() => addBulletAfter(bullets.length - 1)}>
+              <Plus size={13} /> Add point
+            </button>
+          </div>
+        )}
+      </div>
 
       <button className="sb-goal-complete-btn" onClick={submit} disabled={!draft.title.trim()}>
         <Pencil size={14} /> Write this page

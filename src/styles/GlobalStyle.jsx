@@ -2291,8 +2291,18 @@ export default function GlobalStyle() {
       .sb-goal-deadline-chip.is-overdue { background: #FFC9C9; }
 
       .sb-goal-notes {
-        font-family: var(--font-body); font-size: 13px; color: var(--muted); line-height: 1.55; margin: 0;
+        font-family: var(--font-body); font-size: 14.5px; color: var(--muted); line-height: 1.6; margin: 0;
         white-space: pre-wrap;
+      }
+      .sb-goal-notes-list {
+        font-family: var(--font-body); font-size: 14.5px; color: var(--muted); line-height: 1.55;
+        margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px;
+      }
+      .sb-goal-notes-list li {
+        position: relative; padding-left: 18px;
+      }
+      .sb-goal-notes-list li::before {
+        content: "•"; position: absolute; left: 2px; top: 0; color: var(--accent); font-weight: 800;
       }
 
       .sb-goal-page-foot { margin-top: auto; display: flex; align-items: center; gap: 8px; padding-top: 10px; }
@@ -2339,9 +2349,47 @@ export default function GlobalStyle() {
         font-weight: 700; font-size: 12.5px; background: var(--mascot-body); color: var(--mascot-ink);
       }
       .sb-goal-input-notes {
-        font-family: var(--font-body); font-size: 13px; color: var(--mascot-ink); border: 2px solid var(--mascot-outline);
+        font-family: var(--font-body); font-size: 14.5px; color: var(--mascot-ink); border: 2px solid var(--mascot-outline);
         border-radius: 12px; padding: 10px 12px; background: var(--mascot-body); resize: vertical; outline: none;
+        line-height: 1.55;
       }
+
+      .sb-notes-block { display: flex; flex-direction: column; gap: 8px; }
+      .sb-notes-mode-toggle {
+        display: inline-flex; align-self: flex-start; gap: 4px; padding: 3px; border-radius: 999px;
+        border: 2px solid var(--mascot-outline); background: var(--mascot-body);
+      }
+      .sb-notes-mode-toggle button {
+        display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-body); font-weight: 800;
+        font-size: 11.5px; color: var(--muted); background: none; border: none; border-radius: 999px;
+        padding: 5px 11px; cursor: pointer; transition: background .15s ease, color .15s ease;
+      }
+      .sb-notes-mode-toggle button.is-active { background: var(--accent); color: #fff; }
+
+      .sb-bullet-editor {
+        display: flex; flex-direction: column; gap: 6px; border: 2px solid var(--mascot-outline);
+        border-radius: 12px; padding: 10px 12px; background: var(--mascot-body);
+      }
+      .sb-bullet-row { display: flex; align-items: center; gap: 8px; }
+      .sb-bullet-dot { color: var(--accent); font-weight: 800; font-size: 15px; line-height: 1; flex-shrink: 0; }
+      .sb-bullet-input {
+        flex: 1; min-width: 0; font-family: var(--font-body); font-size: 14.5px; color: var(--mascot-ink);
+        border: none; border-bottom: 1.5px dashed var(--mascot-outline); background: transparent; outline: none;
+        padding: 4px 2px;
+      }
+      .sb-bullet-input::placeholder { color: var(--muted); opacity: .6; }
+      .sb-bullet-remove {
+        flex-shrink: 0; width: 22px; height: 22px; border-radius: 999px; border: none; background: transparent;
+        color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer;
+        opacity: .55; transition: opacity .15s ease, color .15s ease;
+      }
+      .sb-bullet-remove:hover { opacity: 1; color: #C64545; }
+      .sb-bullet-add {
+        display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; margin-top: 2px;
+        font-family: var(--font-body); font-weight: 800; font-size: 12px; color: var(--muted);
+        background: none; border: none; cursor: pointer; padding: 4px 2px;
+      }
+      .sb-bullet-add:hover { color: var(--mascot-ink); }
 
       /* ---- nav ---- */
       .sb-journal-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
@@ -2365,6 +2413,19 @@ export default function GlobalStyle() {
       @media (max-width: 560px) {
         .sb-goal-title { font-size: 26px; }
         .sb-goal-cover-title { font-size: 38px; }
+      }
+
+      /* Bigger journal on desktop — more room to write longer goals
+         and notes, while keeping the same notebook proportions. */
+      @media (min-width: 1100px) {
+        .sb-journal-shell { width: min(640px, 42vw); padding-left: 18px; }
+        .sb-journal-page-inner { padding: 30px 30px 22px; gap: 14px; }
+        .sb-goal-title { font-size: 40px; }
+        .sb-goal-notes, .sb-goal-notes-list { font-size: 16px; }
+        .sb-goal-input-notes, .sb-bullet-input { font-size: 15.5px; }
+        .sb-goal-input-title { font-size: 32px; }
+        .sb-goal-cover { width: min(480px, 40vw); }
+        .sb-goal-cover-title { font-size: 52px; }
       }
 
       .sb-page-transition { animation: none !important; }
