@@ -11,6 +11,10 @@ const SELECT = "id, user_id, goal_date, subject, chapter, goal_type, goal_text, 
 // purely to stop the checklist from growing unreasonably long.
 export const MAX_GOALS_PER_DAY = 5;
 
+// How many past days the "History" view fetches. On-demand only (see
+// loadHistory below) so it costs nothing for anyone who never opens it.
+export const HISTORY_DAYS = 14;
+
 /**
  * Daily accountability check-ins. A student can log several goals for
  * today (not just one) — `myGoals` is every one of today's rows for the
@@ -26,6 +30,12 @@ export function useAccountability() {
   const [activeGoals, setActiveGoals] = useState([]); // [{ user_id, profiles, goals: [...] }]
   const [weekly, setWeekly] = useState({ total: 0, completed: 0 });
   const [loading, setLoading] = useState(true);
+  // Past days only (today lives in myGoals), newest first:
+  // [{ date, goals: [...] }]. Loaded lazily — see loadHistory.
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyError, setHistoryError] = useState(false);
   const mounted = useRef(true);
 
   const load = useCallback(async () => {
@@ -67,8 +77,58 @@ export function useAccountability() {
     setLoading(false);
   }, [userId]);
 
+  // On-demand only — called when the student actually opens the "History"
+  // view, not on every page load. With 167+ users that keeps this from
+  // adding a query nobody asked for on top of the today/weekly fetch above.
+  // Own rows only, one extra query, so it's cheap even when they do.
+  const loadHistory = useCallback(async () => {
+    if (!userId) return;
+    setHistoryLoading(true);
+    setHistoryError(false);
+    const since = daysAgoIST(HISTORY_DAYS - 1);
+    const today = todayIST();
+    const { data, error: err } = await supabase
+      .from("accountability_goals")
+      .select(SELECT)
+      .eq("user_id", userId)
+      .gte("goal_date", since)
+      .lt("goal_date", today)
+      .order("goal_date", { ascending: false })
+      .order("created_at", { ascending: true });
+
+    if (!mounted.current) return;
+    if (!err) {
+      // Group into one entry per day, most-recent day first (the query is
+      // already ordered that way, so the order goals are first seen in is
+      // the order days should render in — no extra sort needed).
+      const order = [];
+      const byDate = new Map();
+      for (const row of data || []) {
+        if (!byDate.has(row.goal_date)) { byDate.set(row.goal_date, []); order.push(row.goal_date); }
+        byDate.get(row.goal_date).push(row);
+      }
+      setHistory(order.map((date) => ({ date, goals: byDate.get(date) })));
+      setHistoryLoaded(true);
+    } else {
+      // Leave historyLoaded false so the "History" tab can be retried
+      // (e.g. flipping away and back) instead of getting stuck showing
+      // nothing forever after one failed request.
+      setHistoryError(true);
+    }
+    setHistoryLoading(false);
+  }, [userId]);
+
   useEffect(() => {
     mounted.current = true;
+    // Reset lazily-loaded history whenever the signed-in user changes, so a
+    // user switch (without a full page reload) can't leave a previous
+    // user's history state sitting around instead of refetching for the
+    // new one — everything else here (myGoals/activeGoals/weekly) already
+    // gets overwritten by load() below since those aren't lazy.
+    setHistory([]);
+    setHistoryLoaded(false);
+    setHistoryError(false);
+    setHistoryLoading(false);
     load();
     if (!userId) return () => { mounted.current = false; };
 
@@ -139,5 +199,8 @@ export function useAccountability() {
     []
   );
 
-  return { myGoals, activeGoals, weekly, loading, addGoal, updateStatus, deleteGoal, refetch: load };
+  return {
+    myGoals, activeGoals, weekly, loading, addGoal, updateStatus, deleteGoal, refetch: load,
+    history, historyLoading, historyLoaded, historyError, loadHistory,
+  };
 }

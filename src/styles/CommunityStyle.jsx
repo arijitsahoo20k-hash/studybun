@@ -281,6 +281,23 @@ export default function CommunityStyle() {
       }
       .sb-checkin-weekly-count { font-size: 13px; font-weight: 800; color: var(--mascot-ink); }
 
+      /* history view — past days' goals + status, read-only */
+      .sb-goal-history {
+        display: flex; flex-direction: column; gap: 18px;
+        max-height: 58vh; overflow-y: auto; padding-right: 2px; margin-bottom: 4px;
+      }
+      .sb-goal-history-loading { text-align: center; padding: 18px 0; }
+      .sb-goal-history-day-head {
+        display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+        margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1.5px dashed var(--mascot-outline);
+      }
+      .sb-goal-history-date {
+        font-size: 12px; font-weight: 800; color: var(--mascot-ink); text-transform: uppercase; letter-spacing: .02em;
+      }
+      .sb-goal-history-ratio { font-size: 11.5px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+      .sb-goal-history-list { margin-bottom: 0; }
+      .sb-goal-item-readonly { cursor: default; }
+
       /* ---------- feed ---------- */
       .sb-composer-trigger {
         width: 100%; text-align: left; padding: 10px 14px; border-radius: 14px;

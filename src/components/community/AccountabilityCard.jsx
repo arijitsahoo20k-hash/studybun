@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { Target, Plus, Trash2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Target, Plus, Trash2, History as HistoryIcon } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState } from "../ui";
 import { MAX_GOALS_PER_DAY } from "../../hooks/useAccountability";
+import { formatISTCalendarDate, weekdayShortIST } from "../../lib/dateIST";
 
 const GOAL_TYPES = [
   { value: "minutes", label: "Study for X minutes" },
@@ -166,13 +167,92 @@ function GoalItem({ goal, reporting, onStartReport, onCancelReport, onSave, onDe
   );
 }
 
-export default function AccountabilityCard({ myGoals, weekly, addGoal, updateStatus, deleteGoal, mascot }) {
+// Read-only line for a past day's goal inside the History view — same
+// look as a live GoalItem (status colour, subject/chapter tag, status
+// pill) minus the report/delete controls, since past days can't be edited.
+function HistoryGoalRow({ goal }) {
+  return (
+    <div className={`sb-goal-item sb-goal-item-readonly status-${goal.status}`}>
+      <div className="sb-goal-item-top">
+        <div className="sb-goal-item-body">
+          {goal.subject && (
+            <div className="sb-goal-item-tag">{goal.subject}{goal.chapter ? ` → ${goal.chapter}` : ""}</div>
+          )}
+          <div className="sb-goal-item-text">{goal.goal_text}</div>
+        </div>
+        <div className="sb-goal-item-right">
+          <span className={`sb-goal-status-pill status-${goal.status}`}>{STATUS_LABEL[goal.status] || goal.status}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HistoryDayGroup({ day }) {
+  const done = day.goals.filter((g) => g.status === "completed").length;
+  return (
+    <div className="sb-goal-history-day">
+      <div className="sb-goal-history-day-head">
+        <span className="sb-goal-history-date">
+          {weekdayShortIST(day.date)}, {formatISTCalendarDate(day.date, { day: "numeric", month: "short" })}
+        </span>
+        <span className="sb-goal-history-ratio">{done}/{day.goals.length} completed</span>
+      </div>
+      <div className="sb-goal-list sb-goal-history-list">
+        {day.goals.map((g) => <HistoryGoalRow key={g.id} goal={g} />)}
+      </div>
+    </div>
+  );
+}
+
+function HistoryView({ history, historyLoading, historyLoaded, historyError, onRetry, mascot }) {
+  if (historyLoading && !historyLoaded) {
+    return <div className="sb-muted small sb-goal-history-loading">Loading your history...</div>;
+  }
+  if (historyError && !historyLoaded) {
+    return (
+      <div className="sb-goal-history-loading">
+        <div className="sb-muted small" style={{ marginBottom: 10 }}>Couldn't load your history.</div>
+        <Btn variant="soft" onClick={onRetry}>Try again</Btn>
+      </div>
+    );
+  }
+  if (historyLoaded && history.length === 0) {
+    return (
+      <EmptyState
+        mascot={mascot}
+        mood="idle"
+        text="No past days yet."
+        sub="Once today rolls over, what you set and how it went will show up here."
+      />
+    );
+  }
+  return (
+    <div className="sb-goal-history">
+      {history.map((day) => <HistoryDayGroup key={day.date} day={day} />)}
+    </div>
+  );
+}
+
+export default function AccountabilityCard({
+  myGoals, weekly, addGoal, updateStatus, deleteGoal, mascot,
+  history, historyLoading, historyLoaded, historyError, loadHistory,
+}) {
   const [adding, setAdding] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [addError, setAddError] = useState("");
   const [reportingId, setReportingId] = useState(null);
+  const [view, setView] = useState("today"); // "today" | "history"
 
   const atCap = myGoals.length >= MAX_GOALS_PER_DAY;
+
+  // Fetch history the first time the student flips to that view, not on
+  // every render or on mount — see loadHistory in useAccountability. If a
+  // fetch fails, historyError stops this from retrying in a loop; the
+  // "Try again" button in HistoryView calls loadHistory directly instead.
+  useEffect(() => {
+    if (view === "history" && !historyLoaded && !historyLoading && !historyError) loadHistory();
+  }, [view, historyLoaded, historyLoading, historyError, loadHistory]);
 
   const handleAdd = async (form) => {
     setSubmitting(true);
@@ -190,40 +270,67 @@ export default function AccountabilityCard({ myGoals, weekly, addGoal, updateSta
 
   return (
     <Card washi>
-      <SectionTitle icon={Target}>My Accountability</SectionTitle>
+      <SectionTitle
+        icon={Target}
+        right={
+          <div className="sb-cmp-toggle">
+            <button type="button" className={view === "today" ? "active" : ""} onClick={() => setView("today")}>Today</button>
+            <button type="button" className={view === "history" ? "active" : ""} onClick={() => setView("history")}>
+              <HistoryIcon size={12} style={{ marginRight: 4, verticalAlign: -2 }} />History
+            </button>
+          </div>
+        }
+      >
+        My Accountability
+      </SectionTitle>
 
-      {myGoals.length === 0 && !adding && (
-        <EmptyState mascot={mascot} mood="idle" text="No goals set for today yet." sub="Add what you want to get done and check it off as you go." />
+      {view === "today" && (
+        <>
+          {myGoals.length === 0 && !adding && (
+            <EmptyState mascot={mascot} mood="idle" text="No goals set for today yet." sub="Add what you want to get done and check it off as you go." />
+          )}
+
+          {myGoals.length > 0 && (
+            <div className="sb-goal-list">
+              {myGoals.map((g) => (
+                <GoalItem
+                  key={g.id}
+                  goal={g}
+                  reporting={reportingId === g.id}
+                  onStartReport={setReportingId}
+                  onCancelReport={() => setReportingId(null)}
+                  onSave={handleSaveReport}
+                  onDelete={deleteGoal}
+                />
+              ))}
+            </div>
+          )}
+
+          {adding && (
+            <AddGoalForm onSubmit={handleAdd} onCancel={() => { setAdding(false); setAddError(""); }} submitting={submitting} error={addError} />
+          )}
+
+          {!adding && !atCap && (
+            <button type="button" className="sb-goal-add-btn" onClick={() => setAdding(true)}>
+              <Plus size={16} /> Add a goal
+            </button>
+          )}
+
+          {!adding && atCap && (
+            <div className="sb-muted small sb-goal-cap-note">That's a solid list for today — {MAX_GOALS_PER_DAY} goals tracked.</div>
+          )}
+        </>
       )}
 
-      {myGoals.length > 0 && (
-        <div className="sb-goal-list">
-          {myGoals.map((g) => (
-            <GoalItem
-              key={g.id}
-              goal={g}
-              reporting={reportingId === g.id}
-              onStartReport={setReportingId}
-              onCancelReport={() => setReportingId(null)}
-              onSave={handleSaveReport}
-              onDelete={deleteGoal}
-            />
-          ))}
-        </div>
-      )}
-
-      {adding && (
-        <AddGoalForm onSubmit={handleAdd} onCancel={() => { setAdding(false); setAddError(""); }} submitting={submitting} error={addError} />
-      )}
-
-      {!adding && !atCap && (
-        <button type="button" className="sb-goal-add-btn" onClick={() => setAdding(true)}>
-          <Plus size={16} /> Add a goal
-        </button>
-      )}
-
-      {!adding && atCap && (
-        <div className="sb-muted small sb-goal-cap-note">That's a solid list for today — {MAX_GOALS_PER_DAY} goals tracked.</div>
+      {view === "history" && (
+        <HistoryView
+          history={history}
+          historyLoading={historyLoading}
+          historyLoaded={historyLoaded}
+          historyError={historyError}
+          onRetry={loadHistory}
+          mascot={mascot}
+        />
       )}
 
       <div className="sb-checkin-weekly">

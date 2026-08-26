@@ -77,6 +77,11 @@ export default function CommunityPage(p) {
               addGoal={accountability.addGoal}
               updateStatus={accountability.updateStatus}
               deleteGoal={accountability.deleteGoal}
+              history={accountability.history}
+              historyLoading={accountability.historyLoading}
+              historyLoaded={accountability.historyLoaded}
+              historyError={accountability.historyError}
+              loadHistory={accountability.loadHistory}
               mascot={p.mascot}
             />
           )}
