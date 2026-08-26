@@ -70,7 +70,7 @@ export default function CommunityStyle() {
 
       @media (max-width: 640px) {
         .sb-community-content > .sb-card { min-height: 380px; }
-        .sb-community-content > .sb-card.sb-community-chat { height: min(72vh, 620px); min-height: 420px; }
+        .sb-community-content > .sb-card.sb-community-chat { height: min(84vh, 680px); min-height: 480px; }
       }
 
       /* ---------- check-ins list ---------- */
