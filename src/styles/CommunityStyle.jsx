@@ -101,7 +101,7 @@ export default function CommunityStyle() {
       .sb-chat-list {
         display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
         padding: 6px 8px; margin-bottom: 12px; border-radius: 18px;
-        background: var(--soft); border: 2px solid var(--mascot-outline);
+        background: var(--card); border: 2px solid var(--mascot-outline);
       }
       .sb-chat-load-older {
         align-self: center; font-size: 11.5px; font-weight: 800; color: var(--muted); background: none;
