@@ -12,7 +12,7 @@ export default function CommunityStyle() {
       .sb-community-stats { display: flex; gap: 14px; flex-wrap: wrap; align-self: center; }
       .sb-community-stat {
         display: inline-flex; align-items: center; gap: 6px;
-        background: var(--mascot-body); border: 2px solid var(--mascot-outline);
+        background: var(--card); border: 2px solid var(--mascot-outline);
         border-radius: 999px; padding: 6px 12px; font-weight: 800; font-size: 12px;
         color: var(--mascot-ink); box-shadow: 2px 2px 0 var(--mascot-outline);
       }
@@ -77,7 +77,7 @@ export default function CommunityStyle() {
       .sb-checkins-list { display: flex; flex-direction: column; gap: 8px; }
       .sb-checkins-row {
         display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px;
-        border: 2px solid var(--mascot-outline); border-radius: 14px; background: var(--mascot-body);
+        border: 2px solid var(--mascot-outline); border-radius: 14px; background: var(--card);
       }
       .sb-checkins-row > span:first-child { margin-top: 2px; }
       .sb-checkins-body { flex: 1; min-width: 0; }
@@ -87,7 +87,7 @@ export default function CommunityStyle() {
       .sb-checkins-goal { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
       .sb-checkins-status {
         font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
-        background: var(--mascot-inner); color: var(--mascot-ink); border: 1.5px solid var(--mascot-outline);
+        background: var(--soft); color: var(--mascot-ink); border: 1.5px solid var(--mascot-outline);
       }
       .sb-checkins-status.status-completed { background: #B8E6C1; }
       .sb-checkins-status.status-missed { opacity: .65; }
@@ -101,7 +101,7 @@ export default function CommunityStyle() {
       .sb-chat-list {
         display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
         padding: 6px 8px; margin-bottom: 12px; border-radius: 18px;
-        background: var(--mascot-inner); border: 2px solid var(--mascot-outline);
+        background: var(--soft); border: 2px solid var(--mascot-outline);
       }
       .sb-chat-load-older {
         align-self: center; font-size: 11.5px; font-weight: 800; color: var(--muted); background: none;
@@ -128,7 +128,7 @@ export default function CommunityStyle() {
         display: flex; flex-direction: column; gap: 1px; text-align: left;
         max-width: 100%; margin-top: 4px; padding: 5px 9px;
         border-left: 3px solid var(--accent); border-radius: 8px;
-        background: var(--mascot-inner); cursor: pointer; font: inherit;
+        background: var(--soft); cursor: pointer; font: inherit;
       }
       .sb-chat-msg.own .sb-chat-reply-quote { text-align: right; border-left: none; border-right: 3px solid var(--accent); }
       .sb-chat-reply-quote-name { font-size: 10.5px; font-weight: 800; color: var(--mascot-ink); }
@@ -139,9 +139,9 @@ export default function CommunityStyle() {
       .sb-chat-msg.own .sb-chat-reply-quote-text { margin-left: auto; }
 
       @keyframes sbChatHighlight {
-        0% { background: var(--mascot-inner); }
+        0% { background: var(--soft); }
         30% { background: var(--accent2); }
-        100% { background: var(--mascot-inner); }
+        100% { background: var(--soft); }
       }
       @keyframes sbChatHighlightOwn {
         0% { background: var(--accent); }
@@ -158,7 +158,7 @@ export default function CommunityStyle() {
         display: flex; align-items: center; gap: 10px; flex-shrink: 0;
         margin-bottom: 8px; padding: 8px 12px;
         border: 2px solid var(--mascot-outline); border-left: 4px solid var(--accent); border-radius: 12px;
-        background: var(--mascot-body);
+        background: var(--card);
       }
       .sb-chat-reply-bar-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
       .sb-chat-reply-bar-name { font-size: 11px; font-weight: 800; color: var(--mascot-ink); }
@@ -170,7 +170,7 @@ export default function CommunityStyle() {
         flex-shrink: 0; background: none; border: none; cursor: pointer; color: var(--muted);
         padding: 6px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
       }
-      .sb-chat-reply-bar-cancel:hover { background: var(--mascot-inner); color: #C24444; }
+      .sb-chat-reply-bar-cancel:hover { background: var(--soft); color: #C24444; }
 
       @media (max-width: 640px) {
         .sb-chat-reply-quote-text { max-width: 150px; }
@@ -211,7 +211,7 @@ export default function CommunityStyle() {
       .sb-chat-hint { font-size: 11px; color: var(--muted); font-weight: 600; }
       .sb-chat-hint kbd {
         font-family: inherit; font-size: 10px; font-weight: 800; padding: 1.5px 5px;
-        border: 1.5px solid var(--mascot-outline); border-radius: 5px; background: var(--mascot-inner);
+        border: 1.5px solid var(--mascot-outline); border-radius: 5px; background: var(--soft);
       }
       .sb-chat-counter { font-size: 10.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
       .sb-chat-counter.warn { color: #C24444; }
@@ -247,7 +247,7 @@ export default function CommunityStyle() {
         border: 2px solid var(--mascot-outline); border-radius: 12px; padding: 11px 13px;
         background: var(--card); display: flex; flex-direction: column; gap: 9px;
       }
-      .sb-goal-item.status-completed { background: var(--mascot-inner); }
+      .sb-goal-item.status-completed { background: var(--soft); }
       .sb-goal-item.status-missed { opacity: .7; }
       .sb-goal-item-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
       .sb-goal-item-body { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
@@ -256,7 +256,7 @@ export default function CommunityStyle() {
       .sb-goal-item-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
       .sb-goal-status-pill {
         font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
-        border: 1.5px solid var(--mascot-outline); background: var(--mascot-body); color: var(--mascot-ink);
+        border: 1.5px solid var(--mascot-outline); background: var(--card); color: var(--mascot-ink);
         white-space: nowrap;
       }
       .sb-goal-status-pill.status-completed { background: #B8E6C1; }
@@ -272,7 +272,7 @@ export default function CommunityStyle() {
         width: 100%; padding: 10px; border-radius: 12px; border: 2px dashed var(--mascot-outline);
         background: transparent; color: var(--mascot-ink); font-weight: 800; font-size: 13px; cursor: pointer;
       }
-      .sb-goal-add-btn:hover { background: var(--mascot-inner); }
+      .sb-goal-add-btn:hover { background: var(--soft); }
       .sb-goal-cap-note { text-align: center; padding: 8px 0; }
 
       .sb-checkin-weekly {
@@ -301,7 +301,7 @@ export default function CommunityStyle() {
       /* ---------- feed ---------- */
       .sb-composer-trigger {
         width: 100%; text-align: left; padding: 10px 14px; border-radius: 14px;
-        border: 2px dashed var(--mascot-outline); background: var(--mascot-body); color: var(--muted);
+        border: 2px dashed var(--mascot-outline); background: var(--card); color: var(--muted);
         font-size: 12.5px; font-weight: 700; cursor: pointer; margin-bottom: 14px;
       }
       .sb-composer-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
@@ -312,10 +312,10 @@ export default function CommunityStyle() {
       }
       .sb-composer-attach {
         align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
-        border: 2px dashed var(--mascot-outline); background: var(--mascot-body); color: var(--mascot-ink);
+        border: 2px dashed var(--mascot-outline); background: var(--card); color: var(--mascot-ink);
         border-radius: 12px; padding: 7px 12px; font-size: 12px; font-weight: 800; cursor: pointer;
       }
-      .sb-composer-attach:hover { background: var(--mascot-inner); }
+      .sb-composer-attach:hover { background: var(--soft); }
       .sb-composer-image-preview { position: relative; width: 100%; max-width: 260px; border-radius: 14px; overflow: hidden;
         border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline); }
       .sb-composer-image-preview img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
@@ -331,7 +331,7 @@ export default function CommunityStyle() {
       .sb-post-list { display: flex; flex-direction: column; gap: 14px; }
       .sb-post {
         border: 2px solid var(--mascot-outline); border-radius: 16px; padding: 12px 14px;
-        background: var(--mascot-body); box-shadow: 3px 3px 0 var(--mascot-outline); position: relative;
+        background: var(--card); box-shadow: 3px 3px 0 var(--mascot-outline); position: relative;
       }
       .sb-post-head { display: flex; align-items: center; gap: 9px; }
       .sb-post-who { flex: 1; min-width: 0; }
@@ -346,7 +346,7 @@ export default function CommunityStyle() {
         background: var(--card); border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800;
         color: var(--mascot-ink); cursor: pointer;
       }
-      .sb-post-reaction.active { background: var(--mascot-inner); }
+      .sb-post-reaction.active { background: var(--soft); }
       .sb-post-replies { margin-top: 10px; padding-top: 10px; border-top: 1.5px dashed var(--mascot-outline); display: flex; flex-direction: column; gap: 6px; }
       .sb-post-reply { font-size: 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
       .sb-post-reply-text { flex: 1; min-width: 0; }
@@ -367,7 +367,7 @@ export default function CommunityStyle() {
         background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px;
         display: inline-flex; align-items: center; justify-content: center; border-radius: 8px;
       }
-      .sb-cm-actions-trigger:hover { background: var(--mascot-inner); }
+      .sb-cm-actions-trigger:hover { background: var(--soft); }
 
       .sb-cm-actions-backdrop { position: fixed; inset: 0; z-index: 40; }
       .sb-cm-actions-menu, .sb-cm-actions-panel {
@@ -380,7 +380,7 @@ export default function CommunityStyle() {
         display: flex; align-items: center; gap: 7px; background: none; border: none; cursor: pointer;
         text-align: left; padding: 7px 9px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--ink);
       }
-      .sb-cm-actions-menu button:hover { background: var(--mascot-inner); }
+      .sb-cm-actions-menu button:hover { background: var(--soft); }
       .sb-cm-actions-menu button.danger { color: #C24444; }
       .sb-cm-actions-panel { min-width: 220px; padding: 10px; gap: 8px; }
       .sb-cm-panel-label { font-size: 11px; font-weight: 800; color: var(--muted); }
@@ -390,7 +390,7 @@ export default function CommunityStyle() {
       }
       .sb-cm-panel-btns { display: flex; justify-content: flex-end; gap: 6px; }
       .sb-cm-panel-btns button {
-        border: 2px solid var(--mascot-outline); background: var(--mascot-body); border-radius: 999px;
+        border: 2px solid var(--mascot-outline); background: var(--card); border-radius: 999px;
         padding: 6px 12px; font-size: 11.5px; font-weight: 800; cursor: pointer; color: var(--ink);
       }
       .sb-cm-panel-btns button.primary { background: var(--mascot-outline); color: var(--bg); }
