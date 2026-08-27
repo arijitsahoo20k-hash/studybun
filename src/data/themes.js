@@ -164,6 +164,22 @@ export const THEMES = {
     dot: "rgba(42,42,40,0.07)", emoji: "🖋️", paper: true,
     decor: ["quillInk", "gear", "quillInk", "rivetStud"],
   },
+  "Red Velvet": {
+    bg: "#FCF2EF", card: "#FFFAF6", outline: "#5C2A2E", ink: "#4A2226", muted: "#957070",
+    accent: "#C1616B", accent2: "#E8B7A0", soft: "#F3D9B8",
+    palette: ["#D98A93", "#F3D9B8", "#8A3F42", "#E8C6A8", "#C97A7A", "#F6E8D2"],
+    mascotFill: "#D98A93", mascotInner: "#FBEBE3", mascotBlush: "#8A3F42",
+    dot: "rgba(92,42,46,0.06)", emoji: "🍰",
+    decor: ["strawberry", "blossomSprig", "strawberry", "sparkleStar"],
+  },
+  "Wisteria Dream": {
+    bg: "#FAF3FA", card: "#FEFBFE", outline: "#5A3F63", ink: "#4A3352", muted: "#93809C",
+    accent: "#B583C4", accent2: "#E0AECF", soft: "#F0D9E8",
+    palette: ["#D0A0DC", "#F0D9E8", "#9C63B5", "#E8C2D9", "#C48ADA", "#F6E8F2"],
+    mascotFill: "#D0A0DC", mascotInner: "#F7EEF9", mascotBlush: "#9C4F8C",
+    dot: "rgba(90,63,99,0.06)", emoji: "🪻",
+    decor: ["blossom", "blossomSprig", "blossom", "sparkleStar"],
+  },
 
   /* ===== photo-backdrop themes =====
    * These seven (four below + three more further down) keep the same
