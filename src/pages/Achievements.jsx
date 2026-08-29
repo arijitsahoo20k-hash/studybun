@@ -67,7 +67,7 @@ export default function AchievementsPage(p) {
 
       <div className="sb-achv-grid">
         {visible.map((a) => {
-          const unlocked = a.cond;
+          const unlocked = unlockedIds.has(a.id);
           const pct = a.target ? Math.min(100, ((a.current || 0) / a.target) * 100) : 0;
           return (
             <Card key={a.id} className={`sb-achv-card ${unlocked ? "unlocked" : "locked"}`}>

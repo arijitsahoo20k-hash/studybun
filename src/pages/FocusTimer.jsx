@@ -69,6 +69,12 @@ export default function FocusTimer(p) {
   const settingsDialogRef = useRef(null);
 
   useEffect(() => { setDurationDraft(t.modeMinutes[t.mode]); }, [t.mode, t.modeMinutes]);
+  // Belt-and-suspenders: close the duration popover the instant a session
+  // becomes active, in case it was left open right as Start was pressed.
+  // The real guard against a mid-session edit is inside setCustomMinutes
+  // itself (see useFocusTimer.js), but the popover shouldn't sit open
+  // pretending it can still do something.
+  useEffect(() => { if (t.sessionActive) setEditingDuration(false); }, [t.sessionActive]);
 
   // Same Escape-to-close + initial-focus pattern as the Periodic Table's
   // element dialog (see ElementDetail in PeriodicTable.jsx) so every popup
@@ -171,7 +177,13 @@ export default function FocusTimer(p) {
           </div>
           <div className="sb-timer-actions">
             {t.mode !== STOPWATCH_MODE && (
-              <button className="sb-icon-round" title="Set a custom time for this mode" onClick={() => setEditingDuration((v) => !v)}>
+              <button
+                className="sb-icon-round"
+                title={t.sessionActive ? "Finish, save, or reset your current session to edit its duration" : "Set a custom time for this mode"}
+                onClick={() => setEditingDuration((v) => !v)}
+                disabled={t.sessionActive}
+                style={t.sessionActive ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
+              >
                 <Pencil size={15} />
               </button>
             )}
@@ -240,7 +252,17 @@ export default function FocusTimer(p) {
         </div>
 
         <div className="sb-timer-controls">
-          {!t.running ? <Btn onClick={t.start}><Play size={16} /> Start</Btn> : <Btn variant="soft" onClick={t.pause}><Pause size={16} /> Pause</Btn>}
+          {!t.running ? (
+            <span title={t.askDone ? "Save or discard your last session below before starting a new one" : undefined}>
+              <Btn
+                onClick={t.start}
+                disabled={t.askDone}
+                style={t.askDone ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+              >
+                <Play size={16} /> Start
+              </Btn>
+            </span>
+          ) : <Btn variant="soft" onClick={t.pause}><Pause size={16} /> Pause</Btn>}
           {!t.askDone && (
             <span title={t.canSave ? `Save ${Math.round(t.elapsedSeconds / 60)} min so far and finish this session` : "Runs for 5+ min before you can save early"}>
               <Btn

@@ -503,7 +503,15 @@ export default function App() {
   // them ever changes.
   const streakDays = useMemo(() => {
     const days = new Set();
-    sessions.forEach((s) => { if (Number(s.minutes || 0) >= 5) days.add(s.session_date); });
+    // manualSessions, not sessions: a session logged via the Focus Timer's
+    // "what did you study" card is tagged platform: "Focus Timer" and its
+    // minutes are already governed by the timerSessions branch just below
+    // (which requires completed && >=10min, matching the server-side rule).
+    // Looping over the raw `sessions` array here let a 5-9 min Focus Timer
+    // session count toward the streak locally even when the server-side
+    // lb_calc_streak wouldn't count it (needs >=10min), so Dashboard/Profile
+    // could show a streak alive that the Leaderboard disagreed with.
+    manualSessions.forEach((s) => { if (Number(s.minutes || 0) >= 5) days.add(s.session_date); });
     timerSessions.forEach((ts) => {
       if (ts.completed && Number(ts.actual_minutes || 0) >= 10) days.add(tsToISTDateStr(ts.created_at));
     });
@@ -511,7 +519,7 @@ export default function App() {
     taskDayCompletion.forEach((d) => days.add(d));
     streakFreezesQ.rows.forEach((r) => days.add(r.frozen_date));
     return days;
-  }, [sessions, timerSessions, questions, taskDayCompletion, streakFreezesQ.rows]);
+  }, [manualSessions, timerSessions, questions, taskDayCompletion, streakFreezesQ.rows]);
 
   // A streak only breaks after a full missed day, not the instant "today"
   // hasn't been logged yet (it might still be 9am!). So: if today has no
@@ -718,6 +726,23 @@ export default function App() {
   ];
   const unlockedAchievements = achievementDefs.filter((a) => a.cond);
 
+  // achievements table is the permanent record of what's ever been earned
+  // (see the insert effect just below) — used here to make "unlocked" status
+  // sticky even after the live condition stops being true again. Two of the
+  // conditions above are NOT monotonic: finishedGoalToday resets every
+  // midnight, and perfectionist's overdueRevisions.length === 0 can flip back
+  // true the moment a new revision goes overdue. Without this, a badge the
+  // user genuinely earned would flip back to "Locked" the next time its live
+  // condition lapses — contradicting the app's own promise (see Achievements
+  // page copy: "once you've earned one it's yours for good") — the visible
+  // count/progress bar could shrink, and re-triggering the condition later
+  // would fire the "Achievement unlocked!" celebration a second time for
+  // something already earned. persistedUnlockedIds only ever grows (nothing
+  // ever deletes from the achievements table), so unioning it in makes
+  // unlockedAchievements monotonic like every other badge already is.
+  const persistedUnlockedIds = new Set(achievementsQ.rows.map((r) => r.achievement_key));
+  const stickyUnlockedAchievements = achievementDefs.filter((a) => a.cond || persistedUnlockedIds.has(a.id));
+
   // All the queries that feed achievementDefs' conditions (streaks, totals,
   // overdue counts, etc.) start empty and load in async on every reload.
   // Reading unlockedAchievements before they've all settled makes it look
@@ -729,7 +754,10 @@ export default function App() {
 
   // Persist newly unlocked achievements once data has actually settled —
   // inserting against a still-loading (empty) achievementsQ.rows would just
-  // try to re-insert everything the user already has, every reload.
+  // try to re-insert everything the user already has, every reload. Deliberately
+  // still keyed off the live-cond list (unlockedAchievements, not the sticky
+  // one) — a persisted id is already in achievementsQ.rows by definition, so
+  // looping the sticky list here would just be redundant work every render.
   useEffect(() => {
     if (!dataReady) return;
     unlockedAchievements.forEach((a) => {
@@ -743,21 +771,23 @@ export default function App() {
   // null (not 0) means "no real baseline yet" — the first time dataReady
   // flips true, whatever count we see becomes the baseline silently; it's
   // never treated as a new unlock, even on a fresh page load where the
-  // count is already >0 from past sessions.
+  // count is already >0 from past sessions. Tracks the STICKY count (not the
+  // raw live-cond one) so a non-monotonic condition lapsing and re-triggering
+  // later can never re-fire this celebration for something already earned.
   const prevUnlockedCount = useRef(null);
   useEffect(() => {
     if (!dataReady) return;
     if (prevUnlockedCount.current === null) {
-      prevUnlockedCount.current = unlockedAchievements.length;
+      prevUnlockedCount.current = stickyUnlockedAchievements.length;
       return;
     }
-    if (unlockedAchievements.length > prevUnlockedCount.current) {
+    if (stickyUnlockedAchievements.length > prevUnlockedCount.current) {
       fireCelebrate("petals");
       showToast("Achievement unlocked! 🏆");
     }
-    prevUnlockedCount.current = unlockedAchievements.length;
+    prevUnlockedCount.current = stickyUnlockedAchievements.length;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataReady, unlockedAchievements.length]);
+  }, [dataReady, stickyUnlockedAchievements.length]);
 
   // Streak-freeze tokens (supabase/migration_streak_freeze.sql). Two jobs:
   //
@@ -1175,7 +1205,7 @@ export default function App() {
     goals, addGoal, updateGoal, completeGoal, deleteGoal,
     streak, streakActiveToday, weeklyData, subjectPie, totalQuestions, todayQuestions, daysToExam,
     dueRevisions, upcomingRevisions, overdueRevisions, overallPct, completedCount,
-    unlockedAchievements, achievementDefs, achievementRows: achievementsQ.rows, setPage, showToast, fireCelebrate,
+    unlockedAchievements: stickyUnlockedAchievements, achievementDefs, achievementRows: achievementsQ.rows, setPage, showToast, fireCelebrate,
     longestStreak, totalStudyDays, totalHours, masteredCount,
     featureUnlockStreak: FEATURE_UNLOCK_STREAK,
     mascotMood: buddyMood, mascotEnergy: buddyEnergy,

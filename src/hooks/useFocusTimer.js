@@ -319,12 +319,28 @@ export function useFocusTimer({ onComplete } = {}) {
   const setCustomMinutes = useCallback((m, mins) => {
     const clamped = Math.max(1, Math.min(240, Math.round(mins) || 1));
     setModeMinutesState((prev) => ({ ...prev, [m]: clamped }));
-    if (m === mode && !running) {
+    // Only rewrite the live secondsLeft when there is truly no session to
+    // protect (not running AND not paused-mid-session AND not sitting at the
+    // post-session log step). Checking `!running` alone let a PAUSED session
+    // have its secondsLeft silently overwritten here without touching
+    // startedMinutes, which is exactly the exploit: pause -> shrink duration
+    // -> elapsedSeconds (derived from startedMinutes*60 - secondsLeft) jumps
+    // up instantly, making saveEarly() credit minutes that were never spent.
+    if (m === mode && !running && !sessionInProgress) {
       setSecondsLeft(clamped * 60);
     }
-  }, [mode, running]);
+  }, [mode, running, sessionInProgress]);
 
   const start = useCallback(() => {
+    // Guard against spamming Start while the post-session "what did you
+    // study" log card (askDone) is still up. Without this, finish() has
+    // already set secondsLeft=0 and running=false but left sessionInProgress
+    // true and startedMinutes at the full planned duration — calling start()
+    // from that state re-arms the countdown with secondsLeft=0, so it
+    // "finishes" again on the very next tick and credits a full session's
+    // worth of minutes/points for zero real time. Must Save/Discard/Reset
+    // (which all clear askDone) before a new session can start.
+    if (askDone) return;
     if (typeof Notification !== "undefined" && Notification.permission === "default" && !notifiedPermissionRef.current) {
       notifiedPermissionRef.current = true;
       Notification.requestPermission().catch(() => {});
@@ -350,7 +366,7 @@ export function useFocusTimer({ onComplete } = {}) {
       playStartChime(ctx);
       startDroneOsc(ctx, droneRef);
     }
-  }, [mode, modeMinutes, secondsLeft, soundOn]);
+  }, [mode, modeMinutes, secondsLeft, soundOn, askDone]);
 
   const pause = useCallback(() => {
     setRunning(false);
@@ -361,6 +377,13 @@ export function useFocusTimer({ onComplete } = {}) {
 
   const reset = useCallback(() => {
     setRunning(false);
+    // Also clear askDone: without this, hitting the generic Reset button
+    // while the post-session log card is showing zeroed out
+    // startedMinutes/sessionInProgress underneath a log card that stayed
+    // visible (askDone never cleared) — a stale hybrid state where logging
+    // from that card would save a bogus 0-minute entry. Reset must always
+    // fully clear a pending session, log card included.
+    setAskDone(false);
     endAtRef.current = null;
     stopwatchAnchorRef.current = null;
     finishedRef.current = false;
@@ -396,6 +419,12 @@ export function useFocusTimer({ onComplete } = {}) {
   // Stopwatch session earns the flat completion bonus too, since by
   // definition it can only ever end when the user decides it's done.
   const saveEarly = useCallback(() => {
+    // Same re-entrancy guard finish() already has. Without it, a fast
+    // double-tap on the Save button (touchend+click both firing, common on
+    // mobile/PWA) could run this twice before the first setAskDone(true) has
+    // re-rendered the button away, logging two completed sessions for one
+    // sit-down.
+    if (finishedRef.current) return false;
     const isStopwatch = mode === STOPWATCH_MODE;
     const elapsed = isStopwatch ? secondsLeft : Math.max(0, startedMinutes * 60 - secondsLeft);
     const elapsedMinutes = Math.min(MAX_LOGGABLE_MINUTES, Math.round(elapsed / 60));
