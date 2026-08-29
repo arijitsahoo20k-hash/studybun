@@ -435,8 +435,17 @@ export function useFocusTimer({ onComplete } = {}) {
   }, [running]);
 
   const toggleAggressiveMode = useCallback(() => {
-    setAggressiveMode((v) => !v);
-  }, []);
+    setAggressiveMode((v) => {
+      // Once aggressive mode is on and a session is actually running, that's
+      // exactly the state it exists to protect -- so don't let this same
+      // toggle be used to switch it off mid-session as a way to sneak past
+      // the lock. It becomes editable again the moment running goes false
+      // (pause, finish, or reset). Turning it ON (v === false) is never
+      // blocked, since that can only arm/tighten the lock, never loosen it.
+      if (v && running) return v; // no-op: stays on until the session stops
+      return !v;
+    });
+  }, [running]);
 
   // Stopwatch has no target duration, so "percent complete" is a meaningless
   // (and, past 25 minutes of a fallback 1500s total, actively wrong/negative)
@@ -446,9 +455,16 @@ export function useFocusTimer({ onComplete } = {}) {
   const total = isStopwatch ? null : (modeMinutes[mode] ?? 25) * 60;
   const pct = isStopwatch ? null : (total > 0 ? ((total - secondsLeft) / total) * 100 : 0);
 
+  // True only while the toggle above is actually refusing to flip -- i.e.
+  // aggressive mode is armed AND a session is running. Lets the settings UI
+  // grey out / disable the button and explain why, instead of it looking
+  // clickable but silently doing nothing.
+  const aggressiveModeLocked = aggressiveMode && running;
+
   return {
     modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
-    secondsLeft, total, pct, elapsedSeconds, canSave, sessionActive, aggressiveMode, isStopwatch,
+    secondsLeft, total, pct, elapsedSeconds, canSave, sessionActive, aggressiveMode,
+    aggressiveModeLocked, isStopwatch,
     changeMode, setCustomMinutes, start, pause, reset, resetForNewSession, saveEarly,
     toggleSound, setRadioChoice, setRadioCustomUrl, toggleAggressiveMode,
   };

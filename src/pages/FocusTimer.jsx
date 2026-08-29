@@ -365,7 +365,13 @@ export default function FocusTimer(p) {
                 <button
                   className={`sb-sound-toggle sb-aggressive-toggle ${t.aggressiveMode ? "on" : ""}`}
                   onClick={t.toggleAggressiveMode}
-                  title="Blocks switching to other pages while a session is running"
+                  disabled={t.aggressiveModeLocked}
+                  aria-disabled={t.aggressiveModeLocked}
+                  title={
+                    t.aggressiveModeLocked
+                      ? "Locked — pause, save, or finish this session to turn it off"
+                      : "Blocks switching to other pages while a session is running"
+                  }
                 >
                   {t.aggressiveMode ? <Lock size={18} /> : <ShieldAlert size={18} />}
                   <span>{t.aggressiveMode ? "Locked while running" : "Off"}</span>
@@ -374,7 +380,7 @@ export default function FocusTimer(p) {
               <p className="sb-aggressive-hint">
                 {t.aggressiveMode
                   ? (t.running
-                    ? "You're locked to this page until you pause, save, or finish the session."
+                    ? "You're locked to this page and can't turn this off until you pause, save, or finish the session."
                     : "Armed — the moment you hit Start, other pages will be blocked until you pause or finish.")
                   : "When on, you can't wander off to other pages while a session is actively running — pausing always lets you leave."}
               </p>

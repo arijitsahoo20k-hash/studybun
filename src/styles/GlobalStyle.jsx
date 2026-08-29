@@ -1228,6 +1228,8 @@ export default function GlobalStyle() {
 
       /* ----- Aggressive Mode toggle (timer settings panel) ----- */
       .sb-aggressive-toggle.on { background: var(--accent); color: #fff; }
+      .sb-aggressive-toggle:disabled { cursor: not-allowed; opacity: .72; box-shadow: none; transform: none; }
+      .sb-aggressive-toggle:disabled:hover { transform: none; box-shadow: none; }
       .sb-aggressive-hint { font-size: 11.5px; color: var(--muted); font-weight: 700; line-height: 1.5; margin: -2px 2px 2px; }
 
       /* ----- "Studying Now" card -----
