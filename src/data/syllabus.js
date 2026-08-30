@@ -4,8 +4,8 @@ export const SYLLABUS = {
     groups: {
       "Mechanics I": ["Units and Measurement", "Mathematical Tools", "Motion in 1 Dimension", "Motion in 2 Dimensions", "Laws of Motion & Friction", "Work, Power, and Energy", "Center of Mass & Collision", "Rotational Motion", "Gravitation"],
       "Mechanics II & Thermal": ["Mechanical Properties of Solids", "Mechanical Properties of Fluids", "Oscillations (SHM)", "Waves and Sound", "Thermal Properties & Calorimetry", "Thermodynamics", "Kinetic Theory of Gases"],
-      "Electromagnetism": ["Electric Charges and Fields", "Electrostatic Potential & Capacitance", "Current Electricity", "Moving Charges and Magnetism", "Magnetism and Matter", "Electromagnetic Induction", "Alternating Current"],
-      "Optics & Modern Physics": ["Electromagnetic Waves", "Ray Optics and Optical Instruments", "Wave Optics", "Dual Nature of Radiation and Matter", "Atomic Physics", "Nuclear Physics", "Semiconductor Electronics"],
+      "Electromagnetism": ["Electric Charges and Fields", "Electrostatic Potential & Capacitance", "Current Electricity", "Moving Charges and Magnetism", "Magnetism and Matter", "Electromagnetic Induction", "Alternating Current", "Electromagnetic Waves"],
+      "Optics & Modern Physics": ["Ray Optics and Optical Instruments", "Wave Optics", "Dual Nature of Radiation and Matter", "Atomic Physics", "Nuclear Physics", "Semiconductor Electronics"],
     },
   },
   Chemistry: {
