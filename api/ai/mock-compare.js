@@ -1,26 +1,47 @@
 import { getUserFromAuthHeader } from "../_lib/supabaseAdmin.js";
 import { groqComplete } from "../_lib/groqClient.js";
 import { checkRateLimit } from "../_lib/rateLimit.js";
+import { benchmarkMainMocks, benchmarkAdvancedMocks, buildRealComparison } from "../../src/lib/examBenchmarks.js";
 
 const MAX_MOCKS = 200;
 const MAX_PAYLOAD_CHARS = 40_000;
 
-// Shared "use what you actually know about the real exam" instruction — this
-// is what lets the comparison mean something beyond just the student's own
-// two numbers. The model has no live internet/search tool here, so it's
-// asked to draw on its general trained knowledge of real JEE Main/Advanced
-// score-vs-percentile-vs-rank patterns and recent-year cutoffs, and to be
-// explicit that this is an approximate, general-knowledge estimate rather
-// than a live lookup — never state a fabricated exact rank/percentile as fact.
-const BENCHMARK_INSTRUCTION = `You also have general knowledge (from your training, not live internet access) of how
-JEE Main and JEE Advanced scores have historically mapped to percentiles, ranks, and category-wise cutoffs in recent years.
-Use that general knowledge to add real-world context to this student's numbers — e.g. roughly what percentile/rank band a
-score like theirs has tended to land in, or how it compares to typical cutoffs — but always phrase it as an approximate,
-general-trend estimate (words like "roughly", "typically", "in recent years"), never as a precise live figure, and never
-invent a specific year's exact cutoff number you aren't confident about. If you're not confident enough to estimate
-anything meaningful, say plainly that you can't benchmark this precisely instead of guessing.`;
+// The old version asked the LLM to *guess* a percentile/rank from its own
+// training knowledge, then compared JEE Main vs JEE Advanced by raw score
+// percentage — as if the two exams were on the same scale. They aren't:
+// Advanced's ~1.8 lakh test-takers are already the top slice of Main's ~15
+// lakh, so a percentage on Advanced needs converting through a much steeper,
+// pre-filtered curve before it means anything next to a Main percentage.
+//
+// So the real numbers below are computed HERE, deterministically, from
+// actual published marks-vs-percentile (Main) and marks-vs-rank (Advanced)
+// tables — see src/lib/examBenchmarks.js for the tables and reasoning. The
+// LLM is only asked to narrate around these given facts in plain language;
+// it is explicitly forbidden from inventing its own percentile/rank number.
+function formatRealBenchmarkFacts(real) {
+  if (!real) return "No benchmark could be computed (no scored mocks).";
+  const lines = [];
+  if (real.main) {
+    lines.push(`JEE MAIN — real-data estimate: average NTA percentile ≈ ${real.main.avgPercentile} (latest mock ≈ ${real.main.latestPercentile}), based on ${real.main.count} scored mock(s).`);
+  }
+  if (real.advanced) {
+    lines.push(`JEE ADVANCED — real-data estimate: average CRL rank ≈ AIR ${real.advanced.avgRank.toLocaleString("en-IN")} (latest mock ≈ AIR ${real.advanced.latestRank.toLocaleString("en-IN")}), which converts to an equivalent percentile of ≈ ${real.advanced.avgEquivalentPercentile} against the full ~15 lakh JEE Main aspirant pool (latest mock ≈ ${real.advanced.latestEquivalentPercentile}) — this conversion is what makes it comparable to the Main percentile above, since Advanced is only sat by Main's already-elite top slice.`);
+  }
+  if (real.gapPts !== null && real.gapPts !== undefined) {
+    lines.push(`GAP: ${Math.abs(real.gapPts)} percentile points, in favor of ${real.strongerPaper === "Too close to call" ? "neither — it's essentially a tie" : real.strongerPaper}.`);
+  }
+  lines.push(...real.caveats.map((c) => `CAVEAT: ${c}`));
+  return lines.join("\n");
+}
 
-function buildComparisonPrompt(mainsMocks, advancedMocks) {
+const NUMBERS_INSTRUCTION = `You are given PRECOMPUTED, DATA-GROUNDED benchmark numbers below (real historical JEE Main
+marks-vs-percentile and JEE Advanced marks-vs-rank tables, already converted onto one comparable scale). These are not
+your guess — they were computed deterministically before this prompt ran. You MUST use these exact numbers wherever you
+reference a percentile, rank, or gap. NEVER invent your own percentile/rank estimate, and never state a number that
+contradicts what's given below. You MAY add qualitative color (what the gap likely means, what tends to separate students
+at this level) but every quantitative claim must trace back to the numbers given.`;
+
+function buildComparisonPrompt(mainsMocks, advancedMocks, realFacts) {
   return `You are the mock-test comparison engine inside StudyBun, a cozy productivity app for a JEE (Indian engineering
 entrance exam) aspirant. You are given this student's real JEE Main mock history and real JEE Advanced mock history below.
 Both lists have at least one entry, so do a genuine side-by-side comparison.
@@ -28,7 +49,10 @@ Both lists have at least one entry, so do a genuine side-by-side comparison.
 Compare the two papers' performance for this specific student. Use ONLY the real numbers given — never invent a score,
 subject, or date that isn't in the data.
 
-${BENCHMARK_INSTRUCTION}
+${NUMBERS_INSTRUCTION}
+
+PRECOMPUTED REAL BENCHMARK FACTS:
+${realFacts}
 
 JEE MAIN MOCKS (chronological, oldest first — each has exam_name, date, per-subject marks out of 100, total out of total_marks):
 ${JSON.stringify(mainsMocks, null, 2)}
@@ -40,31 +64,34 @@ Return ONLY valid JSON (no markdown fences, no preamble) matching this exact sha
 {
   "mode": "compare",
   "exam_focus": null,
-  "summary": "2-3 sentence direct comparison of how this student performs on Main vs Advanced, grounded in the actual numbers",
+  "summary": "2-3 sentence direct comparison of how this student performs on Main vs Advanced, grounded in the actual numbers AND the precomputed real benchmark facts above",
   "stronger_paper": "JEE Main" | "JEE Advanced" | "Too close to call",
-  "score_gap_pct": "the approximate percentage-point gap between average Main % and average Advanced %, as a short string",
+  "score_gap_pct": "the percentile-point gap from the precomputed facts above, as a short string — do not compute your own",
   "subject_comparison": {
     "physics": "1 sentence comparing physics performance across the two papers",
     "chemistry": "1 sentence comparing chemistry performance across the two papers",
     "math": "1 sentence comparing math performance across the two papers"
   },
-  "benchmark_context": "1-2 sentences positioning these scores against general real-world JEE percentile/cutoff trends, per the instruction above",
-  "percentile_estimate": "a short approximate percentile/rank-band string for this student's general level right now, or 'not confident enough to estimate'",
-  "trend": "1-2 sentences on whether the gap between the two papers is widening, narrowing, or steady over time",
+  "benchmark_context": "1-2 sentences positioning these scores using ONLY the precomputed real benchmark facts above — state the percentile/rank numbers given, and briefly explain why Advanced's rank was converted the way it was (elite, pre-filtered pool) if relevant",
+  "percentile_estimate": "restate the precomputed percentile/rank figures from the facts above in one short string — do not compute your own",
+  "trend": "1-2 sentences on whether the gap between the two papers is widening, narrowing, or steady over time, based on the mock history",
   "recommendation": "1-3 concrete, actionable sentences on what to focus on given this specific gap — reference real JEE-specific factors where relevant (Advanced's partial-marking and multi-correct/numerical formats vs Main's straight MCQ negative marking, Advanced's tougher conceptual depth vs Main's speed-and-accuracy emphasis, or a specific subject/topic pattern visible in the data)"
 }`;
 }
 
-function buildSingleExamPrompt(examFocus, mocks) {
+function buildSingleExamPrompt(examFocus, mocks, realFacts) {
   const other = examFocus === "JEE Main" ? "JEE Advanced" : "JEE Main";
   return `You are the mock-test evaluation engine inside StudyBun, a cozy productivity app for a JEE (Indian engineering
 entrance exam) aspirant. This student has only logged ${examFocus} mocks so far — no ${other} mocks yet — so there is
 nothing to compare it against internally. Instead, evaluate their ${examFocus} performance on its own merits, benchmarked
-against what you know about real-world ${examFocus} scoring.
+against the precomputed real-world ${examFocus} scoring data below.
 
 Use ONLY the real numbers given below — never invent a score, subject, or date that isn't in the data.
 
-${BENCHMARK_INSTRUCTION}
+${NUMBERS_INSTRUCTION}
+
+PRECOMPUTED REAL BENCHMARK FACTS:
+${realFacts}
 
 ${examFocus.toUpperCase()} MOCKS (chronological, oldest first — each has exam_name, date, per-subject marks, total out of total_marks):
 ${JSON.stringify(mocks, null, 2)}
@@ -73,7 +100,7 @@ Return ONLY valid JSON (no markdown fences, no preamble) matching this exact sha
 {
   "mode": "single",
   "exam_focus": "${examFocus}",
-  "summary": "2-3 sentence read on how this student is doing on ${examFocus} specifically, grounded in the actual numbers",
+  "summary": "2-3 sentence read on how this student is doing on ${examFocus} specifically, grounded in the actual numbers AND the precomputed real benchmark facts above",
   "stronger_paper": "Not applicable — only ${examFocus} logged so far",
   "score_gap_pct": "not applicable",
   "subject_comparison": {
@@ -81,8 +108,8 @@ Return ONLY valid JSON (no markdown fences, no preamble) matching this exact sha
     "chemistry": "1 sentence on chemistry performance/trend within their ${examFocus} mocks",
     "math": "1 sentence on math performance/trend within their ${examFocus} mocks"
   },
-  "benchmark_context": "1-2 sentences positioning these scores against general real-world ${examFocus} percentile/cutoff trends, per the instruction above",
-  "percentile_estimate": "a short approximate percentile/rank-band string for this student's general level right now, or 'not confident enough to estimate'",
+  "benchmark_context": "1-2 sentences positioning these scores using ONLY the precomputed real benchmark facts above",
+  "percentile_estimate": "restate the precomputed percentile/rank figure from the facts above in one short string — do not compute your own",
   "trend": "1-2 sentences on whether their ${examFocus} scores are improving, dipping, or steady over time",
   "recommendation": "1-3 concrete, actionable sentences on what to focus on next, referencing real ${examFocus}-specific factors where relevant (marking scheme, question style, typical weak-topic patterns for aspirants at this score level) — and mention that logging a ${other} mock would unlock a direct Main-vs-Advanced comparison"
 }`;
@@ -113,9 +140,19 @@ export default async function handler(req, res) {
   }
 
   const canCompare = mainsMocks.length > 0 && advancedMocks.length > 0;
+
+  // Compute the real, data-grounded numbers BEFORE prompting — this is the
+  // fix. The LLM narrates around these; it doesn't invent them.
+  const realBenchmark = buildRealComparison(mainsMocks, advancedMocks);
+  const realFacts = formatRealBenchmarkFacts(realBenchmark);
+
   const prompt = canCompare
-    ? buildComparisonPrompt(mainsMocks, advancedMocks)
-    : buildSingleExamPrompt(mainsMocks.length > 0 ? "JEE Main" : "JEE Advanced", mainsMocks.length > 0 ? mainsMocks : advancedMocks);
+    ? buildComparisonPrompt(mainsMocks, advancedMocks, realFacts)
+    : buildSingleExamPrompt(
+        mainsMocks.length > 0 ? "JEE Main" : "JEE Advanced",
+        mainsMocks.length > 0 ? mainsMocks : advancedMocks,
+        realFacts
+      );
 
   try {
     const { content, model } = await groqComplete({ userPrompt: prompt, temperature: 0.4, jsonMode: true });
@@ -127,7 +164,17 @@ export default async function handler(req, res) {
       return res.status(502).json({ success: false, error: "AI returned malformed data. Try regenerating." });
     }
 
-    return res.status(200).json({ success: true, data: { ...parsed, model } });
+    // Safety net: the deterministic numbers are the source of truth, not
+    // whatever the LLM decided to write. Override the fields that must be
+    // exact rather than trusting the model to have copied them faithfully,
+    // and always include the raw computed object so the UI can render it
+    // directly even if the AI narrative text is ever unavailable.
+    if (canCompare && realBenchmark?.gapPts !== null && realBenchmark?.gapPts !== undefined) {
+      parsed.stronger_paper = realBenchmark.strongerPaper;
+      parsed.score_gap_pct = `${Math.abs(realBenchmark.gapPts)} percentile points`;
+    }
+
+    return res.status(200).json({ success: true, data: { ...parsed, model, real_benchmark: realBenchmark } });
   } catch (err) {
     const isNoKeys = err.code === "no_keys";
     return res.status(isNoKeys ? 503 : 502).json({
