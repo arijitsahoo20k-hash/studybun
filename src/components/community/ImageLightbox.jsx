@@ -18,20 +18,24 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
   const dialogRef = useRef(null);
   const touchStartX = useRef(null);
 
-  // Body scroll lock (consistent with sb-pt-overlay's fixed-inset approach).
-  // NOTE: this alone is not enough here. The overlay is position:fixed, so
-  // it visually covers the whole screen, but it's still mounted *inside*
-  // .sb-main (the app's real scrollable container — body itself never
-  // scrolls). A mouse wheel or touch-drag over the fixed overlay still
-  // resolves to .sb-main as the nearest scrollable ancestor in the DOM
-  // tree and scrolls it behind the modal, and iOS Safari in particular
-  // won't respect overflow:hidden on body for touch scrolling anyway. The
-  // wheel/touchmove listeners below are the actual fix: they intercept the
-  // events at the document level and preventDefault() them so no scroll
-  // container ever receives them while the lightbox is open.
+  // Scroll lock (consistent with sb-pt-overlay's fixed-inset approach).
+  // NOTE: body.style.overflow alone is not enough here. The overlay is
+  // position:fixed, so it visually covers the whole screen, but it's still
+  // mounted *inside* .sb-main — the app's REAL scrollable element (it, not
+  // body, carries overflow-y:auto and the visible scrollbar; body itself
+  // never scrolls). So .sb-main's own overflow must be locked directly, or
+  // its native scrollbar thumb stays live and draggable behind the modal.
+  // The wheel/touchmove listeners cover mouse-wheel and touch-drag scroll,
+  // and iOS Safari in particular won't respect overflow:hidden for touch
+  // scrolling anyway, but neither one fires for a scrollbar-thumb drag —
+  // that's a raw mousedown/mousemove on .sb-main itself — so locking
+  // .sb-main's overflow is what actually stops that path.
   useEffect(() => {
-    const prev = document.body.style.overflow;
+    const mainEl = document.querySelector(".sb-main");
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevMainOverflow = mainEl ? mainEl.style.overflow : null;
     document.body.style.overflow = "hidden";
+    if (mainEl) mainEl.style.overflow = "hidden";
 
     const preventScroll = (e) => { e.preventDefault(); };
     // wheel covers desktop mouse/trackpad scroll; touchmove covers mobile
@@ -41,7 +45,8 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
     document.addEventListener("touchmove", preventScroll, { passive: false });
 
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevBodyOverflow;
+      if (mainEl) mainEl.style.overflow = prevMainOverflow;
       document.removeEventListener("wheel", preventScroll);
       document.removeEventListener("touchmove", preventScroll);
     };
