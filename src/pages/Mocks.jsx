@@ -77,6 +77,22 @@ export default function MocksPage(p) {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // JEE Main correct/incorrect counts share one 25-question pool per subject —
+  // each field was only clamped against its own 0-25 range independently, so
+  // e.g. 25 correct + 25 incorrect (50 "questions") could be entered for a
+  // 25-question subject. Clamp the field being edited to [0, 25], then clamp
+  // the other field so the pair never sums past 25.
+  const setMainsField = (subject, type, rawValue) => {
+    const value = Math.min(Math.max(Math.trunc(num(rawValue)), 0), MAINS_QUESTIONS_PER_SUBJECT);
+    const otherType = type === "correct" ? "incorrect" : "correct";
+    const otherKey = `${subject}_${otherType}`;
+    setForm((f) => ({
+      ...f,
+      [`${subject}_${type}`]: value,
+      [otherKey]: Math.min(num(f[otherKey]), MAINS_QUESTIONS_PER_SUBJECT - value),
+    }));
+  };
+
   const toggleReview = (mockId) => {
     if (reviewOpenId === mockId) { setReviewOpenId(null); return; }
     const existing = p.mockAnalysisMap?.[mockId];
@@ -185,15 +201,28 @@ export default function MocksPage(p) {
 
 
 
+  // Sanitizes a stored correct/incorrect pair for one subject: clamps both to
+  // [0, 25] and, if their sum still exceeds 25 (e.g. a mock saved before the
+  // per-subject cap fix), trims incorrect first since correct is the more
+  // load-bearing number for the score.
+  const sanitizeMainsPair = (correctRaw, incorrectRaw) => {
+    const correct = Math.min(Math.max(Math.trunc(num(correctRaw)), 0), MAINS_QUESTIONS_PER_SUBJECT);
+    const incorrect = Math.min(Math.max(Math.trunc(num(incorrectRaw)), 0), MAINS_QUESTIONS_PER_SUBJECT - correct);
+    return [correct, incorrect];
+  };
+
   const startEdit = (m) => {
     setEditingId(m.id);
     setExamType(m.exam_type || "JEE Main");
+    const [physics_correct, physics_incorrect] = sanitizeMainsPair(m.physics_correct, m.physics_incorrect);
+    const [chemistry_correct, chemistry_incorrect] = sanitizeMainsPair(m.chemistry_correct, m.chemistry_incorrect);
+    const [math_correct, math_incorrect] = sanitizeMainsPair(m.math_correct, m.math_incorrect);
     setForm({
       exam_name: m.exam_name || "",
       mock_date: m.mock_date || todayIST(),
-      physics_correct: num(m.physics_correct), physics_incorrect: num(m.physics_incorrect),
-      chemistry_correct: num(m.chemistry_correct), chemistry_incorrect: num(m.chemistry_incorrect),
-      math_correct: num(m.math_correct), math_incorrect: num(m.math_incorrect),
+      physics_correct, physics_incorrect,
+      chemistry_correct, chemistry_incorrect,
+      math_correct, math_incorrect,
       total_marks: num(m.total_marks) || (m.exam_type === "JEE Advanced" ? 360 : MAINS_TOTAL_MARKS),
       physics_marks: num(m.physics_marks), chemistry_marks: num(m.chemistry_marks), math_marks: num(m.math_marks),
       attempted: num(m.attempted), correct: num(m.correct), incorrect: num(m.incorrect),
@@ -324,8 +353,8 @@ export default function MocksPage(p) {
             {[["physics", "Physics"], ["chemistry", "Chemistry"], ["math", "Math"]].map(([k, label]) => (
               <div key={k} style={{ marginBottom: 10 }}>
                 <div className="sb-form-grid dense">
-                  <div><label>{label} — correct</label><input type="number" min={0} max={MAINS_QUESTIONS_PER_SUBJECT} className="sb-input" value={form[`${k}_correct`]} onChange={(ev) => set(`${k}_correct`, +ev.target.value)} /></div>
-                  <div><label>{label} — incorrect</label><input type="number" min={0} max={MAINS_QUESTIONS_PER_SUBJECT} className="sb-input" value={form[`${k}_incorrect`]} onChange={(ev) => set(`${k}_incorrect`, +ev.target.value)} /></div>
+                  <div><label>{label} — correct</label><input type="number" min={0} max={MAINS_QUESTIONS_PER_SUBJECT - num(form[`${k}_incorrect`])} className="sb-input" value={form[`${k}_correct`]} onChange={(ev) => setMainsField(k, "correct", ev.target.value)} /></div>
+                  <div><label>{label} — incorrect</label><input type="number" min={0} max={MAINS_QUESTIONS_PER_SUBJECT - num(form[`${k}_correct`])} className="sb-input" value={form[`${k}_incorrect`]} onChange={(ev) => setMainsField(k, "incorrect", ev.target.value)} /></div>
                   <div><label>{label} marks</label><div className="sb-input" style={{ display: "flex", alignItems: "center", fontWeight: 800, background: "var(--bg)" }}>{mainsPreview[k]} / 100</div></div>
                 </div>
               </div>
