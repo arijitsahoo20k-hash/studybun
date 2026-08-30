@@ -1246,6 +1246,14 @@ export default function GlobalStyle() {
          cap since this content is narrower than a Periodic Table element
          card. */
       .sb-studying-dialog { width: min(420px, 100%); }
+      /* .sb-pt-dialog-close is absolutely positioned at top:14/right:14 as a
+         30px circle, so it reaches to 44px inset from the dialog's right
+         edge -- 22px further in than the dialog's own 22px padding. The
+         "N live" badge sits flush against that padding via SectionTitle's
+         right-aligned slot, so without this it collides with/tucks under
+         the close button. Reserve that extra 22px (+ a little breathing
+         room) so the badge clears the button instead of running under it. */
+      .sb-studying-dialog .sb-section-title { padding-right: 34px; }
       .sb-studying-live-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; color: var(--accent); background: var(--soft); border: 1.5px solid var(--mascot-outline); border-radius: 999px; padding: 5px 12px; flex-shrink: 0; }
       .sb-studying-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: sb-lb-pulse 1.6s ease-in-out infinite; }
 
