@@ -17,14 +17,34 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
   const [idx, setIdx] = useState(startIndex);
   const dialogRef = useRef(null);
   const touchStartX = useRef(null);
-  // Track the grid-tile index so we can return focus to the right tile on close
-  const returnFocusRef = useRef(null);
 
-  // Body scroll lock (consistent with sb-pt-overlay's fixed-inset approach)
+  // Body scroll lock (consistent with sb-pt-overlay's fixed-inset approach).
+  // NOTE: this alone is not enough here. The overlay is position:fixed, so
+  // it visually covers the whole screen, but it's still mounted *inside*
+  // .sb-main (the app's real scrollable container — body itself never
+  // scrolls). A mouse wheel or touch-drag over the fixed overlay still
+  // resolves to .sb-main as the nearest scrollable ancestor in the DOM
+  // tree and scrolls it behind the modal, and iOS Safari in particular
+  // won't respect overflow:hidden on body for touch scrolling anyway. The
+  // wheel/touchmove listeners below are the actual fix: they intercept the
+  // events at the document level and preventDefault() them so no scroll
+  // container ever receives them while the lightbox is open.
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+
+    const preventScroll = (e) => { e.preventDefault(); };
+    // wheel covers desktop mouse/trackpad scroll; touchmove covers mobile
+    // drag-scroll. Both must be non-passive so preventDefault() takes
+    // effect. touchstart/touchend (used for swipe nav below) are untouched.
+    document.addEventListener("wheel", preventScroll, { passive: false });
+    document.addEventListener("touchmove", preventScroll, { passive: false });
+
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("wheel", preventScroll);
+      document.removeEventListener("touchmove", preventScroll);
+    };
   }, []);
 
   // Focus the dialog on mount; restore focus on unmount
