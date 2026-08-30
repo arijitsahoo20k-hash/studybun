@@ -5,8 +5,9 @@ import { attachProfiles, fetchOneProfile } from "../lib/communityProfiles";
 import { compressImage } from "../lib/compressImage";
 
 const PAGE_SIZE = 20;
-const POST_SELECT = "id, user_id, type, content, subject, chapter, image_url, created_at";
-const REPLY_SELECT = "id, post_id, user_id, content, created_at";
+// Keep image_url in the select for backward-compat with existing rows
+const POST_SELECT = "id, user_id, type, content, subject, chapter, image_url, image_urls, created_at";
+const REPLY_SELECT = "id, post_id, user_id, content, image_url, created_at";
 const IMAGE_BUCKET = "community-post-images";
 
 export function useCommunityFeed() {
@@ -75,6 +76,31 @@ export function useCommunityFeed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
+  // Helper: upload a single image file, returns public URL or throws
+  const uploadImage = useCallback(async (file) => {
+    const compressed = await compressImage(file);
+    const ext = compressed.type === "image/png" ? "png" : "jpg";
+    const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from(IMAGE_BUCKET)
+      .upload(path, compressed, { contentType: compressed.type, upsert: false });
+    if (upErr) throw new Error("upload_failed");
+    return supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+  }, [userId]);
+
+  // Best-effort delete a storage path — silently no-ops if the file is gone.
+  // Declared before createPost/addReply since they call it on the
+  // upload/insert-failure cleanup paths below.
+  const deleteStoragePath = useCallback((url) => {
+    if (!url) return;
+    const marker = `/${IMAGE_BUCKET}/`;
+    const idx = url.indexOf(marker);
+    if (idx !== -1) {
+      const path = url.slice(idx + marker.length);
+      supabase.storage.from(IMAGE_BUCKET).remove([path]).catch(() => {});
+    }
+  }, []);
+
   const createPost = useCallback(
     async (form) => {
       if (!userId) return { ok: false };
@@ -82,35 +108,41 @@ export function useCommunityFeed() {
       if (!content) return { ok: false, error: "Write something first." };
       if (content.length > 2000) return { ok: false, error: "That's too long (max 2000 characters)." };
 
-      let image_url = null;
-      if (form.imageFile) {
-        try {
-          const compressed = await compressImage(form.imageFile);
-          const ext = compressed.type === "image/png" ? "png" : "jpg";
-          const path = `${userId}/${crypto.randomUUID()}.${ext}`;
-          const { error: upErr } = await supabase.storage
-            .from(IMAGE_BUCKET)
-            .upload(path, compressed, { contentType: compressed.type, upsert: false });
-          if (upErr) return { ok: false, error: "Couldn't upload that image. Try again." };
-          image_url = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
-        } catch {
-          return { ok: false, error: "Couldn't process that image. Try a different one." };
+      // form.imageFiles is an array (0-3). Backward-compat: also accept legacy form.imageFile.
+      const files = form.imageFiles?.length ? form.imageFiles : (form.imageFile ? [form.imageFile] : []);
+      let image_urls = [];
+
+      if (files.length > 0) {
+        // Upload all in parallel; if any fail, clean up whichever ones DID
+        // succeed (they'd otherwise be orphaned in storage forever, since
+        // the post that would reference them never gets created) and
+        // surface one error.
+        const results = await Promise.allSettled(files.map((f) => uploadImage(f)));
+        const failed = results.some((r) => r.status === "rejected");
+        if (failed) {
+          results.forEach((r) => { if (r.status === "fulfilled") deleteStoragePath(r.value); });
+          return { ok: false, error: "Couldn't upload one of your images. Try again." };
         }
+        image_urls = results.map((r) => r.value);
       }
 
       const { data, error: err } = await supabase
         .from("community_posts")
-        .insert({ user_id: userId, type: form.type, content, subject: form.subject || null, chapter: form.chapter || null, image_url })
+        .insert({ user_id: userId, type: form.type, content, subject: form.subject || null, chapter: form.chapter || null, image_urls })
         .select(POST_SELECT)
         .single();
       if (err) {
+        // The post row was never created, so any uploaded images from
+        // above are now orphaned too — clean them up before surfacing
+        // the error.
+        image_urls.forEach(deleteStoragePath);
         const friendly = err.message?.includes("rate_limited") ? "You've posted a lot this hour — try again later." : "Couldn't post that. Try again.";
         return { ok: false, error: friendly };
       }
       setPosts((prev) => [data, ...prev]);
       return { ok: true, data };
     },
-    [userId]
+    [userId, uploadImage, deleteStoragePath]
   );
 
   const deletePost = useCallback(async (id) => {
@@ -118,19 +150,11 @@ export function useCommunityFeed() {
     const { error: err } = await supabase.from("community_posts").delete().eq("id", id);
     if (err) return { ok: false };
     setPosts((prev) => prev.filter((p) => p.id !== id));
-    // Best-effort cleanup of the uploaded file — RLS only lets the owner
-    // (or the storage path check) remove it, so this quietly no-ops for
-    // anyone else (e.g. a moderator deleting someone else's post).
-    if (target?.image_url) {
-      const marker = `/${IMAGE_BUCKET}/`;
-      const idx = target.image_url.indexOf(marker);
-      if (idx !== -1) {
-        const path = target.image_url.slice(idx + marker.length);
-        supabase.storage.from(IMAGE_BUCKET).remove([path]).catch(() => {});
-      }
-    }
+    // Best-effort cleanup: loop new image_urls array AND legacy image_url
+    (target?.image_urls || []).forEach(deleteStoragePath);
+    deleteStoragePath(target?.image_url);
     return { ok: true };
-  }, [posts]);
+  }, [posts, deleteStoragePath]);
 
   const loadReplies = useCallback(async (postId) => {
     const { data, error } = await supabase
@@ -145,31 +169,47 @@ export function useCommunityFeed() {
   }, []);
 
   const addReply = useCallback(
-    async (postId, content) => {
+    async (postId, content, imageFile) => {
       if (!userId) return { ok: false };
       const trimmed = (content || "").trim();
       if (!trimmed) return { ok: false };
+
+      let image_url = null;
+      if (imageFile) {
+        try {
+          image_url = await uploadImage(imageFile);
+        } catch {
+          return { ok: false, error: "Couldn't upload that image. Try again." };
+        }
+      }
+
       const { data, error: err } = await supabase
         .from("community_replies")
-        .insert({ post_id: postId, user_id: userId, content: trimmed })
+        .insert({ post_id: postId, user_id: userId, content: trimmed, image_url })
         .select(REPLY_SELECT)
         .single();
       if (err) {
+        // The reply row was never created, so an already-uploaded image
+        // (if any) is now orphaned — clean it up before surfacing the error.
+        deleteStoragePath(image_url);
         const friendly = err.message?.includes("rate_limited") ? "Too many replies for now — try again soon." : "Couldn't send that reply.";
         return { ok: false, error: friendly };
       }
       setRepliesByPost((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), data] }));
       return { ok: true };
     },
-    [userId]
+    [userId, uploadImage, deleteStoragePath]
   );
 
   const deleteReply = useCallback(async (postId, replyId) => {
+    const target = (repliesByPost[postId] || []).find((r) => r.id === replyId);
     const { error: err } = await supabase.from("community_replies").delete().eq("id", replyId);
     if (err) return { ok: false };
     setRepliesByPost((prev) => ({ ...prev, [postId]: (prev[postId] || []).filter((r) => r.id !== replyId) }));
+    // Best-effort cleanup of reply image
+    deleteStoragePath(target?.image_url);
     return { ok: true };
-  }, []);
+  }, [repliesByPost, deleteStoragePath]);
 
   const toggleReaction = useCallback(
     async (postId, reactionType) => {

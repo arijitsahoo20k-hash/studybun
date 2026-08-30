@@ -23,21 +23,11 @@ export default function CommunityStyle() {
       .sb-community-shell { margin-top: 16px; }
       .sb-community-content { gap: 0; }
 
-      /* Each tab now shows exactly one card standalone, so it should read
-         like a proper full section, not a cramped little box: more padding,
-         a real min-height so short content doesn't float tiny in empty
-         space, and slightly bigger type throughout. */
       .sb-community-content > .sb-card { padding: 26px 24px; min-height: 460px; display: flex; flex-direction: column; }
       .sb-community-content .sb-section-title { font-size: 18px; margin-bottom: 18px; }
       .sb-community-content .sb-icon-badge { width: 34px; height: 34px; }
       .sb-community-content .sb-icon-badge svg { width: 18px; height: 18px; }
 
-      /* Chat is now its own tab instead of sharing space with check-ins and
-         the feed, so it gets a noticeably bigger, roomier list. The card
-         itself is given a real, fixed height and turned into a flex
-         column — the message list is the only part that stretches/scrolls,
-         the composer stays pinned full-width at the bottom instead of
-         floating as a small leftover box under a tall, mostly-empty card. */
       .sb-community-content > .sb-card.sb-community-chat {
         height: min(74vh, 700px);
         min-height: 460px;
@@ -148,9 +138,6 @@ export default function CommunityStyle() {
         30% { background: var(--accent2); }
         100% { background: var(--accent); }
       }
-      /* own bubbles sit on --accent normally, not --mascot-inner — a
-         dedicated keyframe keeps the flash starting/ending on the right
-         base color instead of visibly jumping to the wrong one */
       .sb-chat-msg.highlight:not(.own) .sb-chat-msg-content { animation: sbChatHighlight 1.2s ease; }
       .sb-chat-msg.own.highlight .sb-chat-msg-content { animation: sbChatHighlightOwn 1.2s ease; }
 
@@ -176,12 +163,6 @@ export default function CommunityStyle() {
         .sb-chat-reply-quote-text { max-width: 150px; }
       }
 
-      /* Composer: the actual thing that was left half-finished before —
-         a real full-width input bar with an auto-growing textarea (up to
-         5 lines), a proper counter, and a send button that matches the
-         rest of the app's sticker-button language instead of a bare
-         circle. Pinned to the bottom of the flex column via flex-shrink:0
-         on the card, so it always spans the full card width. */
       .sb-chat-composer {
         display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
         background: var(--card); border: 2.5px solid var(--mascot-outline); border-radius: 20px;
@@ -281,7 +262,6 @@ export default function CommunityStyle() {
       }
       .sb-checkin-weekly-count { font-size: 13px; font-weight: 800; color: var(--mascot-ink); }
 
-      /* history view — past days' goals + status, read-only */
       .sb-goal-history {
         display: flex; flex-direction: column; gap: 18px;
         max-height: 58vh; overflow-y: auto; padding-right: 2px; margin-bottom: 4px;
@@ -298,7 +278,7 @@ export default function CommunityStyle() {
       .sb-goal-history-list { margin-bottom: 0; }
       .sb-goal-item-readonly { cursor: default; }
 
-      /* ---------- feed ---------- */
+      /* ---------- feed / composer ---------- */
       .sb-composer-trigger {
         width: 100%; text-align: left; padding: 10px 14px; border-radius: 14px;
         border: 2px dashed var(--mascot-outline); background: var(--card); color: var(--muted);
@@ -316,18 +296,179 @@ export default function CommunityStyle() {
         border-radius: 12px; padding: 7px 12px; font-size: 12px; font-weight: 800; cursor: pointer;
       }
       .sb-composer-attach:hover { background: var(--soft); }
+
+      /* Multi-image thumbnail row in the composer */
+      .sb-composer-images-row {
+        display: flex; gap: 8px; flex-wrap: wrap;
+      }
+      .sb-composer-image-thumb {
+        position: relative; width: 80px; height: 80px; border-radius: 10px; overflow: hidden;
+        border: 2px solid var(--mascot-outline); box-shadow: 2px 2px 0 var(--mascot-outline); flex-shrink: 0;
+      }
+      .sb-composer-image-thumb img {
+        display: block; width: 100%; height: 100%; object-fit: cover;
+      }
+      .sb-composer-image-remove {
+        position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%;
+        border: 2px solid var(--mascot-outline); background: var(--card); color: var(--ink);
+        display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+        min-width: 22px; min-height: 22px;
+      }
+
+      /* Legacy single-image preview (kept for future non-grid uses) */
       .sb-composer-image-preview { position: relative; width: 100%; max-width: 260px; border-radius: 14px; overflow: hidden;
         border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline); }
       .sb-composer-image-preview img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
-      .sb-composer-image-remove {
-        position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%;
-        border: 2px solid var(--mascot-outline); background: var(--card); color: var(--ink);
-        display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
-      }
-      .sb-post-image-wrap { display: block; margin-top: 10px; border-radius: 14px; overflow: hidden;
-        border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline); }
-      .sb-post-image { display: block; width: 100%; max-height: 360px; object-fit: cover; }
 
+      /* ---------- post image grid ---------- */
+      .sb-post-img-grid {
+        margin-top: 10px; border-radius: 14px; overflow: hidden;
+        border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline);
+      }
+
+      /* 1 image — full width */
+      .sb-post-img-grid-1 { display: block; }
+      .sb-post-img-grid-1 .sb-post-img-tile { display: block; width: 100%; }
+      .sb-post-img-grid-1 .sb-post-img { display: block; width: 100%; max-height: 360px; object-fit: cover; }
+      /* A broken image has no intrinsic size, so unlike the 2/3-image
+         grids (sized by aspect-ratio/grid tracks regardless of the
+         <img>), this tile would otherwise collapse to ~0 height when its
+         image 404s — give the error state a visible floor. */
+      .sb-post-img-grid-1 .sb-post-img-tile--error { min-height: 200px; }
+
+      /* 2 images — equal columns */
+      .sb-post-img-grid-2 {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 3px;
+      }
+      .sb-post-img-grid-2 .sb-post-img-tile { display: block; aspect-ratio: 1/1; overflow: hidden; }
+      .sb-post-img-grid-2 .sb-post-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      /* Tiles themselves stay square-cornered — the outer .sb-post-img-grid
+         already clips to its own border-radius via overflow: hidden, so
+         individual tiles don't need (and shouldn't add) their own radius. */
+      .sb-post-img-grid-2 .sb-post-img-tile:first-child,
+      .sb-post-img-grid-2 .sb-post-img-tile:last-child { border-radius: 0; }
+
+      /* 3 images — 1 large left, 2 stacked right */
+      .sb-post-img-grid-3 {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 3px;
+        /* Fixed height so the grid doesn't blow up on tall portrait images */
+        max-height: 360px;
+      }
+      .sb-post-img-grid-3 .sb-post-img-tile { display: block; overflow: hidden; min-height: 0; }
+      .sb-post-img-grid-3 .sb-post-img-tile:first-child {
+        grid-row: 1 / 3; /* spans both rows */
+      }
+      .sb-post-img-grid-3 .sb-post-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+      /* On screens ≤480px, drop to a 3-column equal grid — CSS-only */
+      @media (max-width: 480px) {
+        .sb-post-img-grid-3 {
+          grid-template-columns: 1fr 1fr 1fr;
+          grid-template-rows: auto;
+          max-height: none;
+        }
+        .sb-post-img-grid-3 .sb-post-img-tile:first-child { grid-row: auto; }
+        .sb-post-img-grid-3 .sb-post-img-tile { aspect-ratio: 1/1; }
+      }
+
+      /* Image tile button resets */
+      .sb-post-img-tile {
+        background: none; border: none; padding: 0; cursor: pointer;
+        display: block; position: relative;
+      }
+      /* Negative offset (inset ring) instead of the usual +2px outward
+         offset — .sb-post-img-grid clips overflow for its rounded corners,
+         which would otherwise cut off an outward-offset focus ring on the
+         2nd/3rd tile. An inset ring stays fully visible either way. */
+      .sb-post-img-tile:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+      /* Broken/missing image fallback — the <img> itself gets
+         visibility:hidden on error (not display:none, which would
+         collapse the tile's box in the 1-image grid where height comes
+         from the <img>'s own rendered size) so the browser's native
+         broken-image icon/alt-text never shows, while the tile keeps its
+         layout size and shows its own background as the placeholder. */
+      .sb-post-img-tile--error { background: var(--soft); }
+
+      /* ---------- lightbox ---------- */
+      /* The overlay itself reuses .sb-pt-overlay from GlobalStyle.
+         We only add the lightbox-specific overrides here. */
+      .sb-lightbox-overlay { padding: 0; }
+
+      .sb-lightbox-dialog {
+        position: relative;
+        width: 100%; height: 100%;
+        max-width: 100vw; max-height: 100vh;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: transparent;
+        outline: none;
+      }
+
+      .sb-lightbox-close {
+        position: fixed; top: 14px; right: 14px; z-index: 100;
+        /* Inherits sb-pt-dialog-close sizing (30x30px circle) from GlobalStyle */
+        min-width: 44px; min-height: 44px; width: 44px; height: 44px;
+        background: rgba(20,16,14,.7); border-color: rgba(255,255,255,.2); color: #fff;
+      }
+      .sb-lightbox-close:hover { transform: rotate(90deg); background: rgba(20,16,14,.9); }
+
+      .sb-lightbox-img-wrap {
+        max-width: min(92vw, 1200px); max-height: min(82vh, 900px);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .sb-lightbox-img {
+        max-width: 100%; max-height: min(82vh, 900px);
+        object-fit: contain; border-radius: 8px;
+        /* Prevent dragging the image from fighting with swipe */
+        user-select: none; -webkit-user-drag: none;
+      }
+
+      .sb-lightbox-arrow {
+        position: fixed; top: 50%; transform: translateY(-50%);
+        width: 48px; height: 48px; border-radius: 50%;
+        border: 2px solid rgba(255,255,255,.25); background: rgba(20,16,14,.6); color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; z-index: 100;
+        transition: background .12s ease, transform .12s ease;
+        min-width: 44px; min-height: 44px;
+      }
+      .sb-lightbox-arrow:hover { background: rgba(20,16,14,.9); }
+      .sb-lightbox-arrow-prev { left: 14px; }
+      .sb-lightbox-arrow-next { right: 14px; }
+
+      /* Dot indicator — reuses visual language of existing dot trackers */
+      .sb-lightbox-dots {
+        display: flex; gap: 8px; align-items: center; justify-content: center;
+        margin-top: 16px; position: relative; z-index: 10;
+      }
+      .sb-lightbox-dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: rgba(255,255,255,.35); border: none; padding: 0; cursor: pointer;
+        transition: background .15s ease, transform .15s ease;
+        /* Visual dot stays 10px (via ::after below); the button itself
+           expands to a real 44px touch target, matching every other
+           tappable control in this component (arrows, close, attach). */
+        min-width: 44px; min-height: 44px;
+        display: inline-flex; align-items: center; justify-content: center;
+      }
+      .sb-lightbox-dot::after {
+        content: ""; display: block; width: 10px; height: 10px; border-radius: 50%;
+        background: rgba(255,255,255,.35);
+        transition: background .15s ease;
+      }
+      .sb-lightbox-dot.active::after { background: #fff; transform: scale(1.1); }
+      .sb-lightbox-dot:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+      @media (max-width: 640px) {
+        .sb-lightbox-arrow-prev { left: 6px; }
+        .sb-lightbox-arrow-next { right: 6px; }
+        .sb-lightbox-close { top: 8px; right: 8px; }
+      }
+
+      /* ---------- feed post ---------- */
       .sb-post-list { display: flex; flex-direction: column; gap: 14px; }
       .sb-post {
         border: 2px solid var(--mascot-outline); border-radius: 16px; padding: 12px 14px;
@@ -344,28 +485,98 @@ export default function CommunityStyle() {
       .sb-post-reaction {
         display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid var(--mascot-outline);
         background: var(--card); border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800;
-        color: var(--mascot-ink); cursor: pointer;
+        color: var(--mascot-ink); cursor: pointer; min-height: 32px;
       }
       .sb-post-reaction.active { background: var(--soft); }
-      .sb-post-replies { margin-top: 10px; padding-top: 10px; border-top: 1.5px dashed var(--mascot-outline); display: flex; flex-direction: column; gap: 6px; }
-      .sb-post-reply { font-size: 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
-      .sb-post-reply-text { flex: 1; min-width: 0; }
-      .sb-post-reply-name { font-weight: 800; margin-right: 4px; display: inline-flex; align-items: center; gap: 4px; }
-      .sb-post-reply-form { display: flex; gap: 6px; margin-top: 4px; }
-      .sb-post-reply-form input {
-        flex: 1; border: 2px solid var(--mascot-outline); border-radius: 999px; padding: 6px 12px;
-        font-size: 12px; background: var(--card); color: var(--ink);
+
+      /* ---------- replies redesign ---------- */
+      .sb-post-replies {
+        margin-top: 10px; padding-top: 10px;
+        border-top: 1.5px dashed var(--mascot-outline);
+        display: flex; flex-direction: column; gap: 0;
       }
-      .sb-post-reply-form button {
-        border: 2px solid var(--mascot-outline); background: var(--mascot-outline); color: var(--bg);
-        border-radius: 999px; padding: 6px 12px; font-weight: 800; font-size: 11.5px; cursor: pointer;
+      .sb-post-reply {
+        display: flex; align-items: flex-start; gap: 8px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--soft);
+      }
+      .sb-post-reply:last-of-type { border-bottom: none; }
+      .sb-post-reply-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+      .sb-post-reply-head {
+        display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+      }
+      .sb-post-reply-name {
+        font-weight: 800; font-size: 12px; color: var(--mascot-ink);
+        display: inline-flex; align-items: center; gap: 4px;
+      }
+      .sb-post-reply-time { font-size: 10.5px; color: var(--muted); }
+      .sb-post-reply-text { font-size: 12.5px; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+
+      /* Reply image — small tap-to-open tile */
+      .sb-post-reply-img-tile {
+        display: block; margin-top: 6px; width: 120px; height: 90px;
+        border-radius: 10px; overflow: hidden; cursor: pointer;
+        border: 2px solid var(--mascot-outline); box-shadow: 2px 2px 0 var(--mascot-outline);
+        background: none; padding: 0;
+        min-width: 44px; min-height: 44px;
+        position: relative;
+      }
+      /* Inset ring — the tile itself clips overflow for its rounded
+         corners, so an outward-offset outline would get cut off. */
+      .sb-post-reply-img-tile:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+      .sb-post-reply-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+      /* Broken/missing reply image fallback (mirrors .sb-post-img-tile--error) */
+      .sb-post-reply-img-tile--error { background: var(--soft); }
+
+      /* "Show N more replies" pagination button */
+      .sb-post-replies-show-more {
+        align-self: flex-start; font-size: 11.5px; font-weight: 800; color: var(--muted);
+        background: none; border: none; cursor: pointer; text-decoration: underline;
+        padding: 6px 0; margin: 4px 0 2px;
       }
 
-      /* ---------- shared content actions (report/block/delete) ---------- */
+      /* Reply composer form */
+      .sb-post-reply-form { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+      .sb-post-reply-input-row { display: flex; gap: 6px; align-items: center; }
+      .sb-post-reply-input-row input {
+        flex: 1; border: 2px solid var(--mascot-outline); border-radius: 999px; padding: 8px 12px;
+        font-size: 12px; background: var(--card); color: var(--ink); min-height: 40px;
+      }
+      /* Plan's own QA checklist (§8) calls for reply image-attach and
+         send touch targets at ≥40-44px, same bar as the lightbox's
+         arrows/dots/close — these were left at 36px, below that bar. */
+      .sb-post-reply-attach {
+        width: 44px; height: 44px; border-radius: 50%;
+        border: 2px solid var(--mascot-outline); background: var(--card); color: var(--mascot-ink);
+        display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+        flex-shrink: 0; min-width: 44px; min-height: 44px;
+      }
+      .sb-post-reply-attach:hover { background: var(--soft); }
+      .sb-post-reply-attach:disabled { opacity: .45; cursor: not-allowed; }
+      .sb-post-reply-input-row button[type="submit"] {
+        border: 2px solid var(--mascot-outline); background: var(--mascot-outline); color: var(--bg);
+        border-radius: 999px; padding: 6px 16px; font-weight: 800; font-size: 11.5px; cursor: pointer;
+        min-height: 44px; white-space: nowrap;
+      }
+      .sb-post-reply-input-row button[type="submit"]:disabled { opacity: .45; cursor: not-allowed; }
+
+      /* Reply image preview */
+      .sb-post-reply-img-preview {
+        position: relative; width: 80px; height: 60px; border-radius: 8px; overflow: hidden;
+        border: 2px solid var(--mascot-outline); box-shadow: 2px 2px 0 var(--mascot-outline);
+      }
+      .sb-post-reply-img-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+      .sb-post-reply-img-preview .sb-composer-image-remove {
+        width: 20px; height: 20px; min-width: 20px; min-height: 20px; top: 3px; right: 3px;
+      }
+
+      /* ---------- shared content actions ---------- */
       .sb-cm-actions { position: relative; }
       .sb-cm-actions-trigger {
         background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px;
         display: inline-flex; align-items: center; justify-content: center; border-radius: 8px;
+        min-width: 32px; min-height: 32px;
       }
       .sb-cm-actions-trigger:hover { background: var(--soft); }
 
@@ -379,6 +590,7 @@ export default function CommunityStyle() {
       .sb-cm-actions-menu button {
         display: flex; align-items: center; gap: 7px; background: none; border: none; cursor: pointer;
         text-align: left; padding: 7px 9px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--ink);
+        min-height: 40px;
       }
       .sb-cm-actions-menu button:hover { background: var(--soft); }
       .sb-cm-actions-menu button.danger { color: #C24444; }
@@ -392,13 +604,16 @@ export default function CommunityStyle() {
       .sb-cm-panel-btns button {
         border: 2px solid var(--mascot-outline); background: var(--card); border-radius: 999px;
         padding: 6px 12px; font-size: 11.5px; font-weight: 800; cursor: pointer; color: var(--ink);
+        min-height: 40px;
       }
       .sb-cm-panel-btns button.primary { background: var(--mascot-outline); color: var(--bg); }
+      .sb-cm-panel-btns button.primary.danger { background: #C24444; border-color: #C24444; color: #fff; }
       .sb-cm-error { color: #C24444; font-size: 11.5px; font-weight: 700; margin-top: 6px; }
 
       @media (max-width: 640px) {
         .sb-checkin-row { grid-template-columns: 1fr; }
         .sb-chat-msg-body { max-width: 88%; }
+        .sb-composer-image-thumb { width: 70px; height: 70px; }
       }
     `}</style>
   );

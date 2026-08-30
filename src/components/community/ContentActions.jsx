@@ -18,7 +18,7 @@ const REPORT_REASONS = [
  */
 export default function ContentActions({ authorId, currentUserId, isModerator, targetType, targetId, onReport, onBlock, onDelete }) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState(null); // null | "report" | "confirmBlock"
+  const [mode, setMode] = useState(null); // null | "report" | "confirmBlock" | "confirmDelete"
   const [reason, setReason] = useState("spam");
   const [details, setDetails] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -54,7 +54,7 @@ export default function ContentActions({ authorId, currentUserId, isModerator, t
             </button>
           )}
           {canDelete && (
-            <button type="button" role="menuitem" className="danger" onClick={() => { onDelete?.(); close(); }}>
+            <button type="button" role="menuitem" className="danger" onClick={() => setMode("confirmDelete")}>
               <Trash2 size={13} /> Delete
             </button>
           )}
@@ -95,6 +95,18 @@ export default function ContentActions({ authorId, currentUserId, isModerator, t
           <div className="sb-cm-panel-btns">
             <button type="button" onClick={close}>Cancel</button>
             <button type="button" className="primary" onClick={() => { onBlock?.(); close(); }}>Block</button>
+          </div>
+        </div>
+      )}
+      {/* Delete is permanent (removes the row + any attached image from
+          storage) with no undo, so it gets the same confirm-panel pattern
+          as Block instead of firing straight from the menu item. */}
+      {open && mode === "confirmDelete" && (
+        <div className="sb-cm-actions-panel" role="dialog" aria-label="Delete confirmation">
+          <p>Delete this {targetType === "post" ? "post" : "reply"}? This can't be undone.</p>
+          <div className="sb-cm-panel-btns">
+            <button type="button" onClick={close}>Cancel</button>
+            <button type="button" className="primary danger" onClick={() => { onDelete?.(); close(); }}>Delete</button>
           </div>
         </div>
       )}
