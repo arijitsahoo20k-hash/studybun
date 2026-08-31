@@ -57,12 +57,17 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
       const MENU_HEIGHT_ESTIMATE = 100;
       const openUp = rect.bottom + MENU_HEIGHT_ESTIMATE + 8 > window.innerHeight;
       const alignRight = rect.left > window.innerWidth / 2;
+      // Every one of these four must be set explicitly (never left
+      // `undefined`) — an omitted key doesn't reset the CSS class's own
+      // top:100%/right:0 defaults, it just leaves them active alongside
+      // whichever edge we DID set here. That combination is what stretched
+      // the menu into a full-width bar instead of a small dropdown.
       setMenuStyle({
         position: "fixed",
-        top: openUp ? undefined : rect.bottom + 4,
-        bottom: openUp ? window.innerHeight - rect.top + 4 : undefined,
-        left: alignRight ? undefined : rect.left,
-        right: alignRight ? window.innerWidth - rect.right : undefined,
+        top: openUp ? "auto" : rect.bottom + 4,
+        bottom: openUp ? window.innerHeight - rect.top + 4 : "auto",
+        left: alignRight ? "auto" : rect.left,
+        right: alignRight ? window.innerWidth - rect.right : "auto",
       });
     }
     setMenuOpen(true);

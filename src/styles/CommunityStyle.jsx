@@ -35,8 +35,8 @@ export default function CommunityStyle() {
         padding-bottom: 20px;
       }
       .sb-community-content .sb-chat-list { flex: 1; min-height: 0; max-height: none; gap: 6px; }
-      .sb-community-content .sb-chat-msg-content { font-size: 15px; padding: 10px 30px 10px 14px; }
-      .sb-community-content .sb-chat-msg.own .sb-chat-msg-content { padding: 10px 14px 10px 30px; }
+      .sb-community-content .sb-chat-msg-content { font-size: 15px; padding: 17px 30px 10px 14px; }
+      .sb-community-content .sb-chat-msg.own .sb-chat-msg-content { padding: 17px 14px 10px 30px; }
       .sb-community-content .sb-post-list { gap: 18px; }
       .sb-community-content .sb-post { padding: 16px 18px; }
       .sb-community-content .sb-post-content { font-size: 14.5px; }
@@ -120,18 +120,17 @@ export default function CommunityStyle() {
       /* ---------- chat: bubble + actions ---------- */
       .sb-chat-bubble-wrap { position: relative; display: inline-block; max-width: 100%; }
       .sb-chat-msg-content {
-        display: inline-block; margin-top: 3px; padding: 9px 30px 9px 13px; border-radius: 14px;
+        display: inline-block; margin-top: 3px; padding: 16px 30px 9px 13px; border-radius: 14px;
         background: var(--card); border: 2px solid var(--mascot-outline); font-size: 14.5px; line-height: 1.42;
         white-space: pre-wrap; word-break: break-word; box-shadow: 2px 2px 0 var(--mascot-outline);
       }
-      .sb-chat-msg.own .sb-chat-msg-content { padding: 9px 13px 9px 30px; }
+      .sb-chat-msg.own .sb-chat-msg-content { padding: 16px 13px 9px 30px; }
       .sb-chat-msg.own .sb-chat-msg-content { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
-      /* Sits inside the bubble's own bottom-right corner (bottom-left
-         for own messages) instead of floating outside it as a badge —
-         so it never overlaps the next message, and the dropdown that
-         opens below it lands in clear space under the bubble rather
-         than on top of the text. */
-      .sb-chat-msg .sb-cm-actions { position: absolute; bottom: 2px; right: 2px; }
+      /* Sits inside the bubble's own top-right corner (top-left for own
+         messages), tucked above the text — restored to the top per your
+         call. Dropdown still opens/flips off this button's own rect, so
+         it lands in clear space regardless of where the corner sits. */
+      .sb-chat-msg .sb-cm-actions { position: absolute; top: 2px; right: 2px; }
       .sb-chat-msg.own .sb-cm-actions { right: auto; left: 2px; }
       .sb-chat-msg .sb-cm-actions-trigger {
         min-width: 26px; min-height: 22px; padding: 3px; border-radius: 6px;
@@ -622,7 +621,7 @@ export default function CommunityStyle() {
       .sb-cm-actions-menu, .sb-cm-actions-panel {
         position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 41;
         background: var(--card); border: 2px solid var(--mascot-outline); border-radius: 12px;
-        box-shadow: 3px 3px 0 var(--mascot-outline); min-width: 170px; padding: 6px;
+        box-shadow: 3px 3px 0 var(--mascot-outline); min-width: 170px; width: max-content; padding: 6px;
         display: flex; flex-direction: column; gap: 2px;
       }
       .sb-cm-actions-menu button {
