@@ -669,6 +669,151 @@ export default function CommunityStyle() {
         .sb-chat-msg-body { max-width: 88%; }
         .sb-composer-image-thumb { width: 70px; height: 70px; }
       }
+
+      /* ---------- BUG FIX: bubble-wrap + image circular sizing ----------
+         .sb-chat-bubble-wrap is display:inline-block (so a text-only bubble
+         hugs its content width instead of stretching full-width). But
+         .sb-chat-img-bubble below is width:100% — a block-level percentage
+         width resolving against an inline-block parent that itself sizes
+         to its content is a circular dependency, and different browsers
+         resolve that circularity differently (some collapse the image to
+         its intrinsic size, ignoring aspect-ratio; others get it right).
+         Fix: whenever the wrapper holds an image (ChatMessage.jsx adds
+         "has-image" to the className in that case), force it to
+         display:block instead. Then width:100% has an unambiguous
+         containing block — .sb-chat-msg-body's max-width (82% / 88% on
+         mobile) — and the image always sizes correctly. Text-only bubbles
+         are untouched and keep their inline-block "hug the text" sizing. */
+      .sb-chat-bubble-wrap.has-image { display: block; }
+      /* ======================================================
+         CHAT IMAGE SHARING
+         ====================================================== */
+
+      /* ---------- composer: attach button ----------
+         Sits to the left of the textarea inside .sb-chat-composer.
+         Styled like the send button's sibling but softer (dashed border,
+         muted colour) to signal "optional add-on" vs "primary action". */
+      .sb-chat-attach-btn {
+        width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+        border: 2px dashed var(--mascot-outline); background: transparent;
+        color: var(--muted); display: inline-flex; align-items: center;
+        justify-content: center; cursor: pointer;
+        transition: background .12s ease, color .12s ease, border-style .12s ease;
+      }
+      .sb-chat-attach-btn:hover:not(:disabled) {
+        background: var(--soft); color: var(--mascot-ink); border-style: solid;
+      }
+      .sb-chat-attach-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+      /* ---------- composer: image preview strip ----------
+         Shows the selected image thumbnail above the text row, before send.
+         Same visual language as .sb-composer-image-thumb in feed composer. */
+      .sb-chat-img-preview-strip {
+        display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+      }
+      .sb-chat-img-preview-thumb {
+        position: relative; width: 72px; height: 72px;
+        border-radius: 12px; overflow: hidden; flex-shrink: 0;
+        border: 2px solid var(--mascot-outline);
+        box-shadow: 2px 2px 0 var(--mascot-outline);
+      }
+      .sb-chat-img-preview-thumb img {
+        display: block; width: 100%; height: 100%; object-fit: cover;
+      }
+      .sb-chat-img-preview-remove {
+        position: absolute; top: 4px; right: 4px;
+        width: 20px; height: 20px; min-width: 20px; min-height: 20px;
+        border-radius: 50%; border: 1.5px solid var(--mascot-outline);
+        background: var(--card); color: var(--ink);
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; padding: 0;
+      }
+      .sb-chat-img-preview-remove:hover { background: #C24444; border-color: #C24444; color: #fff; }
+
+      /* ---------- chat message: image bubble ----------
+         Renders as a pressable image tile that opens the lightbox.
+         Matches the sticker border-shadow language of the rest of the app.
+
+         Layout model (mirroring WhatsApp/TG):
+           • Image-only message  → rounded bubble, image IS the bubble.
+             No text node rendered. Bubble corners match own/other direction.
+           • Image + caption     → image on top, text content below as a
+             separate block, both inside .sb-chat-bubble-wrap.
+
+         Width: bounded by .sb-chat-msg-body's max-width (82% / 88% mobile).
+         Height: aspect-ratio container with a max-height cap so tall portrait
+         images don't push the image off screen. object-fit:cover fills it. */
+      .sb-chat-img-bubble {
+        display: block; width: 100%;
+        /* Lock the preview to a 4:3 landscape ratio — most screenshots and
+           phone photos are roughly this shape; portrait images will show the
+           top portion with a "tap to see full" affordance implied by the
+           lightbox tap target. */
+        aspect-ratio: 4 / 3;
+        max-height: 240px;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 2px solid var(--mascot-outline);
+        box-shadow: 2px 2px 0 var(--mascot-outline);
+        background: var(--soft);
+        cursor: pointer; padding: 0;
+        /* Margin below only when a text caption follows */
+        margin-bottom: 0;
+        /* Prevent the button from stretching to full body width
+           when the body content is narrower */
+        max-width: 100%;
+        /* Scale-up animation on tap — subtle, same as post image tiles */
+        transition: opacity .1s ease;
+        position: relative;
+      }
+      /* Solo image (no text): slightly taller ratio — feels more natural
+         for standalone photo shares, closer to TG's portrait-friendly crop. */
+      .sb-chat-img-bubble--solo {
+        aspect-ratio: 4 / 3;
+      }
+      /* Caption spacer: when image is followed by a text node add a small gap */
+      .sb-chat-img-bubble + .sb-chat-msg-content {
+        margin-top: 4px;
+      }
+      .sb-chat-img-bubble:hover { opacity: .92; }
+      .sb-chat-img-bubble:active { opacity: .80; }
+      /* Inset focus ring — bubble clips overflow for radius */
+      .sb-chat-img-bubble:focus-visible {
+        outline: 3px solid var(--accent); outline-offset: -3px;
+      }
+
+      .sb-chat-img-bubble-img {
+        display: block; width: 100%; height: 100%;
+        object-fit: cover; object-position: center;
+        user-select: none; -webkit-user-drag: none;
+        /* Prevent layout shift while image loads */
+        min-height: 60px;
+      }
+
+      /* Broken image fallback — same visual as .sb-post-img-tile--error */
+      .sb-chat-img-bubble--error {
+        cursor: default;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .sb-chat-img-bubble-broken {
+        font-size: 12px; color: var(--muted); font-weight: 700;
+        padding: 8px; text-align: center;
+      }
+
+      /* Own messages: the image bubble takes the accent tint on the border
+         to match the text bubble's "own" colour — keeps the visual grouping
+         coherent when both an image AND a text bubble are present. */
+      .sb-chat-msg.own .sb-chat-img-bubble {
+        border-color: var(--mascot-outline); /* same as text bubble own */
+      }
+
+      /* ---------- mobile: image bubble sizing ----------
+         On small screens the bubble is already bounded by the 88% body
+         max-width; the 240px max-height is left in place. */
+      @media (max-width: 640px) {
+        .sb-chat-img-bubble { max-height: 200px; }
+        .sb-chat-attach-btn { width: 36px; height: 36px; }
+        .sb-chat-img-preview-thumb { width: 64px; height: 64px; }
     `}</style>
   );
 }

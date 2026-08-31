@@ -94,9 +94,11 @@ export default function CommunityChat({
 
   // Sending your own message should always take you to the bottom, even
   // if you'd scrolled up to read older messages before replying.
+  // imageFile is the optional File object from ChatComposer — forwarded
+  // straight through to useCommunityChat's sendMessage which handles upload.
   const handleSendMessage = useCallback(
-    async (text, reply) => {
-      const res = await sendMessage(text, reply);
+    async (text, reply, imageFile) => {
+      const res = await sendMessage(text, reply, imageFile);
       if (res.ok) stickToBottomRef.current = true;
       return res;
     },
