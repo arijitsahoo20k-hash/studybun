@@ -30,11 +30,12 @@ export default function CommunityStyle() {
 
       .sb-community-content > .sb-card.sb-community-chat {
         height: min(74vh, 700px);
+        height: min(74dvh, 700px);
         min-height: 460px;
         padding-bottom: 20px;
       }
-      .sb-community-content .sb-chat-list { flex: 1; min-height: 0; max-height: none; gap: 14px; }
-      .sb-community-content .sb-chat-msg-content { font-size: 14.5px; padding: 10px 14px; }
+      .sb-community-content .sb-chat-list { flex: 1; min-height: 0; max-height: none; gap: 6px; }
+      .sb-community-content .sb-chat-msg-content { font-size: 15px; padding: 10px 14px; }
       .sb-community-content .sb-post-list { gap: 18px; }
       .sb-community-content .sb-post { padding: 16px 18px; }
       .sb-community-content .sb-post-content { font-size: 14.5px; }
@@ -50,17 +51,17 @@ export default function CommunityStyle() {
       @media (min-width: 641px) and (max-width: 1023px) {
         .sb-community-stats { gap: 18px; }
         .sb-community-content > .sb-card { min-height: 500px; }
-        .sb-community-content > .sb-card.sb-community-chat { height: min(76vh, 740px); }
+        .sb-community-content > .sb-card.sb-community-chat { height: min(76vh, 740px); height: min(76dvh, 740px); }
       }
 
       @media (min-width: 1024px) {
         .sb-community-content > .sb-card { padding: 32px 30px; min-height: 560px; }
-        .sb-community-content > .sb-card.sb-community-chat { height: min(78vh, 800px); padding-bottom: 26px; }
+        .sb-community-content > .sb-card.sb-community-chat { height: min(78vh, 800px); height: min(78dvh, 800px); padding-bottom: 26px; }
       }
 
       @media (max-width: 640px) {
         .sb-community-content > .sb-card { min-height: 380px; }
-        .sb-community-content > .sb-card.sb-community-chat { height: min(84vh, 680px); min-height: 480px; }
+        .sb-community-content > .sb-card.sb-community-chat { height: min(84vh, 680px); height: min(84dvh, 680px); min-height: 480px; }
       }
 
       /* ---------- check-ins list ---------- */
@@ -97,23 +98,40 @@ export default function CommunityStyle() {
         align-self: center; font-size: 11.5px; font-weight: 800; color: var(--muted); background: none;
         border: none; cursor: pointer; text-decoration: underline; padding: 6px;
       }
-      .sb-chat-msg { display: flex; gap: 8px; align-items: flex-start; position: relative; }
+      .sb-chat-msg { display: flex; gap: 8px; align-items: flex-start; position: relative; margin-bottom: 10px; }
       .sb-chat-msg.own { flex-direction: row-reverse; }
-      .sb-chat-msg-body { max-width: 78%; min-width: 0; }
+      .sb-chat-msg-avatar { width: 26px; flex-shrink: 0; }
+      .sb-chat-msg.grouped { margin-bottom: 3px; }
+      .sb-chat-msg.grouped .sb-chat-msg-avatar { visibility: hidden; }
+      .sb-chat-msg-body { max-width: 82%; min-width: 0; }
       .sb-chat-msg.own .sb-chat-msg-body { text-align: right; }
-      .sb-chat-msg-meta { display: flex; gap: 6px; align-items: baseline; font-size: 10.5px; color: var(--muted); }
+      .sb-chat-msg-meta { display: flex; gap: 6px; align-items: baseline; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
       .sb-chat-msg.own .sb-chat-msg-meta { justify-content: flex-end; }
       .sb-chat-msg-name { font-weight: 800; color: var(--mascot-ink); display: inline-flex; align-items: center; gap: 4px; }
+
+      /* ---------- chat: date separators ---------- */
+      .sb-chat-date-sep { display: flex; justify-content: center; margin: 10px 0 14px; }
+      .sb-chat-date-sep span {
+        font-size: 11px; font-weight: 800; color: var(--muted); background: var(--soft);
+        padding: 4px 13px; border-radius: 999px; border: 1.5px solid var(--mascot-outline);
+      }
+
+      /* ---------- chat: bubble + actions ---------- */
+      .sb-chat-bubble-wrap { position: relative; display: inline-block; max-width: 100%; }
       .sb-chat-msg-content {
-        display: inline-block; margin-top: 3px; padding: 8px 12px; border-radius: 14px;
-        background: var(--card); border: 2px solid var(--mascot-outline); font-size: 13px;
+        display: inline-block; margin-top: 3px; padding: 9px 13px; border-radius: 14px;
+        background: var(--card); border: 2px solid var(--mascot-outline); font-size: 14.5px; line-height: 1.42;
         white-space: pre-wrap; word-break: break-word; box-shadow: 2px 2px 0 var(--mascot-outline);
       }
       .sb-chat-msg.own .sb-chat-msg-content { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
+      .sb-chat-msg .sb-cm-actions {
+        position: absolute; top: -8px; right: -8px; background: var(--card);
+        border: 1.5px solid var(--mascot-outline); border-radius: 999px; box-shadow: 1px 1px 0 var(--mascot-outline);
+      }
+      .sb-chat-msg.own .sb-cm-actions { right: auto; left: -8px; }
+      .sb-chat-msg .sb-cm-actions-trigger { min-width: 26px; min-height: 26px; padding: 2px; }
 
       /* ---------- chat: reply ---------- */
-      .sb-chat-msg.own .sb-chat-msg-meta .sb-cm-actions { order: -1; }
-
       .sb-chat-reply-quote {
         display: flex; flex-direction: column; gap: 1px; text-align: left;
         max-width: 100%; margin-top: 4px; padding: 5px 9px;
@@ -163,6 +181,7 @@ export default function CommunityStyle() {
         .sb-chat-reply-quote-text { max-width: 150px; }
       }
 
+      .sb-chat-composer-zone { flex-shrink: 0; }
       .sb-chat-composer {
         display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
         background: var(--card); border: 2.5px solid var(--mascot-outline); border-radius: 20px;
@@ -172,7 +191,7 @@ export default function CommunityStyle() {
       .sb-chat-composer:focus-within { box-shadow: 4px 4px 0 var(--mascot-outline); transform: translate(-1px, -1px); }
       .sb-chat-composer textarea {
         flex: 1; resize: none; border: none; outline: none; background: transparent;
-        padding: 10px 0; font-family: var(--font-body); font-size: 14.5px; line-height: 1.4;
+        padding: 10px 0; font-family: var(--font-body); font-size: 15px; line-height: 1.4;
         color: var(--ink); max-height: 140px; overflow-y: auto;
       }
       .sb-chat-composer textarea::placeholder { color: var(--muted); opacity: .8; }

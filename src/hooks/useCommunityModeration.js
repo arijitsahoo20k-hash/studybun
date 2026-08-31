@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
 
@@ -57,5 +57,16 @@ export function useCommunityModeration() {
     [userId]
   );
 
-  return { blockedIds, isBlocked: (id) => blockedIds.has(id), isModerator, report, blockUser, unblockUser };
+  // isBlocked only needs to change identity when blockedIds itself
+  // changes — and the whole returned object is memoized too, so anything
+  // downstream (e.g. CommunityChat's `useMemo(..., [messages, moderation])`
+  // filter, or any future memoized child that takes `moderation` as a
+  // prop) doesn't get a new reference, and therefore an unnecessary
+  // recompute/re-render, on every single render of this hook's caller.
+  const isBlocked = useCallback((id) => blockedIds.has(id), [blockedIds]);
+
+  return useMemo(
+    () => ({ blockedIds, isBlocked, isModerator, report, blockUser, unblockUser }),
+    [blockedIds, isBlocked, isModerator, report, blockUser, unblockUser]
+  );
 }
