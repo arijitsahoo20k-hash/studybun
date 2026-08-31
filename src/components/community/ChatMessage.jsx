@@ -1,4 +1,4 @@
-import React, { forwardRef, memo, useEffect, useRef, useState } from "react";
+import React, { forwardRef, memo, useState } from "react";
 import { MoreHorizontal, Reply as ReplyIcon, Trash2 } from "lucide-react";
 import Mascot from "../Mascot";
 import { PersonBadge } from "../ui";
@@ -23,8 +23,6 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
   ref
 ) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuStyle, setMenuStyle] = useState(null);
-  const triggerRef = useRef(null);
   const name = isOwn ? (myName || "You") : (message.profiles?.name || "Study Buddy");
   const mascotSpecies = isOwn ? (myMascotSpecies || "bunny") : (message.profiles?.mascot || "bunny");
   const canDelete = isOwn || isModerator;
@@ -36,58 +34,17 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
     onReply({ id: message.id, user_id: message.user_id, name, content: message.content });
   };
 
-  // The chat list scrolls (`overflow-y: auto` on `.sb-chat-list`), and the
-  // actions menu used to be positioned absolute *inside* it — which meant
-  // opening it on a message near the bottom of the visible scroll area
-  // clipped the dropdown against that boundary, with no way to scroll to
-  // reveal the clipped part (an absolutely-positioned popup doesn't add to
-  // its scroll ancestor's scrollable height). That hit exactly the
-  // messages people interact with most — the newest ones — and more often
-  // the busier the channel. Computing fixed viewport coordinates from the
-  // trigger button's own position sidesteps the scroll-container clipping
-  // entirely, and flips the menu upward/leftward when it would otherwise
-  // run off the edge of the screen.
-  const toggleMenu = () => {
-    if (menuOpen) {
-      setMenuOpen(false);
-      return;
-    }
-    const rect = triggerRef.current?.getBoundingClientRect();
-    if (rect) {
-      const MENU_HEIGHT_ESTIMATE = 100;
-      const openUp = rect.bottom + MENU_HEIGHT_ESTIMATE + 8 > window.innerHeight;
-      const alignRight = rect.left > window.innerWidth / 2;
-      // Every one of these four must be set explicitly (never left
-      // `undefined`) — an omitted key doesn't reset the CSS class's own
-      // top:100%/right:0 defaults, it just leaves them active alongside
-      // whichever edge we DID set here. That combination is what stretched
-      // the menu into a full-width bar instead of a small dropdown.
-      setMenuStyle({
-        position: "fixed",
-        top: openUp ? "auto" : rect.bottom + 4,
-        bottom: openUp ? window.innerHeight - rect.top + 4 : "auto",
-        left: alignRight ? "auto" : rect.left,
-        right: alignRight ? window.innerWidth - rect.right : "auto",
-      });
-    }
-    setMenuOpen(true);
-  };
-
-  // Scrolling the chat list (or resizing the window) moves the message
-  // out from under a fixed-position menu that isn't scroll-anchored to
-  // it — close it rather than leave a stale dropdown floating in place.
-  // Scroll events don't bubble, but a capture-phase listener on window
-  // still fires for them regardless of where in the DOM they originate.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = () => setMenuOpen(false);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
-    return () => {
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("resize", close);
-    };
-  }, [menuOpen]);
+  // Reverted the fixed-position/getBoundingClientRect approach from the
+  // last redesign — it was meant to dodge scroll-container clipping, but
+  // it kept mispositioning the menu (see the two bug reports before this
+  // one: full-width stretch, then landing far from the trigger). A plain
+  // relative dropdown is what the old file had, and it's what's reliable:
+  // the menu is a normal absolutely-positioned child of the trigger's own
+  // wrapper, so it always opens right where the trigger actually is and
+  // scrolls together with the message. The one known tradeoff (also true
+  // of the old file) is that opening it on a message right at the bottom
+  // edge of the scrollable message list can clip the dropdown against
+  // that edge — acceptable, and far better than teleporting elsewhere.
 
   return (
     <div ref={ref} className={`sb-chat-msg ${isOwn ? "own" : ""} ${highlighted ? "highlight" : ""} ${showMeta ? "" : "grouped"}`}>
@@ -121,11 +78,11 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
               completely lost for anything but the first message in a group. */}
           <div className="sb-chat-msg-content" title={showMeta ? undefined : time}>{message.content}</div>
           <div className="sb-cm-actions">
-            <button ref={triggerRef} type="button" className="sb-cm-actions-trigger" onClick={toggleMenu} aria-label="Message actions">
+            <button type="button" className="sb-cm-actions-trigger" onClick={() => setMenuOpen((v) => !v)} aria-label="Message actions">
               <MoreHorizontal size={16} />
             </button>
             {menuOpen && (
-              <div className="sb-cm-actions-menu" role="menu" style={menuStyle || undefined}>
+              <div className="sb-cm-actions-menu" role="menu">
                 <button type="button" role="menuitem" onClick={handleReply}>
                   <ReplyIcon size={13} /> Reply
                 </button>
