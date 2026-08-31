@@ -103,7 +103,7 @@ export default function CommunityStyle() {
       .sb-chat-msg-avatar { width: 26px; flex-shrink: 0; }
       .sb-chat-msg.grouped { margin-bottom: 3px; }
       .sb-chat-msg.grouped .sb-chat-msg-avatar { visibility: hidden; }
-      .sb-chat-msg-body { max-width: 82%; min-width: 0; }
+      .sb-chat-msg-body { max-width: 82%; min-width: 0; flex-shrink: 1; }
       .sb-chat-msg.own .sb-chat-msg-body { text-align: right; }
       .sb-chat-msg-meta { display: flex; gap: 6px; align-items: baseline; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
       .sb-chat-msg.own .sb-chat-msg-meta { justify-content: flex-end; }
@@ -125,11 +125,37 @@ export default function CommunityStyle() {
       }
       .sb-chat-msg.own .sb-chat-msg-content { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
 
-      /* Actions trigger lives in the meta row (name/time line), same as
-         the old file — not floating on the bubble itself. That's also
-         why it only shows on the first message of a grouped run: no
-         meta row, no anchor point, same tradeoff the old file always had. */
-      .sb-chat-msg.own .sb-chat-msg-meta .sb-cm-actions { order: -1; }
+      /* ---------- chat: hover/tap-to-reveal message actions ----------
+         Lives as its own flex sibling (avatar, body, actions) instead of
+         inside the meta row, so it's there for every message — including
+         grouped ones with no meta row of their own. row-reverse on
+         .own handles the mirroring for free: the same DOM order (avatar,
+         body, actions) puts actions after the avatar for incoming messages
+         and before it (i.e. on the bubble's left) for own ones.
+         Reserved as a real flex item (not absolutely positioned) so it
+         never overlaps a tightly-grouped message above/below it and never
+         has to fight the bubble for space — it just quietly takes its
+         share of the row, invisible until hovered or tapped. Desktop gets
+         it via plain :hover; touch devices toggle the same reveal with
+         .active (JS, since :hover isn't reliable on touch) — see
+         ChatMessage.jsx for how that's opened and closed. */
+      .sb-chat-msg-actions {
+        display: flex; align-items: center; gap: 4px; align-self: center; flex-shrink: 0;
+        opacity: 0; transform: scale(0.92); pointer-events: none;
+        transition: opacity .12s ease, transform .12s ease;
+      }
+      .sb-chat-msg:hover .sb-chat-msg-actions,
+      .sb-chat-msg.active .sb-chat-msg-actions {
+        opacity: 1; transform: scale(1); pointer-events: auto;
+      }
+      .sb-chat-msg-action-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border-radius: 999px; flex-shrink: 0;
+        background: var(--card); border: 2px solid var(--mascot-outline); color: var(--muted);
+        cursor: pointer; box-shadow: 1px 1px 0 var(--mascot-outline);
+      }
+      .sb-chat-msg-action-btn:hover { background: var(--soft); color: var(--ink); }
+      .sb-chat-msg-action-btn.danger:hover { background: #C24444; border-color: #C24444; color: #fff; }
 
       /* ---------- chat: reply ---------- */
       .sb-chat-reply-quote {
