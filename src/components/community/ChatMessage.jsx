@@ -56,6 +56,24 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
           <div className="sb-chat-msg-meta">
             <span className="sb-chat-msg-name">{name}<PersonBadge founderIds={founderIds} memberIds={memberIds} userId={message.user_id} /></span>
             <span className="sb-chat-msg-time">{time}</span>
+            <div className="sb-cm-actions">
+              <button type="button" className="sb-cm-actions-trigger" onClick={() => setMenuOpen((v) => !v)} aria-label="Message actions">
+                <MoreHorizontal size={16} />
+              </button>
+              {menuOpen && (
+                <div className="sb-cm-actions-menu" role="menu">
+                  <button type="button" role="menuitem" onClick={handleReply}>
+                    <ReplyIcon size={13} /> Reply
+                  </button>
+                  {canDelete && (
+                    <button type="button" role="menuitem" className="danger" onClick={() => { setMenuOpen(false); onDelete(message.id); }}>
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  )}
+                </div>
+              )}
+              {menuOpen && <div className="sb-cm-actions-backdrop" onClick={() => setMenuOpen(false)} />}
+            </div>
           </div>
         )}
 
@@ -77,24 +95,6 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
               messages), so it's still available on hover instead of being
               completely lost for anything but the first message in a group. */}
           <div className="sb-chat-msg-content" title={showMeta ? undefined : time}>{message.content}</div>
-          <div className="sb-cm-actions">
-            <button type="button" className="sb-cm-actions-trigger" onClick={() => setMenuOpen((v) => !v)} aria-label="Message actions">
-              <MoreHorizontal size={16} />
-            </button>
-            {menuOpen && (
-              <div className="sb-cm-actions-menu" role="menu">
-                <button type="button" role="menuitem" onClick={handleReply}>
-                  <ReplyIcon size={13} /> Reply
-                </button>
-                {canDelete && (
-                  <button type="button" role="menuitem" className="danger" onClick={() => { setMenuOpen(false); onDelete(message.id); }}>
-                    <Trash2 size={13} /> Delete
-                  </button>
-                )}
-              </div>
-            )}
-            {menuOpen && <div className="sb-cm-actions-backdrop" onClick={() => setMenuOpen(false)} />}
-          </div>
         </div>
       </div>
     </div>

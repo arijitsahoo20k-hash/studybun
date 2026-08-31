@@ -35,8 +35,7 @@ export default function CommunityStyle() {
         padding-bottom: 20px;
       }
       .sb-community-content .sb-chat-list { flex: 1; min-height: 0; max-height: none; gap: 6px; }
-      .sb-community-content .sb-chat-msg-content { font-size: 15px; padding: 17px 30px 10px 14px; }
-      .sb-community-content .sb-chat-msg.own .sb-chat-msg-content { padding: 17px 14px 10px 30px; }
+      .sb-community-content .sb-chat-msg-content { font-size: 15px; padding: 10px 14px; }
       .sb-community-content .sb-post-list { gap: 18px; }
       .sb-community-content .sb-post { padding: 16px 18px; }
       .sb-community-content .sb-post-content { font-size: 14.5px; }
@@ -120,25 +119,17 @@ export default function CommunityStyle() {
       /* ---------- chat: bubble + actions ---------- */
       .sb-chat-bubble-wrap { position: relative; display: inline-block; max-width: 100%; }
       .sb-chat-msg-content {
-        display: inline-block; margin-top: 3px; padding: 16px 30px 9px 13px; border-radius: 14px;
+        display: inline-block; margin-top: 3px; padding: 9px 13px; border-radius: 14px;
         background: var(--card); border: 2px solid var(--mascot-outline); font-size: 14.5px; line-height: 1.42;
         white-space: pre-wrap; word-break: break-word; box-shadow: 2px 2px 0 var(--mascot-outline);
       }
-      .sb-chat-msg.own .sb-chat-msg-content { padding: 16px 13px 9px 30px; }
       .sb-chat-msg.own .sb-chat-msg-content { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
-      /* Sits inside the bubble's own top-right corner (top-left for own
-         messages), tucked above the text — restored to the top per your
-         call. Dropdown still opens/flips off this button's own rect, so
-         it lands in clear space regardless of where the corner sits. */
-      .sb-chat-msg .sb-cm-actions { position: absolute; top: 2px; right: 2px; }
-      .sb-chat-msg.own .sb-cm-actions { right: auto; left: 2px; }
-      .sb-chat-msg .sb-cm-actions-trigger {
-        min-width: 26px; min-height: 22px; padding: 3px; border-radius: 6px;
-        color: var(--muted); opacity: .65;
-      }
-      .sb-chat-msg.own .sb-cm-actions-trigger { color: rgba(255,255,255,.75); }
-      .sb-chat-msg .sb-cm-actions-trigger:hover,
-      .sb-chat-msg .sb-cm-actions-trigger:active { opacity: 1; background: rgba(0,0,0,.08); }
+
+      /* Actions trigger lives in the meta row (name/time line), same as
+         the old file — not floating on the bubble itself. That's also
+         why it only shows on the first message of a grouped run: no
+         meta row, no anchor point, same tradeoff the old file always had. */
+      .sb-chat-msg.own .sb-chat-msg-meta .sb-cm-actions { order: -1; }
 
       /* ---------- chat: reply ---------- */
       .sb-chat-reply-quote {
