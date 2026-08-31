@@ -35,7 +35,8 @@ export default function CommunityStyle() {
         padding-bottom: 20px;
       }
       .sb-community-content .sb-chat-list { flex: 1; min-height: 0; max-height: none; gap: 6px; }
-      .sb-community-content .sb-chat-msg-content { font-size: 15px; padding: 10px 14px; }
+      .sb-community-content .sb-chat-msg-content { font-size: 15px; padding: 10px 30px 10px 14px; }
+      .sb-community-content .sb-chat-msg.own .sb-chat-msg-content { padding: 10px 14px 10px 30px; }
       .sb-community-content .sb-post-list { gap: 18px; }
       .sb-community-content .sb-post { padding: 16px 18px; }
       .sb-community-content .sb-post-content { font-size: 14.5px; }
@@ -119,17 +120,26 @@ export default function CommunityStyle() {
       /* ---------- chat: bubble + actions ---------- */
       .sb-chat-bubble-wrap { position: relative; display: inline-block; max-width: 100%; }
       .sb-chat-msg-content {
-        display: inline-block; margin-top: 3px; padding: 9px 13px; border-radius: 14px;
+        display: inline-block; margin-top: 3px; padding: 9px 30px 9px 13px; border-radius: 14px;
         background: var(--card); border: 2px solid var(--mascot-outline); font-size: 14.5px; line-height: 1.42;
         white-space: pre-wrap; word-break: break-word; box-shadow: 2px 2px 0 var(--mascot-outline);
       }
+      .sb-chat-msg.own .sb-chat-msg-content { padding: 9px 13px 9px 30px; }
       .sb-chat-msg.own .sb-chat-msg-content { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
-      .sb-chat-msg .sb-cm-actions {
-        position: absolute; top: -8px; right: -8px; background: var(--card);
-        border: 1.5px solid var(--mascot-outline); border-radius: 999px; box-shadow: 1px 1px 0 var(--mascot-outline);
+      /* Sits inside the bubble's own bottom-right corner (bottom-left
+         for own messages) instead of floating outside it as a badge —
+         so it never overlaps the next message, and the dropdown that
+         opens below it lands in clear space under the bubble rather
+         than on top of the text. */
+      .sb-chat-msg .sb-cm-actions { position: absolute; bottom: 2px; right: 2px; }
+      .sb-chat-msg.own .sb-cm-actions { right: auto; left: 2px; }
+      .sb-chat-msg .sb-cm-actions-trigger {
+        min-width: 26px; min-height: 22px; padding: 3px; border-radius: 6px;
+        color: var(--muted); opacity: .65;
       }
-      .sb-chat-msg.own .sb-cm-actions { right: auto; left: -8px; }
-      .sb-chat-msg .sb-cm-actions-trigger { min-width: 26px; min-height: 26px; padding: 2px; }
+      .sb-chat-msg.own .sb-cm-actions-trigger { color: rgba(255,255,255,.75); }
+      .sb-chat-msg .sb-cm-actions-trigger:hover,
+      .sb-chat-msg .sb-cm-actions-trigger:active { opacity: 1; background: rgba(0,0,0,.08); }
 
       /* ---------- chat: reply ---------- */
       .sb-chat-reply-quote {
@@ -179,6 +189,15 @@ export default function CommunityStyle() {
 
       @media (max-width: 640px) {
         .sb-chat-reply-quote-text { max-width: 150px; }
+        /* Composer felt small on phones — bump the tap/typing area and
+           push the textarea to 16px. Below 16px, iOS Safari zooms the
+           whole page in on focus, which is part of why this read as
+           "small": the field itself was fine but the page jumped. */
+        .sb-chat-composer { padding: 10px 8px 10px 16px; border-radius: 22px; }
+        .sb-chat-composer textarea {
+          font-size: 16px; padding: 12px 0; min-height: 24px; max-height: 160px;
+        }
+        .sb-chat-composer button { width: 46px; height: 46px; }
       }
 
       .sb-chat-composer-zone { flex-shrink: 0; }
@@ -192,7 +211,7 @@ export default function CommunityStyle() {
       .sb-chat-composer textarea {
         flex: 1; resize: none; border: none; outline: none; background: transparent;
         padding: 10px 0; font-family: var(--font-body); font-size: 15px; line-height: 1.4;
-        color: var(--ink); max-height: 140px; overflow-y: auto;
+        color: var(--ink); max-height: 140px; overflow-y: auto; min-height: 22px;
       }
       .sb-chat-composer textarea::placeholder { color: var(--muted); opacity: .8; }
       .sb-chat-composer button {
