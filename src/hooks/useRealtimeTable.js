@@ -80,14 +80,23 @@ export function useRealtimeTable(table, { orderBy = "created_at", ascending = fa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [table, userId, enabled]);
 
+  // Pass { idempotencyKey } for any insert a caller might retry with the
+  // identical payload (see migration_retry_idempotency.sql). Without a key
+  // this is a plain insert, unchanged. With one, it upserts on
+  // (user_id, client_token): a genuinely fresh key inserts normally; the
+  // SAME key sent twice (a retry after the original write actually
+  // committed but the client never saw the response) updates that same row
+  // in place and returns it, instead of creating a duplicate. Only tables
+  // with a client_token column + matching unique index support this — see
+  // the migration for which ones do.
   const insert = useCallback(
-    async (row) => {
+    async (row, { idempotencyKey } = {}) => {
       if (!userId) return null;
-      const { data, error: err } = await supabase
-        .from(table)
-        .insert({ ...row, user_id: userId })
-        .select()
-        .single();
+      const payload = { ...row, user_id: userId };
+      const query = idempotencyKey
+        ? supabase.from(table).upsert({ ...payload, client_token: idempotencyKey }, { onConflict: "user_id,client_token" }).select().single()
+        : supabase.from(table).insert(payload).select().single();
+      const { data, error: err } = await query;
       if (err) { setError(err); console.error(`[StudyBun] insert into ${table} failed:`, err.message); return null; }
       // Optimistic add in case the realtime echo is slow/disabled on this table.
       setRows((prev) => (prev.some((r) => r.id === data.id) ? prev : [data, ...prev]));

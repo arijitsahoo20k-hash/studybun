@@ -525,22 +525,50 @@ create policy "leaderboard public read" on leaderboard_public
 --     mismatched pair is a sign of a hand-crafted fake row).
 --   • Chapter credit only fires once, off completed_at (see above),
 --     not off updated_at — so it can't be "refreshed" by unrelated edits.
---   • Streak uses the same "must have studied today to count today"
---     rule as the rest of the app (Dashboard/Achievements), so the
---     leaderboard never contradicts what the user sees elsewhere.
+--   • Streak only truly resets after a full 2-day gap (today not being
+--     logged yet doesn't zero it out — see lb_calc_streak below), matching
+--     the rest of the app (Dashboard/Achievements), so the leaderboard
+--     never contradicts what the user sees elsewhere.
 --   • Achievements/badges are deliberately NOT part of the score —
 --     that table only enforces row ownership, not that the badge was
 --     genuinely earned, so it isn't a trustworthy scoring input.
+--   • lb_recompute() is serialized per-user via a Postgres advisory lock
+--     (see supabase/migration_leaderboard_integrity.sql) so two
+--     near-simultaneous writes for the same account (two devices, two
+--     tabs, a flaky retry) can never race and silently drop or clobber
+--     each other's points — the classic failure mode of a "recompute
+--     from scratch and overwrite" scoring function without that lock.
 create or replace function lb_calc_streak(uid uuid) returns int
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  d date := current_date;
+  -- StudyBun's "day" is IST (Asia/Kolkata), not whatever timezone this
+  -- Postgres session defaults to (Supabase defaults to UTC).
+  d date := (now() at time zone 'Asia/Kolkata')::date;
   streak_n int := 0;
   has_day boolean;
+  today_logged boolean;
 begin
+  -- If today has no session yet, don't let that alone zero the streak out
+  -- (the day isn't over). Start counting from yesterday instead, so the
+  -- streak only truly resets once a full day has gone by with nothing
+  -- logged — a genuine 2-day gap (today + yesterday both empty).
+  select
+    exists (
+      select 1 from study_sessions
+      where user_id = uid and session_date = d and minutes >= 5
+    )
+    or exists (
+      select 1 from timer_sessions
+      where user_id = uid and completed = true and actual_minutes >= 10
+        and (created_at at time zone 'Asia/Kolkata')::date = d
+    )
+  into today_logged;
+  if not today_logged then
+    d := d - 1;
+  end if;
   loop
     select
       exists (
@@ -550,7 +578,7 @@ begin
       or exists (
         select 1 from timer_sessions
         where user_id = uid and completed = true and actual_minutes >= 10
-          and (created_at at time zone 'utc')::date = d
+          and (created_at at time zone 'Asia/Kolkata')::date = d
       )
     into has_day;
     exit when not has_day or streak_n > 730;
@@ -568,7 +596,7 @@ security definer
 set search_path = public
 as $$
 declare
-  window_start date := current_date - 29;
+  window_start date := (now() at time zone 'Asia/Kolkata')::date - 29;
   active_days   int;
   sessions_n    int;
   timer_mins    numeric;
@@ -579,31 +607,43 @@ declare
   streak_n      int;
   score         numeric;
   prof          record;
+  prior_score   numeric;
 begin
+  -- Serialize all recomputes for this one user — see the anti-cheat note
+  -- above and supabase/migration_leaderboard_integrity.sql for the full
+  -- race this closes. Auto-releases at commit/rollback (xact lock), so
+  -- there's nothing to separately unlock and nothing that can leak.
+  perform pg_advisory_xact_lock(hashtext(uid::text));
+
+  select study_score into prior_score from leaderboard_public where user_id = uid;
+
   -- distinct genuine study days in the window
   select count(distinct d) into active_days from (
     select session_date as d from study_sessions
       where user_id = uid and minutes >= 5 and session_date >= window_start
     union
-    select (created_at at time zone 'utc')::date as d from timer_sessions
+    select (created_at at time zone 'Asia/Kolkata')::date as d from timer_sessions
       where user_id = uid and completed = true and actual_minutes >= 10
-        and (created_at at time zone 'utc')::date >= window_start
+        and (created_at at time zone 'Asia/Kolkata')::date >= window_start
   ) t;
 
-  -- valid completed focus sessions, capped at 8/day equivalent (240 over the window)
+  -- valid completed focus sessions, capped at 8/day equivalent (240 over the window).
+  -- planned_minutes must be present AND matched — a null plan (Stopwatch)
+  -- can never itself satisfy this (see migration_stopwatch_anticheat.sql).
   select least(count(*), 240) into sessions_n
   from timer_sessions
   where user_id = uid and completed = true
     and actual_minutes >= 10 and actual_minutes <= 240
-    and (planned_minutes is null or abs(actual_minutes - planned_minutes) <= greatest(3, planned_minutes * 0.15))
-    and (created_at at time zone 'utc')::date >= window_start;
+    and planned_minutes is not null
+    and abs(actual_minutes - planned_minutes) <= greatest(3, planned_minutes * 0.15)
+    and (created_at at time zone 'Asia/Kolkata')::date >= window_start;
 
   -- trusted (timer-verified) minutes, capped 300/day then summed
   select coalesce(sum(least(daily, 300)), 0) into timer_mins from (
-    select (created_at at time zone 'utc')::date as d, sum(actual_minutes) as daily
+    select (created_at at time zone 'Asia/Kolkata')::date as d, sum(actual_minutes) as daily
     from timer_sessions
     where user_id = uid and completed = true and actual_minutes between 10 and 600
-      and (created_at at time zone 'utc')::date >= window_start
+      and (created_at at time zone 'Asia/Kolkata')::date >= window_start
     group by 1
   ) t;
 
@@ -664,9 +704,92 @@ begin
     current_streak = excluded.current_streak,
     active_days_30 = excluded.active_days_30,
     updated_at     = now();
+
+  -- Audit trail: only log a real change, and only once there's a prior
+  -- value to compare against (null the very first time this user is ever
+  -- scored — a starting point, not a "change").
+  if prior_score is not null and round(prior_score, 2) is distinct from round(score, 2) then
+    insert into leaderboard_score_log (user_id, old_score, new_score, delta)
+    values (uid, prior_score, score, score - prior_score);
+  end if;
+
+  -- Keep each user's log trimmed to their most recent 200 entries.
+  delete from leaderboard_score_log
+  where user_id = uid
+    and id not in (
+      select id from leaderboard_score_log
+      where user_id = uid
+      order by computed_at desc
+      limit 200
+    );
 end;
 $$;
 revoke execute on function lb_recompute(uuid) from public;
+
+-- ---------- 4b. audit log + self-heal RPCs ----------
+-- See supabase/migration_leaderboard_integrity.sql for the full writeup of
+-- the race this closes and how the client uses these.
+create table if not exists leaderboard_score_log (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  old_score numeric not null,
+  new_score numeric not null,
+  delta numeric not null,
+  computed_at timestamptz not null default now()
+);
+create index if not exists idx_leaderboard_score_log_user_time on leaderboard_score_log(user_id, computed_at desc);
+
+alter table leaderboard_score_log enable row level security;
+drop policy if exists "own score log read" on leaderboard_score_log;
+create policy "own score log read" on leaderboard_score_log
+  for select using (auth.uid() = user_id);
+
+create or replace function lb_recompute_and_report()
+returns table (old_score numeric, new_score numeric, had_prior_row boolean)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  prev numeric;
+  cur numeric;
+  existed boolean := false;
+begin
+  if uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select study_score into prev from leaderboard_public where user_id = uid;
+  existed := found;
+
+  perform lb_recompute(uid);
+
+  select study_score into cur from leaderboard_public where user_id = uid;
+
+  return query select prev, coalesce(cur, 0), existed;
+end;
+$$;
+grant execute on function lb_recompute_and_report() to authenticated;
+
+-- One user per call, deliberately not a loop-over-everyone-in-one-function
+-- — see supabase/migration_leaderboard_integrity.sql for why (a single
+-- batched transaction would hold every user's advisory lock until the
+-- whole batch finished). api/cron/leaderboard-reconcile.js calls this once
+-- per user so each recompute is its own transaction, its lock released
+-- immediately after.
+create or replace function lb_recompute_for_user(target_uid uuid) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform lb_recompute(target_uid);
+end;
+$$;
+revoke execute on function lb_recompute_for_user(uuid) from public;
+revoke execute on function lb_recompute_for_user(uuid) from authenticated;
+grant execute on function lb_recompute_for_user(uuid) to service_role;
 
 -- ---------- 5. triggers: keep it live ----------
 create or replace function lb_trg_recompute() returns trigger

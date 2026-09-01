@@ -11,6 +11,7 @@ import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS, defaultChapterProgressFor } fro
 import { useDeviceRow, useRealtimeTable, useChapterProgress, useMockAnalysis } from "./hooks/useRealtimeTable";
 import { useFocusTimer } from "./hooks/useFocusTimer";
 import { useStudyPresence } from "./hooks/useStudyPresence";
+import { useLeaderboardReconciliation } from "./hooks/useLeaderboardReconciliation";
 import { getActiveRadio } from "./lib/radio";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { useAuth } from "./lib/AuthContext";
@@ -189,9 +190,25 @@ export default function App() {
   // supabase/migration_leaderboard.sql (lb_recompute's planned-vs-actual
   // tolerance) is what fairly distinguishes a full completion from an early
   // save, not this flag.
+  // Fire-and-forget here would mean a failed insert (bad network, expired
+  // session, etc.) silently drops the entire completed session — no
+  // console.error is visible to the user, and this is the single biggest
+  // point-earning action in the app. So this awaits the insert and, on
+  // failure, surfaces a toast with a Retry button that re-attempts the same
+  // payload rather than losing it. clientToken is minted once per attempt
+  // (not per network call) and reused by the retry closure, so if the
+  // original insert actually committed and only the response was lost, the
+  // retry upserts onto that same row (see insert()'s idempotencyKey +
+  // migration_retry_idempotency.sql) instead of creating a duplicate.
+  const saveTimerSession = async (payload, clientToken = crypto.randomUUID()) => {
+    const row = await timerSessionsQ.insert(payload, { idempotencyKey: clientToken });
+    if (!row) {
+      showToast("Couldn't save your session — check your connection.", () => saveTimerSession(payload, clientToken), "Retry");
+    }
+  };
   const focusTimer = useFocusTimer({
     onComplete: ({ mode, plannedMinutes, actualMinutes, completed }) => {
-      timerSessionsQ.insert({ mode, planned_minutes: plannedMinutes, actual_minutes: actualMinutes, completed });
+      saveTimerSession({ mode, planned_minutes: plannedMinutes, actual_minutes: actualMinutes, completed });
     },
   });
   // Derived here (not inside FocusTimer's page component) for the same
@@ -419,9 +436,12 @@ export default function App() {
   };
 
   // Pass an `undo` callback for any action that can't otherwise be reversed —
-  // the toast then stays up longer and shows an Undo button.
-  const showToast = (msg, undo) => {
-    setToast({ message: msg, undo: undo || null });
+  // the toast then stays up longer and shows a button, labeled "Undo" by
+  // default. Pass `undoLabel` to relabel that button for a different
+  // purpose — e.g. "Retry" when the callback re-attempts a failed save
+  // rather than reversing a successful one.
+  const showToast = (msg, undo, undoLabel) => {
+    setToast({ message: msg, undo: undo || null, undoLabel: undoLabel || "Undo" });
     setHopping(true);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), undo ? 5200 : 2600);
@@ -436,6 +456,16 @@ export default function App() {
     setCelebrateType(type);
     setTimeout(() => setCelebrateType(null), type === "petals" ? 1900 : 1400);
   };
+
+  // Self-heals the leaderboard/points system: forces a fresh, race-free
+  // server recompute on app open and on tab/app refocus (see
+  // useLeaderboardReconciliation.js + supabase/migration_leaderboard_integrity.sql),
+  // and surfaces a toast if it finds points that had gone missing from an
+  // earlier, since-fixed race and just got added back.
+  useLeaderboardReconciliation(user?.id, (delta) => {
+    const rounded = Math.round(delta).toLocaleString();
+    showToast(`✨ Found and added ${rounded} pts that were missing — you're all caught up!`);
+  });
 
   const theme = THEMES[profile?.theme] || THEMES["Sakura Bloom"];
   const mascot = profile?.mascot || "bunny";
@@ -870,8 +900,12 @@ export default function App() {
   }, [dataReady, user?.id, tasks]);
 
   /* ---------- actions ---------- */
-  const addSession = async (payload) => {
-    const row = await sessionsQ.insert({ session_date: todayStr(), ...payload });
+  const addSession = async (payload, clientToken = crypto.randomUUID()) => {
+    const row = await sessionsQ.insert({ session_date: todayStr(), ...payload }, { idempotencyKey: clientToken });
+    if (!row) {
+      showToast("Couldn't log that session — check your connection.", () => addSession(payload, clientToken), "Retry");
+      return;
+    }
     let chapterBumped = false;
     if (payload.subject && payload.chapter) {
       const cur = getChStatus(`${payload.subject}::${payload.chapter}`);
@@ -881,7 +915,7 @@ export default function App() {
       }
     }
     showToast("Session logged — nice work! ✨", () => {
-      if (row) sessionsQ.remove(row.id);
+      sessionsQ.remove(row.id);
       if (chapterBumped) chapters.upsert(payload.subject, payload.chapter, { status: "Not Started" });
     });
   };
@@ -891,7 +925,11 @@ export default function App() {
   const completeChapter = async (c) => {
     const prior = getChStatus(c.key);
     const priorSnapshot = { status: prior.status, last_revised: prior.last_revised, next_revision: prior.next_revision };
-    await chapters.upsert(c.subject, c.name, { status: "Completed", last_revised: null, next_revision: null });
+    const updated = await chapters.upsert(c.subject, c.name, { status: "Completed", last_revised: null, next_revision: null });
+    if (!updated) {
+      showToast("Couldn't mark that complete — check your connection.", () => completeChapter(c), "Retry");
+      return;
+    }
     const due = daysFromNowIST(3);
     const newRevision = await revisionsQ.insert({ subject: c.subject, chapter: c.name, due_date: due, revision_number: 1, status: "Pending" });
     fireCelebrate();
@@ -901,14 +939,22 @@ export default function App() {
     });
   };
 
-  const addQuestions = async (payload) => {
-    const row = await questionsQ.insert({ log_date: todayStr(), ...payload });
-    showToast(`+${payload.count} questions logged 🥕`, row && (() => questionsQ.remove(row.id)));
+  const addQuestions = async (payload, clientToken = crypto.randomUUID()) => {
+    const row = await questionsQ.insert({ log_date: todayStr(), ...payload }, { idempotencyKey: clientToken });
+    if (!row) {
+      showToast("Couldn't log those questions — check your connection.", () => addQuestions(payload, clientToken), "Retry");
+      return;
+    }
+    showToast(`+${payload.count} questions logged 🥕`, () => questionsQ.remove(row.id));
   };
-  const addMock = async (m) => {
-    const row = await mocksQ.insert({ mock_date: todayStr(), ...m });
+  const addMock = async (m, clientToken = crypto.randomUUID()) => {
+    const row = await mocksQ.insert({ mock_date: todayStr(), ...m }, { idempotencyKey: clientToken });
+    if (!row) {
+      showToast("Couldn't save that mock — check your connection.", () => addMock(m, clientToken), "Retry");
+      return;
+    }
     fireCelebrate();
-    showToast("Mock added — great effort showing up for it.", row && (() => mocksQ.remove(row.id)));
+    showToast("Mock added — great effort showing up for it.", () => mocksQ.remove(row.id));
   };
   const updateMock = async (id, patch) => {
     const prior = mocks.find((m) => m.id === id);
@@ -1241,7 +1287,7 @@ export default function App() {
         <div className="sb-toast">
           <Mascot species={mascot} mood="celebrate" size={28} hop={hopping} />
           <span className="sb-quote">{toast.message}</span>
-          {toast.undo && <button className="sb-toast-undo" onClick={runUndo}>Undo</button>}
+          {toast.undo && <button className="sb-toast-undo" onClick={runUndo}>{toast.undoLabel}</button>}
         </div>
       )}
       {!isSupabaseConfigured && (
