@@ -502,7 +502,7 @@ create policy "leaderboard public read" on leaderboard_public
 --
 --   +12   per genuine study day in the last 30 days           (consistency)
 --   +3    per valid completed focus session (cap 8/day)       (real sessions, not idle timers)
---   +0.5  per minute from completed focus-timer sessions (cap 300 min/day)   — trusted signal
+--   +0.5  per minute from completed focus-timer sessions (cap 780 min/day)   — trusted signal
 --   +0.2  per minute from manually-logged sessions (cap 180 min/day)         — self-reported, weighted lower
 --   +0.3  per question logged (cap 100/day)                   (practice)
 --   +8    per mock test taken (cap 1/day)                     (real exam practice)
@@ -638,8 +638,9 @@ begin
     and abs(actual_minutes - planned_minutes) <= greatest(3, planned_minutes * 0.15)
     and (created_at at time zone 'Asia/Kolkata')::date >= window_start;
 
-  -- trusted (timer-verified) minutes, capped 300/day then summed
-  select coalesce(sum(least(daily, 300)), 0) into timer_mins from (
+  -- trusted (timer-verified) minutes, capped 780/day (13h) then summed
+  -- (raised from 300/day (5h) — see supabase/migration_focus_timer_daily_cap.sql)
+  select coalesce(sum(least(daily, 780)), 0) into timer_mins from (
     select (created_at at time zone 'Asia/Kolkata')::date as d, sum(actual_minutes) as daily
     from timer_sessions
     where user_id = uid and completed = true and actual_minutes between 10 and 600
