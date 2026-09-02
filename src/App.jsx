@@ -523,24 +523,30 @@ export default function App() {
   }, [tasks]);
 
   // What counts as a "genuine study day" here must exactly match the
-  // server-side rule in lb_calc_streak() (supabase/migration_leaderboard.sql,
-  // supabase/migration_streak_tasks.sql, supabase/migration_streak_freeze.sql)
-  // — otherwise Dashboard/Profile can show a streak the Leaderboard
-  // disagrees with. The rule: a manual session of >= 5 minutes, OR a
-  // *completed* focus-timer session of >= 10 minutes, OR at least one
-  // logged question set, OR every planned task for the day completed, OR
-  // a streak-freeze token spent on that date. Keep these in sync if any of
+  // server-side rule in lb_calc_streak() — the canonical definition lives in
+  // supabase/migration_streak_uniform_v2.sql. If you change any threshold
+  // or add a new signal, update BOTH lb_calc_streak AND this block or the
+  // Dashboard/Profile streak will diverge from the Leaderboard again.
+  //
+  // THE RULE (5 signals — identical client and server):
+  //   1. Manual study session >= 5 min  (platform !== 'Focus Timer')
+  //   2. Completed focus-timer session >= 10 min actual elapsed
+  //   3. At least one question logged (count >= 1)
+  //   4. Every task planned for the day completed (non-empty day only)
+  //   5. Streak-freeze token spent on that date
+  //
+  // Signal 1 intentionally EXCLUDES platform='Focus Timer' rows. Those rows
+  // have `minutes` = the planned timer duration (not actual elapsed time) and
+  // the real signal for timer work is signal 2 (timer_sessions). Including
+  // them here would let a 3-second timer run count as a 25-min study day.
+  // The server lb_calc_streak now has the same filter — this is what caused
+  // the leaderboard showing a higher streak than the dashboard (server was
+  // counting those rows, client wasn't). Keep these in sync if any of
   // them ever changes.
   const streakDays = useMemo(() => {
     const days = new Set();
-    // manualSessions, not sessions: a session logged via the Focus Timer's
-    // "what did you study" card is tagged platform: "Focus Timer" and its
-    // minutes are already governed by the timerSessions branch just below
-    // (which requires completed && >=10min, matching the server-side rule).
-    // Looping over the raw `sessions` array here let a 5-9 min Focus Timer
-    // session count toward the streak locally even when the server-side
-    // lb_calc_streak wouldn't count it (needs >=10min), so Dashboard/Profile
-    // could show a streak alive that the Leaderboard disagreed with.
+    // Signal 1: manual sessions only (manualSessions excludes platform='Focus Timer').
+    // Server lb_calc_streak applies the same filter — see migration_streak_uniform_v2.sql.
     manualSessions.forEach((s) => { if (Number(s.minutes || 0) >= 5) days.add(s.session_date); });
     timerSessions.forEach((ts) => {
       if (ts.completed && Number(ts.actual_minutes || 0) >= 10) days.add(tsToISTDateStr(ts.created_at));

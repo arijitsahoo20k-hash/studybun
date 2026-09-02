@@ -21,6 +21,12 @@ create table if not exists profiles (
   theme text default 'Sakura Bloom',
   mascot text default 'bunny',
   dark_mode boolean default false,
+  -- streak-freeze bookkeeping — see migration_streak_freeze.sql. tokens is
+  -- how many the user currently holds (spendable); granted_days is how
+  -- many 7-day chunks of real study days have already been converted into
+  -- a token, so re-running the grant check never double-grants.
+  streak_freeze_tokens int not null default 1,
+  streak_freeze_granted_days int not null default 0,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -273,6 +279,36 @@ create table if not exists tasks (
 );
 create index if not exists idx_tasks_user on tasks(user_id, due_date);
 
+-- ---------- STREAK FREEZES ----------
+-- Was missing from schema.sql entirely (only lived in
+-- migration_streak_freeze.sql) — added here so schema.sql is a real,
+-- loadable snapshot again. See migration_streak_freeze.sql for the
+-- grant/auto-apply functions (sb_recompute_streak_freeze_grants(),
+-- sb_apply_streak_freeze_if_needed()), which aren't part of the
+-- leaderboard-consistency fix and are left as-is.
+create table if not exists streak_freezes (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  frozen_date date not null,
+  created_at timestamptz default now(),
+  unique (user_id, frozen_date)
+);
+alter table streak_freezes enable row level security;
+drop policy if exists "own streak freezes" on streak_freezes;
+create policy "own streak freezes" on streak_freezes
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create index if not exists idx_streak_freezes_user on streak_freezes(user_id, frozen_date);
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'streak_freezes'
+  ) then
+    alter publication supabase_realtime add table streak_freezes;
+  end if;
+end $$;
+
 -- ---------- ACHIEVEMENTS (unlock log) ----------
 create table if not exists achievements (
   id uuid primary key default uuid_generate_v4(),
@@ -509,10 +545,15 @@ create policy "leaderboard public read" on leaderboard_public
 --   +10   per chapter newly completed/mastered (cap 30 in window, first-time only via completed_at)
 --   +4    per day of current streak, capped at 60 days        (long-term consistency, diminishing so it can't dominate forever)
 --
--- A "genuine study day" only counts if it has a manual session of
--- >= 5 minutes OR a *completed* focus-timer session of >= 10
--- minutes — a single throwaway 30-second row can't extend a streak
--- or count as a study day.
+-- A "genuine study day" counts if ANY of: a manual session of >= 5
+-- minutes (excluding platform = 'Focus Timer' rows — those hold the
+-- planned duration, not actual elapsed time), a *completed* focus-timer
+-- session of >= 10 minutes, a logged question set, every task planned
+-- for the day being Completed, or a streak-freeze token spent that day.
+-- This exact 5-signal rule is duplicated in lb_calc_streak, lb_recompute
+-- (active_days), and src/App.jsx's streakDays — see
+-- supabase/migration_streak_uniform_v3.sql for the full history of why,
+-- and keep all three in sync if this ever changes again.
 --
 -- Anti-cheat notes:
 --   • Every raw signal is capped per-day BEFORE being summed over
@@ -555,15 +596,41 @@ begin
   -- (the day isn't over). Start counting from yesterday instead, so the
   -- streak only truly resets once a full day has gone by with nothing
   -- logged — a genuine 2-day gap (today + yesterday both empty).
+  --
+  -- CANONICAL "genuine study day" rule — 5 signals, must stay identical
+  -- across lb_calc_streak, lb_recompute (active_days below), and
+  -- src/App.jsx's streakDays. See supabase/migration_streak_uniform_v3.sql
+  -- for the full history of why each signal/filter exists:
+  --   1. study_sessions: minutes >= 5, EXCLUDING platform = 'Focus Timer'
+  --      (those rows hold the planned duration, not actual elapsed time —
+  --      the real signal for timer work is #2 below)
+  --   2. timer_sessions: completed = true, actual_minutes >= 10
+  --   3. question_logs: count >= 1
+  --   4. tasks: every task due that day is Completed (non-empty day only)
+  --   5. streak_freezes: a freeze token spent on that date
   select
     exists (
       select 1 from study_sessions
       where user_id = uid and session_date = d and minutes >= 5
+        and (platform is null or platform <> 'Focus Timer')
     )
     or exists (
       select 1 from timer_sessions
       where user_id = uid and completed = true and actual_minutes >= 10
         and (created_at at time zone 'Asia/Kolkata')::date = d
+    )
+    or exists (
+      select 1 from question_logs
+      where user_id = uid and log_date = d and count >= 1
+    )
+    or exists (
+      select 1 from tasks
+      where user_id = uid and due_date = d
+      group by due_date having count(*) filter (where status <> 'Completed') = 0
+    )
+    or exists (
+      select 1 from streak_freezes
+      where user_id = uid and frozen_date = d
     )
   into today_logged;
   if not today_logged then
@@ -574,11 +641,25 @@ begin
       exists (
         select 1 from study_sessions
         where user_id = uid and session_date = d and minutes >= 5
+          and (platform is null or platform <> 'Focus Timer')
       )
       or exists (
         select 1 from timer_sessions
         where user_id = uid and completed = true and actual_minutes >= 10
           and (created_at at time zone 'Asia/Kolkata')::date = d
+      )
+      or exists (
+        select 1 from question_logs
+        where user_id = uid and log_date = d and count >= 1
+      )
+      or exists (
+        select 1 from tasks
+        where user_id = uid and due_date = d
+        group by due_date having count(*) filter (where status <> 'Completed') = 0
+      )
+      or exists (
+        select 1 from streak_freezes
+        where user_id = uid and frozen_date = d
       )
     into has_day;
     exit when not has_day or streak_n > 730;
@@ -617,19 +698,34 @@ begin
 
   select study_score into prior_score from leaderboard_public where user_id = uid;
 
-  -- distinct genuine study days in the window
+  -- distinct genuine study days in the window — same 5-signal rule as
+  -- lb_calc_streak above, kept in lockstep on purpose.
   select count(distinct d) into active_days from (
     select session_date as d from study_sessions
       where user_id = uid and minutes >= 5 and session_date >= window_start
+        and (platform is null or platform <> 'Focus Timer')
     union
     select (created_at at time zone 'Asia/Kolkata')::date as d from timer_sessions
       where user_id = uid and completed = true and actual_minutes >= 10
         and (created_at at time zone 'Asia/Kolkata')::date >= window_start
+    union
+    select log_date as d from question_logs
+      where user_id = uid and count >= 1 and log_date >= window_start
+    union
+    select due_date as d from tasks
+      where user_id = uid and due_date >= window_start
+      group by due_date
+      having count(*) filter (where status <> 'Completed') = 0
+    union
+    select frozen_date as d from streak_freezes
+      where user_id = uid and frozen_date >= window_start
   ) t;
 
   -- valid completed focus sessions, capped at 8/day equivalent (240 over the window).
   -- planned_minutes must be present AND matched — a null plan (Stopwatch)
-  -- can never itself satisfy this (see migration_stopwatch_anticheat.sql).
+  -- can never itself satisfy this (see migration_stopwatch_anticheat.sql):
+  -- without this, Stopwatch's lack of a target duration let the flat +3
+  -- bonus be farmed with trivial back-to-back sessions.
   select least(count(*), 240) into sessions_n
   from timer_sessions
   where user_id = uid and completed = true
@@ -648,11 +744,16 @@ begin
     group by 1
   ) t;
 
-  -- self-reported minutes, capped 180/day then summed (lower weight applied later)
+  -- self-reported minutes, capped 180/day then summed (lower weight applied later).
+  -- Excludes platform = 'Focus Timer' rows for the same reason as active_days
+  -- signal 1 above — those rows hold the planned duration, not actual elapsed
+  -- time, and the real minutes are already counted in timer_mins above. Without
+  -- this filter a single focus-timer session could be scored twice.
   select coalesce(sum(least(daily, 180)), 0) into manual_mins from (
     select session_date as d, sum(minutes) as daily
     from study_sessions
     where user_id = uid and minutes between 5 and 600 and session_date >= window_start
+      and (platform is null or platform <> 'Focus Timer')
     group by 1
   ) t;
 
@@ -814,7 +915,13 @@ do $$
 declare
   t text;
 begin
-  for t in select unnest(array['study_sessions', 'timer_sessions', 'question_logs', 'mock_tests', 'chapter_progress'])
+  -- tasks and streak_freezes added by migration_streak_tasks.sql /
+  -- migration_streak_freeze.sql — included here directly (rather than left
+  -- as separate one-off CREATE TRIGGER statements) so this array is once
+  -- again the single, complete list of every table that must recompute the
+  -- leaderboard, instead of something a future migration has to know to
+  -- also check two other files for.
+  for t in select unnest(array['study_sessions', 'timer_sessions', 'question_logs', 'mock_tests', 'chapter_progress', 'tasks', 'streak_freezes'])
   loop
     execute format('drop trigger if exists trg_lb_recompute on %I;', t);
     execute format(
