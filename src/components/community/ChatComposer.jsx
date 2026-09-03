@@ -12,7 +12,17 @@ const TEXTAREA_MAX_HEIGHT = 140;
 // laggy while other people were also posting. Keeping draft/err/textarea
 // state in here means a keystroke only re-renders this small composer,
 // never the list above it.
-export default function ChatComposer({ channelId, replyTo, onCancelReply, sendMessage, sending }) {
+// `placeholder` and `expiryNote` are optional overrides — both default to
+// Community Chat's original copy, so this stays a no-op for every existing
+// call site. Added for Private Chat, which (a) isn't scoped to "your study
+// group" the way Community's channels are, and (b) has no 5-day expiry —
+// showing that note there would be actively wrong, not just generic.
+// Pass expiryNote={null} to omit the line entirely.
+export default function ChatComposer({
+  channelId, replyTo, onCancelReply, sendMessage, sending,
+  placeholder = "Say something to your study group...",
+  expiryNote = "Messages disappear after 5 days.",
+}) {
   const [draft, setDraft] = useState("");
   const [imageFile, setImageFile] = useState(null);   // File | null
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null); // blob URL | null
@@ -168,7 +178,7 @@ export default function ChatComposer({ channelId, replyTo, onCancelReply, sendMe
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(e); }}
-          placeholder={imageFile ? "Add a caption (optional)..." : "Say something to your study group..."}
+          placeholder={imageFile ? "Add a caption (optional)..." : placeholder}
           maxLength={MAX_LEN}
           rows={1}
           disabled={sending}
@@ -185,7 +195,7 @@ export default function ChatComposer({ channelId, replyTo, onCancelReply, sendMe
         )}
       </div>
       {err && <p className="sb-cm-error">{err}</p>}
-      <p className="sb-muted small sb-chat-expiry-note">Messages disappear after 5 days.</p>
+      {expiryNote && <p className="sb-muted small sb-chat-expiry-note">{expiryNote}</p>}
     </div>
   );
 }
