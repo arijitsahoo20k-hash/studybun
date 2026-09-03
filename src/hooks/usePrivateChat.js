@@ -47,6 +47,16 @@ export function usePrivateChat(channelId) {
   const activeChannelIdRef = useRef(channelId);
   const trimmedRef = useRef(false);
 
+  // Keep a ref to messages so loadOlder can read the current list without
+  // re-creating itself (and thus re-triggering the realtime useEffect)
+  // every time a new message arrives. The previous version had `messages`
+  // in loadOlder's dep array — correct for correctness but caused the
+  // realtime subscription to tear down and re-subscribe on every incoming
+  // message, which introduced a brief gap where new messages could be
+  // missed. Now loadOlder reads via ref and is stable across message updates.
+  const messagesRef = useRef(messages);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+
   const load = useCallback(async () => {
     if (!channelId || !userId) {
       setMessages([]);
@@ -73,9 +83,15 @@ export function usePrivateChat(channelId) {
     setLoading(false);
   }, [channelId, userId]);
 
+  // BUG FIX: removed `messages` from the dep array — was causing the
+  // realtime subscription to be rebuilt on every incoming message (because
+  // loadOlder captured `messages` in its closure and was re-created each
+  // time). Now reads via messagesRef, which is always current, without
+  // making loadOlder a new function reference on each render.
   const loadOlder = useCallback(async () => {
-    if (!channelId || messages.length === 0) return;
-    const oldest = messages[0]?.created_at;
+    const currentMessages = messagesRef.current;
+    if (!channelId || currentMessages.length === 0) return;
+    const oldest = currentMessages[0]?.created_at;
     const { data, error: err } = await supabase
       .from("private_messages")
       .select(SELECT)
@@ -92,7 +108,7 @@ export function usePrivateChat(channelId) {
       const existing = new Set(prev.map((m) => m.id));
       return [...older.filter((m) => !existing.has(m.id)), ...prev];
     });
-  }, [channelId, messages]);
+  }, [channelId]);
 
   useEffect(() => {
     if (trimmedRef.current) {
@@ -168,11 +184,20 @@ export function usePrivateChat(channelId) {
   }, [channelId, userId]);
 
   const sendMessage = useCallback(
+    // BUG FIX: renamed local `trimmed` variable to `textContent` to avoid
+    // shadowing the outer `trimmedRef` (boolean flag for capMessages). The
+    // previous code had `const trimmed = (content || "").trim()` inside
+    // sendMessage while `trimmedRef` (a ref, not a variable) existed in the
+    // same scope. Although JS doesn't actually shadow refs (it's
+    // trimmedRef.current vs trimmed), the naming collision was confusing and
+    // the destructure `const { list, trimmed: wasTrimmed }` from capMessages
+    // further down proved they're meant to be different things. Renamed here
+    // to make the intent clear and eliminate any future maintenance hazard.
     async (content, replyTo, imageFile = null) => {
-      const trimmed = (content || "").trim();
-      if (!trimmed && !imageFile) return { ok: false, error: "Nothing to send." };
+      const textContent = (content || "").trim();
+      if (!textContent && !imageFile) return { ok: false, error: "Nothing to send." };
       if (!channelId || !userId || sending) return { ok: false };
-      if (trimmed.length > 1000) return { ok: false, error: "Message is too long (max 1000 characters)." };
+      if (textContent.length > 1000) return { ok: false, error: "Message is too long (max 1000 characters)." };
 
       setSending(true);
 
@@ -191,7 +216,7 @@ export function usePrivateChat(channelId) {
         .insert({
           channel_id: channelId,
           user_id: userId,
-          content: trimmed,
+          content: textContent,
           image_url,
           reply_to_id: replyTo?.id ?? null,
           reply_to_user_id: replyTo?.user_id ?? null,
@@ -232,4 +257,3 @@ export function usePrivateChat(channelId) {
 
   return { messages, loading, error, sending, sendMessage, deleteMessage, hasMore, loadOlder, refetch: load };
 }
-

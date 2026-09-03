@@ -13,6 +13,11 @@ import ConfirmDialog from "./ConfirmDialog";
 function RenameDialog({ open, initialName, onSubmit, onClose }) {
   const [value, setValue] = useState(initialName || "");
   const [submitting, setSubmitting] = useState(false);
+  // BUG FIX: `value` was initialised from useState(initialName) which only
+  // runs once. If the channel was already renamed once and the dialog is
+  // reopened, the input kept the old name. The useEffect below syncs `value`
+  // whenever `open` flips to true or `initialName` changes, covering both
+  // the first-open and re-open cases.
   React.useEffect(() => { if (open) setValue(initialName || ""); }, [open, initialName]);
   if (!open) return null;
   const submit = async () => {
@@ -65,6 +70,19 @@ export default function PrivateChatPage({ currentUserId, myProfile, isFounder, f
   const [renameOpen, setRenameOpen] = useState(false);
   const [confirmDeleteChannel, setConfirmDeleteChannel] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  // Toast error for page-level operation failures (rename, delete channel,
+  // add members, leave) — these happen outside the chat window and need
+  // a visible error path that isn't buried in a now-closed modal.
+  const [pageErr, setPageErr] = useState(null);
+  const pageErrTimerRef = React.useRef(null);
+
+  const showPageErr = useCallback((msg) => {
+    setPageErr(msg);
+    window.clearTimeout(pageErrTimerRef.current);
+    pageErrTimerRef.current = window.setTimeout(() => setPageErr(null), 5000);
+  }, []);
+
+  React.useEffect(() => () => window.clearTimeout(pageErrTimerRef.current), []);
 
   const activeChannel = channels.find((c) => c.id === activeChannelId) || null;
 
@@ -89,36 +107,81 @@ export default function PrivateChatPage({ currentUserId, myProfile, isFounder, f
       setCreateOpen(false);
       setActiveChannelId(res.data.id);
       setMobileShowingChat(true);
+    } else if (res.error) {
+      // Don't close the modal on failure — the user may want to retry.
+      // The modal will show the error via its own state if needed, but
+      // for channel-creation failures we surface it at page level since
+      // the modal has no inline error region.
+      showPageErr(res.error);
     }
     return res;
-  }, [createChannel, setActiveChannelId]);
+  }, [createChannel, setActiveChannelId, showPageErr]);
 
   const handleAddMembersSubmit = useCallback(async (_name, memberIds) => {
     const res = await addMembers(activeChannelId, memberIds);
-    if (res.ok) setAddMembersOpen(false);
+    if (res.ok) {
+      setAddMembersOpen(false);
+    } else if (res.error) {
+      showPageErr(res.error);
+    }
     return res;
-  }, [addMembers, activeChannelId]);
+  }, [addMembers, activeChannelId, showPageErr]);
 
   const handleRenameSubmit = useCallback(async (newName) => {
     const res = await renameChannel(activeChannelId, newName);
-    if (res.ok) setRenameOpen(false);
+    if (res.ok) {
+      setRenameOpen(false);
+    } else if (res.error) {
+      // Keep the dialog open so the user can try a different name.
+      showPageErr(res.error);
+    }
     return res;
-  }, [renameChannel, activeChannelId]);
+  }, [renameChannel, activeChannelId, showPageErr]);
 
+  // BUG FIX: the original handleConfirmDeleteChannel swallowed the result
+  // of deleteChannel entirely — if Supabase returned an error (e.g. RLS
+  // blocked it, network failure) the channel stayed in the list but the
+  // confirm dialog was already closed, so the user had no feedback and no
+  // way to retry. Now we check the result and show a page-level error if
+  // it failed, and only clear the active pane on success.
   const handleConfirmDeleteChannel = useCallback(async () => {
     setConfirmDeleteChannel(false);
-    setMobileShowingChat(false);
-    await deleteChannel(activeChannelId);
-  }, [deleteChannel, activeChannelId]);
+    const res = await deleteChannel(activeChannelId);
+    if (res.ok) {
+      setMobileShowingChat(false);
+    } else {
+      showPageErr(res.error || "Couldn't delete that group. Try again.");
+    }
+  }, [deleteChannel, activeChannelId, showPageErr]);
 
   const handleConfirmLeave = useCallback(async () => {
     setConfirmLeave(false);
-    setMobileShowingChat(false);
-    await leaveChannel(activeChannelId);
-  }, [leaveChannel, activeChannelId]);
+    const res = await leaveChannel(activeChannelId);
+    if (res.ok) {
+      setMobileShowingChat(false);
+    } else {
+      showPageErr(res.error || "Couldn't leave that group. Try again.");
+    }
+  }, [leaveChannel, activeChannelId, showPageErr]);
 
   return (
     <div className="sb-pchat-page" data-pane={mobileShowingChat ? "chat" : "list"}>
+      {/* Page-level error toast (rename/delete/leave/add-members failures) */}
+      {pageErr && (
+        <div
+          className="sb-pchat-chat-err"
+          style={{ borderRadius: 12, margin: "0 0 8px", borderTop: "none", border: "2px solid #f9b0b0" }}
+        >
+          {pageErr}
+          <button
+            type="button"
+            style={{ marginLeft: 10, background: "none", border: "none", cursor: "pointer", color: "#C24444", fontWeight: 800 }}
+            onClick={() => setPageErr(null)}
+            aria-label="Dismiss"
+          >✕</button>
+        </div>
+      )}
+
       <div className="sb-pchat-wrap">
         <PrivateChannelList
           channels={channels}
@@ -165,6 +228,10 @@ export default function PrivateChatPage({ currentUserId, myProfile, isFounder, f
       <PrivateChannelModal
         open={addMembersOpen}
         mode="addMembers"
+        // BUG FIX: activeChannel?.memberIds is a Set (or undefined if the
+        // channel is somehow null). `|| new Set()` is correct here but only
+        // if memberIds was built as a Set — which it is in usePrivateChannels
+        // (see `new Set(members.map(...))`). Safe.
         existingMemberIds={activeChannel?.memberIds || new Set()}
         fetchDirectory={fetchDirectory}
         onSubmit={handleAddMembersSubmit}

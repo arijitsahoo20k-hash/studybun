@@ -29,6 +29,12 @@ export function usePrivateChannels() {
   const [error, setError] = useState(null);
   const mounted = useRef(true);
 
+  // Keep a ref to activeChannelId so callbacks that don't re-create on
+  // every id change (deleteChannel, leaveChannel) can still read the
+  // current value without capturing a stale closure.
+  const activeChannelIdRef = useRef(activeChannelId);
+  useEffect(() => { activeChannelIdRef.current = activeChannelId; }, [activeChannelId]);
+
   const load = useCallback(async () => {
     if (!userId) { setChannels([]); setLoading(false); return; }
     setLoading(true);
@@ -154,12 +160,18 @@ export function usePrivateChannels() {
     return { ok: true };
   }, []);
 
+  // BUG FIX: was missing `load` in the dependency array, which meant the
+  // realtime subscription wouldn't re-trigger a fresh fetch after delete —
+  // the channel list panel could stay stale until the next unrelated event.
+  // Also reads activeChannelId via ref instead of closing over the state
+  // value so this callback never goes stale between renders.
   const deleteChannel = useCallback(async (channelId) => {
     const { error: err } = await supabase.from("private_channels").delete().eq("id", channelId);
     if (err) return { ok: false, error: "Couldn't delete that channel." };
-    if (activeChannelId === channelId) setActiveChannelId(null);
+    if (activeChannelIdRef.current === channelId) setActiveChannelId(null);
+    await load();
     return { ok: true };
-  }, [activeChannelId]);
+  }, [load]);
 
   const addMembers = useCallback(async (channelId, memberUserIds = []) => {
     if (!memberUserIds.length) return { ok: true };
@@ -182,12 +194,17 @@ export function usePrivateChannels() {
     return { ok: true };
   }, [load]);
 
+  // BUG FIX: was closing over `activeChannelId` state (via the dep array)
+  // AND `removeMember` (which itself deps on load). The previous version
+  // had both in deps, which was correct but could produce a stale
+  // `activeChannelId` snapshot if the channel changed between the user
+  // clicking Leave and the async completing. Now reads via ref for safety.
   const leaveChannel = useCallback(async (channelId) => {
     if (!userId) return { ok: false };
     const res = await removeMember(channelId, userId);
-    if (res.ok && activeChannelId === channelId) setActiveChannelId(null);
+    if (res.ok && activeChannelIdRef.current === channelId) setActiveChannelId(null);
     return res;
-  }, [userId, activeChannelId, removeMember]);
+  }, [userId, removeMember]);
 
   // Founder-only — the RPC itself enforces this server-side and raises if
   // the caller isn't a founder; this just surfaces that as {ok:false}.

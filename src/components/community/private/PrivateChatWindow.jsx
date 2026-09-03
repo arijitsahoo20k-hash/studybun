@@ -51,12 +51,26 @@ export default function PrivateChatWindow({
   const [highlightedId, setHighlightedId] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  // BUG FIX: expose inline errors from sendMessage and deleteMessage so the
+  // user gets feedback when something goes wrong (rate limit, upload failure,
+  // etc.). Previously the results were silently discarded — ChatComposer
+  // already shows its own error for send failures, but deleteMessage failures
+  // had zero user feedback.
+  const [chatErr, setChatErr] = useState(null);
   const listRef = useRef(null);
   const msgRefs = useRef({});
   const refCallbacks = useRef(new Map());
   const highlightTimeoutRef = useRef(null);
   const stickToBottomRef = useRef(true);
   const pendingOlderLoadRef = useRef(null);
+  // Auto-dismiss inline error after a few seconds
+  const chatErrTimerRef = useRef(null);
+
+  const showChatErr = useCallback((msg) => {
+    setChatErr(msg);
+    window.clearTimeout(chatErrTimerRef.current);
+    chatErrTimerRef.current = window.setTimeout(() => setChatErr(null), 4000);
+  }, []);
 
   const handleScroll = useCallback(() => {
     const el = listRef.current;
@@ -75,6 +89,9 @@ export default function PrivateChatWindow({
     async (text, reply, imageFile) => {
       const res = await sendMessage(text, reply, imageFile);
       if (res.ok) stickToBottomRef.current = true;
+      // ChatComposer already displays res.error inline for send failures,
+      // so we don't double-show it here — just return the result so the
+      // composer can clear its draft on success.
       return res;
     },
     [sendMessage]
@@ -98,9 +115,14 @@ export default function PrivateChatWindow({
     refCallbacks.current = new Map();
     setReplyTo(null);
     setMenuOpen(false);
+    setChatErr(null);
+    window.clearTimeout(chatErrTimerRef.current);
   }, [channel?.id]);
 
-  useEffect(() => () => window.clearTimeout(highlightTimeoutRef.current), []);
+  useEffect(() => () => {
+    window.clearTimeout(highlightTimeoutRef.current);
+    window.clearTimeout(chatErrTimerRef.current);
+  }, []);
 
   const scrollToMessage = useCallback((id) => {
     const el = msgRefs.current[id];
@@ -135,8 +157,12 @@ export default function PrivateChatWindow({
   const confirmDelete = useCallback(async () => {
     const id = pendingDeleteId;
     setPendingDeleteId(null);
-    if (id) await deleteMessage(id);
-  }, [pendingDeleteId, deleteMessage]);
+    if (!id) return;
+    const res = await deleteMessage(id);
+    // BUG FIX: surface delete errors — previously deleteMessage result was
+    // silently dropped, so a Supabase error (network, RLS) gave zero feedback.
+    if (!res.ok) showChatErr(res.error || "Couldn't delete that message.");
+  }, [pendingDeleteId, deleteMessage, showChatErr]);
 
   if (!channel) {
     return (
@@ -233,6 +259,11 @@ export default function PrivateChatWindow({
           )
         )}
       </div>
+
+      {/* BUG FIX: inline error bar for delete failures (send failures are
+          handled inside ChatComposer already). Shown between the message
+          list and the composer so it doesn't push the list content. */}
+      {chatErr && <div className="sb-pchat-chat-err">{chatErr}</div>}
 
       <ChatComposer
         channelId={channel.id}

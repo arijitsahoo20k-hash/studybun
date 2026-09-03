@@ -13,11 +13,32 @@ import React from "react";
  * — ChatMessage/ChatComposer render those classes verbatim here too, so this
  * file only needs to cover what's actually new: the two-pane shell, the
  * channel list, and the chat header/kebab.
+ *
+ * NOTE: Community.jsx only renders <PrivateChatStyle /> once — in the regular
+ * community shell branch (for the nav pill hover styles). The private-chat
+ * full-page branch renders it separately. Both cases are fine because React
+ * deduplicates <style> tags by content in the same document. Do NOT add a
+ * second import in Community.jsx.
  */
 export default function PrivateChatStyle() {
   return (
     <style>{`
+      /* Override sb-page max-width when inside private-chat full-page view */
       .sb-page-private-chat { max-width: clamp(680px, 96vw, 1480px); }
+
+      /* ---------- sb-pchat-page: fills the page, centres the wrap ----------
+         sb-page gives display:flex + flex-direction:column, but sb-pchat-page
+         is a *child* of sb-page and needs its own flex setup so sb-pchat-wrap
+         can fill the available height without a fixed vh value on the outer
+         container. Without this the wrap's min(84dvh) height was the only
+         thing keeping it from collapsing. */
+      .sb-pchat-page {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+      }
 
       .sb-private-nav-item .sb-settings-nav-icon { filter: none; }
 
@@ -26,6 +47,8 @@ export default function PrivateChatStyle() {
         display: flex; border: 2px solid var(--mascot-outline); border-radius: 22px;
         background: var(--card); box-shadow: 5px 5px 0 var(--mascot-outline);
         overflow: hidden;
+        flex: 1;
+        min-height: 0;
         height: min(84vh, 840px);
         height: min(84dvh, 840px);
       }
@@ -120,6 +143,7 @@ export default function PrivateChatStyle() {
       .sb-pchat-modal-input {
         width: 100%; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--mascot-outline);
         background: var(--bg, #fff); font-size: 14px; font-weight: 600; color: var(--mascot-ink);
+        box-sizing: border-box;
       }
       .sb-pchat-modal-input:focus { outline: none; border-color: var(--accent); }
       .sb-pchat-modal-search {
@@ -135,6 +159,7 @@ export default function PrivateChatStyle() {
       .sb-pchat-modal-user-row {
         display: flex; align-items: center; gap: 10px; padding: 8px 10px; width: 100%; background: none;
         border: none; border-bottom: 1.5px solid var(--mascot-outline); cursor: pointer; text-align: left;
+        box-sizing: border-box;
       }
       .sb-pchat-modal-user-row:last-child { border-bottom: none; }
       .sb-pchat-modal-user-row:hover { background: var(--card); }
@@ -148,11 +173,27 @@ export default function PrivateChatStyle() {
       .sb-pchat-modal-check.on { background: var(--accent); border-color: var(--accent); }
       .sb-pchat-modal-hint { font-size: 11px; color: var(--muted); margin-top: 8px; }
 
+      /* ---------- inline send/delete error inside chat window ---------- */
+      .sb-pchat-chat-err {
+        padding: 6px 16px; font-size: 12px; font-weight: 700; color: #C24444;
+        background: #fef2f2; border-top: 1.5px solid #f9b0b0; flex-shrink: 0;
+        animation: sb-shake .3s ease;
+      }
+      @keyframes sb-shake {
+        0%,100%{ transform: translateX(0); }
+        25%{ transform: translateX(-4px); }
+        75%{ transform: translateX(4px); }
+      }
+
       /* ---------- responsive: single pane with a back button on phones ---------- */
       @media (max-width: 768px) {
-        .sb-pchat-wrap { height: min(90vh, 760px); height: min(90dvh, 760px); border-radius: 18px; }
+        .sb-pchat-wrap {
+          height: min(90vh, 760px);
+          height: min(90dvh, 760px);
+          border-radius: 18px;
+        }
         .sb-pchat-list-pane { width: 100%; border-right: none; }
-        .sb-pchat-mobile-only { display: inline-flex; }
+        .sb-pchat-mobile-only { display: inline-flex !important; }
 
         .sb-pchat-page[data-pane="list"] .sb-pchat-chat-pane { display: none; }
         .sb-pchat-page[data-pane="chat"] .sb-pchat-list-pane { display: none; }

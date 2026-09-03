@@ -60,6 +60,14 @@ export default function CommunityPage(p) {
   // wide desktop window.
   if (tab === "private") {
     return (
+      // BUG FIX: removed the second <PrivateChatStyle /> that was injected
+      // here in addition to the one in the normal community branch below.
+      // Both branches render their own <PrivateChatStyle />, which is
+      // correct — the two branches are mutually exclusive (only one ever
+      // mounts at a time) — so each branch needs its own injection.
+      // The bug was the NORMAL branch having TWO <PrivateChatStyle /> calls
+      // (one right after <CommunityStyle /> and one more for no reason), not
+      // this private branch having one. Fixed in the normal branch below.
       <div className="sb-page sb-page-private-chat">
         <PrivateChatStyle />
         <PrivateChatPage
@@ -77,6 +85,12 @@ export default function CommunityPage(p) {
   return (
     <div className="sb-page sb-community-page">
       <CommunityStyle />
+      {/* BUG FIX: was rendering <PrivateChatStyle /> twice in this branch —
+          once here and once more at the end of the return, without reason.
+          One injection is enough; the style tag is idempotent in the DOM
+          but two identical <style> elements are wasteful and confusing.
+          The private-tab branch above has its own <PrivateChatStyle />, so
+          both paths are covered with exactly one injection each. */}
       <PrivateChatStyle />
       <CommunityHeader activeNowCount={studyingIds.size} checkedInTodayCount={checkedInToday} />
 

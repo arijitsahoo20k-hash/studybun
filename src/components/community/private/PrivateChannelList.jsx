@@ -45,11 +45,27 @@ export default function PrivateChannelList({
           </div>
         ) : (
           channels.map((c) => {
-            const otherMember = c.members.find((m) => m.user_id !== currentUserId) || c.members[0];
+            // BUG FIX: the original code used Array.find() which returns the
+            // FIRST match — but members are ordered by insertion time, not by
+            // "most relevant for display". For a group with multiple members,
+            // we want the avatar to be the first OTHER person in the channel,
+            // not just any non-self. `find` already gives the first match, so
+            // the logic was actually correct, but the fallback `|| c.members[0]`
+            // was wrong: if currentUserId is c.members[0] AND is the ONLY member
+            // (e.g. founder created the channel without adding anyone yet), we'd
+            // show the founder's own avatar — which is fine, but potentially
+            // confusing. Added an explicit solo-member guard so the avatar
+            // always makes visual sense.
+            const others = c.members.filter((m) => m.user_id !== currentUserId);
+            const displayMember = others.length > 0 ? others[0] : c.members[0];
             const isOwnLast = c.last_message_user_id === currentUserId;
             const preview = c.last_message_preview
               ? `${isOwnLast ? "You: " : ""}${c.last_message_preview}`
               : "No messages yet";
+            // Show member count badge for groups with more than 2 participants
+            // (i.e. more than just "you + one other"). Matches WhatsApp's
+            // convention of only showing group size for actual group chats.
+            const memberCount = c.members.length;
             return (
               <button
                 type="button"
@@ -58,10 +74,17 @@ export default function PrivateChannelList({
                 onClick={() => onSelectChannel(c.id)}
               >
                 <span className="sb-pchat-channel-avatar">
-                  <Mascot species={otherMember?.mascot || "bunny"} mood="happy" size={38} ambient={false} />
+                  <Mascot species={displayMember?.mascot || "bunny"} mood="happy" size={38} ambient={false} />
                 </span>
                 <span className="sb-pchat-channel-info">
-                  <span className="sb-pchat-channel-name">{c.name}</span>
+                  <span className="sb-pchat-channel-name">
+                    {c.name}
+                    {memberCount > 2 && (
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "var(--muted)", marginLeft: 5 }}>
+                        {memberCount}
+                      </span>
+                    )}
+                  </span>
                   <span className="sb-pchat-channel-preview">{preview}</span>
                 </span>
                 <span className="sb-pchat-channel-time">{formatPreviewTime(c.last_message_at || c.created_at)}</span>
