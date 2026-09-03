@@ -69,6 +69,23 @@ export default function CommunityPage(p) {
       // (one right after <CommunityStyle /> and one more for no reason), not
       // this private branch having one. Fixed in the normal branch below.
       <div className="sb-page sb-page-private-chat">
+        {/* BUG FIX: this branch is a completely separate return tree from the
+            normal community shell below — it doesn't just skip re-rendering
+            CommunityStyle, it never mounts it at all. PrivateChatWindow reuses
+            ChatMessage/ChatComposer verbatim (message bubbles, composer pill,
+            reply bar, image preview strip, attach button, date separators,
+            the action-menu backdrop, error text) and every one of those
+            classNames is only defined inside CommunityStyle.jsx — PrivateChatStyle
+            deliberately doesn't redefine them (see its header comment). With
+            only <PrivateChatStyle /> mounted here, all of that came out as
+            unstyled browser-default markup: a plain rectangular textarea and
+            send button, borderless message bubbles, an invisible reply bar —
+            which is exactly what "private chat UI is not working" looks like
+            even though every click handler underneath was firing correctly.
+            Mounting CommunityStyle alongside PrivateChatStyle here (both are
+            plain <style> tags, safe to have both mounted at once) restores
+            every shared class this page depends on. */}
+        <CommunityStyle />
         <PrivateChatStyle />
         <PrivateChatPage
           currentUserId={p.userId}
