@@ -105,97 +105,99 @@ export default function DailyOverview(p) {
         </div>
       </div>
 
-      <OverviewClockCard />
+      <div className="sb-overview-top">
+        <OverviewClockCard />
 
-      <div className="sb-overview-grid">
-        <Card paper glass className="sb-overview-card">
-          <SectionTitle icon={Clock3}>Study time</SectionTitle>
-          <div className="sb-overview-big">{p.todayHours}<span>h</span></div>
-          <div className="sb-muted">{p.todayLoggedHours}h logged · {p.todayTimerHours}h focus timer</div>
-          <div className="sb-overview-mini-bar">
-            <div className="sb-overview-mini-fill" style={{ width: `${Math.min(100, (p.todayLoggedHours / (p.todayHours || 1)) * 100)}%`, background: "var(--accent)" }} />
-          </div>
-        </Card>
-
-        <Card paper glass className="sb-overview-card">
-          <SectionTitle icon={Target}>Today's goal</SectionTitle>
-          <div className="sb-overview-ring-row">
-            <ProgressRing pct={goalPct} size={64} stroke={7} />
-            <div>
-              <div className="sb-overview-big" style={{ fontSize: 22 }}>{p.todayHours}h <span style={{ fontSize: 13 }}>/ {dailyGoal}h</span></div>
-              <div className="sb-muted">{goalPct >= 100 ? "Goal hit today 🎉" : `${Math.round(dailyGoal - p.todayHours < 0 ? 0 : dailyGoal - p.todayHours)}h to go`}</div>
+        <div className="sb-overview-stats-grid">
+          <Card paper glass className="sb-overview-card">
+            <SectionTitle icon={Clock3}>Study time</SectionTitle>
+            <div className="sb-overview-big">{p.todayHours}<span>h</span></div>
+            <div className="sb-muted">{p.todayLoggedHours}h logged · {p.todayTimerHours}h focus timer</div>
+            <div className="sb-overview-mini-bar">
+              <div className="sb-overview-mini-fill" style={{ width: `${Math.min(100, (p.todayLoggedHours / (p.todayHours || 1)) * 100)}%`, background: "var(--accent)" }} />
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card paper glass className="sb-overview-card">
-          <SectionTitle icon={HelpCircle}>Questions solved</SectionTitle>
-          <div className="sb-overview-big">{p.todayQuestions || 0}</div>
-          <div className="sb-muted">
-            {questionAccuracy !== null ? `${questionAccuracy}% accuracy · ${questionsCorrect} correct` : "today's practice"}
-          </div>
-        </Card>
-
-        <Card paper glass className="sb-overview-card">
-          <SectionTitle icon={CheckSquare}>Tasks</SectionTitle>
-          <div className="sb-overview-big">{todayTasksDone}<span>/{todayTasks.length}</span></div>
-          <div className="sb-overview-mini-bar">
-            <div className="sb-overview-mini-fill" style={{ width: `${todayTasks.length ? (todayTasksDone / todayTasks.length) * 100 : 0}%`, background: "var(--p2)" }} />
-          </div>
-          <div className="sb-muted">{todayTasks.length ? "planned for today" : "nothing planned today"}</div>
-        </Card>
-
-        <Card paper glass className="sb-overview-card">
-          <SectionTitle icon={RotateCcw}>Revisions</SectionTitle>
-          <div className="sb-overview-big">{revisionsDoneToday}<span>/{revisionsTodayTotal}</span></div>
-          <div className="sb-muted">
-            {revisionsDueToday.length > 0 ? `${revisionsDueToday.length} still due today` : "today's plan clear"}
-            {overdueRevisions > 0 ? ` · ${overdueRevisions} overdue` : ""}
-          </div>
-        </Card>
-
-        <Card paper glass className="sb-overview-card">
-          <SectionTitle icon={ClipboardList}>Mock test</SectionTitle>
-          {todayMocks.length ? (
-            <>
-              <div className="sb-overview-big" style={{ fontSize: 22 }}>{todayMocks.map((m) => mockScoreOf(m)).reduce((a, b) => a + b, 0)}<span>/{todayMocks.reduce((a, m) => a + mockTotalOf(m), 0)}</span></div>
-              <div className="sb-muted">{todayMocks.length} mock{todayMocks.length > 1 ? "s" : ""} taken today</div>
-            </>
-          ) : (
-            <div className="sb-muted" style={{ marginTop: 6 }}>No mock today</div>
-          )}
-        </Card>
-
-        <Card paper glass className="sb-overview-card sb-overview-card-wide">
-          <SectionTitle icon={BookOpen}>Subject split today</SectionTitle>
-          {subjectRows.length ? (
-            <div className="sb-overview-donut-wrap">
-              <div className="sb-overview-donut">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={subjectRows} dataKey="value" nameKey="name" innerRadius="62%" outerRadius="100%" paddingAngle={4} cornerRadius={6} stroke="var(--card)" strokeWidth={3}>
-                      {subjectRows.map((s) => <Cell key={s.name} fill={SYLLABUS[s.name]?.color || "var(--accent)"} />)}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} formatter={(v, n) => [`${v}h`, n]} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="sb-overview-donut-center">
-                  <div className="sb-overview-donut-total">{Math.round(subjectTotal)}h</div>
-                </div>
-              </div>
-              <div className="sb-overview-legend">
-                {subjectRows.map((s) => (
-                  <div className="sb-overview-legend-row" key={s.name}>
-                    <span className="sb-overview-legend-dot" style={{ background: SYLLABUS[s.name]?.color || "var(--accent)" }} />
-                    <span>{s.name}</span>
-                    <span className="sb-muted" style={{ marginLeft: "auto" }}>{Math.round(s.value * 60)}m</span>
-                  </div>
-                ))}
+          <Card paper glass className="sb-overview-card">
+            <SectionTitle icon={Target}>Today's goal</SectionTitle>
+            <div className="sb-overview-ring-row">
+              <ProgressRing pct={goalPct} size={64} stroke={7} />
+              <div>
+                <div className="sb-overview-big" style={{ fontSize: 22 }}>{p.todayHours}h <span style={{ fontSize: 13 }}>/ {dailyGoal}h</span></div>
+                <div className="sb-muted">{goalPct >= 100 ? "Goal hit today 🎉" : `${Math.round(dailyGoal - p.todayHours < 0 ? 0 : dailyGoal - p.todayHours)}h to go`}</div>
               </div>
             </div>
-          ) : <EmptyState mascot={p.mascot} mood="idle" text="Nothing logged yet today." sub="Log a session and it'll show up here." />}
-        </Card>
+          </Card>
+
+          <Card paper glass className="sb-overview-card">
+            <SectionTitle icon={HelpCircle}>Questions solved</SectionTitle>
+            <div className="sb-overview-big">{p.todayQuestions || 0}</div>
+            <div className="sb-muted">
+              {questionAccuracy !== null ? `${questionAccuracy}% accuracy · ${questionsCorrect} correct` : "today's practice"}
+            </div>
+          </Card>
+
+          <Card paper glass className="sb-overview-card">
+            <SectionTitle icon={CheckSquare}>Tasks</SectionTitle>
+            <div className="sb-overview-big">{todayTasksDone}<span>/{todayTasks.length}</span></div>
+            <div className="sb-overview-mini-bar">
+              <div className="sb-overview-mini-fill" style={{ width: `${todayTasks.length ? (todayTasksDone / todayTasks.length) * 100 : 0}%`, background: "var(--p2)" }} />
+            </div>
+            <div className="sb-muted">{todayTasks.length ? "planned for today" : "nothing planned today"}</div>
+          </Card>
+
+          <Card paper glass className="sb-overview-card">
+            <SectionTitle icon={RotateCcw}>Revisions</SectionTitle>
+            <div className="sb-overview-big">{revisionsDoneToday}<span>/{revisionsTodayTotal}</span></div>
+            <div className="sb-muted">
+              {revisionsDueToday.length > 0 ? `${revisionsDueToday.length} still due today` : "today's plan clear"}
+              {overdueRevisions > 0 ? ` · ${overdueRevisions} overdue` : ""}
+            </div>
+          </Card>
+
+          <Card paper glass className="sb-overview-card">
+            <SectionTitle icon={ClipboardList}>Mock test</SectionTitle>
+            {todayMocks.length ? (
+              <>
+                <div className="sb-overview-big" style={{ fontSize: 22 }}>{todayMocks.map((m) => mockScoreOf(m)).reduce((a, b) => a + b, 0)}<span>/{todayMocks.reduce((a, m) => a + mockTotalOf(m), 0)}</span></div>
+                <div className="sb-muted">{todayMocks.length} mock{todayMocks.length > 1 ? "s" : ""} taken today</div>
+              </>
+            ) : (
+              <div className="sb-muted" style={{ marginTop: 6 }}>No mock today</div>
+            )}
+          </Card>
+        </div>
       </div>
+
+      <Card paper glass className="sb-overview-card sb-overview-card-wide">
+        <SectionTitle icon={BookOpen}>Subject split today</SectionTitle>
+        {subjectRows.length ? (
+          <div className="sb-overview-donut-wrap">
+            <div className="sb-overview-donut">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={subjectRows} dataKey="value" nameKey="name" innerRadius="62%" outerRadius="100%" paddingAngle={4} cornerRadius={6} stroke="var(--card)" strokeWidth={3}>
+                    {subjectRows.map((s) => <Cell key={s.name} fill={SYLLABUS[s.name]?.color || "var(--accent)"} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} formatter={(v, n) => [`${v}h`, n]} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="sb-overview-donut-center">
+                <div className="sb-overview-donut-total">{Math.round(subjectTotal)}h</div>
+              </div>
+            </div>
+            <div className="sb-overview-legend">
+              {subjectRows.map((s) => (
+                <div className="sb-overview-legend-row" key={s.name}>
+                  <span className="sb-overview-legend-dot" style={{ background: SYLLABUS[s.name]?.color || "var(--accent)" }} />
+                  <span>{s.name}</span>
+                  <span className="sb-muted" style={{ marginLeft: "auto" }}>{Math.round(s.value * 60)}m</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : <EmptyState mascot={p.mascot} mood="idle" text="Nothing logged yet today." sub="Log a session and it'll show up here." />}
+      </Card>
 
       <div className="sb-overview-footer">
         <div className="sb-overview-quote">"{line}"</div>

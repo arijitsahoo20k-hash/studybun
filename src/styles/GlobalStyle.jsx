@@ -2912,12 +2912,18 @@ export default function GlobalStyle() {
         font-family: var(--font-display); font-weight: 800; font-size: 13.5px; flex-shrink: 0;
       }
 
-      /* --- Live clock hero card --- */
+      /* --- Live clock hero card ---
+         Sits in the left cell of .sb-overview-top as a tall square tile;
+         height: 100% + align-items: stretch on the parent grid means it
+         naturally stretches to match the combined height of the 3x2 stat
+         grid sitting next to it (see .sb-overview-stats-grid below), so the
+         two roughly form a square without any JS measuring. min-height is
+         just a floor for when the stack collapses to one column on mobile. */
       .sb-clock-card {
-        position: relative; border-radius: 26px; min-height: 220px;
+        position: relative; border-radius: 26px; min-height: 220px; height: 100%;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         border: 2.5px solid var(--outline); box-shadow: 5px 5px 0 var(--outline);
-        padding: 28px 20px;
+        padding: 28px 20px; box-sizing: border-box;
       }
       /* Clipping lives here, not on .sb-clock-card itself -- so the
          rounded corners still contain the photo/video/gradient layers, but
@@ -2993,10 +2999,13 @@ export default function GlobalStyle() {
         .sb-clock-card { min-height: 190px; padding: 22px 14px; }
       }
 
-      /* --- Stat bento grid --- */
-      .sb-overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-      .sb-overview-card { display: flex; flex-direction: column; gap: 4px; }
-      .sb-overview-card-wide { grid-column: span 3; }
+      /* --- Bento top row: square clock tile + matching 3x2 stat grid --- */
+      .sb-overview-top {
+        display: grid; grid-template-columns: minmax(230px, 300px) 1fr; gap: 14px; align-items: stretch;
+      }
+      .sb-overview-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 14px; }
+      .sb-overview-card { display: flex; flex-direction: column; gap: 4px; min-height: 118px; box-sizing: border-box; }
+      .sb-overview-card-wide { display: flex; flex-direction: column; gap: 4px; }
       .sb-overview-big {
         font-family: var(--font-display); font-weight: 800; font-size: 32px; color: var(--ink); line-height: 1.1;
       }
@@ -3018,12 +3027,14 @@ export default function GlobalStyle() {
       .sb-overview-brand { display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-weight: 800; font-size: 13px; color: var(--ink); opacity: .85; }
 
       @media (max-width: 900px) {
-        .sb-overview-grid { grid-template-columns: repeat(2, 1fr); }
-        .sb-overview-card-wide { grid-column: span 2; }
+        /* Clock no longer has a same-height neighbour to size against, so
+           it goes back to a full-width banner above the stat grid. */
+        .sb-overview-top { grid-template-columns: 1fr; }
+        .sb-clock-card { height: auto; min-height: 190px; }
+        .sb-overview-stats-grid { grid-template-columns: repeat(3, 1fr); grid-template-rows: none; }
       }
       @media (max-width: 560px) {
-        .sb-overview-grid { grid-template-columns: 1fr; }
-        .sb-overview-card-wide { grid-column: span 1; }
+        .sb-overview-stats-grid { grid-template-columns: repeat(2, 1fr); }
       }
     `}</style>
   );
