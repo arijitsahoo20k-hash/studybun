@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
   RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, Crown, User, Settings, Menu,
-  NotebookPen, ChevronsLeft, ChevronsRight, Users, Layers,
+  NotebookPen, ChevronsLeft, ChevronsRight, Users, Layers, Camera,
 } from "lucide-react";
 
 import { THEMES, themeVars, timeWash } from "./data/themes";
@@ -36,6 +36,7 @@ import ThemePhotoLayer from "./components/ThemePhotoLayer";
 // stay eager above since literally every screen needs them immediately.
 const Onboarding = lazy(() => import("./pages/onboarding"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DailyOverview = lazy(() => import("./pages/DailyOverview"));
 const StudyTracker = lazy(() => import("./pages/StudyTracker"));
 const FocusTimer = lazy(() => import("./pages/FocusTimer"));
 const SyllabusPage = lazy(() => import("./pages/Syllabus"));
@@ -60,6 +61,7 @@ const AIInsightsPage = lazy(() => import("./pages/AIInsights"));
 // still being fetched.
 const PAGE_LOADERS = {
   dashboard: () => import("./pages/Dashboard"),
+  recap: () => import("./pages/DailyOverview"),
   study: () => import("./pages/StudyTracker"),
   timer: () => import("./pages/FocusTimer"),
   syllabus: () => import("./pages/Syllabus"),
@@ -81,6 +83,7 @@ const PAGE_LOADERS = {
 
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: Home },
+  { id: "recap", label: "Daily Recap", icon: Camera },
   { id: "study", label: "Study Tracker", icon: BookOpen },
   { id: "timer", label: "Focus Timer", icon: Timer },
   { id: "syllabus", label: "Syllabus", icon: Library },
@@ -142,16 +145,20 @@ export default function App() {
   // are activated when their page is visible, preventing navigation from
   // waking every table, realtime channel and derived list at once.
   const pageData = {
-    dashboard: true, study: true, timer: true, syllabus: true, backlog: true,
+    dashboard: true, recap: true, study: true, timer: true, syllabus: true, backlog: true,
     goals: true, questions: true, mocks: true, revision: true, planner: true,
     analytics: true, ai: true, achievements: true, leaderboard: true, profile: true, settings: true,
   };
   const isPage = (...ids) => pageData[page] && ids.includes(page);
-  const sessionsQ = useRealtimeTable("study_sessions", { orderBy: "session_date", enabled: page === "dashboard" || isPage("study", "backlog", "analytics", "ai", "leaderboard", "profile") });
-  const timerSessionsQ = useRealtimeTable("timer_sessions", { orderBy: "created_at", enabled: page === "dashboard" || isPage("timer", "analytics", "leaderboard", "profile") });
+  // "recap" (Daily Recap) needs the same live tables Dashboard does — it's
+  // the same today-stats data, just presented as a screenshot-friendly page
+  // — so it rides along on every one of these `enabled` flags rather than
+  // getting its own separate fetch.
+  const sessionsQ = useRealtimeTable("study_sessions", { orderBy: "session_date", enabled: page === "dashboard" || page === "recap" || isPage("study", "backlog", "analytics", "ai", "leaderboard", "profile") });
+  const timerSessionsQ = useRealtimeTable("timer_sessions", { orderBy: "created_at", enabled: page === "dashboard" || page === "recap" || isPage("timer", "analytics", "leaderboard", "profile") });
   const chapters = useChapterProgress({ enabled: page === "dashboard" || isPage("study", "timer", "syllabus", "mocks", "revision", "backlog", "ai", "leaderboard") });
-  const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || isPage("questions", "syllabus", "mocks", "backlog", "analytics", "ai", "leaderboard", "profile") });
-  const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date", enabled: page === "dashboard" || isPage("syllabus", "mocks", "backlog", "analytics", "ai", "leaderboard", "profile") });
+  const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || page === "recap" || isPage("questions", "syllabus", "mocks", "backlog", "analytics", "ai", "leaderboard", "profile") });
+  const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date", enabled: page === "dashboard" || page === "recap" || isPage("syllabus", "mocks", "backlog", "analytics", "ai", "leaderboard", "profile") });
   // Backlog's recovery engine reads mock mistake tags directly, so it needs
   // mock_analysis live too — not just on the Mocks page itself. Not needed
   // on Dashboard: no dashboard card or the achievement-unlock engine below
@@ -169,8 +176,8 @@ export default function App() {
   // disappeared the instant you left the page or refreshed; now it
   // survives nav/refresh/devices while still only staying open when needed.
   const aiInsightsRow = useDeviceRow("ai_insights", { result: null, generated_at: null }, { enabled: page === "ai" });
-  const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true, enabled: page === "dashboard" || isPage("syllabus", "mocks", "backlog", "revision", "ai", "profile") });
-  const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date", enabled: page === "dashboard" || isPage("backlog", "planner", "profile") });
+  const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true, enabled: page === "dashboard" || page === "recap" || isPage("syllabus", "mocks", "backlog", "revision", "ai", "profile") });
+  const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date", enabled: page === "dashboard" || page === "recap" || isPage("backlog", "planner", "profile") });
   const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at", enabled: page === "dashboard" || isPage("backlog", "ai") });
   const goalsQ = useRealtimeTable("goals", { orderBy: "created_at", ascending: true, enabled: isPage("goals", "achievements") });
   const achievementsQ = useRealtimeTable("achievements", { orderBy: "unlocked_at", enabled: page === "dashboard" || page === "achievements" });
@@ -999,9 +1006,9 @@ export default function App() {
 
   const completeRevision = async (id) => {
     const priorStatus = revisions.find((r) => r.id === id)?.status || "Pending";
-    await revisionsQ.update(id, { status: "Completed" });
+    await revisionsQ.update(id, { status: "Completed", completed_at: new Date().toISOString() });
     fireCelebrate("petals");
-    showToast("Revision complete — that chapter just got stickier 🌷", () => revisionsQ.update(id, { status: priorStatus }));
+    showToast("Revision complete — that chapter just got stickier 🌷", () => revisionsQ.update(id, { status: priorStatus, completed_at: null }));
   };
   const addRevision = async (payload) => {
     const row = await revisionsQ.insert({ status: "Pending", revision_number: 1, ...payload });
@@ -1363,6 +1370,7 @@ export default function App() {
         <div className={`sb-page-transition sb-route-${page}`} key={page}>
           <Suspense fallback={<PageLoading mascot={mascot} />}>
             {page === "dashboard" && <Dashboard {...pageProps} />}
+            {page === "recap" && <DailyOverview {...pageProps} />}
             {page === "study" && <StudyTracker {...pageProps} />}
             {page === "timer" && <FocusTimer {...pageProps} />}
             {page === "syllabus" && <SyllabusPage {...pageProps} />}

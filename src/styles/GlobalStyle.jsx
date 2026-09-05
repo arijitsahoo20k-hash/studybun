@@ -2899,6 +2899,127 @@ export default function GlobalStyle() {
       @media (max-width: 720px) {
         .sb-pv-info-grid { grid-template-columns: 1fr; gap: 16px; }
       }
+
+      /* ============================================================
+         DAILY RECAP page — a screenshot-friendly, glassy bento recap
+         of the day's stats, plus the customizable live IST clock card.
+         ============================================================ */
+      .sb-overview-page { display: flex; flex-direction: column; gap: 16px; max-width: 980px; margin: 0 auto; }
+      .sb-overview-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+      .sb-overview-title { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--ink); letter-spacing: -.2px; }
+      .sb-overview-streak-chip {
+        display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
+        font-family: var(--font-display); font-weight: 800; font-size: 13.5px; flex-shrink: 0;
+      }
+
+      /* --- Live clock hero card --- */
+      .sb-clock-card {
+        position: relative; border-radius: 26px; overflow: hidden; min-height: 220px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        border: 2.5px solid var(--outline); box-shadow: 5px 5px 0 var(--outline);
+        padding: 28px 20px;
+      }
+      .sb-clock-bg { position: absolute; inset: 0; z-index: 0; }
+      .sb-clock-bg-theme {
+        position: absolute; inset: 0;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 55%, var(--soft) 100%);
+      }
+      .sb-clock-bg-img { position: absolute; inset: -6px; background-size: cover; background-position: center; }
+      .sb-clock-bg-video { position: absolute; inset: 0; overflow: hidden; }
+      .sb-clock-bg-video iframe {
+        position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
+        transform: translate(-50%, -50%) scale(1.6); border: 0; pointer-events: none;
+      }
+      .sb-clock-bg-dim { position: absolute; inset: 0; background: #000; }
+      .sb-clock-settings-btn {
+        position: absolute; top: 14px; right: 14px; z-index: 3; width: 32px; height: 32px; border-radius: 50%;
+        border: 1.5px solid currentColor; background: rgba(0,0,0,0.18); backdrop-filter: blur(6px);
+        display: inline-flex; align-items: center; justify-content: center; cursor: pointer; opacity: .85;
+        transition: opacity .15s ease, transform .15s ease;
+      }
+      .sb-clock-settings-btn:hover { opacity: 1; transform: scale(1.06); }
+      .sb-clock-face { position: relative; z-index: 1; text-align: center; }
+      .sb-clock-time {
+        font-family: var(--font-display); font-weight: 800; font-size: clamp(48px, 9vw, 76px); line-height: 1;
+        letter-spacing: .5px; display: flex; align-items: baseline; justify-content: center; gap: 2px;
+      }
+      .sb-clock-colon { animation: sb-clock-blink 1.6s step-start infinite; }
+      @keyframes sb-clock-blink { 50% { opacity: .25; } }
+      .sb-clock-seconds { font-size: 0.42em; font-weight: 700; margin-left: 4px; align-self: flex-start; margin-top: .35em; }
+      .sb-clock-ampm { font-size: 0.32em; font-weight: 800; margin-left: 8px; align-self: flex-start; margin-top: .4em; letter-spacing: 1px; }
+      .sb-clock-date { font-family: var(--font-body); font-weight: 700; font-size: 15px; margin-top: 10px; }
+      .sb-clock-tz {
+        display: inline-block; margin-top: 10px; font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px;
+        text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1.3px solid currentColor; opacity: .85;
+      }
+
+      .sb-clock-panel {
+        position: absolute; z-index: 4; bottom: 12px; left: 12px; right: 12px;
+        background: var(--card); border: 2px solid var(--outline); border-radius: 18px; padding: 14px;
+        box-shadow: 4px 4px 0 var(--outline); display: flex; flex-direction: column; gap: 8px;
+        max-width: 420px; margin: 0 auto;
+      }
+      .sb-clock-panel-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .sb-clock-panel-label { font-size: 11px; font-weight: 800; color: var(--muted); margin-top: 4px; }
+      .sb-clock-panel-input {
+        width: 100%; padding: 9px 12px; border-radius: 12px; border: 1.8px solid var(--soft);
+        font-family: var(--font-body); font-size: 13px; color: var(--ink); background: var(--bg);
+      }
+      .sb-clock-mode-chip {
+        display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 999px;
+        border: 1.8px solid var(--soft); background: var(--bg); color: var(--ink); font-weight: 700; font-size: 12px;
+        cursor: pointer; transition: background .15s ease, border-color .15s ease;
+      }
+      .sb-clock-mode-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .sb-clock-reset { margin-left: auto; }
+      .sb-clock-palette-row { gap: 8px; }
+      .sb-clock-swatch {
+        width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid var(--soft); cursor: pointer; padding: 0;
+        transition: transform .15s ease, border-color .15s ease;
+      }
+      .sb-clock-swatch.active { transform: scale(1.18); border-color: var(--outline); }
+      .sb-clock-swatch-custom { position: relative; overflow: hidden; display: inline-block; }
+      .sb-clock-swatch-custom input[type="color"] { position: absolute; inset: -4px; opacity: 0; cursor: pointer; width: 34px; height: 34px; }
+      .sb-clock-panel input[type="range"] { width: 100%; accent-color: var(--accent); }
+      .sb-clock-panel-toggles { margin-top: 4px; }
+
+      @media (max-width: 640px) {
+        .sb-clock-time { font-size: clamp(38px, 13vw, 56px); }
+        .sb-clock-card { min-height: 190px; padding: 22px 14px; }
+      }
+
+      /* --- Stat bento grid --- */
+      .sb-overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      .sb-overview-card { display: flex; flex-direction: column; gap: 4px; }
+      .sb-overview-card-wide { grid-column: span 3; }
+      .sb-overview-big {
+        font-family: var(--font-display); font-weight: 800; font-size: 32px; color: var(--ink); line-height: 1.1;
+      }
+      .sb-overview-big span { font-size: .5em; font-weight: 700; color: var(--muted); margin-left: 2px; }
+      .sb-overview-mini-bar { height: 7px; border-radius: 999px; background: var(--soft); overflow: hidden; margin: 6px 0 2px; }
+      .sb-overview-mini-fill { height: 100%; border-radius: 999px; transition: width .5s ease; }
+      .sb-overview-ring-row { display: flex; align-items: center; gap: 14px; }
+
+      .sb-overview-donut-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+      .sb-overview-donut { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+      .sb-overview-donut-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+      .sb-overview-donut-total { font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--ink); }
+      .sb-overview-legend { flex: 1 1 160px; display: flex; flex-direction: column; gap: 7px; min-width: 140px; }
+      .sb-overview-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+      .sb-overview-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+      .sb-overview-footer { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 0 6px; text-align: center; }
+      .sb-overview-quote { font-family: var(--font-hand); font-size: 19px; color: var(--muted); max-width: 560px; }
+      .sb-overview-brand { display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-weight: 800; font-size: 13px; color: var(--ink); opacity: .85; }
+
+      @media (max-width: 900px) {
+        .sb-overview-grid { grid-template-columns: repeat(2, 1fr); }
+        .sb-overview-card-wide { grid-column: span 2; }
+      }
+      @media (max-width: 560px) {
+        .sb-overview-grid { grid-template-columns: 1fr; }
+        .sb-overview-card-wide { grid-column: span 1; }
+      }
     `}</style>
   );
 }
