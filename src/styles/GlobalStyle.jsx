@@ -2914,12 +2914,17 @@ export default function GlobalStyle() {
 
       /* --- Live clock hero card --- */
       .sb-clock-card {
-        position: relative; border-radius: 26px; overflow: hidden; min-height: 220px;
+        position: relative; border-radius: 26px; min-height: 220px;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         border: 2.5px solid var(--outline); box-shadow: 5px 5px 0 var(--outline);
         padding: 28px 20px;
       }
-      .sb-clock-bg { position: absolute; inset: 0; z-index: 0; }
+      /* Clipping lives here, not on .sb-clock-card itself -- so the
+         rounded corners still contain the photo/video/gradient layers, but
+         the settings panel (a sibling, see below) is free to grow taller
+         than the card and spill past its bottom edge instead of being cut
+         off when its content doesn't fit inside the card's own height. */
+      .sb-clock-bg { position: absolute; inset: 0; z-index: 0; border-radius: inherit; overflow: hidden; }
       .sb-clock-bg-theme {
         position: absolute; inset: 0;
         background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 55%, var(--soft) 100%);
@@ -2957,7 +2962,7 @@ export default function GlobalStyle() {
         position: absolute; z-index: 4; bottom: 12px; left: 12px; right: 12px;
         background: var(--card); border: 2px solid var(--outline); border-radius: 18px; padding: 14px;
         box-shadow: 4px 4px 0 var(--outline); display: flex; flex-direction: column; gap: 8px;
-        max-width: 420px; margin: 0 auto;
+        max-width: 420px; margin: 0 auto; max-height: min(70vh, 480px); overflow-y: auto;
       }
       .sb-clock-panel-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
       .sb-clock-panel-label { font-size: 11px; font-weight: 800; color: var(--muted); margin-top: 4px; }

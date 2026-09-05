@@ -27,18 +27,24 @@ const flameTierFor = (streak) => {
 export default function DailyOverview(p) {
   const todayStr = todayIST();
 
-  const manualToday = useMemo(
-    () => (p.sessions || []).filter((s) => s.platform !== "Focus Timer" && s.session_date === todayStr),
+  // Unlike the "Study time" card above (which deliberately separates manual
+  // vs. timer minutes to avoid double-counting), the subject donut counts
+  // every study_sessions row for today regardless of platform — same as
+  // Dashboard's all-time subject pie. A Focus Timer session still logs a
+  // "what did you study" row with a real subject on it; leaving those out
+  // made subjects studied only via the timer vanish from this chart.
+  const sessionsToday = useMemo(
+    () => (p.sessions || []).filter((s) => s.session_date === todayStr),
     [p.sessions, todayStr]
   );
 
   const subjectRows = useMemo(() => {
     const map = {};
-    manualToday.forEach((s) => { map[s.subject] = (map[s.subject] || 0) + num(s.minutes); });
+    sessionsToday.forEach((s) => { map[s.subject] = (map[s.subject] || 0) + num(s.minutes); });
     return Object.entries(map)
       .map(([name, mins]) => ({ name, value: +(mins / 60).toFixed(2) }))
       .sort((a, b) => b.value - a.value);
-  }, [manualToday]);
+  }, [sessionsToday]);
   const subjectTotal = subjectRows.reduce((a, s) => a + s.value, 0) || 1;
 
   const todayQuestionRows = useMemo(() => (p.questions || []).filter((q) => q.log_date === todayStr), [p.questions, todayStr]);

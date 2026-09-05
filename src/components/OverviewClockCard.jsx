@@ -27,8 +27,13 @@ export default function OverviewClockCard() {
   // `% 24` below is a cheap belt-and-suspenders guard against that same
   // class of bug even if it slips through on some engine.
   const hour24 = Number(ist(now, { hour: "2-digit", hourCycle: "h23" })) % 24;
-  const minute = ist(now, { minute: "2-digit" });
-  const second = ist(now, { second: "2-digit" });
+  // Intl's `minute: "2-digit"` / `second: "2-digit"` only actually
+  // zero-pads when formatted alongside an hour field — asked for on its
+  // own (as here, since hour/minute/second are rendered as separate JSX
+  // spans) it silently returns the un-padded number ("8" instead of "08").
+  // Padding manually sidesteps that rather than relying on Intl for it.
+  const minute = String(Number(ist(now, { minute: "numeric" }))).padStart(2, "0");
+  const second = String(Number(ist(now, { second: "numeric" }))).padStart(2, "0");
   const hourDisplay = settings.format24h
     ? String(hour24).padStart(2, "0")
     : String(hour24 % 12 === 0 ? 12 : hour24 % 12).padStart(2, "0");
