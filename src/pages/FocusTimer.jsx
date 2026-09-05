@@ -18,7 +18,6 @@ const MODE_ORDER = ["Deep Focus", "Pomodoro", "Lecture", "Practice", "Revision",
 // an unrelated re-render -- same pattern DecorLayer uses for its backdrop.
 const MOTE_SLOTS = [
   { top: "10%", left: "16%" }, { top: "18%", left: "82%" },
-  { top: "50%", left: "6%" }, { top: "54%", left: "92%" },
   { top: "86%", left: "22%" }, { top: "82%", left: "78%" },
 ];
 
@@ -57,6 +56,77 @@ const FOCUS_QUOTES = [
   { text: "Discipline is choosing between what you want now and what you want most.", author: "Anonymous" },
   { text: "You don't have to see the whole staircase, just take the first step.", author: "Martin Luther King Jr." },
 ];
+
+// Pulled out of the main render and memoized: everything this shows (mode,
+// tip, photo, today/streak stats, week dots, quote) only ever changes when
+// the mode is switched or once a day -- never on the timer's once-a-second
+// tick. Without this split, that per-second countdown re-render was walking
+// and re-diffing this entire card (including its background-image style
+// object and the 7-day map) every single second for absolutely no visual
+// change, on top of the actual GPU cost from the CSS animations. Desktop/wide
+// screens only (see .sb-focus-side in GlobalStyle), but cheap to always
+// mount since it renders null-equivalent (display:none) below that breakpoint.
+const FocusSideRail = React.memo(function FocusSideRail({
+  mode, mascot, focusScene, focusQuote, todayTimerHours, streak, weeklyData,
+}) {
+  return (
+    <div className="sb-focus-side">
+      <Card className="sb-focus-side-card" glass>
+        <div
+          className="sb-focus-side-img"
+          style={{ backgroundImage: `url(${focusScene})` }}
+          role="img"
+          aria-label={`${mascot || "Mascot"} studying at a window`}
+        />
+        <div className="sb-focus-side-panel">
+          <div className="sb-focus-side-heading">
+            <span className="sb-focus-side-title">{mode}</span>
+            <span className="sb-focus-side-title-bar" aria-hidden="true" />
+          </div>
+          <p className="sb-focus-side-tip">{MODE_TIPS[mode]}</p>
+
+          {(typeof todayTimerHours === "number" || typeof streak === "number") && (
+            <div className="sb-focus-side-stats">
+              {typeof todayTimerHours === "number" && (
+                <div className="sb-focus-stat-chip">
+                  <span className="sb-focus-stat-chip-top"><Clock3 size={12} /> Today</span>
+                  <span className="sb-focus-stat-chip-num">{todayTimerHours.toFixed(1)}h</span>
+                </div>
+              )}
+              {typeof streak === "number" && (
+                <div className="sb-focus-stat-chip">
+                  <span className="sb-focus-stat-chip-top"><Flame size={12} /> Streak</span>
+                  <span className="sb-focus-stat-chip-num">{streak}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {Array.isArray(weeklyData) && weeklyData.length > 0 && (
+            <div className="sb-focus-side-week">
+              {weeklyData.map((d, i) => {
+                const isToday = i === weeklyData.length - 1;
+                const active = (Number(d.hours) || 0) + (Number(d.timerHours) || 0) > 0;
+                return (
+                  <div key={i} className={`sb-focus-week-day ${isToday ? "today" : ""}`}>
+                    <span className="sb-focus-week-letter">{(d.day || "?").charAt(0)}</span>
+                    <span className={`sb-focus-week-dot ${active ? "done" : ""}`} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="sb-focus-side-quote">
+            <span className="sb-focus-side-quote-mark" aria-hidden="true">&ldquo;</span>
+            <span className="sb-focus-side-quote-text">{focusQuote.text}</span>
+            <span className="sb-focus-side-quote-author">— {focusQuote.author}</span>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+});
 
 export default function FocusTimer(p) {
   const t = p.focusTimer;
@@ -279,61 +349,15 @@ export default function FocusTimer(p) {
         </div>
       </Card>
 
-      <div className="sb-focus-side">
-        <Card className="sb-focus-side-card" glass>
-          <div
-            className="sb-focus-side-img"
-            style={{ backgroundImage: `url(${focusScene})` }}
-            role="img"
-            aria-label={`${p.mascot || "Mascot"} studying at a window`}
-          />
-          <div className="sb-focus-side-panel">
-            <div className="sb-focus-side-heading">
-              <span className="sb-focus-side-title">{t.mode}</span>
-              <span className="sb-focus-side-title-bar" aria-hidden="true" />
-            </div>
-            <p className="sb-focus-side-tip">{MODE_TIPS[t.mode]}</p>
-
-            {(typeof p.todayTimerHours === "number" || typeof p.streak === "number") && (
-              <div className="sb-focus-side-stats">
-                {typeof p.todayTimerHours === "number" && (
-                  <div className="sb-focus-stat-chip">
-                    <span className="sb-focus-stat-chip-top"><Clock3 size={12} /> Today</span>
-                    <span className="sb-focus-stat-chip-num">{p.todayTimerHours.toFixed(1)}h</span>
-                  </div>
-                )}
-                {typeof p.streak === "number" && (
-                  <div className="sb-focus-stat-chip">
-                    <span className="sb-focus-stat-chip-top"><Flame size={12} /> Streak</span>
-                    <span className="sb-focus-stat-chip-num">{p.streak}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {Array.isArray(p.weeklyData) && p.weeklyData.length > 0 && (
-              <div className="sb-focus-side-week">
-                {p.weeklyData.map((d, i) => {
-                  const isToday = i === p.weeklyData.length - 1;
-                  const active = (Number(d.hours) || 0) + (Number(d.timerHours) || 0) > 0;
-                  return (
-                    <div key={i} className={`sb-focus-week-day ${isToday ? "today" : ""}`}>
-                      <span className="sb-focus-week-letter">{(d.day || "?").charAt(0)}</span>
-                      <span className={`sb-focus-week-dot ${active ? "done" : ""}`} />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="sb-focus-side-quote">
-              <span className="sb-focus-side-quote-mark" aria-hidden="true">&ldquo;</span>
-              <span className="sb-focus-side-quote-text">{focusQuote.text}</span>
-              <span className="sb-focus-side-quote-author">— {focusQuote.author}</span>
-            </div>
-          </div>
-        </Card>
-      </div>
+      <FocusSideRail
+        mode={t.mode}
+        mascot={p.mascot}
+        focusScene={focusScene}
+        focusQuote={focusQuote}
+        todayTimerHours={p.todayTimerHours}
+        streak={p.streak}
+        weeklyData={p.weeklyData}
+      />
       </div>
 
       {studyingOpen && (

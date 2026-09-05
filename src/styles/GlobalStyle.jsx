@@ -1031,20 +1031,51 @@ export default function GlobalStyle() {
         display: flex; flex-direction: column; align-items: center; gap: 18px;
         padding: 38px 30px; isolation: isolate;
         background: linear-gradient(175deg, var(--card) 0%, var(--card) 62%, var(--soft) 145%);
+        /* Its own containment box: layout/paint/style changes inside (the
+           once-a-second digit tick, the running-state animations) never
+           bubble out to trigger recalculation elsewhere on the page, and
+           vice versa. */
+        contain: layout style paint;
       }
-      /* glassmorphism: a light blur + translucent card so the app's ambient
-         dot/wash backdrop still breathes through, per the studio's usual
-         warm/glass direction -- kept subtle so text contrast never suffers. */
-      .sb-focus-hero.sb-card-glass { background-color: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+      /* glassmorphism, WITHOUT a live backdrop-filter: this card sits directly
+         on top of the app-wide DecorLayer (position:fixed, endlessly drifting
+         on every page -- see .sb-decor-layer below), and a real backdrop
+         blur filter over a moving backdrop forces the compositor to
+         re-sample and re-blur that entire region on every single frame --
+         by far the single biggest GPU cost on this page (this hero is also
+         one of the tallest cards in the app). The card background was already
+         ~88% opaque, so almost none of what's "seen through" was doing any
+         visual work anyway -- a static, slightly richer two-tone tint plus a
+         faint top highlight reproduces the same frosted-glass read for free,
+         at zero per-frame cost. Kept as its own isolated compositor layer (see
+         the contain property below) so nothing else on the page has to
+         repaint alongside it either. See .sb-focus-side-panel for the
+         companion-rail version of this same fix. */
+      .sb-focus-hero.sb-card-glass {
+        background-color: color-mix(in srgb, var(--card) 94%, transparent);
+        /* Layered on top of (not instead of) the base .sb-focus-hero diagonal
+           card->soft wash -- .sb-card-glass wins the cascade for
+           background-image (two classes vs. one, and it's declared later),
+           so the original gradient has to be repeated here or it silently
+           disappears whenever glass is on, which is always, for this card. */
+        background-image:
+          linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent) 0%, transparent 30%),
+          linear-gradient(175deg, var(--card) 0%, var(--card) 62%, var(--soft) 145%);
+      }
 
       .sb-focus-aura {
         position: absolute; top: 50%; left: 50%; width: 62%; aspect-ratio: 1;
         transform: translate(-50%, -54%); border-radius: 50%; pointer-events: none; z-index: 0;
         background: radial-gradient(circle, var(--accent2) 0%, var(--soft) 42%, transparent 72%);
-        opacity: .28; filter: blur(6px);
+        opacity: .28; filter: blur(4px);
         transition: opacity .6s ease;
       }
-      .sb-focus-hero.sb-focus-running .sb-focus-aura { opacity: .5; animation: sb-focus-breathe 4.2s ease-in-out infinite; }
+      .sb-focus-hero.sb-focus-running .sb-focus-aura {
+        opacity: .5; animation: sb-focus-breathe 4.2s ease-in-out infinite;
+        /* Compositor-only scale animation on a layer that's rasterized once,
+           not re-blurred every frame. */
+        will-change: transform;
+      }
       @keyframes sb-focus-breathe {
         0%, 100% { transform: translate(-50%, -54%) scale(1); }
         50% { transform: translate(-50%, -54%) scale(1.12); }
@@ -1054,6 +1085,7 @@ export default function GlobalStyle() {
       .sb-focus-mote {
         position: absolute; font-size: 13px; color: var(--accent);
         opacity: 0; animation: sb-focus-mote-drift 5.5s ease-in-out infinite;
+        will-change: transform, opacity;
       }
       @keyframes sb-focus-mote-drift {
         0% { opacity: 0; transform: translateY(6px) scale(.7) rotate(0deg); }
@@ -1095,7 +1127,7 @@ export default function GlobalStyle() {
         position: absolute; width: 78px; height: 78px; border-radius: 50%;
         background: radial-gradient(circle, var(--soft) 0%, transparent 70%); opacity: 0; transition: opacity .5s ease;
       }
-      .sb-focus-hero.sb-focus-running .sb-focus-mascot-halo { opacity: .9; animation: sb-focus-breathe 3.2s ease-in-out infinite; }
+      .sb-focus-hero.sb-focus-running .sb-focus-mascot-halo { opacity: .9; animation: sb-focus-breathe 3.2s ease-in-out infinite; will-change: transform; }
 
       .sb-focus-mode-label { font-family: var(--font-body); font-weight: 800; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 
@@ -1143,6 +1175,7 @@ export default function GlobalStyle() {
       .sb-focus-side-card {
         display: flex; flex-direction: column; height: 100%;
         padding: 0; overflow: hidden; text-align: left;
+        contain: layout style paint;
       }
       .sb-focus-side-img {
         flex: 1 1 auto; min-height: 260px; width: 100%;
@@ -1152,8 +1185,7 @@ export default function GlobalStyle() {
       .sb-focus-side-panel {
         position: relative; z-index: 1; flex: 0 0 auto;
         margin-top: -26px; border-radius: 22px 22px 0 0;
-        background: color-mix(in srgb, var(--card) 93%, transparent);
-        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        background: color-mix(in srgb, var(--card) 97%, transparent);
         box-shadow: 0 -8px 16px -10px rgba(0,0,0,.22);
         padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 10px;
       }
