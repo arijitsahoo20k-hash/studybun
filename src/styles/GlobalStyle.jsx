@@ -2913,14 +2913,15 @@ export default function GlobalStyle() {
       }
 
       /* --- Live clock hero card ---
-         Sits in the left cell of .sb-overview-top as a tall square tile;
+         Sits in the left cell of .sb-overview-hero as a tall square tile;
          height: 100% + align-items: stretch on the parent grid means it
-         naturally stretches to match the combined height of the 3x2 stat
-         grid sitting next to it (see .sb-overview-stats-grid below), so the
-         two roughly form a square without any JS measuring. min-height is
-         just a floor for when the stack collapses to one column on mobile. */
+         naturally stretches to match the quote card sitting next to it (see
+         .sb-overview-quote-card below), so the two form a matching pair
+         without any JS measuring. min-height is the floor for both mobile
+         (stacked, auto height) and desktop (keeps the pair tall enough to
+         read as a square even when the quote text is short). */
       .sb-clock-card {
-        position: relative; border-radius: 26px; min-height: 220px; height: 100%;
+        position: relative; border-radius: 26px; min-height: 260px; height: 100%;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         border: 2.5px solid var(--outline); box-shadow: 5px 5px 0 var(--outline);
         padding: 28px 20px; box-sizing: border-box;
@@ -2936,10 +2937,30 @@ export default function GlobalStyle() {
         background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 55%, var(--soft) 100%);
       }
       .sb-clock-bg-img { position: absolute; inset: -6px; background-size: cover; background-position: center; }
-      .sb-clock-bg-video { position: absolute; inset: 0; overflow: hidden; }
+      /* container-type: size turns this box into a query container so the
+         iframe below can size itself off ITS OWN box (cqw/cqh) rather than
+         the viewport -- needed because the clock card's own shape changes
+         with the layout (near-square next to the quote card on desktop,
+         a wide banner once it stacks on mobile) and a 16:9 embed needs a
+         different cover strategy for each. */
+      .sb-clock-bg-video { position: absolute; inset: 0; overflow: hidden; container-type: size; }
       .sb-clock-bg-video iframe {
         position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
         transform: translate(-50%, -50%) scale(1.6); border: 0; pointer-events: none;
+      }
+      /* True "cover" for a 16:9 embed inside a box of unknown aspect ratio:
+         whichever dimension the scale(1.6) fallback above doesn't fully
+         cover, one of these two min- rules forces it the rest of the way --
+         min-width covers the near-square/portrait case, min-height covers
+         the wide-banner case -- so there's never a letterboxed gap on
+         either edge. Browsers without cqw/cqh support just keep the
+         scale(1.6) fallback above. */
+      @supports (width: 1cqw) {
+        .sb-clock-bg-video iframe {
+          transform: translate(-50%, -50%);
+          min-width: 177.78cqh;
+          min-height: 56.25cqw;
+        }
       }
       .sb-clock-bg-dim { position: absolute; inset: 0; background: #000; }
       .sb-clock-settings-btn {
@@ -2999,12 +3020,31 @@ export default function GlobalStyle() {
         .sb-clock-card { min-height: 190px; padding: 22px 14px; }
       }
 
-      /* --- Bento top row: square clock tile + matching 3x2 stat grid --- */
-      .sb-overview-top {
+      /* --- Hero row: square clock tile + a matching "today's quote" tile ---
+         Both sit in the same single-row grid; align-items: stretch (grid's
+         default) makes the shorter one (usually the quote) stretch to match
+         the taller one, so they read as a pair without any JS measuring. */
+      .sb-overview-hero {
         display: grid; grid-template-columns: minmax(230px, 300px) 1fr; gap: 14px; align-items: stretch;
       }
-      .sb-overview-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 14px; }
-      .sb-overview-card { display: flex; flex-direction: column; gap: 4px; min-height: 118px; box-sizing: border-box; }
+      .sb-overview-quote-card {
+        height: 100%; box-sizing: border-box;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px;
+        background: linear-gradient(150deg, var(--soft) 0%, var(--card) 65%);
+      }
+      .sb-overview-quote-icon { color: var(--accent); opacity: .45; }
+      .sb-overview-quote-text {
+        font-family: var(--font-hand); font-size: clamp(17px, 2.1vw, 22px); line-height: 1.5;
+        color: var(--ink); max-width: 48ch;
+      }
+      .sb-overview-quote-brand {
+        display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
+        font-family: var(--font-display); font-weight: 800; font-size: 12.5px; color: var(--ink); opacity: .85; margin-top: 4px;
+      }
+
+      /* --- Stat bento grid (6 small cards, full width, below the hero) --- */
+      .sb-overview-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      .sb-overview-card { display: flex; flex-direction: column; gap: 4px; }
       .sb-overview-card-wide { display: flex; flex-direction: column; gap: 4px; }
       .sb-overview-big {
         font-family: var(--font-display); font-weight: 800; font-size: 32px; color: var(--ink); line-height: 1.1;
@@ -3014,27 +3054,32 @@ export default function GlobalStyle() {
       .sb-overview-mini-fill { height: 100%; border-radius: 999px; transition: width .5s ease; }
       .sb-overview-ring-row { display: flex; align-items: center; gap: 14px; }
 
-      .sb-overview-donut-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+      /* donut + legend are centered as one compact group rather than
+         stretching edge-to-edge -- on a full-width card, letting the legend
+         flex-grow to fill all remaining space put a huge empty gap between
+         a subject name and its minutes whenever there were only 1-2
+         subjects logged. Capping the legend's width and centering the pair
+         keeps it looking like a deliberate chart, not a stretched row. */
+      .sb-overview-donut-wrap { display: flex; align-items: center; justify-content: center; gap: 22px; flex-wrap: wrap; }
       .sb-overview-donut { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
       .sb-overview-donut-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
       .sb-overview-donut-total { font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--ink); }
-      .sb-overview-legend { flex: 1 1 160px; display: flex; flex-direction: column; gap: 7px; min-width: 140px; }
+      .sb-overview-legend { flex: 0 1 260px; display: flex; flex-direction: column; gap: 7px; min-width: 180px; max-width: 320px; }
       .sb-overview-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--ink); }
       .sb-overview-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 
       .sb-overview-footer { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 0 6px; text-align: center; }
-      .sb-overview-quote { font-family: var(--font-hand); font-size: 19px; color: var(--muted); max-width: 560px; }
       .sb-overview-brand { display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-weight: 800; font-size: 13px; color: var(--ink); opacity: .85; }
 
       @media (max-width: 900px) {
         /* Clock no longer has a same-height neighbour to size against, so
-           it goes back to a full-width banner above the stat grid. */
-        .sb-overview-top { grid-template-columns: 1fr; }
+           it goes back to a full-width banner above the quote card. */
+        .sb-overview-hero { grid-template-columns: 1fr; }
         .sb-clock-card { height: auto; min-height: 190px; }
-        .sb-overview-stats-grid { grid-template-columns: repeat(3, 1fr); grid-template-rows: none; }
       }
       @media (max-width: 560px) {
         .sb-overview-stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .sb-overview-legend { max-width: none; }
       }
     `}</style>
   );

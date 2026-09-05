@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import {
-  Clock3, HelpCircle, CheckSquare, RotateCcw, ClipboardList, Flame, Target, BookOpen, Sparkles,
+  Clock3, HelpCircle, CheckSquare, RotateCcw, ClipboardList, Flame, Target, BookOpen, Sparkles, Quote,
 } from "lucide-react";
 import { Card, SectionTitle, ProgressRing, EmptyState } from "../components/ui";
 import Mascot from "../components/Mascot";
@@ -105,68 +105,77 @@ export default function DailyOverview(p) {
         </div>
       </div>
 
-      <div className="sb-overview-top">
+      <div className="sb-overview-hero">
         <OverviewClockCard />
 
-        <div className="sb-overview-stats-grid">
-          <Card paper glass className="sb-overview-card">
-            <SectionTitle icon={Clock3}>Study time</SectionTitle>
-            <div className="sb-overview-big">{p.todayHours}<span>h</span></div>
-            <div className="sb-muted">{p.todayLoggedHours}h logged · {p.todayTimerHours}h focus timer</div>
-            <div className="sb-overview-mini-bar">
-              <div className="sb-overview-mini-fill" style={{ width: `${Math.min(100, (p.todayLoggedHours / (p.todayHours || 1)) * 100)}%`, background: "var(--accent)" }} />
-            </div>
-          </Card>
+        <Card paper glass className="sb-overview-quote-card">
+          <Quote size={20} className="sb-overview-quote-icon" />
+          <div className="sb-overview-quote-text">{line}</div>
+          <div className="sb-overview-quote-brand">
+            <Mascot species={p.mascot} mood={p.mascotMood || "happy"} size={26} />
+            <span>StudyBun</span>
+          </div>
+        </Card>
+      </div>
 
-          <Card paper glass className="sb-overview-card">
-            <SectionTitle icon={Target}>Today's goal</SectionTitle>
-            <div className="sb-overview-ring-row">
-              <ProgressRing pct={goalPct} size={64} stroke={7} />
-              <div>
-                <div className="sb-overview-big" style={{ fontSize: 22 }}>{p.todayHours}h <span style={{ fontSize: 13 }}>/ {dailyGoal}h</span></div>
-                <div className="sb-muted">{goalPct >= 100 ? "Goal hit today 🎉" : `${Math.round(dailyGoal - p.todayHours < 0 ? 0 : dailyGoal - p.todayHours)}h to go`}</div>
-              </div>
-            </div>
-          </Card>
+      <div className="sb-overview-stats-grid">
+        <Card paper glass className="sb-overview-card">
+          <SectionTitle icon={Clock3}>Study time</SectionTitle>
+          <div className="sb-overview-big">{p.todayHours}<span>h</span></div>
+          <div className="sb-muted">{p.todayLoggedHours}h logged · {p.todayTimerHours}h focus timer</div>
+          <div className="sb-overview-mini-bar">
+            <div className="sb-overview-mini-fill" style={{ width: `${Math.min(100, (p.todayLoggedHours / (p.todayHours || 1)) * 100)}%`, background: "var(--accent)" }} />
+          </div>
+        </Card>
 
-          <Card paper glass className="sb-overview-card">
-            <SectionTitle icon={HelpCircle}>Questions solved</SectionTitle>
-            <div className="sb-overview-big">{p.todayQuestions || 0}</div>
-            <div className="sb-muted">
-              {questionAccuracy !== null ? `${questionAccuracy}% accuracy · ${questionsCorrect} correct` : "today's practice"}
+        <Card paper glass className="sb-overview-card">
+          <SectionTitle icon={Target}>Today's goal</SectionTitle>
+          <div className="sb-overview-ring-row">
+            <ProgressRing pct={goalPct} size={64} stroke={7} />
+            <div>
+              <div className="sb-overview-big" style={{ fontSize: 22 }}>{p.todayHours}h <span style={{ fontSize: 13 }}>/ {dailyGoal}h</span></div>
+              <div className="sb-muted">{goalPct >= 100 ? "Goal hit today 🎉" : `${Math.round(dailyGoal - p.todayHours < 0 ? 0 : dailyGoal - p.todayHours)}h to go`}</div>
             </div>
-          </Card>
+          </div>
+        </Card>
 
-          <Card paper glass className="sb-overview-card">
-            <SectionTitle icon={CheckSquare}>Tasks</SectionTitle>
-            <div className="sb-overview-big">{todayTasksDone}<span>/{todayTasks.length}</span></div>
-            <div className="sb-overview-mini-bar">
-              <div className="sb-overview-mini-fill" style={{ width: `${todayTasks.length ? (todayTasksDone / todayTasks.length) * 100 : 0}%`, background: "var(--p2)" }} />
-            </div>
-            <div className="sb-muted">{todayTasks.length ? "planned for today" : "nothing planned today"}</div>
-          </Card>
+        <Card paper glass className="sb-overview-card">
+          <SectionTitle icon={HelpCircle}>Questions solved</SectionTitle>
+          <div className="sb-overview-big">{p.todayQuestions || 0}</div>
+          <div className="sb-muted">
+            {questionAccuracy !== null ? `${questionAccuracy}% accuracy · ${questionsCorrect} correct` : "today's practice"}
+          </div>
+        </Card>
 
-          <Card paper glass className="sb-overview-card">
-            <SectionTitle icon={RotateCcw}>Revisions</SectionTitle>
-            <div className="sb-overview-big">{revisionsDoneToday}<span>/{revisionsTodayTotal}</span></div>
-            <div className="sb-muted">
-              {revisionsDueToday.length > 0 ? `${revisionsDueToday.length} still due today` : "today's plan clear"}
-              {overdueRevisions > 0 ? ` · ${overdueRevisions} overdue` : ""}
-            </div>
-          </Card>
+        <Card paper glass className="sb-overview-card">
+          <SectionTitle icon={CheckSquare}>Tasks</SectionTitle>
+          <div className="sb-overview-big">{todayTasksDone}<span>/{todayTasks.length}</span></div>
+          <div className="sb-overview-mini-bar">
+            <div className="sb-overview-mini-fill" style={{ width: `${todayTasks.length ? (todayTasksDone / todayTasks.length) * 100 : 0}%`, background: "var(--p2)" }} />
+          </div>
+          <div className="sb-muted">{todayTasks.length ? "planned for today" : "nothing planned today"}</div>
+        </Card>
 
-          <Card paper glass className="sb-overview-card">
-            <SectionTitle icon={ClipboardList}>Mock test</SectionTitle>
-            {todayMocks.length ? (
-              <>
-                <div className="sb-overview-big" style={{ fontSize: 22 }}>{todayMocks.map((m) => mockScoreOf(m)).reduce((a, b) => a + b, 0)}<span>/{todayMocks.reduce((a, m) => a + mockTotalOf(m), 0)}</span></div>
-                <div className="sb-muted">{todayMocks.length} mock{todayMocks.length > 1 ? "s" : ""} taken today</div>
-              </>
-            ) : (
-              <div className="sb-muted" style={{ marginTop: 6 }}>No mock today</div>
-            )}
-          </Card>
-        </div>
+        <Card paper glass className="sb-overview-card">
+          <SectionTitle icon={RotateCcw}>Revisions</SectionTitle>
+          <div className="sb-overview-big">{revisionsDoneToday}<span>/{revisionsTodayTotal}</span></div>
+          <div className="sb-muted">
+            {revisionsDueToday.length > 0 ? `${revisionsDueToday.length} still due today` : "today's plan clear"}
+            {overdueRevisions > 0 ? ` · ${overdueRevisions} overdue` : ""}
+          </div>
+        </Card>
+
+        <Card paper glass className="sb-overview-card">
+          <SectionTitle icon={ClipboardList}>Mock test</SectionTitle>
+          {todayMocks.length ? (
+            <>
+              <div className="sb-overview-big" style={{ fontSize: 22 }}>{todayMocks.map((m) => mockScoreOf(m)).reduce((a, b) => a + b, 0)}<span>/{todayMocks.reduce((a, m) => a + mockTotalOf(m), 0)}</span></div>
+              <div className="sb-muted">{todayMocks.length} mock{todayMocks.length > 1 ? "s" : ""} taken today</div>
+            </>
+          ) : (
+            <div className="sb-muted" style={{ marginTop: 6 }}>No mock today</div>
+          )}
+        </Card>
       </div>
 
       <Card paper glass className="sb-overview-card sb-overview-card-wide">
@@ -200,7 +209,6 @@ export default function DailyOverview(p) {
       </Card>
 
       <div className="sb-overview-footer">
-        <div className="sb-overview-quote">"{line}"</div>
         <div className="sb-overview-brand">
           <Mascot species={p.mascot} mood={p.mascotMood || "happy"} size={30} />
           <span>StudyBun</span>
