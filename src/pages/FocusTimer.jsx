@@ -10,6 +10,7 @@ import StudyingNowCard from "../components/StudyingNowCard";
 import { SYLLABUS } from "../data/syllabus";
 import { RADIO_OPTIONS, RADIO_LINKS, extractYouTubeId, getActiveRadio } from "../lib/radio";
 import { todayIST } from "../lib/dateIST";
+import { pauseDecor } from "../lib/decorPause";
 import { STOPWATCH_MODE } from "../hooks/useFocusTimer";
 
 const MODE_ORDER = ["Deep Focus", "Pomodoro", "Lecture", "Practice", "Revision", STOPWATCH_MODE];
@@ -154,7 +155,13 @@ export default function FocusTimer(p) {
     studyingDialogRef.current?.focus();
     const onKey = (e) => { if (e.key === "Escape") setStudyingOpen(false); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // See src/lib/decorPause.js -- this popup reuses .sb-pt-overlay, which
+    // fully covers the decor layer while it's open.
+    const resumeDecor = pauseDecor();
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      resumeDecor();
+    };
   }, [studyingOpen]);
 
   // Timer settings used to render inline inside the hero card, which made

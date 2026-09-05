@@ -202,6 +202,13 @@ export default function GlobalStyle() {
       @media (prefers-reduced-motion: reduce) {
         .sb-decor { animation: none; }
       }
+      /* Paused (not unmounted) while any full-screen dialog reusing
+         .sb-pt-overlay is open -- see src/lib/decorPause.js. The decor
+         layer is fully hidden behind that overlay at that point, so
+         freezing 8 elements' worth of transform animation costs nothing
+         visually and just stops burning compositor cycles/battery for a
+         backdrop nobody can see. */
+      .sb-decor-paused .sb-decor { animation-play-state: paused; }
       @keyframes sb-bob {
         0%, 100% { transform: rotate(var(--sb-decor-rot, 0deg)) translateY(0); }
         50% { transform: rotate(var(--sb-decor-rot, 0deg)) translateY(-10px); }
@@ -2683,9 +2690,25 @@ export default function GlobalStyle() {
         .sb-pt-cell-sym { font-size: 12px; }
       }
       /* ===== Periodic Table — element detail dialog ===== */
+      /* No live backdrop-filter here -- see pauseDecor()/.sb-decor-paused
+         below for the other half of this fix. This overlay is reused by
+         three different full-screen dialogs (Periodic Table element
+         detail, the "who's studying" popup, and ImageLightbox), and it
+         sits directly on top of .sb-decor-layer, which is position:fixed
+         and animates on every single page, forever. A blur() filter can't
+         be rasterized once and reused -- with a moving layer underneath,
+         the compositor has to re-sample and re-blur the entire viewport
+         on every frame the whole time the dialog is open. That's the
+         single biggest cause of the GPU spike/lag reported when opening a
+         photo (the lightbox keeps this overlay mounted the longest of the
+         three), and it also explains why *any* extra compositing work
+         while it's open (like the OS notification-shade animating over
+         the page) visibly stutters -- it's competing with a full-screen
+         blur being recomputed every frame. A static, slightly richer
+         opaque scrim gives the same "dimmed background" read for free. */
       .sb-pt-overlay {
-        position: fixed; inset: 0; z-index: 90; background: rgba(20,16,14,.5);
-        display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(2px);
+        position: fixed; inset: 0; z-index: 90; background: rgba(20,16,14,.62);
+        display: flex; align-items: center; justify-content: center; padding: 16px;
       }
       .sb-pt-dialog {
         width: min(440px, 100%); max-height: 88vh; overflow-y: auto; background: var(--card); color: var(--mascot-ink);

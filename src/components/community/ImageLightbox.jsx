@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { pauseDecor } from "../../lib/decorPause";
 
 /**
  * ImageLightbox — in-app full-screen image viewer.
@@ -58,6 +59,11 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
     dialogRef.current?.focus();
     return () => { prevFocus?.focus(); };
   }, []);
+
+  // See src/lib/decorPause.js -- the decor layer is completely covered by
+  // this overlay for as long as it's open, so freeze it rather than let
+  // it keep animating (and burning GPU/battery) behind an opaque photo.
+  useEffect(() => pauseDecor(), []);
 
   // Escape key + arrow-key navigation. Escape closes "from any position"
   // (explicit in the redesign plan), so it stays unscoped. Arrow keys are

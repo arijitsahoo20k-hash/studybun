@@ -4,6 +4,7 @@ import { Card } from "./ui";
 import {
   ELEMENTS, COLOR_MODES, elementColor, kToC, MAX_GROUP,
 } from "../data/periodicTable";
+import { pauseDecor } from "../lib/decorPause";
 
 /* La and Ac now sit as real elements in the main 7-row grid at
  * (period 6, group 3) and (period 7, group 3) -- the standard JEE/NCERT
@@ -57,6 +58,10 @@ function ElementDetail({ el, mode, onClose }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // See src/lib/decorPause.js -- this dialog reuses .sb-pt-overlay, which
+  // fully covers the decor layer while it's open.
+  useEffect(() => pauseDecor(), []);
 
   const { color, border, label } = elementColor(el, mode);
   const meltC = kToC(el.melt), boilC = kToC(el.boil);
