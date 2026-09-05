@@ -367,8 +367,13 @@ export default function GlobalStyle() {
 
       .sb-sidebar-nav {
         flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
-        scrollbar-width: thin; padding: 4px 2px;
+        /* Scrollable, but the track/thumb itself is never drawn -- see the
+           comment above .sb-sidebar-tooltip's :has() rule below for why a
+           *visible* scrollbar here (not just a thin one) is what causes
+           the collapsed rail's icons to visibly jump on hover. */
+        scrollbar-width: none; -ms-overflow-style: none; padding: 4px 2px;
       }
+      .sb-sidebar-nav::-webkit-scrollbar { width: 0; height: 0; }
       .sb-sidebar-nav-list { display: flex; flex-direction: column; gap: 3px; }
       .sb-sidebar-item {
         position: relative;
@@ -410,10 +415,18 @@ export default function GlobalStyle() {
       .sb-sidebar-collapsed .sb-sidebar-item.active { transform: none; }
       /* Hover/focus tooltip for the icons-only rail. The rail itself stays
          overflow:hidden/auto the rest of the time (needed for its own
-         vertical scroll with 16 nav items on short viewports); it only
+         vertical scroll with 18 nav items on short viewports); it only
          pops open to overflow:visible for the moment a tooltip needs to
          escape it, via :has() -- same selector technique already used
          elsewhere in this file (route-scoped .sb-main overrides below).
+         This toggle used to also flip the browser's scrollbar track on and
+         off (auto reserves its width, visible doesn't), which shifted the
+         whole centered icon column every time the mouse crossed onto/off
+         an item -- the "icons clashing" bug. Now that .sb-sidebar-nav's
+         scrollbar is hidden outright (see above), auto and visible reserve
+         the exact same width, so this toggle no longer moves anything; it
+         still does its one real job of letting the tooltip render outside
+         the rail's clip box.
          Scoped to hover-capable, fine-pointer devices only: on a touch
          tablet, tapping a nav item leaves it in a "stuck" :hover/
          :focus-visible state until the user taps elsewhere (a known
