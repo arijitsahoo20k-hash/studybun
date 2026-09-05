@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Settings2, Image as ImageIcon, Youtube, Palette, X, RotateCcw } from "lucide-react";
 import { useOverviewClockSettings, CLOCK_PALETTES, extractYouTubeId } from "../hooks/useOverviewClockSettings";
+import { SectionTitle } from "./ui";
 
 // IST-pinned "now", ticking every second — independent of the device's own
 // timezone, same reasoning as the rest of the app's dateIST helpers, just
@@ -19,7 +20,19 @@ const ist = (now, opts) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Ko
 export default function OverviewClockCard() {
   const { settings, update, reset } = useOverviewClockSettings();
   const [panelOpen, setPanelOpen] = useState(false);
+  const panelDialogRef = useRef(null);
   const now = useISTNow();
+
+  // Same Escape-to-close + initial-focus pattern as Focus Timer's "Timer
+  // Settings" dialog (see FocusTimer.jsx) and the Periodic Table's element
+  // dialog -- so every popup dialog in the app behaves identically.
+  useEffect(() => {
+    if (!panelOpen) return;
+    panelDialogRef.current?.focus();
+    const onKey = (e) => { if (e.key === "Escape") setPanelOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [panelOpen]);
 
   // hourCycle: "h23" (rather than hour12: false) is the more explicit way
   // to ask for 0-23 — some browser/ICU combinations have historically
@@ -101,7 +114,20 @@ export default function OverviewClockCard() {
       </div>
 
       {panelOpen && (
-        <div className="sb-clock-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="sb-pt-overlay sb-clock-settings-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setPanelOpen(false); }}>
+        <div
+          className="sb-pt-dialog sb-clock-settings-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Customize clock card"
+          ref={panelDialogRef}
+          tabIndex={-1}
+        >
+          <button className="sb-pt-dialog-close" title="Close" aria-label="Close" onClick={() => setPanelOpen(false)}>
+            <X size={15} />
+          </button>
+          <SectionTitle icon={Settings2}>Clock Card</SectionTitle>
+          <div className="sb-clock-panel">
           <div className="sb-clock-panel-row sb-clock-panel-modes">
             <button type="button" className={`sb-clock-mode-chip ${settings.bgMode === "theme" ? "active" : ""}`} onClick={() => update({ bgMode: "theme" })}>
               <Palette size={13} /> Theme
@@ -175,6 +201,8 @@ export default function OverviewClockCard() {
               <RotateCcw size={12} /> Reset
             </button>
           </div>
+          </div>
+        </div>
         </div>
       )}
     </div>
