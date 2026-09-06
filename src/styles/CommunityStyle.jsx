@@ -203,6 +203,40 @@ export default function CommunityStyle() {
       }
       .sb-chat-reply-bar-cancel:hover { background: var(--soft); color: #C24444; }
 
+      /* ---------- chat: inline delete-error bar ----------
+         Same visual language as private chat's .sb-pchat-chat-err
+         (PrivateChatStyle.jsx) — a delete can fail (network, RLS) and
+         this surfaces that instead of the message just silently staying
+         put with no explanation. */
+      .sb-chat-delete-err {
+        padding: 6px 4px; font-size: 12px; font-weight: 700; color: #C24444;
+        background: #fef2f2; border: 1.5px solid #f9b0b0; border-radius: 10px;
+        margin-bottom: 8px; flex-shrink: 0; text-align: center;
+      }
+
+      /* ---------- chat: "seen by" message info popup ----------
+         Reuses .sb-pt-overlay/.sb-pt-dialog chrome (see GlobalStyle.jsx)
+         so it opens centered like every other popup in the app. Reader
+         rows are a plain flex row (Mascot avatar + name), not the
+         ringed "studying" bubble treatment — no live/pulse indicator
+         is meaningful here, so the simpler row fits better. */
+      .sb-msginfo-dialog { width: min(360px, 100%); text-align: left; }
+      .sb-msginfo-title { font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--mascot-ink); margin: 4px 0 2px; }
+      .sb-msginfo-preview {
+        font-size: 12.5px; color: var(--muted); margin: 0 0 14px; padding-bottom: 10px;
+        border-bottom: 2px dashed var(--mascot-outline);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .sb-msginfo-status { padding: 4px 0 2px; }
+      .sb-msginfo-empty { font-size: 13px; color: var(--muted); font-weight: 700; padding: 6px 0 2px; }
+      .sb-msginfo-list {
+        display: flex; flex-direction: column; gap: 4px;
+        max-height: 260px; overflow-y: auto; margin: 0 -4px; padding: 2px 4px;
+      }
+      .sb-msginfo-row { display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-radius: 12px; }
+      .sb-msginfo-row:hover { background: var(--soft); }
+      .sb-msginfo-name { font-size: 13.5px; font-weight: 700; color: var(--mascot-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
       @media (max-width: 640px) {
         .sb-chat-reply-quote-text { max-width: 150px; }
         /* Composer felt small on phones — bump the tap/typing area and

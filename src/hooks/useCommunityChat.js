@@ -241,5 +241,31 @@ export function useCommunityChat(channelId) {
     return { ok: true };
   }, []);
 
-  return { messages, loading, error, sending, sendMessage, deleteMessage, hasMore, loadOlder, refetch: load };
+  // ── read receipts ───────────────────────────────────────────────────────────
+  // One write per (channel, user) — see migration_community_chat_read_receipts.sql
+  // for why this is a single watermark row rather than a row per message.
+  // Throttled to at most once every 4s per channel so a burst of incoming
+  // messages (or the caller re-invoking this on every render) doesn't turn
+  // into a write per message — read receipts only need "roughly now", not
+  // per-message precision.
+  // Goes through the mark_channel_read RPC (server-side now()) rather than
+  // a client-side upsert with a client-supplied timestamp — a device clock
+  // running behind the server would otherwise make freshly-arrived
+  // messages look permanently unread, since "seen" is judged by comparing
+  // this watermark against each message's (server-timestamped) created_at.
+  const lastMarkRef = useRef({ channelId: null, at: 0 });
+  const markChannelRead = useCallback(() => {
+    if (!channelId || !userId) return;
+    const now = Date.now();
+    const last = lastMarkRef.current;
+    if (last.channelId === channelId && now - last.at < 4000) return;
+    lastMarkRef.current = { channelId, at: now };
+    supabase
+      .rpc("mark_channel_read", { p_channel_id: channelId })
+      .then(({ error: rpcErr }) => {
+        if (rpcErr) console.error("markChannelRead failed:", rpcErr.message);
+      });
+  }, [channelId, userId]);
+
+  return { messages, loading, error, sending, sendMessage, deleteMessage, hasMore, loadOlder, refetch: load, markChannelRead };
 }

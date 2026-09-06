@@ -93,3 +93,18 @@ export async function fetchProfilesByIds(userIds) {
 export function getCachedProfile(userId) {
   return profileCache.get(userId) || null;
 }
+
+// Read-receipts lookup for the "seen by" (i) popup on a message you sent.
+// Goes through get_message_readers (see migration_community_chat_read_receipts.sql)
+// which already joins profiles server-side, so this is one round trip —
+// no separate get_community_profiles call needed, which is what keeps the
+// popup opening instantly instead of chaining two network hops.
+export async function fetchMessageReaders(channelId, createdAtIso) {
+  if (!channelId || !createdAtIso) return [];
+  const { data, error } = await supabase.rpc("get_message_readers", {
+    p_channel_id: channelId,
+    p_after: createdAtIso,
+  });
+  if (error) throw error;
+  return data || [];
+}

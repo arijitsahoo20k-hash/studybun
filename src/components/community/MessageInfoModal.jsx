@@ -1,0 +1,92 @@
+import React, { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
+import Mascot from "../Mascot";
+import { fetchMessageReaders } from "../../lib/communityProfiles";
+
+/** WhatsApp-style "message info" popup — reuses the same
+ * .sb-pt-overlay/.sb-pt-dialog chrome as the Periodic Table / Focus
+ * Timer / "who's studying" dialogs so it opens centered with zero new
+ * overlay plumbing.
+ *
+ * Fetches lazily, only while open, and only for the one message being
+ * inspected — a chat can have hundreds of messages on screen, and
+ * nothing here is computed until someone actually taps the (i). That,
+ * plus the channel-level read watermark this reads from (see
+ * migration_community_chat_read_receipts.sql), is what keeps this from
+ * adding any per-message cost to the chat itself.
+ *
+ * `message` is only ever one of the current user's own — CommunityChat
+ * only opens this from the (i) button ChatMessage shows on `isOwn`
+ * messages, and the RPC itself excludes the caller from the results,
+ * so there's nothing to double-guard here.
+ */
+export default function MessageInfoModal({ open, channelId, message, onClose }) {
+  const [readers, setReaders] = useState(null); // null = loading
+  const [loadError, setLoadError] = useState(null);
+  const dialogRef = useRef(null);
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!open || !message) return;
+    const requestId = ++requestIdRef.current;
+    setReaders(null);
+    setLoadError(null);
+    fetchMessageReaders(channelId, message.created_at)
+      .then((rows) => {
+        if (requestIdRef.current === requestId) setReaders(rows);
+      })
+      .catch(() => {
+        if (requestIdRef.current === requestId) setLoadError("Couldn't load this right now.");
+      });
+  }, [open, channelId, message]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    dialogRef.current?.focus();
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open || !message) return null;
+
+  const hasText = Boolean(message.content?.trim());
+  const previewText = hasText ? message.content : message.image_url ? "📷 Photo" : "";
+
+  return (
+    <div className="sb-pt-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div
+        className="sb-pt-dialog sb-msginfo-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Message info"
+        ref={dialogRef}
+        tabIndex={-1}
+      >
+        <button className="sb-pt-dialog-close" title="Close" aria-label="Close" onClick={onClose}>
+          <X size={15} />
+        </button>
+
+        <h3 className="sb-msginfo-title">Seen by</h3>
+        {previewText && <p className="sb-msginfo-preview">{previewText}</p>}
+
+        {readers === null ? (
+          <div className="sb-muted small sb-msginfo-status">Loading…</div>
+        ) : loadError ? (
+          <div className="sb-muted small sb-msginfo-status">{loadError}</div>
+        ) : readers.length === 0 ? (
+          <div className="sb-msginfo-empty">No one's seen this yet.</div>
+        ) : (
+          <div className="sb-msginfo-list">
+            {readers.map((r) => (
+              <div key={r.user_id} className="sb-msginfo-row">
+                <Mascot species={r.mascot || "bunny"} mood="happy" size={30} ambient={false} />
+                <span className="sb-msginfo-name">{r.name || "Study Buddy"}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

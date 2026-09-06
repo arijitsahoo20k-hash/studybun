@@ -1,5 +1,5 @@
 import React, { forwardRef, memo, useCallback, useEffect, useRef, useState } from "react";
-import { Reply as ReplyIcon, Trash2 } from "lucide-react";
+import { Reply as ReplyIcon, Trash2, Info } from "lucide-react";
 import Mascot from "../Mascot";
 import { PersonBadge } from "../ui";
 import ImageLightbox from "./ImageLightbox";
@@ -14,7 +14,7 @@ function formatTime(iso) {
 // message's render fixed once it's on screen — it only re-renders if its own
 // props (e.g. `highlighted` flipping) change.
 const ChatMessage = memo(forwardRef(function ChatMessage(
-  { message, isOwn, myName, myMascotSpecies, isModerator, founderIds, memberIds, onDelete, onReply, onJumpToReply, highlighted, showMeta = true },
+  { message, isOwn, myName, myMascotSpecies, isModerator, founderIds, memberIds, onDelete, onReply, onJumpToReply, onShowInfo, highlighted, showMeta = true },
   forwardedRef
 ) {
   const [active, setActive] = useState(false);
@@ -80,6 +80,18 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
     e.stopPropagation();
     if (!imgError) setLightboxOpen(true);
   }, [imgError]);
+
+  // "Seen by" info button — WhatsApp-style, and like WhatsApp only shown
+  // on messages YOU sent. This is a UI convention, not a security
+  // boundary: channel read-watermarks aren't sensitive beyond what's
+  // already visible in a public channel (everyone can already see who's
+  // posting), so get_message_readers doesn't need to lock this down
+  // further — it just always excludes the caller from their own results.
+  const handleShowInfo = useCallback((e) => {
+    e.stopPropagation();
+    setActive(false);
+    onShowInfo?.(message);
+  }, [message, onShowInfo]);
 
   return (
     <>
@@ -165,6 +177,11 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
           <button type="button" className="sb-chat-msg-action-btn" onClick={handleReply} aria-label="Reply">
             <ReplyIcon size={13} />
           </button>
+          {isOwn && onShowInfo && (
+            <button type="button" className="sb-chat-msg-action-btn" onClick={handleShowInfo} aria-label="Message info">
+              <Info size={13} />
+            </button>
+          )}
           {canDelete && (
             <button type="button" className="sb-chat-msg-action-btn danger" onClick={handleDelete} aria-label="Delete">
               <Trash2 size={13} />

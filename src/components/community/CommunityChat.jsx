@@ -4,6 +4,8 @@ import { Card, SectionTitle, EmptyState } from "../ui";
 import ChatMessage from "./ChatMessage";
 import ChatComposer from "./ChatComposer";
 import ChannelSelector from "./ChannelSelector";
+import ConfirmDialog from "./private/ConfirmDialog";
+import MessageInfoModal from "./MessageInfoModal";
 
 // Same-sender messages within this window are visually grouped (avatar
 // and name shown once, bubbles pulled tighter) instead of repeating the
@@ -54,11 +56,24 @@ function buildRenderItems(messages) {
 
 export default function CommunityChat({
   channels, activeChannelId, onSelectChannel,
-  messages, loading, sending, sendMessage, deleteMessage, hasMore, loadOlder,
+  messages, loading, sending, sendMessage, deleteMessage, hasMore, loadOlder, markChannelRead,
   currentUserId, myProfile, isModerator, moderation, founderIds, memberIds, mascot,
 }) {
   const [replyTo, setReplyTo] = useState(null); // { id, user_id, name, content } | null
   const [highlightedId, setHighlightedId] = useState(null);
+  // Message the "seen by" popup is currently showing — the full message
+  // object (not just an id) since MessageInfoModal needs its created_at
+  // and content/image_url for the preview line, and holding it here means
+  // the popup keeps showing that content even if the message list
+  // reorders underneath it.
+  const [infoMessage, setInfoMessage] = useState(null);
+  // Pending delete now goes through a confirm step instead of firing the
+  // instant the trash icon is tapped — mirrors private chat's
+  // requestDelete/confirmDelete split (see PrivateChatWindow.jsx). Holds
+  // just the id; ChatMessage still calls onDelete(id) exactly as before,
+  // this only intercepts what that callback does with it.
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
   const listRef = useRef(null);
   const msgRefs = useRef({});
   const refCallbacks = useRef(new Map());
@@ -128,6 +143,9 @@ export default function CommunityChat({
     msgRefs.current = {};
     refCallbacks.current = new Map();
     setReplyTo(null);
+    setInfoMessage(null);
+    setPendingDeleteId(null);
+    setDeleteError(null);
   }, [activeChannelId]);
 
   useEffect(() => {
@@ -166,6 +184,32 @@ export default function CommunityChat({
     [messages, moderation]
   );
   const renderItems = useMemo(() => buildRenderItems(visible), [visible]);
+
+  // Mark the channel read whenever it's open and has messages on screen —
+  // covers both "just switched into this channel" and "a new message
+  // arrived while it's open". markChannelRead itself throttles the actual
+  // network write (see useCommunityChat), so this firing on every message
+  // list change is cheap, not a write per message.
+  useEffect(() => {
+    if (!markChannelRead || visible.length === 0) return;
+    markChannelRead();
+  }, [activeChannelId, visible.length, markChannelRead]);
+
+  // ChatMessage fires onDelete(id)/onShowInfo(message) the instant its
+  // icon is tapped — requestDelete just intercepts what that does (same
+  // split as PrivateChatWindow's requestDelete/confirmDelete) so a tap
+  // opens a confirmation instead of deleting immediately.
+  const requestDelete = useCallback((id) => {
+    setDeleteError(null);
+    setPendingDeleteId(id);
+  }, []);
+  const confirmDelete = useCallback(async () => {
+    const id = pendingDeleteId;
+    setPendingDeleteId(null);
+    if (!id) return;
+    const res = await deleteMessage(id);
+    setDeleteError(res.ok ? null : (res.error || "Couldn't delete that message."));
+  }, [pendingDeleteId, deleteMessage]);
 
   // Passing `myProfile` itself down to every ChatMessage meant *any* field
   // on your own profile row changing (theme, streak-freeze tokens, none of
@@ -206,9 +250,10 @@ export default function CommunityChat({
                 isModerator={isModerator}
                 founderIds={founderIds}
                 memberIds={memberIds}
-                onDelete={deleteMessage}
+                onDelete={requestDelete}
                 onReply={setReplyTo}
                 onJumpToReply={scrollToMessage}
+                onShowInfo={setInfoMessage}
                 highlighted={highlightedId === item.message.id}
               />
             )
@@ -216,12 +261,30 @@ export default function CommunityChat({
         )}
       </div>
 
+      {deleteError && <div className="sb-chat-delete-err">{deleteError}</div>}
+
       <ChatComposer
         channelId={activeChannelId}
         replyTo={replyTo}
         onCancelReply={cancelReply}
         sendMessage={handleSendMessage}
         sending={sending}
+      />
+
+      <ConfirmDialog
+        open={pendingDeleteId != null}
+        title="Delete this message?"
+        body="This can't be undone."
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
+
+      <MessageInfoModal
+        open={!!infoMessage}
+        channelId={activeChannelId}
+        message={infoMessage}
+        onClose={() => setInfoMessage(null)}
       />
     </Card>
   );

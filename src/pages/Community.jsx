@@ -165,6 +165,7 @@ export default function CommunityPage(p) {
               deleteMessage={chat.deleteMessage}
               hasMore={chat.hasMore}
               loadOlder={chat.loadOlder}
+              markChannelRead={chat.markChannelRead}
               currentUserId={p.userId}
               myProfile={p.profile}
               isModerator={moderation.isModerator}
