@@ -20,6 +20,22 @@ export function useStudyPresence(isStudyingNow) {
   const userId = user?.id;
   const [studyingIds, setStudyingIds] = useState(() => new Set());
   const channelRef = useRef(null);
+  // Always holds the CURRENT isStudyingNow, independent of which render the
+  // [userId]-effect below happened to run in. This is what the
+  // channel.subscribe() callback reads from -- necessary because Supabase
+  // Realtime's websocket reconnects a channel on its own after it's been
+  // idle/throttled for a while (exactly what happens to a background tab
+  // during a 25-50 min focus session), and every reconnect fires
+  // "SUBSCRIBED" again, re-running that same callback. Without this ref,
+  // that callback would close over whatever isStudyingNow was at the
+  // ORIGINAL mount -- usually true -- and re-track that stale value the
+  // moment a reconnect lands, silently overwriting the correct false a
+  // just-finished session had already set. That's the "still shows
+  // studying until I reload" bug: reload re-mounts from scratch with the
+  // current value, so it looks fixed, but the same stale re-track was
+  // always waiting to happen again on the next reconnect.
+  const isStudyingNowRef = useRef(isStudyingNow);
+  useEffect(() => { isStudyingNowRef.current = isStudyingNow; }, [isStudyingNow]);
 
   useEffect(() => {
     if (!userId) {
@@ -43,7 +59,7 @@ export function useStudyPresence(isStudyingNow) {
 
     channel.subscribe((status) => {
       if (status === "SUBSCRIBED") {
-        channel.track({ studying: !!isStudyingNow });
+        channel.track({ studying: !!isStudyingNowRef.current });
       }
     });
 
