@@ -367,10 +367,13 @@ export default function GlobalStyle() {
 
       .sb-sidebar-nav {
         flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
-        /* Scrollable, but the track/thumb itself is never drawn -- see the
-           comment above .sb-sidebar-tooltip's :has() rule below for why a
-           *visible* scrollbar here (not just a thin one) is what causes
-           the collapsed rail's icons to visibly jump on hover. */
+        /* Scrollable, but the track/thumb itself is never drawn -- this is
+           what fixed the manual-scrollbar-appears-while-collapsing bug.
+           Kept even though the tooltip no longer needs overflow toggled
+           on this element (see .sb-sidebar-tooltip-portal below): a
+           permanently-hidden scrollbar is still what stops the collapsed
+           rail's icon column from shifting width when content becomes
+           scrollable. */
         scrollbar-width: none; -ms-overflow-style: none; padding: 4px 2px;
       }
       .sb-sidebar-nav::-webkit-scrollbar { width: 0; height: 0; }
@@ -413,50 +416,46 @@ export default function GlobalStyle() {
       }
       .sb-sidebar-collapsed .sb-sidebar-item:hover:not(.active),
       .sb-sidebar-collapsed .sb-sidebar-item.active { transform: none; }
-      /* Hover/focus tooltip for the icons-only rail. The rail itself stays
-         overflow:hidden/auto the rest of the time (needed for its own
-         vertical scroll with 18 nav items on short viewports); it only
-         pops open to overflow:visible for the moment a tooltip needs to
-         escape it, via :has() -- same selector technique already used
-         elsewhere in this file (route-scoped .sb-main overrides below).
-         This toggle used to also flip the browser's scrollbar track on and
-         off (auto reserves its width, visible doesn't), which shifted the
-         whole centered icon column every time the mouse crossed onto/off
-         an item -- the "icons clashing" bug. Now that .sb-sidebar-nav's
-         scrollbar is hidden outright (see above), auto and visible reserve
-         the exact same width, so this toggle no longer moves anything; it
-         still does its one real job of letting the tooltip render outside
-         the rail's clip box.
-         Scoped to hover-capable, fine-pointer devices only: on a touch
-         tablet, tapping a nav item leaves it in a "stuck" :hover/
-         :focus-visible state until the user taps elsewhere (a known
-         mobile Safari/Chrome quirk). Without this guard that stuck state
-         flips the nav's overflow-y:auto to overflow:visible on tap,
-         killing its scroll container the instant someone touches it --
-         so items below the fold (e.g. Profile/Settings) become
-         unreachable and untappable. Desktop/trackpad hover doesn't have
-         this "stuck" problem, so it keeps the tooltip escape behavior. */
-      @media (hover: hover) and (pointer: fine) {
-        .sb-sidebar-collapsed:has(.sb-sidebar-item:hover, .sb-sidebar-item:focus-visible),
-        .sb-sidebar-nav-collapsed:has(.sb-sidebar-item:hover, .sb-sidebar-item:focus-visible) {
-          overflow: visible;
-        }
-      }
-      .sb-sidebar-tooltip {
-        position: absolute; left: calc(100% + 10px); top: 50%;
-        transform: translateY(-50%) translateX(-4px);
+      /* Hover/focus tooltip for the icons-only rail.
+         This USED to be a plain absolutely-positioned child of each nav
+         item, escaped past the rail's clipping box by flipping
+         .sb-sidebar-nav's overflow from auto to visible on :hover via
+         :has(). That fixed the tooltip's horizontal clipping but also
+         removed the rail's *vertical* clipping for as long as the hover
+         lasted -- with 19 nav items the list is taller than the collapsed
+         rail on most laptop screens, so the moment overflow went visible
+         the un-scrolled tail of the list spilled out and visually
+         overlapped the footer's collapse-toggle button below it (the
+         "icons clashing" bug). Tablets never showed this because the
+         trick was already scoped to (hover: hover) and (pointer: fine),
+         which touch devices don't match -- so tablet looked fixed only
+         because it was never exercising this code path, not because the
+         underlying technique was safe.
+         The tooltip is now rendered by TopNav.jsx via a React portal
+         straight into document.body, positioned with plain top/left
+         pixel coordinates computed from the hovered item's own
+         getBoundingClientRect(). That removes the need to touch either
+         .sb-sidebar's or .sb-sidebar-nav's overflow at all, on any
+         screen height -- there's nothing left to clip past, so the rail
+         can stay overflow:auto/hidden permanently and the two bugs
+         (manual scrollbar on collapse, icons clashing on hover) can't
+         reoccur together again. */
+      .sb-sidebar-tooltip-portal {
+        position: fixed; transform: translateY(-50%);
         background: var(--card); color: var(--mascot-ink);
         border: 2px solid var(--mascot-outline); border-radius: 10px;
         padding: 5px 10px; font-size: 12px; font-weight: 800; white-space: nowrap;
         box-shadow: 3px 3px 0 var(--mascot-outline);
-        opacity: 0; pointer-events: none; z-index: 60;
-        transition: opacity .15s ease, transform .15s ease;
+        pointer-events: none; z-index: 60;
+        animation: sb-tooltip-in .15s ease;
       }
-      .sb-sidebar-item:hover .sb-sidebar-tooltip,
-      .sb-sidebar-item:focus-visible .sb-sidebar-tooltip { opacity: 1; transform: translateY(-50%) translateX(0); }
+      @keyframes sb-tooltip-in {
+        from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+        to { opacity: 1; transform: translateY(-50%) translateX(0); }
+      }
       @media (prefers-reduced-motion: reduce) {
         .sb-sidebar { transition: none; }
-        .sb-sidebar-tooltip { transition: none; }
+        .sb-sidebar-tooltip-portal { animation: none; }
       }
 
       /* Legacy top-nav classes are deliberately neutralised. Keeping these
