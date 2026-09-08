@@ -81,6 +81,19 @@ const PAGE_LOADERS = {
   settings: () => import("./pages/Settings"),
 };
 
+// Recurring-task skip marker — see the "Recurring planner tasks" effect
+// and deleteTask below for how this is written/read. Shared as a module
+// function (rather than redefined in both spots) so the encode/decode
+// format can't drift out of sync between them.
+const RECURRING_SKIP_PREFIX = "__recurring_skip:";
+function parseRecurringSkipDates(description) {
+  if (!description || !description.startsWith(RECURRING_SKIP_PREFIX)) return [];
+  return description.slice(RECURRING_SKIP_PREFIX.length).split(",").filter(Boolean);
+}
+function encodeRecurringSkipDates(dates) {
+  return dates.length ? RECURRING_SKIP_PREFIX + dates.join(",") : null;
+}
+
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: Home },
   { id: "recap", label: "Daily Recap", icon: Camera },
@@ -888,6 +901,17 @@ export default function App() {
   // Runs once per IST calendar day per session (guarded by
   // materializedForDate) rather than on every render/reload; there's no
   // backfill for missed days, matching how most habit trackers behave.
+  //
+  // Deleting a single day's spawned child (see deleteTask below) removes
+  // that row from the DB, but on its own that's indistinguishable from
+  // "never materialized yet" — a same-day reload would see no row for
+  // today and recreate it right back. To keep a deleted occurrence
+  // deleted, the template's own (otherwise-unused) `description` also
+  // doubles as a skip list: "__recurring_skip:2026-01-05,2026-01-07".
+  // deleteTask writes to it; this effect reads it before spawning.
+  // (Deleting the template's OWN due-day row — before any child has ever
+  // spawned — is handled separately in deleteTask by advancing its
+  // due_date instead; that path never touches this skip list.)
   const materializedForDate = useRef(null);
   useEffect(() => {
     if (!dataReady || !user) return;
@@ -900,6 +924,7 @@ export default function App() {
       if (today <= t.due_date) return; // template's own day already represents that occurrence
       const isDue = t.recurring === "Daily" || t.recurring === `Weekly:${weekdayShortIST(today)}`;
       if (!isDue) return;
+      if (parseRecurringSkipDates(t.description).includes(today)) return; // user deleted today's occurrence
       const alreadyExists = t.due_date === today ||
         tasks.some((x) => x.due_date === today && x.description === `__recurring_from:${t.id}`);
       if (alreadyExists) return;
@@ -1053,12 +1078,78 @@ export default function App() {
     await tasksQ.update(id, patch);
     showToast("Task updated ✏️", () => tasksQ.update(id, { title: row.title, subject: row.subject, priority: row.priority, category: row.category, recurring: row.recurring }));
   };
+  // Deleting a recurring task's row is not a plain delete — see the
+  // "Recurring planner tasks" effect above for the read side of the skip
+  // marker used here.
+  //
+  // Case 1 — a spawned CHILD ("__recurring_from:<template_id>", any day
+  // after the template's own due date): just removing this row isn't
+  // enough, because the materializer's only idempotency check is "does a
+  // row for today already exist?" — on the next same-day reload it'd see
+  // no row and spawn a fresh one right back. So the parent template's
+  // skip list gets today's date added first.
+  //
+  // Case 2 — the TEMPLATE row itself, on the one day it stands in for its
+  // own first occurrence (due_date === today, before any child has ever
+  // spawned from it): this row IS the recurring pattern, so a plain
+  // delete doesn't just remove today's task, it destroys every future
+  // occurrence too — silently, with no "stop repeating" confirmation.
+  // That's inconsistent with case 1 (which only affects one day) and is
+  // very likely not what someone clicking the same delete button expects.
+  //
+  // Fix is an UPDATE, not a delete: advance the template's own due_date
+  // straight to its next occurrence (tomorrow for Daily, +7 days for
+  // Weekly) instead of removing the row. That skips today exactly like
+  // case 1 does, while the row keeps carrying the pattern forward.
+  // Deliberately NOT implemented by inserting a second "hidden" row dated
+  // in the past — taskDayCompletion (further above, feeds streakDays)
+  // buckets tasks by due_date every render, so a backdated Pending row
+  // would retroactively flip an already-completed day back to
+  // incomplete, silently breaking a real streak day days after the fact.
+  // An update to the one existing row has no such side effect: it only
+  // ever occupies exactly one due_date bucket, same as it always did.
   const deleteTask = async (id) => {
     const row = tasks.find((t) => t.id === id);
     if (!row) return;
+    const today = todayStr();
+
+    if (row.recurring && row.due_date === today) {
+      const advanceDays = row.recurring === "Daily" ? 1 : 7; // Weekly:<Day> only recurs the same weekday
+      const nextDue = daysFromNowIST(advanceDays);
+      const updated = await tasksQ.update(id, { due_date: nextDue, status: "Pending" });
+      if (!updated) {
+        showToast("Couldn't delete that task — check your connection.", () => deleteTask(id), "Retry");
+        return;
+      }
+      showToast("Task deleted", () => tasksQ.update(id, { due_date: row.due_date, status: row.status }));
+      return;
+    }
+
+    const childMatch = /^__recurring_from:(.+)$/.exec(row.description || "");
+    const template = childMatch ? tasks.find((t) => t.id === childMatch[1]) : null;
+    if (template) {
+      const skips = parseRecurringSkipDates(template.description);
+      if (!skips.includes(row.due_date)) {
+        const updated = await tasksQ.update(template.id, { description: encodeRecurringSkipDates([...skips, row.due_date]) });
+        if (!updated) {
+          showToast("Couldn't delete that task — check your connection.", () => deleteTask(id), "Retry");
+          return;
+        }
+      }
+    }
+
     await tasksQ.remove(id);
     const { id: _oldId, user_id: _userId, created_at: _createdAt, ...rest } = row;
-    showToast("Task deleted", () => tasksQ.insert(rest));
+    showToast("Task deleted", () => {
+      tasksQ.insert(rest);
+      // Undo: un-skip the date too, so this exact occurrence can be
+      // deleted again later instead of being silently pre-blocked by a
+      // leftover skip entry.
+      if (template) {
+        const skips = parseRecurringSkipDates(template.description).filter((d) => d !== row.due_date);
+        tasksQ.update(template.id, { description: encodeRecurringSkipDates(skips) });
+      }
+    });
   };
 
   const addBacklogItem = async (item) => {
