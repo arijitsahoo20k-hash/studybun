@@ -7,6 +7,11 @@ const SLOT_BRIEF = {
   test: "This is a one-off test notification the student triggered themselves from Settings to confirm notifications are working.",
 };
 
+// "Check-in" = a row in accountability_goals for today (Community page's
+// daily accountability feature, see src/hooks/useAccountability.js) — a
+// student posts a goal for the day, then later marks it
+// completed/partial/missed. This is separate from study_sessions/timer_sessions.
+
 function buildSystemPrompt() {
   return `You are the notification-writing engine inside StudyBun, a cozy productivity app for a JEE (Indian engineering entrance exam) aspirant. You write ONE short push notification, 3 times a day, grounded entirely in real data about this specific student's day — never generic motivational filler, never invented numbers.
 
@@ -16,8 +21,9 @@ RULES:
 - Tone: warm, direct, like a sharp study buddy who's actually paying attention — never guilt-trippy, never hollow hype ("You've got this! 💪" with nothing behind it is bad).
 - Vary the angle by time of day (see the SLOT context you're given) — don't just restate a to-do list three times a day.
 - If there is genuinely nothing notable today (no tasks, no revisions, low urgency), it's fine to send something light — acknowledge the calm, don't invent urgency.
+- CHECK-IN handling (data fields: has_checked_in_today, checkins_today_count, checkins_open_count, checkins_completed_count, checkins_open_sample): a "check-in" is a daily goal the student posts on the Community page, then later marks done. If has_checked_in_today is false, and this isn't the very first morning ping, it's fair game to nudge them to post today's check-in — but don't force it into every single notification if something more pressing (overdue revisions, due tasks) is happening. If has_checked_in_today is true and checkins_open_count > 0, they've posted a goal but never closed it out — remind them to go mark it done/partial (name the actual goal text from checkins_open_sample if present) rather than telling them to "check in" again. If checkins_open_count is 0 and checkins_completed_count > 0, they're fully wrapped up on check-ins — don't nag about it.
 - title: max 45 characters. body: max 110 characters. Both plain text, no markdown, no emoji spam (0-1 emoji max, only if it fits naturally).
-- deep_link must be exactly one of: "dashboard", "planner", "revision", "backlog", "analytics", "goals" — pick whichever page this notification is actually about.
+- deep_link must be exactly one of: "dashboard", "planner", "revision", "backlog", "analytics", "goals", "community" — pick whichever page this notification is actually about. Use "community" for check-in prompts/reminders.
 
 Return ONLY valid JSON, no markdown fences, matching exactly:
 {"title": "...", "body": "...", "deep_link": "dashboard"}`;
@@ -37,7 +43,7 @@ function sanitize(title, body) {
   return { title: t, body: b };
 }
 
-const VALID_LINKS = new Set(["dashboard", "planner", "revision", "backlog", "analytics", "goals"]);
+const VALID_LINKS = new Set(["dashboard", "planner", "revision", "backlog", "analytics", "goals", "community"]);
 
 /** Rule-based, always-available fallback — used only if the AI call fails outright. Never leaves the user with nothing. */
 function fallbackNotification(slot, ctx) {
@@ -55,6 +61,27 @@ function fallbackNotification(slot, ctx) {
       title: "Today's plan is ready",
       body: `${name}${ctx.tasks_due_today_count} task${ctx.tasks_due_today_count > 1 ? "s" : ""} lined up for today. First one first.`,
       deep_link: "planner",
+    };
+  }
+  // Already posted a check-in but never closed it out — remind them to
+  // mark it, don't tell them to "check in" again.
+  if (ctx.checkins_open_count > 0) {
+    const goal = ctx.checkins_open_sample?.[0]?.text;
+    return {
+      title: "Close out today's check-in",
+      body: goal
+        ? `${name}your check-in "${goal}" is still open. Mark it done (or partial) when you wrap up.`
+        : `${name}you've got an open check-in from earlier — mark it done or partial when you wrap up.`,
+      deep_link: "community",
+    };
+  }
+  // Hasn't posted a check-in yet today — nudge for afternoon/evening only,
+  // morning gets a fresh planning ping instead (handled above/below).
+  if (!ctx.has_checked_in_today && slot !== "morning") {
+    return {
+      title: "Post today's check-in",
+      body: `${name}you haven't logged a check-in yet today. Post today's goal on Community so others can see you're in.`,
+      deep_link: "community",
     };
   }
   if (slot === "evening" && ctx.study_minutes_today < 30) {
