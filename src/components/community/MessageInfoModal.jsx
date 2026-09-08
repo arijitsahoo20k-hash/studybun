@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import Mascot from "../Mascot";
 import { fetchMessageReaders } from "../../lib/communityProfiles";
+import { useModalScrollLock } from "../../hooks/useModalScrollLock";
 
 /** WhatsApp-style "message info" popup — reuses the same
  * .sb-pt-overlay/.sb-pt-dialog chrome as the Periodic Table / Focus
@@ -47,6 +48,12 @@ export default function MessageInfoModal({ open, channelId, message, onClose }) 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // See src/hooks/useModalScrollLock.js -- without this, dragging on the
+  // black backdrop scrolls the chat behind the dialog instead of staying put.
+  // This component stays mounted while closed (toggled via `open`), so the
+  // lock is gated on `active` rather than mount/unmount.
+  useModalScrollLock(dialogRef, open);
 
   if (!open || !message) return null;
 
