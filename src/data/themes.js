@@ -273,6 +273,29 @@ export const THEMES = {
     dot: "rgba(38,58,45,0.055)", emoji: "📮", photoBg: true, bgImage: "/theme-bg/meadow-post.webp",
     decor: ["marigoldFlower", "blossom", "marigoldFlower", "sparkleStar"],
   },
+
+  /* ===== photo-backdrop themes, batch 4 =====
+   * Same rules as the eight above -- near-white bg/card, hand-picked
+   * accent/accent2/soft/palette pulled straight from each source photo's
+   * boldest, most saturated notes (never the washed-out/pastel route the
+   * earlier batches leaned on) so chips, buttons and the decor layer pop
+   * against the scene instead of receding into it. */
+  "Sherbet Alley": {
+    bg: "#FFF4EF", card: "#FFFDFB", outline: "#5C1B3D", ink: "#4A1730", muted: "#9C6F82",
+    accent: "#FF2D78", accent2: "#FF8A3D", soft: "#FFD23D",
+    palette: ["#FF6FB8", "#FFAE42", "#B355D6", "#FF5A3C", "#2E8FD6", "#FFE070"],
+    mascotFill: "#FF9AC4", mascotInner: "#FFE8F2", mascotBlush: "#E8432E",
+    dot: "rgba(92,27,61,0.06)", emoji: "🌀", photoBg: true, bgImage: "/theme-bg/sherbet-alley.webp",
+    decor: ["cloud", "lollipop", "sparkleStar", "sparkleStar"],
+  },
+  "Petal Serenade": {
+    bg: "#FDF4F7", card: "#FFFBFC", outline: "#241D3D", ink: "#28223F", muted: "#847C9C",
+    accent: "#E8447A", accent2: "#F2A93C", soft: "#F7C5DA",
+    palette: ["#E8447A", "#F2A93C", "#2D4468", "#F7C5DA", "#C2185B", "#5C7099"],
+    mascotFill: "#F4A6C1", mascotInner: "#FDEAF1", mascotBlush: "#C2185B",
+    dot: "rgba(36,29,61,0.06)", emoji: "🌺", photoBg: true, bgImage: "/theme-bg/petal-serenade.webp",
+    decor: ["blossom", "twinkleStar", "blossom", "crescentMoon"],
+  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the
