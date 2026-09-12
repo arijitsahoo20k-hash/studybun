@@ -192,7 +192,11 @@ export default function FocusTimer(p) {
   };
 
   const [subject, setSubject] = useState("Physics");
-  const [chapter, setChapter] = useState(SYLLABUS.Physics.groups["Mechanics I"][0]);
+  // First chapter of Physics's first group, whatever that group is named --
+  // was hardcoded to the old "Mechanics I" key and threw on load after the
+  // syllabus restructuring renamed it. Object.values(...).flat()[0] tracks
+  // the syllabus automatically, no matter how the groups get renamed.
+  const [chapter, setChapter] = useState(Object.values(SYLLABUS.Physics.groups).flat()[0]);
 
   const logAndReset = () => {
     p.addSession({ subject, chapter, session_type: t.mode === "Pomodoro" ? "Practice" : t.mode, minutes: t.startedMinutes, platform: "Focus Timer" });
