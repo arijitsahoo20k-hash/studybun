@@ -134,7 +134,8 @@ export default function GlobalStyle() {
 
       /* ===== theme photo-backdrop (Wildwood CRT / Midnight Express /
          Windmill Meadow / Sunset Drift / Pixel Garden / Dusk Alley /
-         Paper Sky / Meadow Post / Sherbet Alley / Petal Serenade) =====
+         Paper Sky / Meadow Post / Sherbet Alley / Petal Serenade / Stitched
+         Cosmos / Velvet Skyline) =====
          Same fixed full-viewport slot as .sb-custom-bg-layer above, one
          z-index further back (-2 vs -1) so a user's own Settings > Custom
          Background photo -- if they've turned that on -- always paints over

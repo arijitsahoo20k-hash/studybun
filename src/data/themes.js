@@ -296,6 +296,39 @@ export const THEMES = {
     dot: "rgba(36,29,61,0.06)", emoji: "🌺", photoBg: true, bgImage: "/theme-bg/petal-serenade.webp",
     decor: ["blossom", "twinkleStar", "blossom", "crescentMoon"],
   },
+
+  /* ===== photo-backdrop themes, batch 5 =====
+   * Same rules as the ten above -- near-white bg/card, accent/accent2/soft/
+   * palette hand-picked straight from each source photo's own boldest
+   * notes so the UI reads as part of the scene, never a clashing overlay.
+   * Stitched Cosmos: cross-stitched Earth+Moon on black -- gold/mustard and
+   * forest-green continents against deep navy ocean and void, so gold leads
+   * as the hero accent (it's the only warm note in an otherwise cool/dark
+   * photo) with a vivid indigo-blue as the poppy secondary and the outline
+   * pulled dark-navy instead of the usual brown/charcoal to match the space
+   * backdrop. Velvet Skyline: whimsical night-city painting -- teal sky,
+   * cobalt + near-black towers, one fuchsia building and a lime-green
+   * bridge, with warm gold window-lights as the only glow in the scene.
+   * Fuchsia leads as the hero accent since it's the photo's single most
+   * saturated note, gold window-light is secondary, lime is the soft/
+   * highlight tone, and the outline goes deep indigo-black to match the
+   * painting's own dark building silhouettes. */
+  "Stitched Cosmos": {
+    bg: "#F1F3FB", card: "#FBFCFF", outline: "#1D2440", ink: "#262E52", muted: "#7B84AC",
+    accent: "#D9A23A", accent2: "#4A6EF0", soft: "#F0C87A",
+    palette: ["#D9A23A", "#4FA85B", "#4A6EF0", "#C9CFE0", "#1B2560", "#7FC98A"],
+    mascotFill: "#F0C87A", mascotInner: "#FFF6E4", mascotBlush: "#E0793E",
+    dot: "rgba(29,36,64,0.06)", emoji: "🌍", photoBg: true, bgImage: "/theme-bg/stitched-cosmos.webp",
+    decor: ["candyPlanet", "orbitRing", "twinkleStar", "sparkleStar"],
+  },
+  "Velvet Skyline": {
+    bg: "#EFF6FA", card: "#FCFEFF", outline: "#1E1B33", ink: "#28233F", muted: "#847E9E",
+    accent: "#C23F8A", accent2: "#E8B23E", soft: "#8FB93E",
+    palette: ["#2E6FA8", "#4B3F8C", "#C23F8A", "#7C9A2E", "#E8B23E", "#0E8FBF"],
+    mascotFill: "#9FC4E8", mascotInner: "#EDF6FC", mascotBlush: "#C23F8A",
+    dot: "rgba(30,27,51,0.06)", emoji: "🌃", photoBg: true, bgImage: "/theme-bg/velvet-skyline.webp",
+    decor: ["crescentMoon", "twinkleStar", "cloud", "sparkleStar"],
+  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the
