@@ -1,5 +1,5 @@
 import React from "react";
-import { Target, Clock3, Flame, TrendingUp, BookOpen } from "lucide-react";
+import { Target, Clock3, Flame, TrendingUp, BookOpen, HelpCircle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Card, ProgressRing, SectionTitle, EmptyState } from "../components/ui";
 import Mascot from "../components/Mascot";
@@ -274,6 +274,13 @@ export default function Dashboard(p) {
               <div className="sb-goal-row">
                 <ProgressRing pct={goalPct} />
                 <div><div className="sb-goal-num">{p.todayHours}h <span>/ {p.profile.daily_goal}h</span></div><div className="sb-muted">{p.todayLoggedHours}h logged · {p.todayTimerHours}h focus timer</div></div>
+              </div>
+            </Card>
+            <Card paper glass>
+              <SectionTitle icon={HelpCircle}>Today's questions</SectionTitle>
+              <div className="sb-goal-row">
+                <ProgressRing pct={p.questionTargetPct || 0} color={p.questionTargetMet ? "#3E9E5C" : undefined} />
+                <div><div className="sb-goal-num">{p.todayQuestions || 0} <span>/ {p.dailyQuestionTarget || 50}</span></div><div className="sb-muted">{p.questionTargetMet ? "Target hit for today 🎯" : "questions logged today"}</div></div>
               </div>
             </Card>
             <Card paper glass>

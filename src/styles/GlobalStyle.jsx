@@ -817,6 +817,13 @@ export default function GlobalStyle() {
       .sb-form-grid label { display: block; font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 6px; }
 
       .sb-chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+      /* Mock review: mistake-category info toggle + subject-grouped chapter links */
+      .sb-review-info-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+      .sb-review-info-box { background: var(--soft); border: 2px solid var(--mascot-outline); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
+      .sb-review-info-line { font-size: 12px; color: var(--muted); line-height: 1.5; }
+      .sb-review-info-line b { color: var(--mascot-ink); }
+      .sb-review-chapter-group { margin-bottom: 10px; }
+      .sb-review-chapter-group-label { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
       .sb-chip { padding: 8px 14px; border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--card); color: var(--mascot-ink); font-weight: 800; font-size: 12.5px; cursor: pointer; box-shadow: 2px 2px 0 var(--mascot-outline); transition: transform .12s ease, box-shadow .12s ease; }
       .sb-chip:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--mascot-outline); }
       .sb-chip.small { padding: 5px 10px; font-size: 11.5px; }
@@ -917,6 +924,12 @@ export default function GlobalStyle() {
         .sb-backlog-layout { grid-template-columns: minmax(340px, 400px) 1fr; gap: 26px; }
       }
 
+      /* ---- Question Practice pulse: daily target + per-subject split ---- */
+      .sb-pulse-target { margin-bottom: 14px; }
+      .sb-pulse-target-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+      .sb-pulse-target-label { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+      .sb-pulse-target-num { font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--mascot-ink); }
+      .sb-pulse-target-hit { margin-top: 6px; font-size: 12px; font-weight: 800; color: #3E9E5C; }
       .sb-backlog-pulse { display: flex; align-items: center; gap: 16px; }
       .sb-backlog-ring-wrap { flex-shrink: 0; text-align: center; }
       .sb-backlog-ring-label { font-size: 9.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
@@ -926,6 +939,13 @@ export default function GlobalStyle() {
       .sb-backlog-stat-num { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--mascot-ink); }
       .sb-backlog-stat.is-warn { background: #FFD9DF; border-color: #C0435A; }
       .sb-backlog-stat.is-warn .sb-backlog-stat-num { color: #7A2436; }
+      /* Question Practice's pulse card needs a 3rd row (per-subject mini
+         split) inside each stat block — a dedicated class so Backlog's and
+         Mocks' plain two-span .sb-backlog-stat blocks are untouched. */
+      .sb-pulse-stat { display: flex; flex-direction: column; gap: 3px; padding: 7px 12px; background: var(--soft); border: 2px solid var(--mascot-outline); border-radius: 12px; }
+      .sb-pulse-stat-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+      .sb-pulse-mini-split { display: flex; gap: 9px; font-size: 11px; font-weight: 700; color: var(--muted); }
+      .sb-pulse-mini-split b { font-weight: 900; margin-right: 2px; }
 
       /* Overdue spotlight -- deliberately loud (red border/wash) since its whole
          job is to pull the eye before the student adds anything new to pile on
@@ -1435,6 +1455,39 @@ export default function GlobalStyle() {
       .sb-chapter-progress-row { display: flex; flex-direction: column; gap: 3px; }
       .sb-chapter-progress-row .small { font-size: 10.5px; }
       .sb-chapter-detail { border-top: 1.5px dashed var(--accent2); padding-top: 10px; margin-top: 4px; }
+      .sb-chapter-card-done { opacity: .8; }
+      .sb-chapter-card-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+      .sb-chapter-check { border: none; background: transparent; color: var(--muted); cursor: pointer; padding: 2px; }
+      .sb-chapter-check.active { color: #4E8F63; cursor: default; }
+      .sb-chapter-check:not(.active):hover { color: var(--mascot-ink); transform: scale(1.08); }
+
+      /* ---- Syllabus: overall-progress hero ---- */
+      .sb-syllabus-hero { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+      .sb-syllabus-hero-body { flex: 1; min-width: 200px; }
+      .sb-syllabus-hero-title { font-family: var(--font-display); font-weight: 800; font-size: 16px; margin-bottom: 2px; }
+      .sb-syllabus-hero-msg { font-size: 13px; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+      .sb-syllabus-hero-stats { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 12px; font-weight: 800; color: var(--mascot-ink); }
+      .sb-syllabus-hero-stats span { display: inline-flex; align-items: center; gap: 3px; }
+      .sb-subject-head-name { display: inline-flex; align-items: center; gap: 6px; }
+
+      /* ---- Syllabus: smart "mark complete?" nudge banner ---- */
+      .sb-nudge-banner { border: 2px dashed var(--accent2); }
+      .sb-nudge-list { display: flex; flex-direction: column; gap: 8px; }
+      .sb-nudge-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg); border: 1.5px solid var(--mascot-outline); border-radius: 12px; padding: 8px 10px; flex-wrap: wrap; }
+      .sb-nudge-card-name { font-size: 12.5px; font-weight: 800; }
+      .sb-nudge-card-reason { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 1px; }
+      .sb-nudge-card-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+      .sb-nudge-dismiss { border: 1.5px solid var(--mascot-outline); background: var(--card); color: var(--muted); border-radius: 999px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; padding: 0; }
+      .sb-nudge-dismiss:hover { background: var(--soft); color: var(--mascot-ink); }
+
+      /* ---- Syllabus: Chemistry PC / IOC / OC branch classification ---- */
+      .sb-chem-mini-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+      .sb-chem-mini-chip { font-size: 10px; font-weight: 800; border: 1.5px solid; border-radius: 999px; padding: 2px 7px; background: var(--card); }
+      .sb-chem-branch-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+      .sb-chem-branch-chip { padding: 6px 12px; border-radius: 999px; border: 2px solid var(--branch-color, var(--mascot-outline)); background: var(--card); color: var(--branch-color, var(--mascot-ink)); font-weight: 800; font-size: 11.5px; cursor: pointer; box-shadow: 2px 2px 0 var(--mascot-outline); transition: transform .12s ease, box-shadow .12s ease; }
+      .sb-chem-branch-chip:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--mascot-outline); }
+      .sb-chem-branch-chip.active { background: var(--branch-color, var(--soft)); color: #fff; }
+      .sb-chem-branch-badge { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; font-weight: 900; border-radius: 6px; padding: 1px 6px; margin-right: 6px; vertical-align: middle; }
       .sb-backlog-actions { display: flex; gap: 6px; flex-wrap: wrap; }
       .sb-mini-action { border: 1.5px solid var(--mascot-outline); background: var(--card); border-radius: 10px; padding: 4px 8px; font-size: 10.5px; font-weight: 800; color: var(--mascot-ink); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; box-shadow: 1.5px 1.5px 0 var(--mascot-outline); }
       .sb-mini-action:hover { transform: translate(-1px,-1px); box-shadow: 2.5px 2.5px 0 var(--mascot-outline); }

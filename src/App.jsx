@@ -150,7 +150,7 @@ export default function App() {
   const { user } = useAuth();
   const [page, setPageRaw] = useState("dashboard");
   const { row: profile, loading: profileLoading, save: saveProfile, refetch: refetchProfile } = useDeviceRow("profiles", {
-    name: "", exam: "JEE Main", exam_date: "2027-01-24", daily_goal: 6, theme: "Sakura Bloom", mascot: "bunny",
+    name: "", exam: "JEE Main", exam_date: "2027-01-24", daily_goal: 6, daily_question_target: 50, theme: "Sakura Bloom", mascot: "bunny",
     streak_freeze_tokens: 1, streak_freeze_granted_days: 0,
   });
 
@@ -649,6 +649,9 @@ export default function App() {
 
   const totalQuestions = questions.reduce((a, q) => a + Number(q.count || 0), 0);
   const todayQuestions = questions.filter((q) => q.log_date === todayStr()).reduce((a, q) => a + Number(q.count || 0), 0);
+  const dailyQuestionTarget = profile?.daily_question_target || 50;
+  const questionTargetPct = Math.min(100, (todayQuestions / dailyQuestionTarget) * 100);
+  const questionTargetMet = todayQuestions >= dailyQuestionTarget;
 
   const daysToExam = profile ? daysUntilIST(profile.exam_date) : 0;
 
@@ -1353,7 +1356,8 @@ export default function App() {
     backlogItems, addBacklogItem, updateBacklogItem, setBacklogStatus, toggleSessionItem, deleteBacklogItem,
     upsertRecoveryItem, startRecoveryItem, addRecoveryToToday, dismissRecoveryItem, completeRecoveryItem, reopenRecoveryRow,
     goals, addGoal, updateGoal, completeGoal, deleteGoal,
-    streak, streakActiveToday, weeklyData, subjectPie, totalQuestions, todayQuestions, daysToExam,
+    streak, streakActiveToday, weeklyData, subjectPie, totalQuestions, todayQuestions,
+    dailyQuestionTarget, questionTargetPct, questionTargetMet, daysToExam,
     dueRevisions, upcomingRevisions, overdueRevisions, overallPct, completedCount,
     unlockedAchievements: stickyUnlockedAchievements, achievementDefs, achievementRows: achievementsQ.rows, setPage, showToast, fireCelebrate,
     longestStreak, totalStudyDays, totalHours, masteredCount,

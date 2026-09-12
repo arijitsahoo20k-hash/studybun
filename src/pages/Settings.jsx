@@ -145,6 +145,7 @@ export default function SettingsPage(p) {
                 <div className="sb-form-grid">
                   <div><label>Name</label><input className="sb-input" defaultValue={profile.name} onBlur={(e) => saveProfile({ name: e.target.value })} /></div>
                   <div><label>Daily goal (hours)</label><input type="number" className="sb-input" defaultValue={profile.daily_goal} onBlur={(e) => saveProfile({ daily_goal: +e.target.value })} /></div>
+                  <div><label>Daily question target</label><input type="number" min="1" className="sb-input" defaultValue={profile.daily_question_target} onBlur={(e) => saveProfile({ daily_question_target: Math.max(1, +e.target.value || 1) })} /></div>
                   <div><label>Exam date</label><input type="date" className="sb-input" defaultValue={profile.exam_date} onChange={(e) => saveProfile({ exam_date: e.target.value })} /></div>
                   <div><label>Target exam</label>
                     <select className="sb-input" value={profile.exam} onChange={(e) => saveProfile({ exam: e.target.value })}>

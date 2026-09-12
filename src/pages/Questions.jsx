@@ -15,6 +15,17 @@ const dayLabel = (d) => {
 };
 
 const QUICK_COUNTS = [10, 20, 25, 30, 50, 75, 100];
+const SUBJECT_SHORT = { Physics: "P", Chemistry: "C", Mathematics: "M" };
+const SubjectMiniSplit = ({ split }) => (
+  <div className="sb-pulse-mini-split">
+    {Object.keys(SUBJECT_SHORT).map((s) => (
+      <span key={s}>
+        <b style={{ color: SYLLABUS[s]?.deepColor || SYLLABUS[s]?.color }}>{SUBJECT_SHORT[s]}</b>
+        {split[s] || 0}
+      </span>
+    ))}
+  </div>
+);
 const SOURCES = ["PYQ", "Module", "DPP", "NCERT", "Book", "Mock", "Coaching Sheet", "Custom"];
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 const MISTAKE_TAGS = ["Silly Mistake", "Concept Gap", "Calculation Error", "Time Pressure", "Guessed Wrong", "Custom"];
@@ -148,6 +159,18 @@ export default function QuestionsPage(p) {
     return attempted > 0 ? { pct: Math.round((c / attempted) * 100), attempted } : null;
   }, [questions]);
 
+  // ---- Per-subject split for each stat window (today / this week /
+  // lifetime), all computed the same way so the mini breakdown under each
+  // number always lines up with what that number is counting ----
+  const splitBySubject = (rows) => {
+    const m = { Physics: 0, Chemistry: 0, Mathematics: 0 };
+    rows.forEach((q) => { if (m[q.subject] !== undefined) m[q.subject] += Number(q.count || 0); });
+    return m;
+  };
+  const todaySplit = useMemo(() => splitBySubject(questions.filter((q) => q.log_date === todayStr())), [questions]);
+  const weekSplit = useMemo(() => splitBySubject(questions.filter((q) => q.log_date >= weekAgo)), [questions, weekAgo]);
+  const lifetimeSplit = useMemo(() => splitBySubject(questions), [questions]);
+
   // ---- Recent log timeline, day-grouped like Study Tracker's ----
   const subjectsLogged = useMemo(() => Object.keys(SYLLABUS).filter((s) => questions.some((q) => q.subject === s)), [questions]);
   const timelineRows = useMemo(
@@ -166,9 +189,61 @@ export default function QuestionsPage(p) {
   return (
     <div className="sb-page">
       <div className="sb-practice-layout">
-        {/* ---------- Left: log form + today's pulse (sticky on desktop) ---------- */}
+        {/* ---------- Left: today's pulse + log form (sticky on desktop) ---------- */}
         <div className="sb-practice-left">
-          <Card washi>
+          <Card className="sb-card-tinted">
+            <SectionTitle icon={Sparkles}>Today's pulse</SectionTitle>
+
+            <div className="sb-pulse-target">
+              <div className="sb-pulse-target-head">
+                <span className="sb-pulse-target-label"><Target size={12} /> Daily target</span>
+                <span className="sb-pulse-target-num">{p.todayQuestions || 0}<span className="sb-muted"> / {p.dailyQuestionTarget || 50}</span></span>
+              </div>
+              <ProgressBar pct={p.questionTargetPct || 0} color={p.questionTargetMet ? "#3E9E5C" : undefined} paw={false} />
+              {p.questionTargetMet && <div className="sb-pulse-target-hit">🎯 Target hit for today — nice work!</div>}
+            </div>
+
+            <div className="sb-backlog-pulse">
+              {overall && (
+                <div className="sb-backlog-ring-wrap">
+                  <ProgressRing pct={overall.pct} size={80} stroke={9} color={overall.pct < 60 ? "#C0435A" : undefined} paw={false} />
+                  <div className="sb-backlog-ring-label">Accuracy</div>
+                </div>
+              )}
+              <div className="sb-backlog-pulse-nums">
+                <div className="sb-pulse-stat">
+                  <div className="sb-pulse-stat-top">
+                    <span className="sb-backlog-stat-label">Today</span>
+                    <span className="sb-backlog-stat-num">{p.todayQuestions}</span>
+                  </div>
+                  <SubjectMiniSplit split={todaySplit} />
+                </div>
+                <div className="sb-pulse-stat">
+                  <div className="sb-pulse-stat-top">
+                    <span className="sb-backlog-stat-label">This week</span>
+                    <span className="sb-backlog-stat-num">{thisWeekCount}</span>
+                  </div>
+                  <SubjectMiniSplit split={weekSplit} />
+                </div>
+                <div className="sb-pulse-stat">
+                  <div className="sb-pulse-stat-top">
+                    <span className="sb-backlog-stat-label">Lifetime</span>
+                    <span className="sb-backlog-stat-num">{p.totalQuestions}</span>
+                  </div>
+                  <SubjectMiniSplit split={lifetimeSplit} />
+                </div>
+              </div>
+            </div>
+
+            {!overall && (
+              <div className="sb-hero-meta" style={{ marginTop: 12 }}>Log a few answers with correct/incorrect to see your accuracy here.</div>
+            )}
+            {activeDays > 0 && (
+              <div className="sb-hero-meta" style={{ marginTop: overall ? 12 : 0 }}>~{Math.round(p.totalQuestions / activeDays)} questions per active day.</div>
+            )}
+          </Card>
+
+          <Card washi style={{ borderLeft: `5px solid ${SYLLABUS[subject]?.color}` }}>
             <SectionTitle icon={HelpCircle}>Log practice</SectionTitle>
             <div className="sb-form-grid">
               <div>
@@ -226,29 +301,6 @@ export default function QuestionsPage(p) {
                 <Plus size={16} /> {loggingAcc ? "Logging…" : `Log ${accTotal || ""} with accuracy`}
               </Btn>
             </div>
-          </Card>
-
-          <Card className="sb-card-tinted">
-            <SectionTitle icon={Sparkles}>Today's pulse</SectionTitle>
-            <div className="sb-backlog-pulse">
-              {overall && (
-                <div className="sb-backlog-ring-wrap">
-                  <ProgressRing pct={overall.pct} size={80} stroke={9} color={overall.pct < 60 ? "#C0435A" : undefined} paw={false} />
-                  <div className="sb-backlog-ring-label">Accuracy</div>
-                </div>
-              )}
-              <div className="sb-backlog-pulse-nums">
-                <div className="sb-backlog-stat"><span className="sb-backlog-stat-label">Today</span><span className="sb-backlog-stat-num">{p.todayQuestions}</span></div>
-                <div className="sb-backlog-stat"><span className="sb-backlog-stat-label">This week</span><span className="sb-backlog-stat-num">{thisWeekCount}</span></div>
-                <div className="sb-backlog-stat"><span className="sb-backlog-stat-label">Lifetime</span><span className="sb-backlog-stat-num">{p.totalQuestions}</span></div>
-              </div>
-            </div>
-            {!overall && (
-              <div className="sb-hero-meta" style={{ marginTop: 12 }}>Log a few answers with correct/incorrect to see your accuracy here.</div>
-            )}
-            {activeDays > 0 && (
-              <div className="sb-hero-meta" style={{ marginTop: overall ? 12 : 0 }}>~{Math.round(p.totalQuestions / activeDays)} questions per active day.</div>
-            )}
           </Card>
         </div>
 

@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useRef } from "react";
-import { ClipboardList, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X, Search, Clock, Target, Award, Compass, Atom, FlaskConical, Calculator, Trophy, TrendingUp, TrendingDown, Minus, Lightbulb } from "lucide-react";
+import { ClipboardList, Plus, Sparkles, RefreshCw, AlertTriangle, Scale, Pencil, Trash2, X, Search, Clock, Target, Award, Compass, Atom, FlaskConical, Calculator, Trophy, TrendingUp, TrendingDown, Minus, Lightbulb, Info } from "lucide-react";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { Card, SectionTitle, Btn, EmptyState, ProgressRing } from "../components/ui";
 import { formatISTCalendarDate, todayIST } from "../lib/dateIST";
 import { generateMockComparison } from "../services/groqMockCompare";
-import { ALL_CHAPTERS } from "../data/syllabus";
+import { ALL_CHAPTERS, SYLLABUS } from "../data/syllabus";
 
 // ---------- Mistake-tagging (mock review) ----------
 // The categories that actually change what a student should do next:
@@ -12,11 +12,11 @@ import { ALL_CHAPTERS } from "../data/syllabus";
 // re-study the chapter, time pressure -> pacing work, guesswork -> honesty
 // check on what's actually understood.
 const MISTAKE_TYPES = [
-  { key: "silly_mistakes", label: "Silly mistakes" },
-  { key: "concept_errors", label: "Concept gaps" },
-  { key: "calculation_errors", label: "Calculation errors" },
-  { key: "time_management_errors", label: "Time pressure" },
-  { key: "guess_work", label: "Guesswork" },
+  { key: "silly_mistakes", label: "Silly mistakes", hint: "Knew it, but slipped under exam pressure" },
+  { key: "concept_errors", label: "Concept gaps", hint: "Didn't actually know the topic well enough" },
+  { key: "calculation_errors", label: "Calculation errors", hint: "Right method, wrong arithmetic" },
+  { key: "time_management_errors", label: "Time pressure", hint: "Rushed, guessed or skipped because the clock ran out" },
+  { key: "guess_work", label: "Guesswork", hint: "Attempted without real confidence in the answer" },
 ];
 const emptyAnalysis = () => ({
   silly_mistakes: 0, concept_errors: 0, calculation_errors: 0, time_management_errors: 0, guess_work: 0,
@@ -74,6 +74,7 @@ export default function MocksPage(p) {
   const formRef = useRef(null);
   const [reviewOpenId, setReviewOpenId] = useState(null);
   const [reviewDraft, setReviewDraft] = useState(emptyAnalysis());
+  const [reviewInfoOpen, setReviewInfoOpen] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -94,6 +95,7 @@ export default function MocksPage(p) {
   };
 
   const toggleReview = (mockId) => {
+    setReviewInfoOpen(false);
     if (reviewOpenId === mockId) { setReviewOpenId(null); return; }
     const existing = p.mockAnalysisMap?.[mockId];
     setReviewDraft(existing ? {
@@ -417,6 +419,109 @@ export default function MocksPage(p) {
         {/* ---------- Right: trend, comparisons, AI insight, mistakes, history ---------- */}
         <div className="sb-mocks-right">
 
+
+      <Card>
+        <SectionTitle icon={ClipboardList}>History</SectionTitle>
+        {p.mocks.length === 0 ? <EmptyState mascot={p.mascot} mood="idle" text="Nothing here yet." /> : p.mocks.map((m) => {
+          const analysis = p.mockAnalysisMap?.[m.id];
+          const isReviewOpen = reviewOpenId === m.id;
+          return (
+          <div key={m.id} className="sb-mock-block" style={{ marginBottom: 10 }}>
+            <div className="sb-mock-row">
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                  <b>{m.exam_name}</b>
+                  <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }}>{m.exam_type || "JEE Main"}</span>
+                  {analysis && <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }} title="Mistakes reviewed">🔍 reviewed</span>}
+                </div>
+                <div className="sb-muted">{dayLabel(m.mock_date)}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="sb-mock-score">{totalOf(m)}<span>/{m.total_marks}</span></div>
+                <button className="sb-icon-btn" title={isReviewOpen ? "Close review" : "Review mistakes"} onClick={() => toggleReview(m.id)}><Search size={15} /></button>
+                <button className="sb-icon-btn" title="Edit" onClick={() => startEdit(m)}><Pencil size={15} /></button>
+                <button className="sb-icon-btn danger" title="Delete" onClick={() => p.deleteMock(m.id)}><Trash2 size={15} /></button>
+              </div>
+            </div>
+
+            {isReviewOpen && (
+              <div className="sb-chapter-detail" style={{ marginTop: 8 }}>
+                <div className="sb-review-info-row">
+                  <div className="sb-muted small">
+                    Tag why you lost marks on this mock — this is what feeds AI Insights and Backlog priority with real error data instead of just counts.
+                  </div>
+                  <button
+                    type="button"
+                    className="sb-icon-btn"
+                    title={reviewInfoOpen ? "Hide explanation" : "What does each category mean?"}
+                    onClick={() => setReviewInfoOpen((v) => !v)}
+                  >
+                    <Info size={14} />
+                  </button>
+                </div>
+
+                {reviewInfoOpen && (
+                  <div className="sb-review-info-box">
+                    {MISTAKE_TYPES.map(({ key, label, hint }) => (
+                      <div key={key} className="sb-review-info-line"><b>{label}</b> — {hint}</div>
+                    ))}
+                    <div className="sb-review-info-line" style={{ marginTop: 6 }}>
+                      <b>Link to chapters</b> — which chapters these mistakes actually came from, grouped by subject below.
+                    </div>
+                  </div>
+                )}
+
+                <div className="sb-form-grid dense">
+                  {MISTAKE_TYPES.map(({ key, label }) => (
+                    <div key={key}>
+                      <label>{label}</label>
+                      <input
+                        type="number" min={0} className="sb-input small"
+                        value={reviewDraft[key]}
+                        onChange={(e) => setReviewDraft((d) => ({ ...d, [key]: +e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <label className="sb-muted small" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}>
+                  <input type="checkbox" checked={reviewDraft.revision_needed} onChange={(e) => setReviewDraft((d) => ({ ...d, revision_needed: e.target.checked }))} />
+                  Flag for revision
+                </label>
+
+                <div className="sb-muted small" style={{ marginTop: 10, marginBottom: 6 }}>Link to chapters (optional)</div>
+                {Object.keys(SYLLABUS).map((subj) => {
+                  const chs = ALL_CHAPTERS.filter((c) => c.subject === subj);
+                  return (
+                    <div key={subj} className="sb-review-chapter-group">
+                      <div className="sb-review-chapter-group-label" style={{ color: SYLLABUS[subj]?.deepColor || SYLLABUS[subj]?.color }}>{subj}</div>
+                      <div className="sb-chip-row">
+                        {chs.map((c) => (
+                          <button
+                            key={c.key} type="button"
+                            className={`sb-chip small ${reviewDraft.linked_chapters.includes(c.name) ? "active" : ""}`}
+                            onClick={() => toggleLinkedChapter(c.name)}
+                          >
+                            {c.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                  <Btn onClick={() => saveReview(m.id)}>Save mistake breakdown</Btn>
+                  <Btn variant="soft" onClick={() => setReviewOpenId(null)}>Cancel</Btn>
+                </div>
+              </div>
+            )}
+          </div>
+          );
+        })}
+      </Card>
+
+
       <Card className="sb-cmp-card">
         <SectionTitle icon={Scale} right={
           <div className="sb-cmp-toggle">
@@ -651,77 +756,6 @@ export default function MocksPage(p) {
           )}
         </Card>
       )}
-
-      <Card>
-        <SectionTitle icon={ClipboardList}>History</SectionTitle>
-        {p.mocks.length === 0 ? <EmptyState mascot={p.mascot} mood="idle" text="Nothing here yet." /> : p.mocks.map((m) => {
-          const analysis = p.mockAnalysisMap?.[m.id];
-          const isReviewOpen = reviewOpenId === m.id;
-          return (
-          <div key={m.id} className="sb-mock-block" style={{ marginBottom: 10 }}>
-            <div className="sb-mock-row">
-              <div style={{ minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-                  <b>{m.exam_name}</b>
-                  <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }}>{m.exam_type || "JEE Main"}</span>
-                  {analysis && <span className="sb-chip small" style={{ boxShadow: "none", cursor: "default" }} title="Mistakes reviewed">🔍 reviewed</span>}
-                </div>
-                <div className="sb-muted">{dayLabel(m.mock_date)}</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div className="sb-mock-score">{totalOf(m)}<span>/{m.total_marks}</span></div>
-                <button className="sb-icon-btn" title={isReviewOpen ? "Close review" : "Review mistakes"} onClick={() => toggleReview(m.id)}><Search size={15} /></button>
-                <button className="sb-icon-btn" title="Edit" onClick={() => startEdit(m)}><Pencil size={15} /></button>
-                <button className="sb-icon-btn danger" title="Delete" onClick={() => p.deleteMock(m.id)}><Trash2 size={15} /></button>
-              </div>
-            </div>
-
-            {isReviewOpen && (
-              <div className="sb-chapter-detail" style={{ marginTop: 8 }}>
-                <div className="sb-muted small" style={{ marginBottom: 8 }}>
-                  Tag why you lost marks on this mock — this is what feeds AI Insights and Backlog priority with real error data instead of just counts.
-                </div>
-                <div className="sb-form-grid dense">
-                  {MISTAKE_TYPES.map(({ key, label }) => (
-                    <div key={key}>
-                      <label>{label}</label>
-                      <input
-                        type="number" min={0} className="sb-input small"
-                        value={reviewDraft[key]}
-                        onChange={(e) => setReviewDraft((d) => ({ ...d, [key]: +e.target.value }))}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <label className="sb-muted small" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}>
-                  <input type="checkbox" checked={reviewDraft.revision_needed} onChange={(e) => setReviewDraft((d) => ({ ...d, revision_needed: e.target.checked }))} />
-                  Flag for revision
-                </label>
-
-                <div className="sb-muted small" style={{ marginTop: 10, marginBottom: 6 }}>Link to chapters (optional)</div>
-                <div className="sb-chip-row">
-                  {ALL_CHAPTERS.map((c) => (
-                    <button
-                      key={c.key} type="button"
-                      className={`sb-chip small ${reviewDraft.linked_chapters.includes(c.name) ? "active" : ""}`}
-                      onClick={() => toggleLinkedChapter(c.name)}
-                    >
-                      {c.name}
-                    </button>
-                  ))}
-                </div>
-
-                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                  <Btn onClick={() => saveReview(m.id)}>Save mistake breakdown</Btn>
-                  <Btn variant="soft" onClick={() => setReviewOpenId(null)}>Cancel</Btn>
-                </div>
-              </div>
-            )}
-          </div>
-          );
-        })}
-      </Card>
         </div>
       </div>
     </div>

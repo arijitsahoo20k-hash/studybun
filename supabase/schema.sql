@@ -18,6 +18,7 @@ create table if not exists profiles (
   exam text default 'JEE Main',
   exam_date date default (current_date + interval '365 days'),
   daily_goal numeric default 6,
+  daily_question_target int not null default 50,
   theme text default 'Sakura Bloom',
   mascot text default 'bunny',
   dark_mode boolean default false,

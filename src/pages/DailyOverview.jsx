@@ -141,9 +141,14 @@ export default function DailyOverview(p) {
 
         <Card paper glass className="sb-overview-card">
           <SectionTitle icon={HelpCircle}>Questions solved</SectionTitle>
-          <div className="sb-overview-big">{p.todayQuestions || 0}</div>
-          <div className="sb-muted">
-            {questionAccuracy !== null ? `${questionAccuracy}% accuracy · ${questionsCorrect} correct` : "today's practice"}
+          <div className="sb-overview-ring-row">
+            <ProgressRing pct={p.questionTargetPct || 0} size={64} stroke={7} color={p.questionTargetMet ? "#3E9E5C" : undefined} />
+            <div>
+              <div className="sb-overview-big" style={{ fontSize: 22 }}>{p.todayQuestions || 0} <span style={{ fontSize: 13 }}>/ {p.dailyQuestionTarget || 50}</span></div>
+              <div className="sb-muted">
+                {p.questionTargetMet ? "Target hit today 🎯" : questionAccuracy !== null ? `${questionAccuracy}% accuracy · ${questionsCorrect} correct` : "today's practice"}
+              </div>
+            </div>
           </div>
         </Card>
 
