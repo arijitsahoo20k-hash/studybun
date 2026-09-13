@@ -1,5 +1,5 @@
 import React from "react";
-import { Target, Clock3, Flame, TrendingUp, BookOpen, HelpCircle } from "lucide-react";
+import { Target, Clock3, Flame, TrendingUp, BookOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Card, ProgressRing, SectionTitle, EmptyState } from "../components/ui";
 import Mascot from "../components/Mascot";
@@ -277,13 +277,6 @@ export default function Dashboard(p) {
               </div>
             </Card>
             <Card paper glass>
-              <SectionTitle icon={HelpCircle}>Today's questions</SectionTitle>
-              <div className="sb-goal-row">
-                <ProgressRing pct={p.questionTargetPct || 0} color={p.questionTargetMet ? "#3E9E5C" : undefined} />
-                <div><div className="sb-goal-num">{p.todayQuestions || 0} <span>/ {p.dailyQuestionTarget || 50}</span></div><div className="sb-muted">{p.questionTargetMet ? "Target hit for today 🎯" : "questions logged today"}</div></div>
-              </div>
-            </Card>
-            <Card paper glass>
               <div className="sb-section-title">
                 <span>
                   <span className={`sb-icon-badge sb-streak-flame sb-flame-tier-${flameTierFor(p.streak).tier}${p.streakActiveToday ? " sb-streak-flame--lit" : ""}`}>
@@ -403,7 +396,9 @@ export default function Dashboard(p) {
             onClick={() => p.setPage("questions")}
           >
             <div className="sb-pin-label">questions</div>
-            <div className="sb-pin-value">{p.todayQuestions} solved</div>
+            <div className="sb-pin-value" style={{ color: p.questionTargetMet ? "#3E9E5C" : undefined }}>
+              {p.todayQuestions || 0}<span style={{ fontSize: "0.55em", opacity: 0.75 }}> / {p.dailyQuestionTarget || 50}</span>
+            </div>
           </div>
         </div>
       </div>

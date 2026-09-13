@@ -702,6 +702,31 @@ export default function GlobalStyle() {
         .sb-card { padding: 32px; }
         .sb-countdown-hero { font-size: 96px; }
       }
+      /* ===== extra-wide desktop monitors (~1700px+, e.g. a 22"+ 1080p/1440p
+         display) =====
+         Everything above tops out its scaling at 1200-1500px, tuned for
+         laptop screens -- past that the page's own max-width keeps growing
+         (.sb-page clamp caps at 1680px) but the cards/text inside it stopped
+         getting any bigger, so on a genuinely wide monitor the whole
+         dashboard reads as a small island in a lot of empty space. This
+         tier only adds MORE room/scale on top of the 1200px tier above
+         (never overrides it downward) and only fires past 1700px, so it
+         can't touch phones/tablets/laptops -- purely additive, same pattern
+         as the 1200px and 1500px tiers already established above. */
+      @media (min-width: 1700px) {
+        .sb-page { max-width: clamp(680px, 90vw, 1880px); gap: 26px; }
+        .sb-card { padding: 34px; border-radius: 30px; }
+        .sb-dash-layout { gap: 32px; }
+        .sb-dash-main { gap: 26px; }
+        .sb-grid-3, .sb-grid-2 { gap: 28px; }
+        .sb-hero { padding: 36px; }
+        .sb-hero-greet { font-size: 29px; }
+        .sb-hero-line { font-size: 16.5px; max-width: 520px; }
+        .sb-countdown-hero { font-size: 106px; }
+        .sb-goal-num { font-size: 33px; }
+        .sb-dash-chart { max-height: 320px; }
+        .sb-pinboard { padding: 32px 28px; }
+      }
 
       /* ===== subject split: donut chart + legend =====
          Replaces the old plain horizontal bar list with a recharts donut
