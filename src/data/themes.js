@@ -329,6 +329,58 @@ export const THEMES = {
     dot: "rgba(30,27,51,0.06)", emoji: "🌃", photoBg: true, bgImage: "/theme-bg/velvet-skyline.webp",
     decor: ["crescentMoon", "twinkleStar", "cloud", "sparkleStar"],
   },
+
+  /* ===== photo-backdrop themes, batch 6 =====
+   * Same rules as the twelve above -- near-white bg/card, accent/accent2/
+   * soft/palette hand-picked straight from each source photo's own boldest
+   * notes (never washed-out pastels) so chips/buttons/decor read as part of
+   * the scene. Stardust Fox: oil-painted boy-and-fox-under-a-shooting-star
+   * night scene -- burnt-orange fox fur is the only warm note against a deep
+   * indigo sky, so it leads as hero accent, star-gold is secondary, and the
+   * outline pulls dark navy to match the sky instead of the usual brown.
+   * Autumn Pup: cream cartoon dog buried in rust/maple-orange fall leaves --
+   * rust leads as hero accent, golden leaf-yellow is secondary, outline goes
+   * near-black warm brown to match the dog's own ink linework. Pixel
+   * Lakeside: cross-stitch-style pixel-art night forest and lake -- the
+   * yellow-green tree canopy is the only bright note against deep navy sky
+   * and water, so it leads as hero accent, moonlight-gold is secondary, and
+   * the outline pulls the same deep navy as the sky/lake. Amber Radio: warm
+   * sunlit desk scene with a vintage wood radio, steaming coffee and a
+   * trailing pothos -- the amber wood tone leads as hero accent, leaf-green
+   * is secondary, and the outline goes deep coffee-brown to match the desk's
+   * own long shadows. */
+  "Stardust Fox": {
+    bg: "#F2F5FB", card: "#FCFEFF", outline: "#1E3A56", ink: "#1B2F47", muted: "#6B7A94",
+    accent: "#E0703A", accent2: "#F0C860", soft: "#F6DFA0",
+    palette: ["#E0703A", "#F0C860", "#D63B3B", "#8FAFD9", "#2A4A70", "#F5EFE0"],
+    mascotFill: "#F0B183", mascotInner: "#FDF6E8", mascotBlush: "#D63B3B",
+    dot: "rgba(30,58,86,0.06)", emoji: "🦊", photoBg: true, bgImage: "/theme-bg/stardust-fox.webp",
+    decor: ["crescentMoon", "shootingStar", "twinkleStar", "sparkleStar"],
+  },
+  "Autumn Pup": {
+    bg: "#FBF1E4", card: "#FFF9EF", outline: "#2A1E16", ink: "#3A2415", muted: "#8C6F55",
+    accent: "#C24A1F", accent2: "#E8A33D", soft: "#F0C48A",
+    palette: ["#C24A1F", "#E8A33D", "#9C3D1F", "#D97A2E", "#3A2415", "#F0DAB0"],
+    mascotFill: "#F0DAB0", mascotInner: "#FDF6E8", mascotBlush: "#C97452",
+    dot: "rgba(58,36,21,0.06)", emoji: "🍂", photoBg: true, bgImage: "/theme-bg/autumn-pup.webp",
+    decor: ["mapleLeaf", "acorn", "mapleLeaf", "sparkleStar"],
+  },
+  "Pixel Lakeside": {
+    bg: "#EFF5F3", card: "#FBFEFC", outline: "#1B324F", ink: "#1D2E42", muted: "#6E7F92",
+    accent: "#5C9E4A", accent2: "#F0DE7A", soft: "#BFE0D0",
+    palette: ["#5C9E4A", "#8CC63F", "#F0DE7A", "#2E5A82", "#1B324F", "#BFE0D0"],
+    mascotFill: "#BFE0D0", mascotInner: "#F0FAF5", mascotBlush: "#E8B85C",
+    dot: "rgba(27,50,79,0.06)", emoji: "🌲", photoBg: true, bgImage: "/theme-bg/pixel-lakeside.webp",
+    decor: ["pixelTree", "twinkleStar", "pixelTree", "crescentMoon"],
+  },
+  "Amber Radio": {
+    bg: "#FBF3E4", card: "#FFFAF0", outline: "#3A2818", ink: "#33261A", muted: "#8C7A63",
+    accent: "#A85A2E", accent2: "#6B8F42", soft: "#E8C98A",
+    palette: ["#A85A2E", "#6B8F42", "#C23B3B", "#2E4A8C", "#E8C98A", "#3A2818"],
+    mascotFill: "#E8C98A", mascotInner: "#FEF6E4", mascotBlush: "#C2703E",
+    dot: "rgba(58,40,24,0.06)", emoji: "📻", photoBg: true, bgImage: "/theme-bg/amber-radio.webp",
+    decor: ["coffeeCup", "mintSprig", "quillInk", "sparkleStar"],
+  },
 };
 
 /** Build the full set of CSS custom properties for a given theme, including the
