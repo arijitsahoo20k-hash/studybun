@@ -31,12 +31,20 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
   // scrolling anyway, but neither one fires for a scrollbar-thumb drag —
   // that's a raw mousedown/mousemove on .sb-main itself — so locking
   // .sb-main's overflow is what actually stops that path.
+  // Also toggles .sb-scroll-chain-lock (see GlobalStyle.jsx and
+  // useModalScrollLock.js) for as long as the lightbox is open -- this is
+  // the dialog the shared hook's own doc comment calls out as mounting
+  // longest, so it needs the same document-detach protection, applied and
+  // released the same way rather than left permanently on.
   useEffect(() => {
     const mainEl = document.querySelector(".sb-main");
     const prevBodyOverflow = document.body.style.overflow;
     const prevMainOverflow = mainEl ? mainEl.style.overflow : null;
     document.body.style.overflow = "hidden";
     if (mainEl) mainEl.style.overflow = "hidden";
+    document.documentElement.classList.add("sb-scroll-chain-lock");
+    document.body.classList.add("sb-scroll-chain-lock");
+    if (mainEl) mainEl.classList.add("sb-scroll-chain-lock");
 
     const preventScroll = (e) => { e.preventDefault(); };
     // wheel covers desktop mouse/trackpad scroll; touchmove covers mobile
@@ -48,6 +56,9 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
     return () => {
       document.body.style.overflow = prevBodyOverflow;
       if (mainEl) mainEl.style.overflow = prevMainOverflow;
+      document.documentElement.classList.remove("sb-scroll-chain-lock");
+      document.body.classList.remove("sb-scroll-chain-lock");
+      if (mainEl) mainEl.classList.remove("sb-scroll-chain-lock");
       document.removeEventListener("wheel", preventScroll);
       document.removeEventListener("touchmove", preventScroll);
     };

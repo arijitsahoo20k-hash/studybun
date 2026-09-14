@@ -124,7 +124,7 @@ export default function PrivateChatStyle() {
       .sb-pchat-kebab-menu button.danger:hover { background: #C24444; color: #fff; }
 
       /* ---------- chat pane: message list ---------- */
-      .sb-pchat-msg-list { flex: 1; overflow-y: auto; padding: 14px 16px; min-height: 0; display: flex; flex-direction: column; }
+      .sb-pchat-msg-list { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 14px 16px; min-height: 0; display: flex; flex-direction: column; }
       .sb-pchat-empty-thread { margin: auto; text-align: center; color: var(--muted); font-size: 13px; font-weight: 700; padding: 20px; }
       .sb-pchat-no-active { align-items: center; justify-content: center; }
       .sb-pchat-no-active-inner { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 20px; }

@@ -12,6 +12,7 @@ import { RADIO_OPTIONS, RADIO_LINKS, extractYouTubeId, getActiveRadio } from "..
 import { todayIST } from "../lib/dateIST";
 import { pauseDecor } from "../lib/decorPause";
 import { STOPWATCH_MODE } from "../hooks/useFocusTimer";
+import { useModalScrollLock } from "../hooks/useModalScrollLock";
 
 const MODE_ORDER = ["Deep Focus", "Pomodoro", "Lecture", "Practice", "Revision", STOPWATCH_MODE];
 
@@ -138,6 +139,15 @@ export default function FocusTimer(p) {
   const studyingCount = p.studyingIds ? p.studyingIds.size : 0;
   const studyingDialogRef = useRef(null);
   const settingsDialogRef = useRef(null);
+  // BUG FIX: this dialog reuses .sb-pt-overlay/.sb-pt-dialog (same chrome as
+  // the Periodic Table's element detail and MessageInfoModal) but was
+  // missing the scroll lock those two already have -- see
+  // useModalScrollLock.js. Without it, touch-dragging the backdrop scrolled
+  // .sb-main behind the dialog instead of just dimming it, which read as
+  // "the overlay itself is scrollable" and felt especially heavy right
+  // after a session finishes, when the Save-session card has just made the
+  // page taller.
+  useModalScrollLock(studyingDialogRef, studyingOpen);
 
   useEffect(() => { setDurationDraft(t.modeMinutes[t.mode]); }, [t.mode, t.modeMinutes]);
   // Belt-and-suspenders: close the duration popover the instant a session

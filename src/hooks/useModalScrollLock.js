@@ -38,6 +38,14 @@ import { useEffect } from "react";
  * the lock only engages while it's actually showing:
  *
  *   useModalScrollLock(dialogRef, open);
+ *
+ * Also toggles .sb-scroll-chain-lock on <html>/<body>/.sb-main for exactly
+ * as long as the dialog is open -- see the .sb-scroll-chain-lock rules in
+ * GlobalStyle.jsx. That's what keeps a rubber-band bounce from visibly
+ * detaching this fixed-position dialog from the document (the original bug
+ * this hook exists for), without permanently disabling the browser's
+ * native pull-to-refresh gesture the rest of the time, when no dialog is
+ * open to detach in the first place.
  */
 export function useModalScrollLock(dialogRef, active = true) {
   useEffect(() => {
@@ -47,6 +55,9 @@ export function useModalScrollLock(dialogRef, active = true) {
     const prevMainOverflow = mainEl ? mainEl.style.overflow : null;
     document.body.style.overflow = "hidden";
     if (mainEl) mainEl.style.overflow = "hidden";
+    document.documentElement.classList.add("sb-scroll-chain-lock");
+    document.body.classList.add("sb-scroll-chain-lock");
+    if (mainEl) mainEl.classList.add("sb-scroll-chain-lock");
 
     const preventScroll = (e) => {
       // Let scroll/wheel events inside the dialog card through -- only the
@@ -60,6 +71,9 @@ export function useModalScrollLock(dialogRef, active = true) {
     return () => {
       document.body.style.overflow = prevBodyOverflow;
       if (mainEl) mainEl.style.overflow = prevMainOverflow;
+      document.documentElement.classList.remove("sb-scroll-chain-lock");
+      document.body.classList.remove("sb-scroll-chain-lock");
+      if (mainEl) mainEl.classList.remove("sb-scroll-chain-lock");
       document.removeEventListener("wheel", preventScroll);
       document.removeEventListener("touchmove", preventScroll);
     };

@@ -30,20 +30,32 @@ export default function GlobalStyle() {
       body { min-height: 100vh; }
       #root { min-height: 100vh; }
 
-      /* Stop scroll chaining at the document edge. Without this, pulling
-         an inner scroller (.sb-main, .sb-chat-list, a .sb-pt-dialog's own
-         reader list, the chat composer textarea) past its own top/bottom
-         bubbles the gesture up to html/body, which triggers the browser's
-         native elastic/rubber-band bounce on the *document*. Position:fixed
-         elements (every .sb-pt-overlay dialog, including the "Seen by"
-         popup) are anchored to the viewport, not the document, so mid-bounce
-         they visibly detach from it -- the dialog opens off-center and the
-         dark scrim doesn't reach the bottom of the screen, because the
-         document has temporarily slid past where the fixed layer expects it
-         to be. overscroll-behavior:none here is the backstop; the inner
-         scrollers below get :contain so their own bounce stays local instead
-         of reaching this. */
-      html, body { overscroll-behavior: none; }
+      /* Stop scroll chaining at the document edge -- but only while a
+         fixed-position dialog (.sb-pt-overlay: Periodic Table, "Seen by",
+         Studying Now, ImageLightbox, etc.) is actually mounted. Without
+         some lock, pulling an inner scroller (.sb-main, a .sb-pt-dialog's
+         own reader list, the chat composer textarea) past its own
+         top/bottom bubbles the gesture up to html/body, which triggers the
+         browser's native elastic/rubber-band bounce on the *document*.
+         Those dialogs are anchored to the viewport, not the document, so
+         mid-bounce they visibly detach from it -- the dialog opens
+         off-center and the dark scrim doesn't reach the bottom of the
+         screen, because the document has temporarily slid past where the
+         fixed layer expects it to be.
+         BUG FIX: this used to be a permanent "html, body { overscroll-
+         behavior: none; }" rule, always on. That's a stronger fix than the
+         bug needs -- the detachment can only happen while one of those
+         dialogs is open -- and as a side effect it permanently killed the
+         browser's native pull-to-refresh gesture on every page, all the
+         time, since PTR relies on exactly the scroll-chain-to-document this
+         rule blocks. It's now gated behind .sb-scroll-chain-lock, toggled
+         onto <html>/<body> for the lifetime of a dialog by
+         useModalScrollLock.js (and ImageLightbox.jsx, which manages its own
+         lock) -- same class also gates .sb-main's own :contain below, since
+         that alone is enough to stop the chain before it even reaches here.
+         Pull-to-refresh works again everywhere a dialog isn't open, and the
+         dialog fix still applies exactly when it's needed. */
+      html.sb-scroll-chain-lock, body.sb-scroll-chain-lock { overscroll-behavior: none; }
 
       /* ===== tap/focus reset =====
          Android Chrome (incl. installed PWAs) paints two things this app never
@@ -510,7 +522,13 @@ export default function GlobalStyle() {
          writeup. Don't remove contain: layout to fix a dialog instead --
          it's there on purpose (perf boundary for .sb-main's own reflows);
          portal the dialog out instead. */
-      .sb-main { flex: 1 1 auto; min-width: 0; width: calc(100% - 244px); height: 100vh; padding: clamp(20px, 2.6vw, 40px) clamp(20px, 3vw, 44px) 90px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; contain: layout; }
+      .sb-main { flex: 1 1 auto; min-width: 0; width: calc(100% - 244px); height: 100vh; padding: clamp(20px, 2.6vw, 40px) clamp(20px, 3vw, 44px) 90px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; contain: layout; }
+      /* Only contains its own bounce (stopping the chain before it reaches
+         html/body above) while a dialog is open -- see .sb-scroll-chain-lock
+         above. The rest of the time .sb-main is free to chain a pull-down
+         at its own top all the way to the document, which is what lets the
+         browser's native pull-to-refresh fire. */
+      .sb-main.sb-scroll-chain-lock { overscroll-behavior: contain; }
       /* One page's worth of content, wrapped so AnimatePresence in App.jsx
          has a single element to fade/slide in and out between nav switches.
          Mirrors .sb-main's own centering so the swap is otherwise invisible
@@ -2192,7 +2210,22 @@ export default function GlobalStyle() {
 
       @media (max-width: 720px) {
         .sb-sidebar { display: none; }
-        .sb-main { width: 100%; height: 100vh; padding: 70px 16px 24px; }
+        /* BUG FIX: bottom padding here was 24px, but .sb-buddy (the
+           persistent floating mascot button, below) sits fixed at
+           bottom:20px with a 62px-tall avatar -- an 82px footprint. Every
+           other breakpoint reserves 90px of .sb-main bottom padding for
+           exactly that reason (see the base .sb-main rule above), but this
+           one narrow-screen override was never updated to match when it
+           set its own padding shorthand, so on phones and any window
+           narrower than 720px, content that legitimately sits at the
+           bottom of a tall page -- e.g. Private Chat's composer, whose
+           two-pane layout fills nearly the full viewport height -- ended
+           up underneath Buddy's circle instead of above it: a same-colour
+           "white spot" sitting on top of the real Send button that ate
+           the tap before it reached the button underneath. Restoring 90px
+           here (matching every other breakpoint) gives content the same
+           clearance Buddy has always needed. */
+        .sb-main { width: 100%; height: 100vh; padding: 70px 16px 90px; }
         .sb-mobile-toggle { display: flex; position: fixed; top: 14px; left: 14px; z-index: 55; background: var(--card); border: 2px solid var(--mascot-outline); border-radius: 12px; padding: 8px; box-shadow: 3px 3px 0 var(--mascot-outline); }
         .sb-mobile-nav {
           display: flex; flex-direction: column; position: fixed; top: 58px; left: 14px;
