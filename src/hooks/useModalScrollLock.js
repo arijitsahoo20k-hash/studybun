@@ -46,6 +46,17 @@ import { useEffect } from "react";
  * this hook exists for), without permanently disabling the browser's
  * native pull-to-refresh gesture the rest of the time, when no dialog is
  * open to detach in the first place.
+ *
+ * .sb-main also carries `scrollbar-gutter: stable` (keeps the layout from
+ * jittering sideways whenever a page's content crosses the scroll
+ * threshold). That reserved strip is still reserved even once we set
+ * overflow to hidden below -- it's not tied to whether a scrollbar is
+ * actually drawn, only to overflow not being `visible` -- so without this,
+ * a thin untinted sliver of the real page survives at .sb-main's right
+ * edge, right where its scrollbar normally lives, for as long as the
+ * dialog stays open. It's not scrollable (overflow:hidden already stops
+ * that), just visibly un-dimmed. Since nothing needs that space while
+ * scrolling is locked anyway, drop the reservation for the duration.
  */
 export function useModalScrollLock(dialogRef, active = true) {
   useEffect(() => {
@@ -53,8 +64,12 @@ export function useModalScrollLock(dialogRef, active = true) {
     const mainEl = document.querySelector(".sb-main");
     const prevBodyOverflow = document.body.style.overflow;
     const prevMainOverflow = mainEl ? mainEl.style.overflow : null;
+    const prevMainScrollbarGutter = mainEl ? mainEl.style.scrollbarGutter : null;
     document.body.style.overflow = "hidden";
-    if (mainEl) mainEl.style.overflow = "hidden";
+    if (mainEl) {
+      mainEl.style.overflow = "hidden";
+      mainEl.style.scrollbarGutter = "auto";
+    }
     document.documentElement.classList.add("sb-scroll-chain-lock");
     document.body.classList.add("sb-scroll-chain-lock");
     if (mainEl) mainEl.classList.add("sb-scroll-chain-lock");
@@ -70,7 +85,10 @@ export function useModalScrollLock(dialogRef, active = true) {
 
     return () => {
       document.body.style.overflow = prevBodyOverflow;
-      if (mainEl) mainEl.style.overflow = prevMainOverflow;
+      if (mainEl) {
+        mainEl.style.overflow = prevMainOverflow;
+        mainEl.style.scrollbarGutter = prevMainScrollbarGutter;
+      }
       document.documentElement.classList.remove("sb-scroll-chain-lock");
       document.body.classList.remove("sb-scroll-chain-lock");
       if (mainEl) mainEl.classList.remove("sb-scroll-chain-lock");

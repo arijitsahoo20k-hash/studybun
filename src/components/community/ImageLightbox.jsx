@@ -36,12 +36,23 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
   // the dialog the shared hook's own doc comment calls out as mounting
   // longest, so it needs the same document-detach protection, applied and
   // released the same way rather than left permanently on.
+  // .sb-main also carries `scrollbar-gutter: stable`, which stays reserved
+  // even once overflow is set to hidden below (it's tied to overflow not
+  // being `visible`, not to whether a scrollbar is actually drawn) --
+  // leaving a thin untinted sliver of the real page at .sb-main's right
+  // edge, right where its scrollbar normally sits, for as long as the
+  // lightbox is open. Nothing needs that reserved space while scrolling
+  // is locked, so drop it for the duration, same as useModalScrollLock.js.
   useEffect(() => {
     const mainEl = document.querySelector(".sb-main");
     const prevBodyOverflow = document.body.style.overflow;
     const prevMainOverflow = mainEl ? mainEl.style.overflow : null;
+    const prevMainScrollbarGutter = mainEl ? mainEl.style.scrollbarGutter : null;
     document.body.style.overflow = "hidden";
-    if (mainEl) mainEl.style.overflow = "hidden";
+    if (mainEl) {
+      mainEl.style.overflow = "hidden";
+      mainEl.style.scrollbarGutter = "auto";
+    }
     document.documentElement.classList.add("sb-scroll-chain-lock");
     document.body.classList.add("sb-scroll-chain-lock");
     if (mainEl) mainEl.classList.add("sb-scroll-chain-lock");
@@ -55,7 +66,10 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
 
     return () => {
       document.body.style.overflow = prevBodyOverflow;
-      if (mainEl) mainEl.style.overflow = prevMainOverflow;
+      if (mainEl) {
+        mainEl.style.overflow = prevMainOverflow;
+        mainEl.style.scrollbarGutter = prevMainScrollbarGutter;
+      }
       document.documentElement.classList.remove("sb-scroll-chain-lock");
       document.body.classList.remove("sb-scroll-chain-lock");
       if (mainEl) mainEl.classList.remove("sb-scroll-chain-lock");
