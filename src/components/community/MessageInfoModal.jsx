@@ -85,7 +85,7 @@ export default function MessageInfoModal({ open, channelId, message, onClose }) 
   if (!portalTarget) return null;
 
   return createPortal(
-    <div className="sb-pt-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="sb-pt-overlay sb-msginfo-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div
         className="sb-pt-dialog sb-msginfo-dialog"
         role="dialog"

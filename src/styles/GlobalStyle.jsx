@@ -1387,6 +1387,12 @@ export default function GlobalStyle() {
          cap since this content is narrower than a Periodic Table element
          card. */
       .sb-studying-dialog { width: min(420px, 100%); }
+      /* No dimmed backdrop here either — the popup pops on its own border +
+         hard-shadow. Scoped to .sb-studying-overlay only (the JSX already
+         carries this class alongside .sb-pt-overlay), so every other
+         .sb-pt-overlay dialog (Periodic Table, image lightbox, timer
+         settings) keeps its normal dimmed backdrop. */
+      .sb-studying-overlay { background: transparent; }
       /* .sb-pt-dialog-close is absolutely positioned at top:14/right:14 as a
          30px circle, so it reaches to 44px inset from the dialog's right
          edge -- 22px further in than the dialog's own 22px padding. The

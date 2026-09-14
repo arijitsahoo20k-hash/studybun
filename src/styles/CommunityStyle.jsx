@@ -51,12 +51,25 @@ export default function CommunityStyle() {
       @media (min-width: 641px) and (max-width: 1023px) {
         .sb-community-stats { gap: 18px; }
         .sb-community-content > .sb-card { min-height: 500px; }
-        .sb-community-content > .sb-card.sb-community-chat { height: min(76vh, 740px); height: min(76dvh, 740px); }
+        /* Tablet: chat felt cramped — taller message pane and a roomier
+           composer textarea (was capped at the same 140px as mobile).
+           The page itself scrolls (no outer max-height wrapper), so
+           pushing this taller is safe — it just extends downward.
+           Scoped to .sb-community-chat only — the generic rule above
+           (min-height: 500px) stays untouched so check-ins/accountability
+           keep their original height. */
+        .sb-community-content > .sb-card.sb-community-chat { height: min(94vh, 1040px); height: min(94dvh, 1040px); min-height: 620px; }
+        .sb-community-content .sb-chat-composer textarea { max-height: 180px; }
       }
 
       @media (min-width: 1024px) {
         .sb-community-content > .sb-card { padding: 32px 30px; min-height: 560px; }
-        .sb-community-content > .sb-card.sb-community-chat { height: min(78vh, 800px); height: min(78dvh, 800px); padding-bottom: 26px; }
+        /* Laptop/desktop: same fix — more vertical room for the message
+           list, and a taller textarea so multi-line messages don't scroll
+           inside a tiny box. Scoped to .sb-community-chat only, same as
+           above — the generic min-height (560px) is untouched. */
+        .sb-community-content > .sb-card.sb-community-chat { height: min(96vh, 1180px); height: min(96dvh, 1180px); min-height: 680px; padding-bottom: 26px; }
+        .sb-community-content .sb-chat-composer textarea { max-height: 220px; }
       }
 
       @media (max-width: 640px) {
@@ -219,7 +232,13 @@ export default function CommunityStyle() {
          so it opens centered like every other popup in the app. Reader
          rows are a plain flex row (Mascot avatar + name), not the
          ringed "studying" bubble treatment — no live/pulse indicator
-         is meaningful here, so the simpler row fits better. */
+         is meaningful here, so the simpler row fits better.
+         Backdrop: the .sb-msginfo-overlay class (added in JSX alongside
+         .sb-pt-overlay) is kept as a hook for future scoping, but no
+         override is defined here — it just inherits .sb-pt-overlay's
+         normal dimmed background: rgba(20,16,14,.62), position:fixed,
+         inset:0, so it always covers the full viewport no matter where
+         you click or how far the page is scrolled. */
       .sb-msginfo-dialog { width: min(360px, 100%); text-align: left; }
       .sb-msginfo-title { font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--mascot-ink); margin: 4px 0 2px; }
       .sb-msginfo-preview {

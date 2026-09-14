@@ -3,6 +3,9 @@ import { Send, X, ImagePlus } from "lucide-react";
 import { validateImageFile } from "../../lib/imageValidation";
 
 const MAX_LEN = 1000;
+// Fallback only, used if the textarea's CSS max-height can't be read
+// (e.g. not yet mounted/styled). The real cap normally comes from CSS —
+// see resizeToContent() below.
 const TEXTAREA_MAX_HEIGHT = 140;
 
 // Split out from CommunityChat on purpose: `draft` used to live in the
@@ -53,12 +56,34 @@ export default function ChatComposer({
     if (replyTo) textareaRef.current?.focus();
   }, [replyTo]);
 
-  useEffect(() => {
+  // Auto-grow the textarea up to whatever max-height the current
+  // breakpoint's CSS gives it (140px on mobile, more on tablet/desktop —
+  // see CommunityStyle.jsx) instead of a single hardcoded JS constant.
+  // A fixed constant here would silently override any CSS max-height bump
+  // at larger breakpoints, since this effect sets an explicit inline
+  // px height on every keystroke. Reading the computed style keeps this
+  // in sync with CSS no matter how the breakpoints change later.
+  const resizeToContent = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
+    const cssMax = parseFloat(getComputedStyle(el).maxHeight);
+    const max = Number.isFinite(cssMax) && cssMax > 0 ? cssMax : TEXTAREA_MAX_HEIGHT;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`;
-  }, [draft]);
+    el.style.height = `${Math.min(el.scrollHeight, max)}px`;
+  }, []);
+
+  useEffect(() => {
+    resizeToContent();
+  }, [draft, resizeToContent]);
+
+  // Re-clamp on viewport/orientation changes too (e.g. rotating a tablet,
+  // or resizing a browser window across a breakpoint) — without this the
+  // textarea would keep whichever max-height applied when it was last
+  // typed into until the next keystroke.
+  useEffect(() => {
+    window.addEventListener("resize", resizeToContent);
+    return () => window.removeEventListener("resize", resizeToContent);
+  }, [resizeToContent]);
 
   // BUG FIX (stale closure / double revoke): this is now the *only* place
   // that ever calls URL.revokeObjectURL. Previously clearImage() and
