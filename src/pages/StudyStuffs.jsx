@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Layers, Atom, Dna, ChevronRight } from "lucide-react";
+import { Layers, Atom, Dna, FlaskConical, ChevronRight } from "lucide-react";
 import { Card, SectionTitle } from "../components/ui";
 import PeriodicTable from "../components/PeriodicTable";
 import ProteinVisualizer from "../components/protein/ProteinVisualizer";
+import AminoAcids from "../components/AminoAcids";
 
 /* Every reference tool StudyBun offers lives here. This list is the whole
  * point of the page -- new graphs/reference charts get a new entry here and
@@ -22,6 +23,13 @@ const TOOLS = [
     blurb: "See a protein fold from amino-acid chain to full 3D assembly — primary, secondary, tertiary and quaternary, with an interactive rotate-and-zoom model.",
     icon: Dna,
     render: (onBack) => <ProteinVisualizer onBack={onBack} />,
+  },
+  {
+    id: "amino-acids",
+    title: "Amino Acids",
+    blurb: "The building blocks of proteins — structure, naming, and the full NCERT table of all 20 natural amino acids with their side chains and codes.",
+    icon: FlaskConical,
+    render: (onBack) => <AminoAcids onBack={onBack} />,
   },
 ];
 

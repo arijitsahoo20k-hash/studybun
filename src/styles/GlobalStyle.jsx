@@ -3186,6 +3186,65 @@ export default function GlobalStyle() {
         .sb-overview-stats-grid { grid-template-columns: repeat(2, 1fr); }
         .sb-overview-legend { max-width: none; }
       }
+
+      /* ===== Amino Acids (Study Stuffs) =====
+         Text-and-table reference page, no fixed palette of its own -- reuses
+         theme tokens plus .sb-pt-back so its header stays pixel-identical to
+         Periodic Table / Protein Structure. Below 680px the real <table>
+         (.sb-aa-table-scroll) is swapped for a stacked card list
+         (.sb-aa-cards) built from the exact same AMINO_ACIDS data, since a
+         5-column table just can't fit a phone width without truncating the
+         side-chain formulas -- and those are the whole point of the row. */
+      .sb-aa-wrap { display: flex; flex-direction: column; gap: 14px; width: 100%; min-width: 0; }
+      .sb-aa-title { font-family: var(--font-display); font-weight: 800; font-size: 19px; color: var(--mascot-ink); margin: 12px 0 0; }
+      .sb-aa-h3 { font-family: var(--font-display); font-weight: 800; font-size: 14.5px; color: var(--mascot-ink); margin: 0 0 10px; }
+      .sb-aa-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; }
+      .sb-aa-list li { font-size: 13px; line-height: 1.6; color: var(--ink); }
+      .sb-aa-list em { font-style: italic; color: var(--muted); }
+
+      .sb-aa-formula-box {
+        margin-top: 14px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+        background: var(--soft); border: 2px solid var(--mascot-outline); border-radius: 16px; padding: 14px 12px;
+      }
+      .sb-aa-formula { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--mascot-ink); letter-spacing: .3px; }
+      .sb-aa-formula-cap { font-size: 11px; font-weight: 700; color: var(--muted); }
+
+      .sb-aa-star { color: var(--accent); font-weight: 800; margin-left: 1px; }
+
+      /* --- table (tablet/desktop, >= 681px) --- */
+      .sb-aa-table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .sb-aa-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 480px; }
+      .sb-aa-table th {
+        text-align: left; font-family: var(--font-body); font-weight: 800; font-size: 10.5px; text-transform: uppercase;
+        letter-spacing: .4px; color: var(--muted); padding: 0 10px 8px; border-bottom: 2px solid var(--mascot-outline);
+        white-space: nowrap;
+      }
+      .sb-aa-table td { padding: 9px 10px; font-size: 12.5px; color: var(--ink); border-bottom: 1.5px dashed var(--soft); vertical-align: middle; }
+      .sb-aa-table tbody tr:last-child td { border-bottom: none; }
+      .sb-aa-table tbody tr:hover td { background: var(--soft); }
+      .sb-aa-row-essential td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+      .sb-aa-td-num { font-weight: 700; color: var(--muted); width: 30px; }
+      .sb-aa-td-name { font-weight: 800; color: var(--mascot-ink); white-space: nowrap; }
+      .sb-aa-td-r { font-family: var(--font-body); color: var(--ink); }
+      .sb-aa-td-code { font-weight: 700; color: var(--muted); text-align: center; width: 60px; }
+
+      /* --- stacked cards (phones, <= 680px) --- */
+      .sb-aa-cards { display: none; flex-direction: column; gap: 8px; }
+      .sb-aa-card { border: 2px solid var(--mascot-outline); border-radius: 14px; padding: 10px 12px; background: var(--card); }
+      .sb-aa-card-essential { box-shadow: inset 3px 0 0 var(--accent); }
+      .sb-aa-card-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .sb-aa-card-num { font-size: 11px; font-weight: 700; color: var(--muted); }
+      .sb-aa-card-name { font-family: var(--font-display); font-weight: 800; font-size: 13.5px; color: var(--mascot-ink); }
+      .sb-aa-card-codes { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--muted); }
+      .sb-aa-card-r { margin-top: 5px; font-size: 12.5px; color: var(--ink); display: flex; flex-direction: column; gap: 2px; }
+      .sb-aa-card-r-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); }
+
+      .sb-aa-footnote { margin: 12px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+
+      @media (max-width: 680px) {
+        .sb-aa-table-scroll { display: none; }
+        .sb-aa-cards { display: flex; }
+      }
     `}</style>
   );
 }
