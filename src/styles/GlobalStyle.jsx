@@ -1140,11 +1140,18 @@ export default function GlobalStyle() {
         display: flex; flex-direction: column; align-items: center; gap: 18px;
         padding: 38px 30px; isolation: isolate;
         background: linear-gradient(175deg, var(--card) 0%, var(--card) 62%, var(--soft) 145%);
-        /* Its own containment box: layout/paint/style changes inside (the
+        /* Its own containment box: layout/style changes inside (the
            once-a-second digit tick, the running-state animations) never
            bubble out to trigger recalculation elsewhere on the page, and
-           vice versa. */
-        contain: layout style paint;
+           vice versa. Paint containment removed: it was forcing the hero
+           into its own compositor layer permanently, which is free while
+           nothing else is on screen but becomes expensive to composite on
+           every scroll frame once the askDone save-card appears below it
+           and makes the page tall enough to scroll. Layout+style is
+           enough to stop the timer tick from dirtying the rest of the
+           page; the compositor can skip the hero's layer during scroll
+           when it isn't animating. */
+        contain: layout style;
       }
       /* glassmorphism, WITHOUT a live backdrop-filter: this card sits directly
          on top of the app-wide DecorLayer (position:fixed, endlessly drifting
@@ -1156,9 +1163,7 @@ export default function GlobalStyle() {
          ~88% opaque, so almost none of what's "seen through" was doing any
          visual work anyway -- a static, slightly richer two-tone tint plus a
          faint top highlight reproduces the same frosted-glass read for free,
-         at zero per-frame cost. Kept as its own isolated compositor layer (see
-         the contain property below) so nothing else on the page has to
-         repaint alongside it either. See .sb-focus-side-panel for the
+         at zero per-frame cost. See .sb-focus-side-panel for the
          companion-rail version of this same fix. */
       .sb-focus-hero.sb-card-glass {
         background-color: color-mix(in srgb, var(--card) 94%, transparent);
@@ -1175,14 +1180,23 @@ export default function GlobalStyle() {
       .sb-focus-aura {
         position: absolute; top: 50%; left: 50%; width: 62%; aspect-ratio: 1;
         transform: translate(-50%, -54%); border-radius: 50%; pointer-events: none; z-index: 0;
-        background: radial-gradient(circle, var(--accent2) 0%, var(--soft) 42%, transparent 72%);
-        opacity: .28; filter: blur(4px);
+        /* Soft radial gradient reads as a diffuse glow without needing
+           filter:blur. A CSS blur on an always-present element creates an
+           implicit compositor layer even when the timer is idle — that layer
+           stays promoted and gets re-composited on every scroll frame once
+           the askDone card makes the page tall enough to scroll. A wider,
+           more transparent gradient gives the same soft-glow visual for free,
+           at zero per-frame cost when not animating. */
+        background: radial-gradient(circle, var(--accent2) 0%, color-mix(in srgb, var(--soft) 60%, transparent) 55%, transparent 80%);
+        opacity: .28;
         transition: opacity .6s ease;
       }
       .sb-focus-hero.sb-focus-running .sb-focus-aura {
         opacity: .5; animation: sb-focus-breathe 4.2s ease-in-out infinite;
-        /* Compositor-only scale animation on a layer that's rasterized once,
-           not re-blurred every frame. */
+        /* Compositor-only scale animation on a layer that's rasterized once.
+           will-change is scoped to the running state only so the layer is
+           only promoted while the animation is actually live, not during
+           idle/save states when the page is being scrolled. */
         will-change: transform;
       }
       @keyframes sb-focus-breathe {
@@ -1284,7 +1298,20 @@ export default function GlobalStyle() {
       .sb-focus-side-card {
         display: flex; flex-direction: column; height: 100%;
         padding: 0; overflow: hidden; text-align: left;
-        contain: layout style paint;
+        /* This is the actual remaining desktop jank: the companion rail
+           only renders at >=1080px (.sb-focus-side is display:none below
+           that -- see the media query further down), so it never exists on
+           tablet at all, which is exactly why tablet was already smooth
+           while desktop wasn't, even after the hero-only fix. It's a tall
+           (420-460px) card with a full-bleed cover-image child, and paint
+           containment forced it into its own permanent compositor layer --
+           a second promoted layer sitting right next to the hero's, both
+           having to be re-composited every scroll frame once the askDone
+           card makes the page scrollable. Layout+style still scopes this
+           card's own reflow so it can't dirty the rest of the page; dropping
+           paint just stops it from being promoted when nothing inside it is
+           animating. */
+        contain: layout style;
       }
       .sb-focus-side-img {
         flex: 1 1 auto; min-height: 260px; width: 100%;
