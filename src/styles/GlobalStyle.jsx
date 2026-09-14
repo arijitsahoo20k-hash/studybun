@@ -30,6 +30,21 @@ export default function GlobalStyle() {
       body { min-height: 100vh; }
       #root { min-height: 100vh; }
 
+      /* Stop scroll chaining at the document edge. Without this, pulling
+         an inner scroller (.sb-main, .sb-chat-list, a .sb-pt-dialog's own
+         reader list, the chat composer textarea) past its own top/bottom
+         bubbles the gesture up to html/body, which triggers the browser's
+         native elastic/rubber-band bounce on the *document*. Position:fixed
+         elements (every .sb-pt-overlay dialog, including the "Seen by"
+         popup) are anchored to the viewport, not the document, so mid-bounce
+         they visibly detach from it -- the dialog opens off-center and the
+         dark scrim doesn't reach the bottom of the screen, because the
+         document has temporarily slid past where the fixed layer expects it
+         to be. overscroll-behavior:none here is the backstop; the inner
+         scrollers below get :contain so their own bounce stays local instead
+         of reaching this. */
+      html, body { overscroll-behavior: none; }
+
       /* ===== tap/focus reset =====
          Android Chrome (incl. installed PWAs) paints two things this app never
          styled: (1) a translucent blue rectangle on tap — the UA's default
@@ -484,7 +499,18 @@ export default function GlobalStyle() {
       .sb-mobile-toggle { display: none; }
       .sb-mobile-nav { display: none; }
 
-      .sb-main { flex: 1 1 auto; min-width: 0; width: calc(100% - 244px); height: 100vh; padding: clamp(20px, 2.6vw, 40px) clamp(20px, 3vw, 44px) 90px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; contain: layout; }
+      /* WARNING: contain: layout below makes .sb-main a containing block
+         for any position: fixed descendant (same effect as a transform).
+         Any full-screen dialog (.sb-pt-overlay) rendered as a DOM
+         descendant of .sb-main -- i.e. not portaled out via createPortal --
+         will silently stop being fixed to the viewport and instead track
+         .sb-main's own scrolled box: it opens off-center and the scrim
+         falls short of the real screen edges once .sb-main is scrolled.
+         See MessageInfoModal.jsx (Seen by popup) for the fix and a full
+         writeup. Don't remove contain: layout to fix a dialog instead --
+         it's there on purpose (perf boundary for .sb-main's own reflows);
+         portal the dialog out instead. */
+      .sb-main { flex: 1 1 auto; min-width: 0; width: calc(100% - 244px); height: 100vh; padding: clamp(20px, 2.6vw, 40px) clamp(20px, 3vw, 44px) 90px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; contain: layout; }
       /* One page's worth of content, wrapped so AnimatePresence in App.jsx
          has a single element to fade/slide in and out between nav switches.
          Mirrors .sb-main's own centering so the swap is otherwise invisible
@@ -2802,7 +2828,7 @@ export default function GlobalStyle() {
         display: flex; align-items: center; justify-content: center; padding: 16px;
       }
       .sb-pt-dialog {
-        width: min(440px, 100%); max-height: 88vh; overflow-y: auto; background: var(--card); color: var(--mascot-ink);
+        width: min(440px, 100%); max-height: 88vh; overflow-y: auto; overscroll-behavior: contain; background: var(--card); color: var(--mascot-ink);
         border: 2.5px solid var(--mascot-outline); border-radius: 22px; padding: 22px; position: relative;
         box-shadow: 6px 6px 0 var(--mascot-outline);
       }

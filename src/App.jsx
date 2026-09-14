@@ -1368,6 +1368,15 @@ export default function App() {
   };
 
   return (
+    // WARNING: `cssVars` below is the ONLY place theme colors (--card,
+    // --mascot-outline, --mascot-ink, --bg, --muted, --soft, --accent2,
+    // etc.) get defined -- they live as inline custom properties on THIS
+    // element, not on <body> or :root. Any component that portals UI out
+    // of .sb-main (e.g. createPortal for a themed dialog -- see
+    // MessageInfoModal.jsx) must target this .sb-app node, not
+    // document.body: portaling to body escapes this variable scope and
+    // the portaled content renders with no theme colors at all
+    // (transparent surfaces, invisible borders).
     <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"} data-paper={theme.paper ? "true" : "false"} data-photo-bg={theme.photoBg ? "true" : "false"}>
       <GlobalStyle />
       <ThemePhotoLayer theme={theme} />

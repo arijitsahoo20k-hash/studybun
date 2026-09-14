@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Search, X, ArrowLeft, Info } from "lucide-react";
 import { Card } from "./ui";
 import {
@@ -86,7 +87,16 @@ function ElementDetail({ el, mode, onClose }) {
     ["Discovered by", el.by || "Unknown"],
   ];
 
-  return (
+  return createPortal(
+    // Portaled to .sb-app -- same fix as MessageInfoModal.jsx's "Seen by"
+    // popup, and the same reason: .sb-main sets `contain: layout`, which
+    // makes it the containing block for `position: fixed` descendants, so
+    // left un-portaled this overlay tracks .sb-main's own scrolled box
+    // instead of the viewport (opens off-center, scrim cut off at the
+    // bottom once .sb-main is scrolled). Target .sb-app specifically, NOT
+    // document.body -- .sb-app is where the theme CSS variables
+    // (--card, --mascot-outline, etc.) are actually defined; portaling to
+    // body would render this dialog with no colors at all.
     <div className="sb-pt-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div
         className="sb-pt-dialog"
@@ -125,7 +135,9 @@ function ElementDetail({ el, mode, onClose }) {
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    (typeof document !== "undefined" && document.querySelector(".sb-app")) ||
+      (typeof document !== "undefined" ? document.body : null)
   );
 }
 

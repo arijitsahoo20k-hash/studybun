@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import Mascot from "../Mascot";
 import { fetchMessageReaders } from "../../lib/communityProfiles";
@@ -60,7 +61,30 @@ export default function MessageInfoModal({ open, channelId, message, onClose }) 
   const hasText = Boolean(message.content?.trim());
   const previewText = hasText ? message.content : message.image_url ? "📷 Photo" : "";
 
-  return (
+  // Portaled out of .sb-main (this component's DOM ancestor on every
+  // route) because .sb-main sets `contain: layout`, which per spec makes
+  // it the containing block for `position: fixed` descendants -- same
+  // effect as a transform. Left un-portaled, this overlay is "fixed" to
+  // .sb-main's own scrollable box instead of the viewport: scroll .sb-main
+  // down first and the overlay renders anchored to where .sb-main's top
+  // used to be, so it opens above-center and the scrim falls short of the
+  // real bottom of the screen.
+  //
+  // The portal target is .sb-app, NOT document.body. Every theme color
+  // this dialog's CSS reads (--card, --mascot-outline, --mascot-ink, etc.,
+  // see src/App.jsx) is set as an inline custom property on .sb-app, not
+  // on <body> -- portaling straight to body escapes that scope too and
+  // the dialog renders with no colors at all (transparent background,
+  // invisible border). .sb-app has no transform/contain/filter of its own,
+  // so mounting there keeps the overlay a sibling of .sb-main -- clear of
+  // its containing-block trap -- while still inheriting every theme
+  // variable normally.
+  const portalTarget =
+    (typeof document !== "undefined" && document.querySelector(".sb-app")) ||
+    (typeof document !== "undefined" ? document.body : null);
+  if (!portalTarget) return null;
+
+  return createPortal(
     <div className="sb-pt-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div
         className="sb-pt-dialog sb-msginfo-dialog"
@@ -94,6 +118,7 @@ export default function MessageInfoModal({ open, channelId, message, onClose }) 
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    portalTarget
   );
 }

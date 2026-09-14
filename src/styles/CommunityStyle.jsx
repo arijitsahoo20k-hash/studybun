@@ -90,7 +90,7 @@ export default function CommunityStyle() {
         padding: 9px 18px; font-size: 13px; border-radius: 999px; font-weight: 800;
       }
       .sb-chat-list {
-        display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
+        display: flex; flex-direction: column; gap: 10px; overflow-y: auto; overscroll-behavior: contain;
         padding: 6px 8px; margin-bottom: 12px; border-radius: 18px;
         background: var(--card); border: 2px solid var(--mascot-outline);
       }
@@ -261,7 +261,7 @@ export default function CommunityStyle() {
       .sb-chat-composer textarea {
         flex: 1; resize: none; border: none; outline: none; background: transparent;
         padding: 10px 0; font-family: var(--font-body); font-size: 15px; line-height: 1.4;
-        color: var(--ink); max-height: 140px; overflow-y: auto; min-height: 22px;
+        color: var(--ink); max-height: 140px; overflow-y: auto; overscroll-behavior: contain; min-height: 22px;
       }
       .sb-chat-composer textarea::placeholder { color: var(--muted); opacity: .8; }
       .sb-chat-composer button {
