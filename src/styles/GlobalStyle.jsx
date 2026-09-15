@@ -319,6 +319,28 @@ export default function GlobalStyle() {
         background: var(--accent); color: #fff; border: 1.5px solid var(--mascot-outline); border-radius: 50%;
       }
 
+      /* Tablet + desktop: the pill (and the post-install toast) sit centred
+         along the bottom edge instead of hugging the left corner -- there's
+         plenty of empty space down there on a wide screen, and dead-centre is
+         where the eye actually lands. Phones keep the corner position (see the
+         max-width block below) since a centred pill there would sit right on
+         top of the content.
+         NOTE: centring is done with translateX(-50%), so every other transform
+         on these elements (hover nudge, entry animation) has to re-state it or
+         the pill snaps back to the left edge mid-animation -- hence the
+         dedicated keyframe and the doubled-up hover transform. */
+      @media (min-width: 561px) {
+        .sb-install-mini, .sb-install-toast {
+          left: 50%; transform: translateX(-50%);
+          animation-name: sb-install-rise-centered;
+        }
+        .sb-install-mini:hover { transform: translateX(-50%) translate(-1px, -1px); }
+      }
+      @keyframes sb-install-rise-centered {
+        from { opacity: 0; transform: translateX(-50%) translateY(14px) scale(.96); }
+        to { opacity: 1; transform: translateX(-50%); }
+      }
+
       /* Phones: full-width card, lifted above the Buddy avatar so the two
          never collide; the pill stays small and tucked in the corner. */
       @media (max-width: 560px) {
