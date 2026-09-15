@@ -39,6 +39,29 @@
       />
     </noscript>
     <title>StudyBun · Your Cozy JEE Study Companion</title>
+    <!-- `beforeinstallprompt` fires as soon as the browser decides the app is
+         installable, which is regularly BEFORE the React bundle has finished
+         downloading and mounting. A listener added inside a component would
+         simply miss it, and the install banner would then believe the app
+         isn't installable at all. So we capture it here, at the very top of
+         the document, park it on window.__sbInstallPrompt, and re-broadcast a
+         `sb:installprompt` event that src/components/PWAPrompt.jsx picks up
+         whenever it happens to mount. preventDefault() stops Chrome's own
+         mini-infobar so our themed banner is the only nudge on screen. -->
+    <script>
+      (function () {
+        window.__sbInstallPrompt = null;
+        window.addEventListener("beforeinstallprompt", function (e) {
+          e.preventDefault();
+          window.__sbInstallPrompt = e;
+          window.dispatchEvent(new CustomEvent("sb:installprompt"));
+        });
+        window.addEventListener("appinstalled", function () {
+          window.__sbInstallPrompt = null;
+          window.dispatchEvent(new CustomEvent("sb:appinstalled"));
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -215,6 +215,121 @@ export default function GlobalStyle() {
       .sb-pwa-btn.ghost { background: var(--soft); color: var(--mascot-ink); }
       .sb-pwa-dismiss { background: none; border: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 2px; }
 
+      /* ===== persistent PWA install nudge (see components/PWAPrompt.jsx) =====
+         Anchored bottom-LEFT on purpose: the Buddy mascot owns bottom-right
+         (.sb-buddy, z-index 65) and these two must never sit on top of each
+         other. On phones the card goes full-width but lifts clear of the
+         buddy avatar (62px + its 20px offset) instead of covering it. */
+      .sb-install-card {
+        position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        width: min(340px, calc(100vw - 32px));
+        background: var(--card); color: var(--mascot-ink);
+        border: 2.5px solid var(--mascot-outline); border-radius: 20px;
+        box-shadow: 5px 5px 0 var(--mascot-outline);
+        padding: 15px 16px 14px; z-index: 70;
+        display: flex; flex-direction: column; gap: 11px;
+        animation: sb-install-rise .28s cubic-bezier(.2, .9, .3, 1.2);
+      }
+      @keyframes sb-install-rise {
+        from { opacity: 0; transform: translateY(14px) scale(.96); }
+        to { opacity: 1; transform: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-install-card, .sb-install-mini, .sb-install-toast { animation: none; }
+      }
+      .sb-install-close {
+        position: absolute; top: 9px; right: 9px; display: flex; padding: 3px;
+        background: none; border: none; color: var(--muted); cursor: pointer; border-radius: 8px;
+      }
+      .sb-install-close:hover { color: var(--mascot-ink); background: var(--soft); }
+
+      .sb-install-head { display: flex; align-items: flex-start; gap: 11px; padding-right: 18px; }
+      .sb-install-bun {
+        width: 42px; height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+        font-size: 23px; line-height: 1; background: var(--soft); border: 2.5px solid var(--mascot-outline);
+        border-radius: 14px; box-shadow: 2px 2px 0 var(--mascot-outline); animation: sb-bob 3.6s ease-in-out infinite;
+      }
+      .sb-install-head-text { min-width: 0; }
+      .sb-install-title {
+        font-family: var(--font-display); font-weight: 800; font-size: 15.5px;
+        color: var(--mascot-ink); margin: 1px 0 3px; line-height: 1.2;
+      }
+      .sb-install-sub { font-size: 12px; font-weight: 700; line-height: 1.45; color: var(--muted); margin: 0; }
+
+      .sb-install-perks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+      .sb-install-perks li {
+        display: flex; align-items: center; gap: 7px;
+        font-size: 12px; font-weight: 700; color: var(--mascot-ink); line-height: 1.35;
+      }
+      .sb-install-perks svg { color: var(--accent); flex-shrink: 0; }
+
+      .sb-install-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+      .sb-install-step {
+        display: flex; align-items: flex-start; gap: 9px;
+        font-size: 12px; font-weight: 700; line-height: 1.45; color: var(--mascot-ink);
+      }
+      .sb-install-step-num {
+        width: 19px; height: 19px; flex-shrink: 0; margin-top: 1px;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--accent); color: #fff; border: 1.5px solid var(--mascot-outline);
+        border-radius: 50%; font-size: 10.5px; font-weight: 800;
+      }
+
+      .sb-install-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .sb-install-cta { display: inline-flex; align-items: center; gap: 6px; box-shadow: 2px 2px 0 var(--mascot-outline); }
+      .sb-install-cta:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--mascot-outline); }
+      .sb-install-how {
+        margin-left: auto; display: inline-flex; align-items: center; gap: 2px;
+        background: none; border: none; cursor: pointer; padding: 4px 2px;
+        font-family: var(--font-body); font-size: 11.5px; font-weight: 800; color: var(--muted);
+      }
+      .sb-install-how:hover { color: var(--mascot-ink); }
+
+      /* what's left after "Later" -- small, permanent, one tap back to the card */
+      .sb-install-mini {
+        position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 70;
+        display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px 8px 12px;
+        background: var(--card); color: var(--mascot-ink);
+        border: 2.5px solid var(--mascot-outline); border-radius: 999px;
+        box-shadow: 3px 3px 0 var(--mascot-outline);
+        font-family: var(--font-body); font-size: 12px; font-weight: 800; cursor: pointer;
+        transition: transform .12s ease, box-shadow .12s ease;
+        animation: sb-install-rise .28s ease;
+      }
+      .sb-install-mini:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--mascot-outline); }
+      .sb-install-mini-dot {
+        position: absolute; top: -3px; right: -3px; width: 11px; height: 11px; border-radius: 50%;
+        background: var(--accent2, var(--accent)); border: 2px solid var(--mascot-outline);
+        animation: sb-buddy-pulse 1.8s ease-in-out infinite;
+      }
+      .sb-install-mini svg { color: var(--accent); }
+
+      .sb-install-toast {
+        position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 70;
+        width: min(320px, calc(100vw - 32px));
+        display: flex; align-items: center; gap: 9px; padding: 11px 14px;
+        background: var(--card); color: var(--mascot-ink);
+        border: 2.5px solid var(--mascot-outline); border-radius: 16px;
+        box-shadow: 4px 4px 0 var(--mascot-outline);
+        font-size: 12.5px; font-weight: 800; line-height: 1.35;
+        animation: sb-install-rise .28s ease;
+      }
+      .sb-install-toast-icon {
+        width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+        background: var(--accent); color: #fff; border: 1.5px solid var(--mascot-outline); border-radius: 50%;
+      }
+
+      /* Phones: full-width card, lifted above the Buddy avatar so the two
+         never collide; the pill stays small and tucked in the corner. */
+      @media (max-width: 560px) {
+        .sb-install-card {
+          left: 12px; right: 12px; width: auto;
+          bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+        }
+        .sb-install-mini, .sb-install-toast { left: 12px; }
+        .sb-install-toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+      }
+
       /* ===== decorative floating layer ===== */
       .sb-decor-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
       .sb-decor {
