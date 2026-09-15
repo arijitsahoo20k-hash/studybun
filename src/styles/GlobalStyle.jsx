@@ -2441,6 +2441,52 @@ export default function GlobalStyle() {
       .sb-penguin-peek:hover .sb-penguin-flipper { transform-box: fill-box; transform-origin: center; animation: sb-flipper-wave .5s ease; }
       @keyframes sb-flipper-wave { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
 
+      /* ---- founder-only species ----
+         Lion leads with its mane (a slow breathing sway, like Hamster's
+         cheeks) and Dragon with its wings (offset timings on the two wings so
+         the flap never looks like a single mirrored shape snapping open). */
+      .sb-species-lion .sb-lion-mane { transform-box: fill-box; transform-origin: center; animation: sb-mane-sway 4.4s ease-in-out infinite; }
+      @keyframes sb-mane-sway { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.035) rotate(1.4deg); } }
+
+      .sb-species-lion .sb-lion-tail { transform-origin: 18px 24px; animation: sb-lion-tail-swish 3s ease-in-out infinite; }
+      @keyframes sb-lion-tail-swish { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-7deg); } }
+
+      .sb-species-lion .sb-lion-crown { transform-box: fill-box; transform-origin: center bottom; animation: sb-crown-tilt 5s ease-in-out infinite; }
+      @keyframes sb-crown-tilt { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+
+      .sb-species-dragon .sb-dragon-wing-l { transform-origin: -13px -10px; animation: sb-wing-flap 2.4s ease-in-out infinite; }
+      .sb-species-dragon .sb-dragon-wing-r { transform-origin: -13px -10px; animation: sb-wing-flap 2.4s ease-in-out infinite .18s; }
+      @keyframes sb-wing-flap { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-9deg) translateY(-1px); } }
+
+      .sb-species-dragon .sb-dragon-tail { transform-origin: 10px 26px; animation: sb-dragon-tail-swish 2.8s ease-in-out infinite; }
+      @keyframes sb-dragon-tail-swish { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(6deg); } }
+
+      .sb-species-dragon .sb-dragon-flame { transform-box: fill-box; transform-origin: center top; animation: sb-dragon-flame-lick .7s ease-in-out infinite; }
+      @keyframes sb-dragon-flame-lick { 0%, 100% { transform: scaleY(1) scaleX(1); } 50% { transform: scaleY(1.12) scaleX(.94); } }
+
+      .sb-species-dragon .sb-dragon-smoke { animation: sb-dragon-smoke-rise 3s ease-in-out infinite; }
+      @keyframes sb-dragon-smoke-rise { 0%, 100% { opacity: .25; transform: translateY(1px); } 50% { opacity: .7; transform: translateY(-2px); } }
+
+      .sb-lion-peek:hover .sb-ear-l { animation: sb-ear-wiggle-l .55s ease; }
+      .sb-lion-peek:hover .sb-ear-r { animation: sb-ear-wiggle-r .55s ease .06s; }
+      .sb-lion-peek:hover .sb-lion-mane { animation: sb-mane-sway .6s ease; }
+      .sb-dragon-peek:hover .sb-dragon-wing-l,
+      .sb-dragon-peek:hover .sb-dragon-wing-r { animation: sb-wing-flap .45s ease; }
+
+      /* the little crown corner-tag on a founder-only option in the picker */
+      .sb-mascot-pick.exclusive, .sb-ob-mascot-pick.exclusive { position: relative; border-color: #E0A82E; }
+      .sb-mascot-pick.exclusive.active, .sb-ob-mascot-pick.exclusive.active { background: #FFF6DE; }
+      .sb-mascot-crown {
+        position: absolute; top: -8px; right: -6px; font-size: 12px; line-height: 1;
+        padding: 3px 4px; background: var(--card); border: 2px solid #E0A82E; border-radius: 999px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-species-lion .sb-lion-mane, .sb-species-lion .sb-lion-tail, .sb-species-lion .sb-lion-crown,
+        .sb-species-dragon .sb-dragon-wing-l, .sb-species-dragon .sb-dragon-wing-r,
+        .sb-species-dragon .sb-dragon-tail, .sb-species-dragon .sb-dragon-flame,
+        .sb-species-dragon .sb-dragon-smoke { animation: none; }
+      }
+
       /* ===== kawaii study calendar (Profile page) ===== */
       .sb-cal { display: flex; flex-direction: column; gap: 10px; margin: 6px auto 0; width: 100%; max-width: 372px; }
       .sb-cal-left { display: flex; flex-direction: column; gap: 10px; width: 100%; }

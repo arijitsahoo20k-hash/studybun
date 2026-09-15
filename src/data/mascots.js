@@ -5,7 +5,35 @@ export const MASCOTS = {
   bear: { label: "Bear", emoji: "🐻" },
   hamster: { label: "Hamster", emoji: "🐹" },
   penguin: { label: "Penguin", emoji: "🐧" },
+  // `exclusive: "founder"` -- these two never appear in anyone else's picker.
+  // The flag is only half the story: hiding a button stops an honest user,
+  // not someone editing the request, so the real lock is the database trigger
+  // in supabase/migration_founder_mascots.sql which rejects a profile update
+  // that sets one of these unless the row's owner actually holds the founder
+  // role. Keep the two lists in sync if you ever add a third.
+  lion: { label: "Lion", emoji: "🦁", exclusive: "founder" },
+  dragon: { label: "Dragon", emoji: "🐉", exclusive: "founder" },
 };
+
+/** Is this species one of the founder-only ones? */
+export function isExclusiveMascot(species) {
+  return Boolean(MASCOTS[species]?.exclusive);
+}
+
+/**
+ * The list a picker should render. Plain members get the six standard
+ * species; founders get all eight.
+ *
+ * `current` is the species already saved on the profile, and it's always
+ * included even when it's exclusive and `isFounder` is false. That covers
+ * the awkward in-between states -- founder status still loading, or a role
+ * that got revoked -- where dropping the saved species from the grid would
+ * make the picker look like nothing is selected, and one stray tap would
+ * silently overwrite it.
+ */
+export function pickableMascots(isFounder, current) {
+  return Object.entries(MASCOTS).filter(([id, m]) => !m.exclusive || isFounder || id === current);
+}
 
 /**
  * Per-species personality: what each mascot *does* (verb, plus a capitalized
@@ -22,6 +50,8 @@ export const MASCOT_THEME = {
   bear: { verbing: "Hunt", sound: "*grr*", collectible: { emoji: "🐟", name: "fish", plural: "Fish" } },
   hamster: { verbing: "Scurry", sound: "*squeak*", collectible: { emoji: "🌻", name: "seed", plural: "Seeds" } },
   penguin: { verbing: "Waddle", sound: "*honk*", collectible: { emoji: "🪨", name: "pebble", plural: "Pebbles" } },
+  lion: { verbing: "Prowl", sound: "*rawr*", collectible: { emoji: "👑", name: "crown jewel", plural: "Crown Jewels" } },
+  dragon: { verbing: "Soar", sound: "*fwoosh*", collectible: { emoji: "💎", name: "gem", plural: "Gems" } },
 };
 
 export function mascotTheme(species) {

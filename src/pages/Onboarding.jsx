@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { THEMES, themeVars } from "../data/themes";
-import { MASCOTS } from "../data/mascots";
+import { pickableMascots } from "../data/mascots";
+import { useIsFounder } from "../hooks/useIsFounder";
 import Mascot from "../components/Mascot";
 import { Btn } from "../components/ui";
 
@@ -15,6 +16,9 @@ export default function Onboarding({ profile, onSave }) {
     mascot: profile?.mascot || "bunny",
   });
   const [step, setStep] = useState(0);
+  // Founders get two extra species in the picker below; everyone else never
+  // sees them at all.
+  const isFounder = useIsFounder();
   const steps = ["name", "exam", "goal", "mascot", "theme"];
   const t = THEMES[form.theme];
   const cssVars = themeVars(t);
@@ -54,8 +58,9 @@ export default function Onboarding({ profile, onSave }) {
           <div className="sb-onboard-step">
             <label>Choose your study buddy</label>
             <div className="sb-mascot-grid">
-              {Object.entries(MASCOTS).map(([id, m]) => (
-                <button key={id} className={`sb-mascot-pick ${form.mascot === id ? "active" : ""}`} onClick={() => setForm({ ...form, mascot: id })}>
+              {pickableMascots(isFounder, form.mascot).map(([id, m]) => (
+                <button key={id} className={`sb-mascot-pick ${form.mascot === id ? "active" : ""} ${m.exclusive ? "exclusive" : ""}`} onClick={() => setForm({ ...form, mascot: id })}>
+                  {m.exclusive && <span className="sb-mascot-crown" title="Founders only">👑</span>}
                   <Mascot species={id} mood="happy" size={54} />
                   <span>{m.label}</span>
                 </button>

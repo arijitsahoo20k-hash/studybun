@@ -7,6 +7,8 @@ import Fox from "./mascots/Fox";
 import Bear from "./mascots/Bear";
 import Hamster from "./mascots/Hamster";
 import Penguin from "./mascots/Penguin";
+import Lion from "./mascots/Lion";
+import Dragon from "./mascots/Dragon";
 
 /*
  * Every species below is handcrafted independently in its own file under
@@ -31,7 +33,12 @@ import Penguin from "./mascots/Penguin";
  *     gesture layer racing against the imperative controls is what used to
  *     leave the mascot stuck rendering a shrunk in-between frame.
  */
-const SPECIES = { bunny: Bunny, cat: Cat, fox: Fox, bear: Bear, hamster: Hamster, penguin: Penguin };
+// Lion and Dragon are founder-only *to pick* (see data/mascots.js +
+// migration_founder_mascots.sql) -- but they're routed here exactly like
+// every other species on purpose. Rendering must never depend on who's
+// looking: a founder's lion still has to draw correctly on a plain member's
+// leaderboard row, chat message, and community post.
+const SPECIES = { bunny: Bunny, cat: Cat, fox: Fox, bear: Bear, hamster: Hamster, penguin: Penguin, lion: Lion, dragon: Dragon };
 
 // A handful of hearts/sparkles per pet, each with its own tiny random drift
 // so a burst never looks identical twice.
