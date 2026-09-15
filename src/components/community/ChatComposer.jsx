@@ -33,6 +33,13 @@ export default function ChatComposer({
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const submittingRef = useRef(false);
+  // Outer wrapper ref — watched by the ResizeObserver below. Deliberately
+  // NOT the textarea itself: observing the textarea would mean every call
+  // to resizeToContent() (which sets the textarea's own height) could
+  // re-trigger the observer on itself. Watching the stable outer zone
+  // instead only reacts to layout changes that come from *outside* this
+  // component — exactly the cases the old resize-only listener missed.
+  const zoneRef = useRef(null);
 
   // Resets imageFile/imagePreviewUrl without revoking the blob URL itself —
   // revocation happens in exactly one place (the effect below), so this can
@@ -83,6 +90,34 @@ export default function ChatComposer({
   useEffect(() => {
     window.addEventListener("resize", resizeToContent);
     return () => window.removeEventListener("resize", resizeToContent);
+  }, [resizeToContent]);
+
+  // BUG FIX (mobile private chat): the `resize` listener above only ever
+  // fires for actual window/viewport resizes. It does nothing for a purely
+  // CSS-driven layout change — and Private Chat's mobile layout does
+  // exactly that: below 768px it keeps both the channel list and the chat
+  // pane mounted at all times and just toggles one of them to
+  // `display: none` via `.sb-pchat-page[data-pane]` (see PrivateChatStyle.jsx),
+  // instead of unmounting. Community Chat's composer never goes through a
+  // display:none/flex flip like this, so it never hit this bug — but for
+  // Private Chat, the moment you're sat on the channel list, this
+  // composer's textarea has a collapsed (zero) box, and switching back to
+  // the chat pane doesn't fire `resize`, so it could render at a stale/
+  // wrong height until the next keystroke.
+  //
+  // A ResizeObserver on the composer's own wrapper sidesteps all of that:
+  // it fires for *any* reason the box's size changes — a display:none/flex
+  // toggle, a sidebar collapsing, an orientation change that doesn't fire
+  // `resize`, a parent flex layout reflowing — so this one mechanism keeps
+  // the textarea correctly sized on every screen size and every layout,
+  // for both Community and Private Chat, without either needing its own
+  // special-case handling.
+  useEffect(() => {
+    const el = zoneRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(() => resizeToContent());
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [resizeToContent]);
 
   // BUG FIX (stale closure / double revoke): this is now the *only* place
@@ -144,7 +179,7 @@ export default function ChatComposer({
   const canSend = !sending && (draft.trim().length > 0 || imageFile !== null);
 
   return (
-    <div className="sb-chat-composer-zone">
+    <div className="sb-chat-composer-zone" ref={zoneRef}>
       {replyTo && (
         <div className="sb-chat-reply-bar">
           <div className="sb-chat-reply-bar-info">
