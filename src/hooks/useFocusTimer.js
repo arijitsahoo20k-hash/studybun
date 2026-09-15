@@ -369,11 +369,23 @@ export function useFocusTimer({ onComplete } = {}) {
   }, [mode, modeMinutes, secondsLeft, soundOn, askDone]);
 
   const pause = useCallback(() => {
+    // BUG FIX: secondsLeft only gets updated once a second by the tick
+    // interval — it's whatever resync() last computed, up to ~1s stale
+    // by the moment this actually runs. Snap it to the precise
+    // remaining/elapsed time right now, before freezing it, instead of
+    // pausing on a slightly-stale number.
+    if (mode === STOPWATCH_MODE) {
+      if (stopwatchAnchorRef.current) {
+        setSecondsLeft(Math.max(0, Math.round((Date.now() - stopwatchAnchorRef.current) / 1000)));
+      }
+    } else if (endAtRef.current) {
+      setSecondsLeft(Math.max(0, Math.round((endAtRef.current - Date.now()) / 1000)));
+    }
     setRunning(false);
     endAtRef.current = null;
     stopwatchAnchorRef.current = null;
     stopDroneOsc(audioCtxRef.current, droneRef);
-  }, []);
+  }, [mode]);
 
   const reset = useCallback(() => {
     setRunning(false);
@@ -426,7 +438,21 @@ export function useFocusTimer({ onComplete } = {}) {
     // sit-down.
     if (finishedRef.current) return false;
     const isStopwatch = mode === STOPWATCH_MODE;
-    const elapsed = isStopwatch ? secondsLeft : Math.max(0, startedMinutes * 60 - secondsLeft);
+    // BUG FIX: same staleness issue as pause() above — secondsLeft can be
+    // up to ~1s behind the real elapsed/remaining time since it's only
+    // ever updated by the once-a-second tick. Recompute it precisely from
+    // the anchor first (only meaningful while still running — a paused
+    // session's secondsLeft is already frozen and accurate) so an early
+    // save always credits the real elapsed time, not a slightly-stale one.
+    let preciseSecondsLeft = secondsLeft;
+    if (running) {
+      if (isStopwatch && stopwatchAnchorRef.current) {
+        preciseSecondsLeft = Math.max(0, Math.round((Date.now() - stopwatchAnchorRef.current) / 1000));
+      } else if (!isStopwatch && endAtRef.current) {
+        preciseSecondsLeft = Math.max(0, Math.round((endAtRef.current - Date.now()) / 1000));
+      }
+    }
+    const elapsed = isStopwatch ? preciseSecondsLeft : Math.max(0, startedMinutes * 60 - preciseSecondsLeft);
     const elapsedMinutes = Math.min(MAX_LOGGABLE_MINUTES, Math.round(elapsed / 60));
     if (elapsedMinutes < 5) return false;
     finishedRef.current = true;
@@ -445,7 +471,7 @@ export function useFocusTimer({ onComplete } = {}) {
       completed: true,
     });
     return true;
-  }, [mode, modeMinutes, startedMinutes, secondsLeft, soundOn]);
+  }, [mode, modeMinutes, startedMinutes, secondsLeft, running, soundOn]);
 
   const resetForNewSession = useCallback(() => {
     setAskDone(false);

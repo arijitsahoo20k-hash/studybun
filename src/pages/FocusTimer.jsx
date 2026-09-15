@@ -157,6 +157,16 @@ export default function FocusTimer(p) {
   // itself (see useFocusTimer.js), but the popover shouldn't sit open
   // pretending it can still do something.
   useEffect(() => { if (t.sessionActive) setEditingDuration(false); }, [t.sessionActive]);
+  // BUG FIX: editingDuration was never reset on a plain mode switch (only
+  // when sessionActive turned true). Repro: open the duration popover on
+  // a countdown mode, tap the Stopwatch chip (allowed — no session
+  // running) — the popover hides only because the render guard below
+  // skips Stopwatch, but editingDuration itself stays true. Tap back to
+  // any countdown mode and the popover reappears on its own, with no
+  // pencil click. It also left the pencil button's next click toggling
+  // off a stale `true` instead of opening a fresh popover. Mode switches
+  // should always cancel an in-progress duration edit outright.
+  useEffect(() => { setEditingDuration(false); }, [t.mode]);
 
   // Same Escape-to-close + initial-focus pattern as the Periodic Table's
   // element dialog (see ElementDetail in PeriodicTable.jsx) so every popup
