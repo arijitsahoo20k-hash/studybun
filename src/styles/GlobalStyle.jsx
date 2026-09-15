@@ -1207,6 +1207,19 @@ export default function GlobalStyle() {
       .sb-focus-hero > *:not(.sb-focus-aura):not(.sb-focus-motes) { position: relative; z-index: 1; }
 
       .sb-timer-topbar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; width: 100%; }
+      /* .sb-chip-row is shared with plain left-aligned filter rows on other
+         pages (Syllabus, Questions, etc.), so this centering is scoped to
+         the timer's own mode-chip row instead of the shared class. Without
+         it, .sb-chip-row's default justify-content: flex-start left-
+         aligns each wrapped line -- fine for a single row, but the moment
+         the 6 mode chips (Deep Focus/Pomodoro/Lecture/Practice/Revision/
+         Stopwatch) don't fit one line, whichever line has fewer chips
+         (almost every width below the widest-single-row breakpoint) sits
+         flush left instead of centered under the row above it, reading as
+         lopsided. Centering each wrapped line here makes every row -- 1
+         chip or 6 -- sit centered under the topbar regardless of viewport
+         width, so it never looks asymmetric at any device size. */
+      .sb-timer-topbar .sb-chip-row { justify-content: center; }
 
       .sb-focus-mode-chip { transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease, background-color .2s ease; }
       .sb-focus-mode-chip.active { background: var(--accent); border-color: var(--mascot-outline); color: #fff; box-shadow: 2px 2px 0 var(--mascot-outline), 0 0 0 3px var(--soft); }

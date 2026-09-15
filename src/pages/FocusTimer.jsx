@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
   Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock, ShieldAlert, Users,
@@ -381,7 +382,18 @@ export default function FocusTimer(p) {
       />
       </div>
 
-      {studyingOpen && (
+      {/* Portaled out of .sb-main for the same reason as MessageInfoModal.jsx
+          ("Seen by") and ConfirmDialog.jsx (delete confirm): .sb-main sets
+          `contain: layout`, which makes it the containing block for
+          `position: fixed` descendants. Left un-portaled, this overlay was
+          "fixed" to .sb-main's own scrolled box instead of the viewport --
+          scroll .sb-main down first (e.g. the bottom "session complete"
+          card pushes this card mid-screen) and the scrim opened anchored to
+          wherever .sb-main's top used to be, cutting off short of the real
+          screen edges. Portal target is .sb-app (not document.body) so the
+          dialog keeps every theme color it reads via inline custom
+          properties on .sb-app. */}
+      {studyingOpen && createPortal(
         <div className="sb-pt-overlay sb-studying-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setStudyingOpen(false); }}>
           <div
             className="sb-pt-dialog sb-studying-dialog"
@@ -396,7 +408,8 @@ export default function FocusTimer(p) {
             </button>
             <StudyingNowCard studyingIds={p.studyingIds} userId={p.userId} bare />
           </div>
-        </div>
+        </div>,
+        document.querySelector(".sb-app") || document.body
       )}
 
       {settingsOpen && (
