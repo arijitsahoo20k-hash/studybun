@@ -63,6 +63,14 @@ export default function PrivateChatWindow({
   const highlightTimeoutRef = useRef(null);
   const stickToBottomRef = useRef(true);
   const pendingOlderLoadRef = useRef(null);
+  // BUG FIX: same fix as CommunityChat.jsx's scrollToMessage — only the
+  // most recent PAGE_SIZE messages are loaded up front (see usePrivateChat),
+  // so tapping a reply quote pointing further back than that "worked
+  // sometimes" depending on how much history happened to already be
+  // loaded, and did nothing the rest of the time. This holds the target
+  // id while the retry effect below keeps paging back via loadOlder()
+  // until it's found (or hasMore runs out).
+  const pendingJumpIdRef = useRef(null);
   // Auto-dismiss inline error after a few seconds
   const chatErrTimerRef = useRef(null);
 
@@ -111,6 +119,7 @@ export default function PrivateChatWindow({
   useEffect(() => {
     stickToBottomRef.current = true;
     pendingOlderLoadRef.current = null;
+    pendingJumpIdRef.current = null;
     msgRefs.current = {};
     refCallbacks.current = new Map();
     setReplyTo(null);
@@ -124,14 +133,59 @@ export default function PrivateChatWindow({
     window.clearTimeout(chatErrTimerRef.current);
   }, []);
 
-  const scrollToMessage = useCallback((id) => {
+  // Actually performs the scroll + highlight once the target is known to
+  // be rendered — shared by the direct-hit path below and the "found it
+  // after loading more" retry effect.
+  //
+  // BUG FIX (layout-dependent jump): same fix as CommunityChat.jsx —
+  // el.scrollIntoView() walks every scrollable ancestor, not just
+  // .sb-pchat-msg-list, so whether the jump actually landed on the
+  // message also depended on the surrounding page layout (mobile single-
+  // pane vs desktop two-pane, how far the page itself was scrolled,
+  // etc). Computing the offset against our own list container and
+  // scrolling just that container keeps it fully local to the chat pane
+  // regardless of layout/breakpoint.
+  const jumpToLoadedMessage = useCallback((id) => {
     const el = msgRefs.current[id];
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const container = listRef.current;
+    if (!el || !container) return false;
+    const elRect = el.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const offsetWithinContainer = elRect.top - containerRect.top + container.scrollTop;
+    const target = offsetWithinContainer - container.clientHeight / 2 + el.clientHeight / 2;
+    const maxScroll = container.scrollHeight - container.clientHeight;
+    container.scrollTo({ top: Math.max(0, Math.min(target, maxScroll)), behavior: "smooth" });
     setHighlightedId(id);
     window.clearTimeout(highlightTimeoutRef.current);
     highlightTimeoutRef.current = window.setTimeout(() => setHighlightedId(null), 1200);
+    return true;
   }, []);
+
+  const scrollToMessage = useCallback((id) => {
+    if (jumpToLoadedMessage(id)) return;
+    // Not currently loaded — most likely an older message than the
+    // current page covers. Keep paging back until it turns up.
+    if (hasMore) {
+      pendingJumpIdRef.current = id;
+      handleLoadOlder();
+    }
+  }, [jumpToLoadedMessage, hasMore, handleLoadOlder]);
+
+  // Resolves a pending jump once loadOlder() brings in a fresh page: if
+  // the target is now rendered, jump to it; if it's still missing and
+  // there's more history, keep paging back; otherwise give up quietly
+  // (message was deleted, or this thread simply doesn't have it).
+  useEffect(() => {
+    const id = pendingJumpIdRef.current;
+    if (!id) return;
+    if (jumpToLoadedMessage(id)) {
+      pendingJumpIdRef.current = null;
+    } else if (hasMore) {
+      handleLoadOlder();
+    } else {
+      pendingJumpIdRef.current = null;
+    }
+  }, [messages, hasMore, handleLoadOlder, jumpToLoadedMessage]);
 
   const cancelReply = useCallback(() => setReplyTo(null), []);
 

@@ -94,6 +94,18 @@ export default function CommunityChat({
   // which used to trigger scrollTop = scrollHeight every time.
   const pendingOlderLoadRef = useRef(null); // previous scrollHeight, or null
 
+  // BUG FIX: id of a reply-jump target that wasn't in the currently
+  // loaded page when scrollToMessage() was called. Only the most recent
+  // PAGE_SIZE messages are loaded up front (see useCommunityChat) — so
+  // tapping a reply quote that points further back than that "worked
+  // sometimes" purely by luck of how much history happened to be loaded
+  // already, and silently did nothing the rest of the time. The effect
+  // below keeps calling loadOlder() while this is set, until the target
+  // shows up in msgRefs (then it jumps) or hasMore runs out (then it
+  // gives up — the message was deleted, or belongs to a blocked sender
+  // filtered out of `visible`).
+  const pendingJumpIdRef = useRef(null);
+
   const handleScroll = useCallback(() => {
     const el = listRef.current;
     if (!el) return;
@@ -140,6 +152,7 @@ export default function CommunityChat({
     // this list).
     stickToBottomRef.current = true;
     pendingOlderLoadRef.current = null;
+    pendingJumpIdRef.current = null;
     msgRefs.current = {};
     refCallbacks.current = new Map();
     setReplyTo(null);
@@ -152,16 +165,69 @@ export default function CommunityChat({
     return () => window.clearTimeout(highlightTimeoutRef.current);
   }, []);
 
-  // useCallback with a stable identity so ChatMessage's React.memo isn't
-  // defeated by a new function reference on every parent render.
-  const scrollToMessage = useCallback((id) => {
+  // Actually performs the scroll + highlight once the target is known to
+  // be rendered. Split out so both the direct-hit path in scrollToMessage
+  // and the "found it after loading more" path in the retry effect below
+  // share the exact same behavior.
+  //
+  // BUG FIX (layout-dependent jump): this used to call el.scrollIntoView()
+  // directly. scrollIntoView() walks *every* scrollable ancestor to bring
+  // the target into view — not just .sb-chat-list. So whether the jump
+  // "worked" also depended on where the Community Chat card itself
+  // happened to sit in the surrounding page: if the card wasn't already
+  // fully in view within .sb-main's own scroll (e.g. on a layout/breakpoint
+  // where the card sits lower on the page, or the page was scrolled),
+  // scrollIntoView would also drag the *outer page* scroll around trying
+  // to satisfy block:"center", on top of (or sometimes instead of) the
+  // inner list actually centering the message — a different, extra
+  // failure mode from the pagination one already fixed. Computing the
+  // scroll offset against our own list container via getBoundingClientRect
+  // and calling container.scrollTo() keeps this 100% local to
+  // .sb-chat-list, so it behaves identically no matter what page layout
+  // or breakpoint it's sitting in.
+  const jumpToLoadedMessage = useCallback((id) => {
     const el = msgRefs.current[id];
-    if (!el) return; // not currently loaded (e.g. older page) — no-op for v1
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const container = listRef.current;
+    if (!el || !container) return false;
+    const elRect = el.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const offsetWithinContainer = elRect.top - containerRect.top + container.scrollTop;
+    const target = offsetWithinContainer - container.clientHeight / 2 + el.clientHeight / 2;
+    const maxScroll = container.scrollHeight - container.clientHeight;
+    container.scrollTo({ top: Math.max(0, Math.min(target, maxScroll)), behavior: "smooth" });
     setHighlightedId(id);
     window.clearTimeout(highlightTimeoutRef.current);
     highlightTimeoutRef.current = window.setTimeout(() => setHighlightedId(null), 1200);
+    return true;
   }, []);
+
+  // useCallback with a stable identity so ChatMessage's React.memo isn't
+  // defeated by a new function reference on every parent render.
+  const scrollToMessage = useCallback((id) => {
+    if (jumpToLoadedMessage(id)) return;
+    // Not currently loaded — most likely an older message than the
+    // current page covers. Keep paging back until it turns up, instead
+    // of giving up on the first miss.
+    if (hasMore) {
+      pendingJumpIdRef.current = id;
+      handleLoadOlder();
+    }
+  }, [jumpToLoadedMessage, hasMore, handleLoadOlder]);
+
+  // Resolves a pending jump once loadOlder() brings in a fresh page:
+  // if the target is now rendered, jump to it; if it's still missing and
+  // there's more history, keep paging back; otherwise give up quietly.
+  useEffect(() => {
+    const id = pendingJumpIdRef.current;
+    if (!id) return;
+    if (jumpToLoadedMessage(id)) {
+      pendingJumpIdRef.current = null;
+    } else if (hasMore) {
+      handleLoadOlder();
+    } else {
+      pendingJumpIdRef.current = null;
+    }
+  }, [messages, hasMore, handleLoadOlder, jumpToLoadedMessage]);
 
   const cancelReply = useCallback(() => setReplyTo(null), []);
 
