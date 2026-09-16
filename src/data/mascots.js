@@ -5,14 +5,20 @@ export const MASCOTS = {
   bear: { label: "Bear", emoji: "🐻" },
   hamster: { label: "Hamster", emoji: "🐹" },
   penguin: { label: "Penguin", emoji: "🐧" },
-  // `exclusive: "founder"` -- these three never appear in anyone else's
+  // `exclusive: "founder"` -- these three never appear in a plain member's
   // picker. The flag is only half the story: hiding a button stops an
   // honest user, not someone editing the request, so the real lock is the
-  // database trigger in supabase/migration_founder_mascots.sql which rejects
-  // a profile update that sets one of these unless the row's owner actually
-  // holds the founder role. Keep the two lists in sync if you ever add a
-  // fourth.
-  lion: { label: "Lion", emoji: "🦁", exclusive: "founder" },
+  // database trigger in supabase/migration_founder_mascots.sql (dragon,
+  // axolotl) and supabase/migration_moderator_mascot_unlock.sql (lion),
+  // which reject a profile update that sets one of these unless the row's
+  // owner actually holds the right role.
+  //
+  // `unlockedFor` says which roles, beyond founder, also get it -- lion is
+  // the one mascot moderators unlock too (their own thing, distinct from
+  // the founder-exclusive dragon/axolotl). Omit it and a mascot is
+  // founder-only, same as before. Keep this in lockstep with the two
+  // migration files above if you ever add a fourth exclusive species.
+  lion: { label: "Lion", emoji: "🦁", exclusive: "founder", unlockedFor: ["moderator"] },
   dragon: { label: "Dragon", emoji: "🐉", exclusive: "founder" },
   // No official axolotl emoji exists in Unicode yet, so this uses the
   // closest widely-supported stand-in rather than an inaccurate animal.
@@ -24,19 +30,41 @@ export function isExclusiveMascot(species) {
   return Boolean(MASCOTS[species]?.exclusive);
 }
 
+/** Tooltip text for the crown on an exclusive mascot's picker tile —
+ * "Founders & Mods only" for lion, "Founders only" for dragon/axolotl. */
+export function exclusiveMascotLabel(species) {
+  const m = MASCOTS[species];
+  if (!m?.exclusive) return null;
+  return (m.unlockedFor || []).includes("moderator") ? "Founders & Mods only" : "Founders only";
+}
+
 /**
  * The list a picker should render. Plain members get the six standard
- * species; founders get all eight.
+ * species; founders get all eight (dragon/axolotl are founder-only, lion
+ * is shared with moderators); a moderator who isn't a founder gets the
+ * six standard plus lion.
+ *
+ * `roles` is `{ isFounder, isModerator }`. The old call shape —
+ * `pickableMascots(isFounder, current)`, a bare boolean as the first
+ * arg — still works: every existing call site that hasn't been updated
+ * to pass a roles object keeps behaving exactly as before (founder-only
+ * gating, no lion-for-mods), it just doesn't get the new unlock.
  *
  * `current` is the species already saved on the profile, and it's always
- * included even when it's exclusive and `isFounder` is false. That covers
- * the awkward in-between states -- founder status still loading, or a role
- * that got revoked -- where dropping the saved species from the grid would
- * make the picker look like nothing is selected, and one stray tap would
+ * included even when nobody's role unlocks it. That covers the awkward
+ * in-between states -- role status still loading, or a role that got
+ * revoked -- where dropping the saved species from the grid would make
+ * the picker look like nothing is selected, and one stray tap would
  * silently overwrite it.
  */
-export function pickableMascots(isFounder, current) {
-  return Object.entries(MASCOTS).filter(([id, m]) => !m.exclusive || isFounder || id === current);
+export function pickableMascots(roles, current) {
+  const { isFounder, isModerator } = typeof roles === "boolean" ? { isFounder: roles, isModerator: false } : (roles || {});
+  return Object.entries(MASCOTS).filter(([id, m]) => {
+    if (!m.exclusive || id === current) return true;
+    if (isFounder) return true;
+    if (isModerator && (m.unlockedFor || []).includes("moderator")) return true;
+    return false;
+  });
 }
 
 /**

@@ -12,11 +12,20 @@ const REPORT_REASONS = [
 
 /**
  * The "⋯" menu on any chat message / post / reply. Report and Block are
- * always available on other people's content; Delete only shows for your
- * own content or if you're a moderator. Reused everywhere instead of a
- * separate BlockDialog/ReportDialog pair per surface.
+ * always available on other people's content; Delete shows for your own
+ * content, or when the caller says you may delete this author's content.
+ * Reused everywhere instead of a separate BlockDialog/ReportDialog pair
+ * per surface.
+ *
+ * `canDelete` replaced the old `isModerator` flag when the ⚡ Mod role
+ * landed: "may I delete this" now depends on WHO wrote it (a mod can't
+ * touch a founder's content), so it can't be answered by a single
+ * role boolean here. The caller passes the already-resolved answer from
+ * useCommunityModeration's canDelete(authorId). Own content is still
+ * always deletable regardless of what's passed, so a missing prop can
+ * never lock someone out of their own post.
  */
-export default function ContentActions({ authorId, currentUserId, isModerator, targetType, targetId, onReport, onBlock, onDelete }) {
+export default function ContentActions({ authorId, currentUserId, canDelete: canDeleteProp, targetType, targetId, onReport, onBlock, onDelete }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState(null); // null | "report" | "confirmBlock" | "confirmDelete"
   const [reason, setReason] = useState("spam");
@@ -25,7 +34,7 @@ export default function ContentActions({ authorId, currentUserId, isModerator, t
   const [done, setDone] = useState(false);
 
   const isOwn = authorId === currentUserId;
-  const canDelete = isOwn || isModerator;
+  const canDelete = isOwn || !!canDeleteProp;
 
   const close = () => { setOpen(false); setMode(null); setDetails(""); setReason("spam"); setDone(false); };
 

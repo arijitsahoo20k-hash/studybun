@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { THEMES, themeVars } from "../data/themes";
-import { pickableMascots } from "../data/mascots";
+import { pickableMascots, exclusiveMascotLabel } from "../data/mascots";
 import { useIsFounder } from "../hooks/useIsFounder";
+import { useIsModerator } from "../hooks/useIsModerator";
 import Mascot from "../components/Mascot";
 import { Btn } from "../components/ui";
 
@@ -16,9 +17,10 @@ export default function Onboarding({ profile, onSave }) {
     mascot: profile?.mascot || "bunny",
   });
   const [step, setStep] = useState(0);
-  // Founders get two extra species in the picker below; everyone else never
-  // sees them at all.
+  // Founders get two extra species in the picker below; a moderator
+  // additionally unlocks the lion. Everyone else never sees any of them.
   const isFounder = useIsFounder();
+  const isModerator = useIsModerator();
   const steps = ["name", "exam", "goal", "mascot", "theme"];
   const t = THEMES[form.theme];
   const cssVars = themeVars(t);
@@ -58,9 +60,9 @@ export default function Onboarding({ profile, onSave }) {
           <div className="sb-onboard-step">
             <label>Choose your study buddy</label>
             <div className="sb-mascot-grid">
-              {pickableMascots(isFounder, form.mascot).map(([id, m]) => (
+              {pickableMascots({ isFounder, isModerator }, form.mascot).map(([id, m]) => (
                 <button key={id} className={`sb-mascot-pick ${form.mascot === id ? "active" : ""} ${m.exclusive ? "exclusive" : ""}`} onClick={() => setForm({ ...form, mascot: id })}>
-                  {m.exclusive && <span className="sb-mascot-crown" title="Founders only">👑</span>}
+                  {m.exclusive && <span className="sb-mascot-crown" title={exclusiveMascotLabel(id)}>👑</span>}
                   <Mascot species={id} mood="happy" size={54} />
                   <span>{m.label}</span>
                 </button>

@@ -4,7 +4,7 @@ import { Card, SectionTitle, EmptyState, Btn } from "../ui";
 import CommunityComposer from "./CommunityComposer";
 import CommunityPost from "./CommunityPost";
 
-export default function CommunityFeed({ feed, currentUserId, myProfile, isModerator, moderation, founderIds, memberIds, mascot }) {
+export default function CommunityFeed({ feed, currentUserId, myProfile, moderation, founderIds, memberIds, mascot }) {
   const visiblePosts = feed.posts.filter((p) => !moderation.isBlocked(p.user_id));
 
   return (
@@ -25,7 +25,6 @@ export default function CommunityFeed({ feed, currentUserId, myProfile, isModera
               reactions={feed.reactionsByPost[post.id]}
               currentUserId={currentUserId}
               myProfile={myProfile}
-              isModerator={isModerator}
               moderation={moderation}
               founderIds={founderIds}
               memberIds={memberIds}

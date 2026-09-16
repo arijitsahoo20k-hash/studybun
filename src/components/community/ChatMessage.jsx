@@ -14,7 +14,7 @@ function formatTime(iso) {
 // message's render fixed once it's on screen — it only re-renders if its own
 // props (e.g. `highlighted` flipping) change.
 const ChatMessage = memo(forwardRef(function ChatMessage(
-  { message, isOwn, myName, myMascotSpecies, isModerator, founderIds, memberIds, onDelete, onReply, onJumpToReply, onShowInfo, highlighted, showMeta = true },
+  { message, isOwn, myName, myMascotSpecies, canDelete: canDeleteProp, founderIds, memberIds, onDelete, onReply, onJumpToReply, onShowInfo, highlighted, showMeta = true },
   forwardedRef
 ) {
   const [active, setActive] = useState(false);
@@ -24,7 +24,13 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
 
   const name = isOwn ? (myName || "You") : (message.profiles?.name || "Study Buddy");
   const mascotSpecies = isOwn ? (myMascotSpecies || "bunny") : (message.profiles?.mascot || "bunny");
-  const canDelete = isOwn || isModerator;
+  // `canDelete` is resolved by the parent per message (see
+  // useCommunityModeration's canDelete) rather than derived from a single
+  // isModerator flag: since the ⚡ Mod role landed, whether the trash icon
+  // should appear depends on who wrote the message — a mod may delete a
+  // member's or another mod's message, but never a founder's. Own
+  // messages are always deletable regardless of what's passed.
+  const canDelete = isOwn || !!canDeleteProp;
   const isReply = !!message.reply_to_name;
   const time = formatTime(message.created_at);
 

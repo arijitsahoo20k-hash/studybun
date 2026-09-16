@@ -66,7 +66,7 @@ function PostImageGrid({ images, onOpen }) {
   );
 }
 
-export default function CommunityPost({ post, reactions, currentUserId, myProfile, isModerator, moderation, founderIds, memberIds, onToggleReaction, replies, onLoadReplies, onAddReply, onDelete, onDeleteReply }) {
+export default function CommunityPost({ post, reactions, currentUserId, myProfile, moderation, founderIds, memberIds, onToggleReaction, replies, onLoadReplies, onAddReply, onDelete, onDeleteReply }) {
   const [showReplies, setShowReplies] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [replyImageFile, setReplyImageFile] = useState(null);
@@ -75,6 +75,11 @@ export default function CommunityPost({ post, reactions, currentUserId, myProfil
   const [replySending, setReplySending] = useState(false);
   const [replyPage, setReplyPage] = useState(1); // how many "pages" of REPLY_PAGE_SIZE to show
   const [lightbox, setLightbox] = useState(null); // { images, startIndex } | null
+  // BUG FIX: the result of onDelete/onDeleteReply was discarded, so a
+  // failed delete (network, or a refusal now that a mod can aim at
+  // content they may not remove) left the post sitting there with no
+  // explanation. Shown with the existing .sb-cm-error class.
+  const [actionErr, setActionErr] = useState(null);
   const replyFileRef = useRef(null);
 
   // Same leak as the composer's imagePreviews: replyImagePreview is a
@@ -156,18 +161,23 @@ export default function CommunityPost({ post, reactions, currentUserId, myProfil
         <ContentActions
           authorId={post.user_id}
           currentUserId={currentUserId}
-          isModerator={isModerator}
+          canDelete={moderation.canDelete(post.user_id)}
           targetType="post"
           targetId={post.id}
           onReport={moderation.report}
           onBlock={() => moderation.blockUser(post.user_id)}
-          onDelete={() => onDelete(post.id)}
+          onDelete={async () => {
+            setActionErr(null);
+            const res = await onDelete(post.id);
+            if (res && !res.ok) setActionErr(res.error || "Couldn't delete that post.");
+          }}
         />
       </div>
       {(post.subject || post.chapter) && (
         <div className="sb-post-tag">{post.subject}{post.chapter ? ` — ${post.chapter}` : ""}</div>
       )}
       <div className="sb-post-content">{post.content}</div>
+      {actionErr && <div className="sb-cm-error">{actionErr}</div>}
 
       {/* Image grid — handles 0/1/2/3 images, backward-compat with old image_url */}
       <PostImageGrid images={postImages} onOpen={(i) => setLightbox({ images: postImages, startIndex: i })} />
@@ -224,12 +234,16 @@ export default function CommunityPost({ post, reactions, currentUserId, myProfil
                 <ContentActions
                   authorId={rp.user_id}
                   currentUserId={currentUserId}
-                  isModerator={isModerator}
+                  canDelete={moderation.canDelete(rp.user_id)}
                   targetType="reply"
                   targetId={rp.id}
                   onReport={moderation.report}
                   onBlock={() => moderation.blockUser(rp.user_id)}
-                  onDelete={() => onDeleteReply(post.id, rp.id)}
+                  onDelete={async () => {
+                    setActionErr(null);
+                    const res = await onDeleteReply(post.id, rp.id);
+                    if (res && !res.ok) setActionErr(res.error || "Couldn't delete that reply.");
+                  }}
                 />
               </div>
             );

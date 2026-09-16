@@ -38,7 +38,13 @@ export default function CommunityPage(p) {
   const privateAccess = usePrivateChatAccess();
   const [tab, setTab] = useState("checkins");
 
-  const isFounder = moderation.isModerator;
+  // BUG FIX: this used to be `moderation.isModerator`, which was correct
+  // only while founder was the sole role that satisfied is_moderator().
+  // With the ⚡ Mod role live, that would have handed every moderator the
+  // founder-only private-chat powers (create/rename/delete a group, add
+  // members, see every private channel). isAdmin is the real "founder or
+  // admin" answer — same set of people as before, now actually named.
+  const isFounder = moderation.isAdmin;
   // Founders always see the entry; everyone else only once a founder has
   // actually added them to at least one private channel — mirrors the
   // "invisible until you're invited" behavior from the prototype.
@@ -92,6 +98,7 @@ export default function CommunityPage(p) {
           myProfile={p.profile}
           isFounder={isFounder}
           founderIds={founderIds}
+          moderation={moderation}
           mascot={p.mascot}
           onExit={() => setTab("feed")}
         />
@@ -168,7 +175,6 @@ export default function CommunityPage(p) {
               markChannelRead={chat.markChannelRead}
               currentUserId={p.userId}
               myProfile={p.profile}
-              isModerator={moderation.isModerator}
               moderation={moderation}
               founderIds={founderIds}
               memberIds={memberIds}
@@ -181,7 +187,6 @@ export default function CommunityPage(p) {
               feed={feed}
               currentUserId={p.userId}
               myProfile={p.profile}
-              isModerator={moderation.isModerator}
               moderation={moderation}
               founderIds={founderIds}
               memberIds={memberIds}

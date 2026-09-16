@@ -145,10 +145,19 @@ export function useCommunityFeed() {
     [userId, uploadImage, deleteStoragePath]
   );
 
+  // BUG FIX: an RLS-refused delete returns no error and zero rows, which
+  // the old code read as success — the post disappeared from the list and
+  // came back on the next load. `.select("id")` lets us tell the two
+  // apart now that a moderator can hit a post they may not delete.
   const deletePost = useCallback(async (id) => {
     const target = posts.find((p) => p.id === id);
-    const { error: err } = await supabase.from("community_posts").delete().eq("id", id);
-    if (err) return { ok: false };
+    const { data, error: err } = await supabase
+      .from("community_posts")
+      .delete()
+      .eq("id", id)
+      .select("id");
+    if (err) return { ok: false, error: "Couldn't delete that post." };
+    if (!data || data.length === 0) return { ok: false, error: "You can't delete that post." };
     setPosts((prev) => prev.filter((p) => p.id !== id));
     // Best-effort cleanup: loop new image_urls array AND legacy image_url
     (target?.image_urls || []).forEach(deleteStoragePath);
@@ -203,8 +212,13 @@ export function useCommunityFeed() {
 
   const deleteReply = useCallback(async (postId, replyId) => {
     const target = (repliesByPost[postId] || []).find((r) => r.id === replyId);
-    const { error: err } = await supabase.from("community_replies").delete().eq("id", replyId);
-    if (err) return { ok: false };
+    const { data, error: err } = await supabase
+      .from("community_replies")
+      .delete()
+      .eq("id", replyId)
+      .select("id");
+    if (err) return { ok: false, error: "Couldn't delete that reply." };
+    if (!data || data.length === 0) return { ok: false, error: "You can't delete that reply." };
     setRepliesByPost((prev) => ({ ...prev, [postId]: (prev[postId] || []).filter((r) => r.id !== replyId) }));
     // Best-effort cleanup of reply image
     deleteStoragePath(target?.image_url);

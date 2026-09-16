@@ -2,6 +2,7 @@ import React from "react";
 import Mascot from "./Mascot";
 import { THEMES } from "../data/themes";
 import { MOTIFS } from "./decor/Motifs";
+import { useRoleIds } from "../hooks/useRoleIds";
 
 export const Card = ({ children, className = "", style, onClick, washi = false, paper = false, glass = false }) => (
   <div className={`sb-card ${glass ? "sb-card-glass" : ""} ${paper ? "sb-paper" : ""} ${className}`} style={style} onClick={onClick}>
@@ -21,6 +22,14 @@ export const FounderBadge = () => (
   <span className="sb-founder-badge" title="StudyBun founder">👑 Founder</span>
 );
 
+// Small "Mod" pill — role = 'moderator' in user_roles. Sits between
+// Founder and Member: a mod NEVER shows the Member pill, even on a long
+// streak, because the role is the more informative thing to say about
+// them. Cosmetic only; their actual powers are RLS-enforced.
+export const ModBadge = () => (
+  <span className="sb-mod-badge" title="StudyBun moderator">⚡ Mod</span>
+);
+
 // Small "Member" pill — shown next to a name wherever founderIds does NOT
 // have that user_id but they have a 3+ day real-activity streak (see
 // useStreakMemberIds). Same spots as FounderBadge: Leaderboard
@@ -37,14 +46,28 @@ export const MEMBER_STREAK_MIN = 3;
 // user_id". Handles both call shapes: pass `memberIds` (a Set, for
 // Community posts/replies/chat) OR `streak` (a number, for Leaderboard
 // rows which already carry current_streak inline and don't need a
-// separate query). Founder always wins over Member if somehow both are
-// true. Renders nothing at all — not even a guess — until founderIds has
-// actually loaded (it starts as `null`, see useFounderIds), which is what
-// stops a founder from seeing a stray Member badge flash on their own name
-// before their founder status comes back.
-export const PersonBadge = ({ founderIds, memberIds, userId, streak }) => {
-  if (!userId || !founderIds) return null; // founderIds still loading (null/undefined) — show nothing, not a guess
-  if (founderIds.has(userId)) return <FounderBadge />;
+// separate query).
+//
+// Precedence is Founder > Mod > Member — exactly one pill ever renders,
+// and a role always beats a streak.
+//
+// Founder/mod ids come from the shared role snapshot (useRoleIds) rather
+// than props. The `founderIds` prop is still accepted and still wins when
+// passed, so every existing call site keeps working untouched; new call
+// sites don't need to thread anything. Both lists resolve from one cached
+// RPC per page load no matter how many badges are on screen.
+//
+// Renders nothing at all — not even a guess — until the roles have
+// actually loaded (they start as `null`), which is what stops a founder
+// or a mod from seeing a stray Member badge flash on their own name
+// before their role comes back.
+export const PersonBadge = ({ founderIds, moderatorIds, memberIds, userId, streak }) => {
+  const roles = useRoleIds();
+  const founders = founderIds || roles.founderIds;
+  const mods = moderatorIds || roles.moderatorIds;
+  if (!userId || !founders || !mods) return null; // roles still loading — show nothing, not a guess
+  if (founders.has(userId)) return <FounderBadge />;
+  if (mods.has(userId)) return <ModBadge />;
   if (memberIds !== undefined) {
     if (!memberIds) return null; // memberIds query also still loading
     return memberIds.has(userId) ? <MemberBadge /> : null;

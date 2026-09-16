@@ -57,8 +57,12 @@ function buildRenderItems(messages) {
 export default function CommunityChat({
   channels, activeChannelId, onSelectChannel,
   messages, loading, sending, sendMessage, deleteMessage, hasMore, loadOlder, markChannelRead,
-  currentUserId, myProfile, isModerator, moderation, founderIds, memberIds, mascot,
+  currentUserId, myProfile, moderation, founderIds, memberIds, mascot,
 }) {
+  // NOTE: the old `isModerator` prop is gone — "can I delete this" is now
+  // a per-author question (a mod may not delete a founder's message), so
+  // it's answered per message via moderation.canDelete(authorId) at the
+  // ChatMessage call site below.
   const [replyTo, setReplyTo] = useState(null); // { id, user_id, name, content } | null
   const [highlightedId, setHighlightedId] = useState(null);
   // Message the "seen by" popup is currently showing — the full message
@@ -313,7 +317,7 @@ export default function CommunityChat({
                 isOwn={item.message.user_id === currentUserId}
                 myName={myName}
                 myMascotSpecies={myMascotSpecies}
-                isModerator={isModerator}
+                canDelete={moderation.canDelete(item.message.user_id)}
                 founderIds={founderIds}
                 memberIds={memberIds}
                 onDelete={requestDelete}

@@ -57,7 +57,7 @@ function RenameDialog({ open, initialName, onSubmit, onClose }) {
  * nav + tab content), not just the content-area card, so the two-pane chat
  * layout gets the full viewport to work with instead of being squeezed
  * into a settings-style card. */
-export default function PrivateChatPage({ currentUserId, myProfile, isFounder, founderIds, mascot, onExit }) {
+export default function PrivateChatPage({ currentUserId, myProfile, isFounder, founderIds, moderation, mascot, onExit }) {
   const {
     channels, activeChannelId, setActiveChannelId, loading,
     createChannel, renameChannel, deleteChannel, addMembers, removeMember, leaveChannel, fetchDirectory,
@@ -207,6 +207,7 @@ export default function PrivateChatPage({ currentUserId, myProfile, isFounder, f
           myProfile={myProfile}
           isFounder={isFounder}
           founderIds={founderIds}
+          canDeleteMessage={moderation?.canDelete}
           mascot={mascot}
           onBack={handleBackToList}
           onRequestAddMembers={() => setAddMembersOpen(true)}

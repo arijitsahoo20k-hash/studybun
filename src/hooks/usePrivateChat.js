@@ -248,9 +248,21 @@ export function usePrivateChat(channelId) {
     [channelId, userId, sending, uploadChatImage]
   );
 
+  // BUG FIX: same RLS-refusal blind spot as useCommunityChat's
+  // deleteMessage — a delete the policy rejects returns no error and
+  // zero rows, which the old code counted as success and removed from
+  // the list anyway. `.select("id")` surfaces the row count so a refused
+  // delete reports back instead of silently faking it.
   const deleteMessage = useCallback(async (id) => {
-    const { error: err } = await supabase.from("private_messages").delete().eq("id", id);
+    const { data, error: err } = await supabase
+      .from("private_messages")
+      .delete()
+      .eq("id", id)
+      .select("id");
     if (err) return { ok: false, error: "Couldn't delete that message." };
+    if (!data || data.length === 0) {
+      return { ok: false, error: "You can't delete that message." };
+    }
     setMessages((prev) => prev.filter((m) => m.id !== id));
     return { ok: true };
   }, []);

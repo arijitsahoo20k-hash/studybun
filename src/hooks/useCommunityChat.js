@@ -234,9 +234,24 @@ export function useCommunityChat(channelId) {
     [channelId, userId, sending, uploadChatImage]
   );
 
+  // BUG FIX: a delete refused by RLS comes back with NO error and zero
+  // rows affected — PostgREST treats "matched nothing you're allowed to
+  // touch" as a successful no-op. The old code read that as success and
+  // optimistically dropped the message from the list, so a moderator
+  // deleting something they aren't allowed to (a founder's message, now
+  // that mods exist) watched it vanish and then reappear on the next
+  // load. `.select("id")` makes the response carry the rows that were
+  // actually deleted, so zero rows is detectable and reportable.
   const deleteMessage = useCallback(async (id) => {
-    const { error: err } = await supabase.from("community_messages").delete().eq("id", id);
+    const { data, error: err } = await supabase
+      .from("community_messages")
+      .delete()
+      .eq("id", id)
+      .select("id");
     if (err) return { ok: false, error: "Couldn't delete that message." };
+    if (!data || data.length === 0) {
+      return { ok: false, error: "You can't delete that message." };
+    }
     setMessages((prev) => prev.filter((m) => m.id !== id));
     return { ok: true };
   }, []);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
+import { useRoleIds } from "./useRoleIds";
 
 /** Reporting content and blocking users. Reporter identity is never shown
  * to anyone but the reporter and moderators — enforced by RLS, not just
@@ -10,14 +11,43 @@ export function useCommunityModeration() {
   const userId = user?.id;
   const [blockedIds, setBlockedIds] = useState(new Set());
   const [isModerator, setIsModerator] = useState(false);
+  // "Outranks a moderator" — true for admin and founder, false for a
+  // plain moderator. is_moderator() is deliberately the broad check
+  // (anyone with delete power at all), so it can't answer this on its
+  // own; see supabase/migration_moderator_role.sql.
+  const [isAdmin, setIsAdmin] = useState(false);
+  const { protectedIds } = useRoleIds();
 
   useEffect(() => {
-    if (!userId) { setBlockedIds(new Set()); setIsModerator(false); return; }
+    if (!userId) { setBlockedIds(new Set()); setIsModerator(false); setIsAdmin(false); return; }
     supabase.from("community_blocks").select("blocked_id").eq("blocker_id", userId).then(({ data }) => {
       setBlockedIds(new Set((data || []).map((r) => r.blocked_id)));
     });
     supabase.rpc("is_moderator", { uid: userId }).then(({ data }) => setIsModerator(!!data));
+    supabase.rpc("is_admin", { uid: userId }).then(({ data }) => setIsAdmin(!!data));
   }, [userId]);
+
+  /** Can the signed-in user delete content written by `authorId`?
+   * Own content: always. Admin/founder: anything. Moderator: anything
+   * except content from someone in `protectedIds` (admin ∪ founder —
+   * see is_mod_protected in supabase/migration_moderator_role.sql and
+   * migration_moderator_protect_admin.sql for why this isn't just
+   * founderIds).
+   *
+   * This is the exact shape of the RLS policies, mirrored client-side
+   * purely so the Delete control isn't offered on something that would
+   * then be refused. The database is the boundary, not this. */
+  const canDelete = useCallback(
+    (authorId) => {
+      if (!authorId) return false;
+      if (authorId === userId) return true;
+      if (isAdmin) return true;
+      if (!isModerator) return false;
+      if (!protectedIds) return false; // roles still loading — don't offer a control we can't judge
+      return !protectedIds.has(authorId);
+    },
+    [userId, isAdmin, isModerator, protectedIds]
+  );
 
   const report = useCallback(
     async ({ targetType, targetId, reason, details }) => {
@@ -66,7 +96,7 @@ export function useCommunityModeration() {
   const isBlocked = useCallback((id) => blockedIds.has(id), [blockedIds]);
 
   return useMemo(
-    () => ({ blockedIds, isBlocked, isModerator, report, blockUser, unblockUser }),
-    [blockedIds, isBlocked, isModerator, report, blockUser, unblockUser]
+    () => ({ blockedIds, isBlocked, isModerator, isAdmin, canDelete, report, blockUser, unblockUser }),
+    [blockedIds, isBlocked, isModerator, isAdmin, canDelete, report, blockUser, unblockUser]
   );
 }

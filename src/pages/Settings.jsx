@@ -3,8 +3,9 @@ import { Settings, Sparkles, Rabbit, LogOut, UserCircle, GraduationCap, CheckCir
 import { Card, SectionTitle, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { THEMES } from "../data/themes";
-import { pickableMascots } from "../data/mascots";
+import { pickableMascots, exclusiveMascotLabel } from "../data/mascots";
 import { useIsFounder } from "../hooks/useIsFounder";
+import { useIsModerator } from "../hooks/useIsModerator";
 import { useAuth } from "../lib/AuthContext";
 import { getCachedAIStatus, fetchAIStatus, getModelPreference, setModelPreference } from "../services/buddyKeyManager";
 import { MODEL_FAMILIES } from "../services/geminiModels";
@@ -107,6 +108,7 @@ export default function SettingsPage(p) {
   const [tab, setTab] = useState("profile");
   // Unlocks the founder-only mascots in the Look tab's picker.
   const isFounder = useIsFounder();
+  const isModerator = useIsModerator();
 
   return (
     <div className="sb-page">
@@ -165,12 +167,12 @@ export default function SettingsPage(p) {
               <Card>
                 <SectionTitle icon={Rabbit}>Mascot</SectionTitle>
                 <div className="sb-mascot-grid">
-                  {/* Lion and Dragon only enter this list for a founder (or if
-                      one is already saved on this profile) -- see
-                      pickableMascots in data/mascots.js. */}
-                  {pickableMascots(isFounder, profile.mascot).map(([id, m]) => (
+                  {/* Dragon/Axolotl only enter this list for a founder; Lion also
+                      unlocks for a moderator (or if one is already saved on
+                      this profile) -- see pickableMascots in data/mascots.js. */}
+                  {pickableMascots({ isFounder, isModerator }, profile.mascot).map(([id, m]) => (
                     <button key={id} className={`sb-mascot-pick ${profile.mascot === id ? "active" : ""} ${m.exclusive ? "exclusive" : ""}`} onClick={() => saveProfile({ mascot: id })}>
-                      {m.exclusive && <span className="sb-mascot-crown" title="Founders only">👑</span>}
+                      {m.exclusive && <span className="sb-mascot-crown" title={exclusiveMascotLabel(id)}>👑</span>}
                       <Mascot species={id} mood="happy" size={54} />
                       <span>{m.label}</span>
                     </button>

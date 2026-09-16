@@ -44,7 +44,7 @@ function buildRenderItems(messages) {
 
 export default function PrivateChatWindow({
   channel, messages, loading, sending, sendMessage, deleteMessage, hasMore, loadOlder,
-  currentUserId, myProfile, isFounder, founderIds, mascot, onBack,
+  currentUserId, myProfile, isFounder, founderIds, canDeleteMessage, mascot, onBack,
   onRequestAddMembers, onRequestRename, onRequestDeleteChannel, onRequestLeaveChannel,
 }) {
   const [replyTo, setReplyTo] = useState(null);
@@ -198,6 +198,17 @@ export default function PrivateChatWindow({
     return fn;
   }, []);
 
+  // A moderator may clear out other people's messages in a channel they
+  // were added to — but never a founder's, and never in a channel they
+  // aren't a member of (they can't even see those; RLS hides them).
+  // canDeleteMessage answers all of that per author. Falls back to the
+  // founder flag if the prop is missing, so this component still works
+  // standalone.
+  const resolveCanDelete = useCallback(
+    (authorId) => (canDeleteMessage ? canDeleteMessage(authorId) : isFounder),
+    [canDeleteMessage, isFounder]
+  );
+
   const renderItems = useMemo(() => buildRenderItems(messages), [messages]);
   const myName = myProfile?.name || "You";
   const myMascotSpecies = myProfile?.mascot || "bunny";
@@ -301,7 +312,7 @@ export default function PrivateChatWindow({
                 isOwn={item.message.user_id === currentUserId}
                 myName={myName}
                 myMascotSpecies={myMascotSpecies}
-                isModerator={isFounder}
+                canDelete={resolveCanDelete(item.message.user_id)}
                 founderIds={founderIds}
                 memberIds={undefined}
                 onDelete={requestDelete}
