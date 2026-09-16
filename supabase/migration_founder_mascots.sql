@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration: founder-only mascots (lion, dragon)
+-- Migration: founder-only mascots (lion, dragon, axolotl)
 -- ============================================================
 -- Safe to re-run (idempotent) — same pattern as every other
 -- migration in this folder. Requires migration_founder_tag.sql
@@ -42,10 +42,10 @@ grant execute on function is_founder(uuid) to authenticated;
 -- ---------- 2. which species are locked ----------
 -- Kept as a function rather than a table so it stays in lockstep
 -- with MASCOTS in src/data/mascots.js with one obvious place to
--- edit. If you add a third founder mascot, add it here too.
+-- edit. If you add a fourth founder mascot, add it here too.
 create or replace function founder_only_mascots() returns text[]
 language sql immutable as $$
-  select array['lion', 'dragon']::text[];
+  select array['lion', 'dragon', 'axolotl']::text[];
 $$;
 
 -- ---------- 3. reject the update at the door ----------
@@ -81,5 +81,5 @@ create trigger trg_enforce_founder_mascot
 -- ---------- 4. sanity check (optional, run by hand) ----------
 -- Confirms the lock is live. The first should return the founders'
 -- rows only; the second should raise check_violation.
---   select p.user_id, p.name, p.mascot from profiles p where p.mascot in ('lion','dragon');
+--   select p.user_id, p.name, p.mascot from profiles p where p.mascot in ('lion','dragon','axolotl');
 --   update profiles set mascot = 'lion' where user_id = '<some-member-uuid>';

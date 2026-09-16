@@ -2473,6 +2473,27 @@ export default function GlobalStyle() {
       .sb-dragon-peek:hover .sb-dragon-wing-l,
       .sb-dragon-peek:hover .sb-dragon-wing-r { animation: sb-wing-flap .45s ease; }
 
+      /* Axolotl -- third founder-only species. Its gills lead the same way
+         Lion's mane and Dragon's wings do; offset timings on the two sides
+         so they read as a soft, alive sway rather than a single mirrored
+         shape twitching in place. */
+      .sb-species-axolotl .sb-axolotl-gill-l { transform-box: fill-box; transform-origin: center; animation: sb-gill-sway 4s ease-in-out infinite; }
+      .sb-species-axolotl .sb-axolotl-gill-r { transform-box: fill-box; transform-origin: center; animation: sb-gill-sway 4s ease-in-out infinite .2s; }
+      @keyframes sb-gill-sway { 0%, 100% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(6deg) scale(1.04); } }
+
+      /* Origin sits at the tail's own attach point on the body (see the
+         "M176 377" start of the tail path) -- these are raw SVG user units,
+         which for Axolotl's 0-512 viewBox means actual path-scale numbers,
+         not the small ~90-unit numbers Lion/Dragon use. */
+      .sb-species-axolotl .sb-axolotl-tail { transform-origin: 180px 385px; animation: sb-axolotl-tail-swish 3.2s ease-in-out infinite; }
+      @keyframes sb-axolotl-tail-swish { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-8deg); } }
+
+      .sb-species-axolotl .sb-axolotl-bubbles { animation: sb-axolotl-bubble-rise 2.6s ease-in-out infinite; }
+      @keyframes sb-axolotl-bubble-rise { 0%, 100% { opacity: .35; transform: translateY(6px); } 50% { opacity: .8; transform: translateY(-16px); } }
+
+      .sb-axolotl-peek:hover .sb-axolotl-gill-l,
+      .sb-axolotl-peek:hover .sb-axolotl-gill-r { animation: sb-gill-sway .5s ease; }
+
       /* the little crown corner-tag on a founder-only option in the picker */
       .sb-mascot-pick.exclusive, .sb-ob-mascot-pick.exclusive { position: relative; border-color: #E0A82E; }
       .sb-mascot-pick.exclusive.active, .sb-ob-mascot-pick.exclusive.active { background: #FFF6DE; }
@@ -2484,7 +2505,9 @@ export default function GlobalStyle() {
         .sb-species-lion .sb-lion-mane, .sb-species-lion .sb-lion-tail, .sb-species-lion .sb-lion-crown,
         .sb-species-dragon .sb-dragon-wing-l, .sb-species-dragon .sb-dragon-wing-r,
         .sb-species-dragon .sb-dragon-tail, .sb-species-dragon .sb-dragon-flame,
-        .sb-species-dragon .sb-dragon-smoke { animation: none; }
+        .sb-species-dragon .sb-dragon-smoke,
+        .sb-species-axolotl .sb-axolotl-gill-l, .sb-species-axolotl .sb-axolotl-gill-r,
+        .sb-species-axolotl .sb-axolotl-tail, .sb-species-axolotl .sb-axolotl-bubbles { animation: none; }
       }
 
       /* ===== kawaii study calendar (Profile page) ===== */

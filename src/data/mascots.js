@@ -5,14 +5,18 @@ export const MASCOTS = {
   bear: { label: "Bear", emoji: "🐻" },
   hamster: { label: "Hamster", emoji: "🐹" },
   penguin: { label: "Penguin", emoji: "🐧" },
-  // `exclusive: "founder"` -- these two never appear in anyone else's picker.
-  // The flag is only half the story: hiding a button stops an honest user,
-  // not someone editing the request, so the real lock is the database trigger
-  // in supabase/migration_founder_mascots.sql which rejects a profile update
-  // that sets one of these unless the row's owner actually holds the founder
-  // role. Keep the two lists in sync if you ever add a third.
+  // `exclusive: "founder"` -- these three never appear in anyone else's
+  // picker. The flag is only half the story: hiding a button stops an
+  // honest user, not someone editing the request, so the real lock is the
+  // database trigger in supabase/migration_founder_mascots.sql which rejects
+  // a profile update that sets one of these unless the row's owner actually
+  // holds the founder role. Keep the two lists in sync if you ever add a
+  // fourth.
   lion: { label: "Lion", emoji: "🦁", exclusive: "founder" },
   dragon: { label: "Dragon", emoji: "🐉", exclusive: "founder" },
+  // No official axolotl emoji exists in Unicode yet, so this uses the
+  // closest widely-supported stand-in rather than an inaccurate animal.
+  axolotl: { label: "Axolotl", emoji: "🦎", exclusive: "founder" },
 };
 
 /** Is this species one of the founder-only ones? */
@@ -52,6 +56,7 @@ export const MASCOT_THEME = {
   penguin: { verbing: "Waddle", sound: "*honk*", collectible: { emoji: "🪨", name: "pebble", plural: "Pebbles" } },
   lion: { verbing: "Prowl", sound: "*rawr*", collectible: { emoji: "👑", name: "crown jewel", plural: "Crown Jewels" } },
   dragon: { verbing: "Soar", sound: "*fwoosh*", collectible: { emoji: "💎", name: "gem", plural: "Gems" } },
+  axolotl: { verbing: "Paddle", sound: "*blub*", collectible: { emoji: "🫧", name: "bubble", plural: "Bubbles" } },
 };
 
 export function mascotTheme(species) {
