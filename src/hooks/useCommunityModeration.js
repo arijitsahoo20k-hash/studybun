@@ -16,15 +16,24 @@ export function useCommunityModeration() {
   // (anyone with delete power at all), so it can't answer this on its
   // own; see supabase/migration_moderator_role.sql.
   const [isAdmin, setIsAdmin] = useState(false);
+  // Not the same thing as isAdmin/founder — see
+  // supabase/migration_channel_lock.sql. There are two founders; the
+  // channel lock (off/on switch that closes a Community Chat channel
+  // for everyone) is restricted to one specific person, checked
+  // server-side by user_id, not by role. This is purely "should the
+  // toggle render for me" — the RPC re-checks it independently, so a
+  // stale/false client value can never grant the actual power.
+  const [isChannelLockAdmin, setIsChannelLockAdmin] = useState(false);
   const { protectedIds } = useRoleIds();
 
   useEffect(() => {
-    if (!userId) { setBlockedIds(new Set()); setIsModerator(false); setIsAdmin(false); return; }
+    if (!userId) { setBlockedIds(new Set()); setIsModerator(false); setIsAdmin(false); setIsChannelLockAdmin(false); return; }
     supabase.from("community_blocks").select("blocked_id").eq("blocker_id", userId).then(({ data }) => {
       setBlockedIds(new Set((data || []).map((r) => r.blocked_id)));
     });
     supabase.rpc("is_moderator", { uid: userId }).then(({ data }) => setIsModerator(!!data));
     supabase.rpc("is_admin", { uid: userId }).then(({ data }) => setIsAdmin(!!data));
+    supabase.rpc("is_channel_lock_admin", { uid: userId }).then(({ data }) => setIsChannelLockAdmin(!!data));
   }, [userId]);
 
   /** Can the signed-in user delete content written by `authorId`?
@@ -96,7 +105,7 @@ export function useCommunityModeration() {
   const isBlocked = useCallback((id) => blockedIds.has(id), [blockedIds]);
 
   return useMemo(
-    () => ({ blockedIds, isBlocked, isModerator, isAdmin, canDelete, report, blockUser, unblockUser }),
-    [blockedIds, isBlocked, isModerator, isAdmin, canDelete, report, blockUser, unblockUser]
+    () => ({ blockedIds, isBlocked, isModerator, isAdmin, isChannelLockAdmin, canDelete, report, blockUser, unblockUser }),
+    [blockedIds, isBlocked, isModerator, isAdmin, isChannelLockAdmin, canDelete, report, blockUser, unblockUser]
   );
 }

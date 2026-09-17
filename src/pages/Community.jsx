@@ -28,7 +28,7 @@ const BASE_TABS = [
 const PRIVATE_TAB = { id: "private", emoji: "🔒", label: "Private Chats", sub: "Just for your group" };
 
 export default function CommunityPage(p) {
-  const { channels, activeChannelId, setActiveChannelId } = useCommunityChannels();
+  const { channels, activeChannelId, setActiveChannelId, setChannelLock } = useCommunityChannels();
   const chat = useCommunityChat(activeChannelId);
   const accountability = useAccountability();
   const feed = useCommunityFeed();
@@ -165,6 +165,7 @@ export default function CommunityPage(p) {
               channels={channels}
               activeChannelId={activeChannelId}
               onSelectChannel={setActiveChannelId}
+              setChannelLock={setChannelLock}
               messages={chat.messages}
               loading={chat.loading}
               sending={chat.sending}

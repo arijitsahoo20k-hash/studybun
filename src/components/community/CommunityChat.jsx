@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Lock } from "lucide-react";
 import { Card, SectionTitle, EmptyState } from "../ui";
 import ChatMessage from "./ChatMessage";
 import ChatComposer from "./ChatComposer";
 import ChannelSelector from "./ChannelSelector";
+import ChannelLockToggle from "./ChannelLockToggle";
 import ConfirmDialog from "./private/ConfirmDialog";
 import MessageInfoModal from "./MessageInfoModal";
 
@@ -55,7 +56,7 @@ function buildRenderItems(messages) {
 }
 
 export default function CommunityChat({
-  channels, activeChannelId, onSelectChannel,
+  channels, activeChannelId, onSelectChannel, setChannelLock,
   messages, loading, sending, sendMessage, deleteMessage, hasMore, loadOlder, markChannelRead,
   currentUserId, myProfile, moderation, founderIds, memberIds, mascot,
 }) {
@@ -291,9 +292,36 @@ export default function CommunityChat({
   const myName = myProfile?.name || "You";
   const myMascotSpecies = myProfile?.mascot || "bunny";
 
+  const activeChannel = useMemo(
+    () => channels.find((c) => c.id === activeChannelId) || null,
+    [channels, activeChannelId]
+  );
+  const isChannelLocked = !!activeChannel?.is_locked;
+
+  // Stable identity so ChannelLockToggle's internal pending/error state
+  // isn't reset by a fresh function reference on every parent render.
+  const handleToggleLock = useCallback(
+    (nextLocked) => setChannelLock(activeChannelId, nextLocked),
+    [setChannelLock, activeChannelId]
+  );
+
   return (
     <Card washi className="sb-community-chat">
-      <SectionTitle icon={MessageCircle}>Community Chat</SectionTitle>
+      <SectionTitle
+        icon={MessageCircle}
+        right={
+          moderation.isChannelLockAdmin && activeChannel ? (
+            <ChannelLockToggle
+              key={activeChannel.id}
+              channelName={activeChannel.name}
+              locked={isChannelLocked}
+              onToggle={handleToggleLock}
+            />
+          ) : null
+        }
+      >
+        Community Chat
+      </SectionTitle>
       <ChannelSelector channels={channels} activeId={activeChannelId} onSelect={onSelectChannel} />
 
       <div className="sb-chat-list" ref={listRef} onScroll={handleScroll}>
@@ -333,13 +361,23 @@ export default function CommunityChat({
 
       {deleteError && <div className="sb-chat-delete-err">{deleteError}</div>}
 
-      <ChatComposer
-        channelId={activeChannelId}
-        replyTo={replyTo}
-        onCancelReply={cancelReply}
-        sendMessage={handleSendMessage}
-        sending={sending}
-      />
+      {isChannelLocked ? (
+        // Replaces the composer entirely — for EVERYONE, including the
+        // person who closed it. No half-measures like a disabled input;
+        // a closed channel shouldn't even look like typing is an option.
+        <div className="sb-channel-closed-banner" role="status">
+          <Lock size={16} aria-hidden="true" />
+          <span>This channel is closed right now — no new messages.</span>
+        </div>
+      ) : (
+        <ChatComposer
+          channelId={activeChannelId}
+          replyTo={replyTo}
+          onCancelReply={cancelReply}
+          sendMessage={handleSendMessage}
+          sending={sending}
+        />
+      )}
 
       <ConfirmDialog
         open={pendingDeleteId != null}

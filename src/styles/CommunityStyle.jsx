@@ -101,7 +101,50 @@ export default function CommunityStyle() {
       .sb-channel-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; flex-shrink: 0; }
       .sb-channel-selector .sb-chip {
         padding: 9px 18px; font-size: 13px; border-radius: 999px; font-weight: 800;
+        display: inline-flex; align-items: center; gap: 5px;
       }
+      .sb-channel-selector .sb-chip.locked { opacity: .72; }
+      .sb-channel-selector .sb-chip-lock-icon { flex-shrink: 0; color: #C24444; }
+
+      /* ---------- chat: channel lock switch (founder-only) ---------- */
+      /* Reads as a real physical switch, not a settings checkbox — this
+         is the one control that can silence the whole channel, for
+         everyone, at once. Locked = red filled track, open = green
+         filled track. Same danger red (#C24444) as delete controls
+         elsewhere in Community; the green is new to this page on
+         purpose — nothing else here needed a "safe/on" color before. */
+      .sb-channel-lock { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+      .sb-channel-lock-switch {
+        display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px;
+        border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--card);
+        box-shadow: 2px 2px 0 var(--mascot-outline); cursor: pointer; font-weight: 800; font-size: 11.5px;
+        color: var(--mascot-ink); transition: transform .12s ease;
+      }
+      .sb-channel-lock-switch:hover:not(:disabled) { transform: translateY(-1px); }
+      .sb-channel-lock-switch:disabled { cursor: default; opacity: .75; }
+      .sb-channel-lock-track {
+        position: relative; width: 34px; height: 20px; border-radius: 999px;
+        border: 2px solid var(--mascot-outline); flex-shrink: 0;
+        background: #C24444; transition: background .15s ease;
+      }
+      .sb-channel-lock-switch.unlocked .sb-channel-lock-track { background: #4FAE6E; }
+      .sb-channel-lock-knob {
+        position: absolute; top: 50%; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+        background: #fff; display: flex; align-items: center; justify-content: center; color: #C24444;
+        transform: translate(0, -50%); transition: transform .15s ease;
+      }
+      .sb-channel-lock-switch.unlocked .sb-channel-lock-knob { transform: translate(14px, -50%); color: #2E7D4F; }
+      .sb-channel-lock-label { letter-spacing: .02em; text-transform: uppercase; }
+      .sb-channel-lock-err { font-size: 10.5px; font-weight: 700; color: #C24444; max-width: 160px; text-align: right; }
+
+      /* ---------- chat: channel closed banner (replaces the composer) ---------- */
+      .sb-channel-closed-banner {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 14px 16px; border-radius: 16px; border: 2px dashed #C24444;
+        background: color-mix(in srgb, #C24444 10%, var(--card)); color: #C24444;
+        font-weight: 800; font-size: 13px; text-align: center; flex-shrink: 0;
+      }
+      .sb-channel-closed-banner svg { flex-shrink: 0; }
       .sb-chat-list {
         display: flex; flex-direction: column; gap: 10px; overflow-y: auto; overscroll-behavior: contain;
         padding: 6px 8px; margin-bottom: 12px; border-radius: 18px;
