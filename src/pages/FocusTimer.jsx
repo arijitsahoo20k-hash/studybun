@@ -45,6 +45,9 @@ const FOCUS_SCENES = {
   bear: "/focus-scenes/bear.jpeg",
   hamster: "/focus-scenes/hamster.jpeg",
   penguin: "/focus-scenes/penguin.jpeg",
+  lion: "/focus-scenes/lion.jpeg",
+  dragon: "/focus-scenes/dragon.jpeg",
+  axolotl: "/focus-scenes/axolotl.jpeg",
 };
 
 // Small rotating set of quotes for the companion rail's quote card -- picked
