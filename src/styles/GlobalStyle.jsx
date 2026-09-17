@@ -2455,11 +2455,20 @@ export default function GlobalStyle() {
       .sb-species-lion .sb-lion-crown { transform-box: fill-box; transform-origin: center bottom; animation: sb-crown-tilt 5s ease-in-out infinite; }
       @keyframes sb-crown-tilt { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
 
-      .sb-species-dragon .sb-dragon-wing-l { transform-origin: -13px -10px; animation: sb-wing-flap 2.4s ease-in-out infinite; }
-      .sb-species-dragon .sb-dragon-wing-r { transform-origin: -13px -10px; animation: sb-wing-flap 2.4s ease-in-out infinite .18s; }
-      @keyframes sb-wing-flap { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-9deg) translateY(-1px); } }
+      /* Origins are raw SVG user units for Dragon's 0-512 viewBox (same
+         convention as Axolotl's gills/tail below) -- 200,292 and 312,292
+         sit at each wing's own shoulder-attach point on the body, mirrored
+         around the 256 center line; 208,362 sits at the tail's own root. */
+      /* wing-r is its own unmirrored artwork (not a scale(-1,1) copy of
+         wing-l like some other species' paired parts), so it needs the
+         opposite rotation sign to read as a symmetric outward flap rather
+         than both wings turning the same way on screen. */
+      .sb-species-dragon .sb-dragon-wing-l { transform-origin: 200px 292px; animation: sb-wing-flap 2.4s ease-in-out infinite; }
+      .sb-species-dragon .sb-dragon-wing-r { transform-origin: 312px 292px; animation: sb-wing-flap-r 2.4s ease-in-out infinite .18s; }
+      @keyframes sb-wing-flap { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-9deg) translateY(-4px); } }
+      @keyframes sb-wing-flap-r { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(9deg) translateY(-4px); } }
 
-      .sb-species-dragon .sb-dragon-tail { transform-origin: 10px 26px; animation: sb-dragon-tail-swish 2.8s ease-in-out infinite; }
+      .sb-species-dragon .sb-dragon-tail { transform-origin: 208px 362px; animation: sb-dragon-tail-swish 2.8s ease-in-out infinite; }
       @keyframes sb-dragon-tail-swish { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(6deg); } }
 
       .sb-species-dragon .sb-dragon-flame { transform-box: fill-box; transform-origin: center top; animation: sb-dragon-flame-lick .7s ease-in-out infinite; }
@@ -2471,8 +2480,8 @@ export default function GlobalStyle() {
       .sb-lion-peek:hover .sb-ear-l { animation: sb-ear-wiggle-l .55s ease; }
       .sb-lion-peek:hover .sb-ear-r { animation: sb-ear-wiggle-r .55s ease .06s; }
       .sb-lion-peek:hover .sb-lion-mane { animation: sb-mane-sway .6s ease; }
-      .sb-dragon-peek:hover .sb-dragon-wing-l,
-      .sb-dragon-peek:hover .sb-dragon-wing-r { animation: sb-wing-flap .45s ease; }
+      .sb-dragon-peek:hover .sb-dragon-wing-l { animation: sb-wing-flap .45s ease; }
+      .sb-dragon-peek:hover .sb-dragon-wing-r { animation: sb-wing-flap-r .45s ease; }
 
       /* Axolotl -- third founder-only species. Its gills lead the same way
          Lion's mane and Dragon's wings do; offset timings on the two sides
