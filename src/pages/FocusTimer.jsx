@@ -392,7 +392,8 @@ export default function FocusTimer(p) {
       />
       </div>
 
-      {/* Portaled out of .sb-main for the same reason as MessageInfoModal.jsx
+      {/* Both dialogs below (who's-studying, timer settings) are portaled
+          out of .sb-main for the same reason as MessageInfoModal.jsx
           ("Seen by") and ConfirmDialog.jsx (delete confirm): .sb-main sets
           `contain: layout`, which makes it the containing block for
           `position: fixed` descendants. Left un-portaled, this overlay was
@@ -422,7 +423,7 @@ export default function FocusTimer(p) {
         document.querySelector(".sb-app") || document.body
       )}
 
-      {settingsOpen && (
+      {settingsOpen && createPortal(
         <div className="sb-pt-overlay sb-timer-settings-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setSettingsOpen(false); }}>
           <div
             className="sb-pt-dialog sb-timer-settings-dialog"
@@ -524,7 +525,8 @@ export default function FocusTimer(p) {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.querySelector(".sb-app") || document.body
       )}
 
       {t.askDone && (
