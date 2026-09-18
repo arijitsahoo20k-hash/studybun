@@ -1633,6 +1633,26 @@ export default function GlobalStyle() {
       .sb-radio-custom-row { display: flex; gap: 8px; align-items: center; }
       .sb-radio-custom-row .sb-input { flex: 1; font-size: 14px; padding: 10px 12px; }
       .sb-radio-error { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #d1495b; margin: 0; }
+
+      /* "Run this in one browser only" banner (Focus Timer info toggle) --
+         deliberately hardcoded red (not a theme var) rather than
+         var(--accent)/var(--soft): this needs to read as a warning in every
+         mascot theme, not blend in as a normal on-brand card. */
+      .sb-timer-guilt-banner {
+        display: flex; align-items: flex-start; gap: 10px;
+        background: rgba(209, 73, 91, 0.14);
+        border: 2px solid #d1495b; border-radius: 14px;
+        padding: 12px 14px; margin-top: 8px;
+        animation: sb-pop .2s ease;
+      }
+      .sb-timer-guilt-banner-icon { color: #d1495b; flex-shrink: 0; margin-top: 2px; }
+      .sb-timer-guilt-banner-text { flex: 1; margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--mascot-ink); }
+      .sb-timer-guilt-banner-text b { color: #d1495b; }
+      .sb-timer-guilt-banner-close {
+        flex-shrink: 0; background: none; border: none; padding: 2px; cursor: pointer;
+        color: #d1495b; opacity: .65;
+      }
+      .sb-timer-guilt-banner-close:hover { opacity: 1; }
       .sb-radio-embed-wrap { display: flex; flex-direction: column; gap: 4px; }
       .sb-radio-embed-tucked { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
       .sb-radio-embed { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; border: 2px solid var(--mascot-outline); }

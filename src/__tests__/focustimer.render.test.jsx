@@ -69,6 +69,25 @@ describe("FocusTimer page — real render smoke test", () => {
     expect(screen.getByText("Start")).toBeInTheDocument();
   });
 
+  it("info toggle shows and hides the one-browser-only guilt banner, without touching the running session", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText("Start"));
+    await flush();
+
+    expect(screen.queryByText(/quietly lying to a leaderboard/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle("Why can I only run one timer per device?"));
+    await flush();
+    expect(screen.getByText(/quietly lying to a leaderboard/i)).toBeInTheDocument();
+    // Purely informational -- must not pause/reset the session underneath.
+    expect(screen.getByText("Pause")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Close"));
+    await flush();
+    expect(screen.queryByText(/quietly lying to a leaderboard/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Pause")).toBeInTheDocument();
+  });
+
   it("idle Reset (no session) never shows a confirm dialog", async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText("Reset"));

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
   Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock, ShieldAlert, Users,
-  Clock3, Flame,
+  Clock3, Flame, Info,
 } from "lucide-react";
 import { Card, Btn, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
@@ -139,6 +139,15 @@ export default function FocusTimer(p) {
   const [editingDuration, setEditingDuration] = useState(false);
   const [durationDraft, setDurationDraft] = useState(t.modeMinutes[t.mode]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Info toggle for the "run this in one browser only" banner below — see
+  // useFocusTimer's Web Lock, which only ever sees other tabs/windows of
+  // THIS SAME browser (that's the boundary of navigator.locks + localStorage).
+  // A different browser, or a regular vs incognito window of the same
+  // browser, has entirely separate storage, so nothing here can technically
+  // stop someone from running a second, independent timer that way. This
+  // banner exists purely to make that loophole visible and unappealing to
+  // use, since the lock itself can't close it.
+  const [multiBrowserInfoOpen, setMultiBrowserInfoOpen] = useState(false);
   const [studyingOpen, setStudyingOpen] = useState(false);
   // BUG FIX (critical): Reset used to fire instantly with zero confirmation,
   // even mid-session -- sitting one tap away from Pause/Save. A stray tap
@@ -336,8 +345,39 @@ export default function FocusTimer(p) {
             <button className={`sb-icon-round ${settingsOpen ? "on" : ""}`} title="Timer settings" onClick={() => setSettingsOpen((v) => !v)}>
               <Settings size={15} />
             </button>
+            <button
+              className={`sb-icon-round ${multiBrowserInfoOpen ? "on" : ""}`}
+              title="Why can I only run one timer per device?"
+              aria-expanded={multiBrowserInfoOpen}
+              onClick={() => setMultiBrowserInfoOpen((v) => !v)}
+            >
+              <Info size={15} />
+            </button>
           </div>
         </div>
+
+        {multiBrowserInfoOpen && (
+          <div className="sb-timer-guilt-banner" role="note">
+            <AlertTriangle size={16} className="sb-timer-guilt-banner-icon" />
+            <p className="sb-timer-guilt-banner-text">
+              This only stops a second timer <b>in this same browser</b> — other tabs, other windows, even
+              reopening the app. Firing it up in a <b>different browser</b>, or an incognito window, on the
+              same device slips right past that and yeah, technically, your logged hours go up.
+              <br />
+              But nothing else does. Not your syllabus. Not how many problems you can actually solve. Not
+              your rank on exam day. You'd just be quietly lying to a leaderboard number — the one thing in
+              this app that was never the point. Run it in one browser. Let the number mean something.
+            </p>
+            <button
+              className="sb-timer-guilt-banner-close"
+              title="Close"
+              aria-label="Close"
+              onClick={() => setMultiBrowserInfoOpen(false)}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {t.sessionActive && !t.askDone && (
           <p className="sb-muted" style={{ fontSize: 11.5, margin: "6px 2px 0" }}>
