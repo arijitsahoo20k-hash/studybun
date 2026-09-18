@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "sb.focusTimer.v1";
+// Web Locks name for "a focus session is actively running on this device
+// right now" -- scoped per-origin by the browser itself, shared by every
+// tab/window of this same site, independent of the STORAGE_KEY sync above.
+const LOCK_NAME = "sb-focus-timer-active-session";
 
 export const DEFAULT_MODE_MINUTES = {
   "Deep Focus": 50,
@@ -195,6 +199,23 @@ export function useFocusTimer({ onComplete } = {}) {
   const droneRef = useRef(null);
   const intervalRef = useRef(null);
   const notifiedPermissionRef = useRef(false);
+  // Holds the resolve() for the Web Lock's holding promise while this tab
+  // owns the "active session" lock -- calling it releases the lock. null
+  // when this tab doesn't currently hold it.
+  const lockReleaseRef = useRef(null);
+  const lockBlockedTimeoutRef = useRef(null);
+  // True for a few seconds right after this tab tried to Start while
+  // another tab/window already held the active-session lock. Surfaced to
+  // the UI so the person sees *why* Start didn't do anything, instead of it
+  // silently no-op'ing.
+  const [lockBlocked, setLockBlocked] = useState(false);
+
+  const releaseTimerLock = useCallback(() => {
+    if (lockReleaseRef.current) {
+      lockReleaseRef.current();
+      lockReleaseRef.current = null;
+    }
+  }, []);
 
   // Persist on every change relevant to resuming later.
   useEffect(() => {
@@ -206,6 +227,117 @@ export function useFocusTimer({ onComplete } = {}) {
   }, [modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes, secondsLeft, sessionInProgress, aggressiveMode]);
 
   useEffect(() => () => stopDroneOsc(audioCtxRef.current, droneRef), []);
+  useEffect(() => () => {
+    releaseTimerLock();
+    clearTimeout(lockBlockedTimeoutRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // BUG FIX (multi-tab clobbering): this hook has no leader election -- if
+  // the app is open in more than one tab/window (very normal for a PWA:
+  // relaunching from the home-screen icon while a browser tab was already
+  // open, or two tabs of the same site), every instance independently ticks
+  // its own countdown AND independently re-persists its own snapshot to the
+  // same STORAGE_KEY every second, unaware of what any other instance is
+  // doing. Repro that motivated this: Tab A saves/finishes a session (writes
+  // running:false) but Tab B, still open and still ticking on its own stale
+  // in-memory copy, overwrites that with running:true + its own leftover
+  // remaining time on its very next 1s tick -- so a save (or a Reset) done
+  // in one tab gets silently reverted a moment later by another tab that
+  // never learned about it.
+  //
+  // The fix: listen for the native `storage` event, which the browser fires
+  // in every OTHER tab/window (never the one that made the write) whenever
+  // this key changes. On receiving one, treat the incoming payload as the
+  // new source of truth and adopt it wholesale, instead of letting this
+  // tab's own stale state keep winning the next race to write. This doesn't
+  // need a lock: once every tab adopts every foreign write, they converge on
+  // whichever tab acted most recently instead of fighting over which one's
+  // clock wins. If two tabs happen to both reach a natural finish() in the
+  // exact same instant (before either's write has propagated), each will
+  // still log its own completion -- a narrow residual edge case a full
+  // cross-tab lock would close, but not the "my save/reset didn't stick"
+  // symptom this fixes.
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key !== STORAGE_KEY || !e.newValue) return;
+      let incoming;
+      try { incoming = JSON.parse(e.newValue); } catch { return; }
+
+      const incomingMode = incoming.mode || "Pomodoro";
+      const wasRunning = running;
+      const nowRunning = !!incoming.running;
+
+      setModeMinutesState((prev) => incoming.modeMinutes || prev);
+      setModeRaw(incomingMode);
+      setSoundOn(incoming.soundOn ?? true);
+      setRadioChoice(incoming.radioChoice || "none");
+      setRadioCustomUrl(incoming.radioCustomUrl || "");
+      setStartedMinutes(incoming.startedMinutes || 0);
+      setAskDone(!!incoming.askDone);
+      setSessionInProgress(!!incoming.sessionInProgress);
+      setAggressiveMode(!!incoming.aggressiveMode);
+
+      endAtRef.current = incomingMode !== STOPWATCH_MODE && nowRunning ? (incoming.endAt || null) : null;
+      stopwatchAnchorRef.current = incomingMode === STOPWATCH_MODE && nowRunning ? (incoming.stopwatchAnchor || null) : null;
+
+      if (incomingMode === STOPWATCH_MODE) {
+        setSecondsLeft(
+          nowRunning && stopwatchAnchorRef.current
+            ? Math.max(0, Math.round((Date.now() - stopwatchAnchorRef.current) / 1000))
+            : (typeof incoming.secondsLeft === "number" ? incoming.secondsLeft : 0)
+        );
+      } else {
+        setSecondsLeft(
+          nowRunning && endAtRef.current
+            ? Math.max(0, Math.round((endAtRef.current - Date.now()) / 1000))
+            : (typeof incoming.secondsLeft === "number" ? incoming.secondsLeft : 0)
+        );
+      }
+
+      // A foreign tab just became the source of truth -- this tab's own
+      // finishedRef guard is only meaningful for ITS OWN in-flight
+      // finish()/saveEarly() call, not for a session another tab now owns.
+      finishedRef.current = false;
+      // If this tab had its own drone/chime running for a session that
+      // another tab has now ended (saved/paused/reset), stop it here --
+      // nothing else will, since none of this tab's own callbacks fired.
+      if (wasRunning && !nowRunning) {
+        stopDroneOsc(audioCtxRef.current, droneRef);
+        // Another tab is now the authority saying this session is over --
+        // if we were (or thought we were) the lock holder, let it go rather
+        // than sit on it for a session that, as far as every tab agrees, has
+        // already ended.
+        releaseTimerLock();
+      }
+      setRunning(nowRunning);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, releaseTimerLock]);
+
+  // Mount-time lock reacquisition. If we're hydrating into an
+  // already-running session (persisted.running was true -- e.g. this very
+  // tab was reloaded, or an install was relaunched into a session started
+  // earlier), that happens by reading state directly rather than by calling
+  // start(), so it would otherwise never actually claim the lock. Do it here
+  // instead, once, right after mount. If some other context still genuinely
+  // holds the lock (see the note on start() below for why that should only
+  // ever be a fleeting race), we simply don't get it -- storage-event sync
+  // is what keeps this tab's display honest either way.
+  useEffect(() => {
+    if (!running || typeof navigator === "undefined" || !navigator.locks || !navigator.locks.request) return;
+    let cancelled = false;
+    navigator.locks.request(LOCK_NAME, { ifAvailable: true }, (lock) => {
+      if (!lock || cancelled) return;
+      return new Promise((resolve) => { lockReleaseRef.current = resolve; });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+    // Mount-only by design -- start()/pause()/reset()/saveEarly()/finish()
+    // own acquisition and release from here on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const finish = useCallback(() => {
     if (finishedRef.current) return;
@@ -214,6 +346,7 @@ export function useFocusTimer({ onComplete } = {}) {
     setSecondsLeft(0);
     setAskDone(true);
     endAtRef.current = null;
+    releaseTimerLock();
     if (soundOn) {
       const ctx = makeCtx(audioCtxRef);
       stopDroneOsc(ctx, droneRef);
@@ -228,7 +361,7 @@ export function useFocusTimer({ onComplete } = {}) {
       actualMinutes: Math.min(MAX_LOGGABLE_MINUTES, startedMinutes || modeMinutes[mode] || 25),
       completed: true,
     });
-  }, [soundOn, mode, modeMinutes, startedMinutes]);
+  }, [soundOn, mode, modeMinutes, startedMinutes, releaseTimerLock]);
 
   // Recompute the displayed time from the absolute anchor timestamp. Safe to
   // call often — on every tick, and also on visibility/focus changes so the
@@ -341,30 +474,69 @@ export function useFocusTimer({ onComplete } = {}) {
     // worth of minutes/points for zero real time. Must Save/Discard/Reset
     // (which all clear askDone) before a new session can start.
     if (askDone) return;
-    if (typeof Notification !== "undefined" && Notification.permission === "default" && !notifiedPermissionRef.current) {
-      notifiedPermissionRef.current = true;
-      Notification.requestPermission().catch(() => {});
-    }
-    finishedRef.current = false;
-    setAskDone(false);
-    const isStopwatch = mode === STOPWATCH_MODE;
-    setStartedMinutes(isStopwatch ? 0 : modeMinutes[mode] ?? (Math.round(secondsLeft / 60) || 1));
-    setSessionInProgress(true);
-    if (isStopwatch) {
-      // secondsLeft holds whatever elapsed count we're resuming from (0 on a
-      // fresh start, or the paused value on resume) — anchor "now" to that
-      // so counting continues seamlessly rather than restarting from 0.
-      stopwatchAnchorRef.current = Date.now() - secondsLeft * 1000;
-      endAtRef.current = null;
+
+    const beginSession = () => {
+      if (typeof Notification !== "undefined" && Notification.permission === "default" && !notifiedPermissionRef.current) {
+        notifiedPermissionRef.current = true;
+        Notification.requestPermission().catch(() => {});
+      }
+      finishedRef.current = false;
+      setAskDone(false);
+      const isStopwatch = mode === STOPWATCH_MODE;
+      setStartedMinutes(isStopwatch ? 0 : modeMinutes[mode] ?? (Math.round(secondsLeft / 60) || 1));
+      setSessionInProgress(true);
+      if (isStopwatch) {
+        // secondsLeft holds whatever elapsed count we're resuming from (0 on
+        // a fresh start, or the paused value on resume) — anchor "now" to
+        // that so counting continues seamlessly rather than restarting from 0.
+        stopwatchAnchorRef.current = Date.now() - secondsLeft * 1000;
+        endAtRef.current = null;
+      } else {
+        endAtRef.current = Date.now() + secondsLeft * 1000;
+        stopwatchAnchorRef.current = null;
+      }
+      setRunning(true);
+      if (soundOn) {
+        const ctx = makeCtx(audioCtxRef);
+        playStartChime(ctx);
+        startDroneOsc(ctx, droneRef);
+      }
+    };
+
+    // BUG FIX (anti-misuse): claim an exclusive, browser-arbitrated Web Lock
+    // for this origin before actually starting anything, so this device can
+    // never have two independent sessions ticking at once. The cross-tab
+    // storage sync above already makes every open tab *mirror* whichever
+    // session is running, but mirroring only kicks in after the fact — two
+    // tabs that both hit Start in the same instant, before either has heard
+    // about the other, would otherwise each briefly run their own
+    // independent countdown, and someone could deliberately try to time
+    // that gap to log two overlapping sessions. navigator.locks.request with
+    // ifAvailable:true resolves immediately and atomically: exactly one of
+    // any number of simultaneous callers gets the lock, because it's the
+    // browser (not this tab's JS, which can't see other tabs) that decides.
+    // We hold it open for as long as the session runs by not resolving the
+    // callback's returned promise until pause/reset/saveEarly/finish calls
+    // releaseTimerLock(). If the tab is killed instead of exiting normally,
+    // the browser releases the lock for us automatically -- unlike a
+    // hand-rolled "isRunning" flag in localStorage, this can never get stuck
+    // permanently held by a tab that no longer exists.
+    if (typeof navigator !== "undefined" && navigator.locks && navigator.locks.request) {
+      navigator.locks
+        .request(LOCK_NAME, { ifAvailable: true }, (lock) => {
+          if (!lock) {
+            setLockBlocked(true);
+            clearTimeout(lockBlockedTimeoutRef.current);
+            lockBlockedTimeoutRef.current = setTimeout(() => setLockBlocked(false), 4000);
+            return;
+          }
+          setLockBlocked(false);
+          beginSession();
+          return new Promise((resolve) => { lockReleaseRef.current = resolve; });
+        })
+        .catch(() => beginSession()); // Locks API present but the request itself failed -- don't let that hard-block starting a timer
     } else {
-      endAtRef.current = Date.now() + secondsLeft * 1000;
-      stopwatchAnchorRef.current = null;
-    }
-    setRunning(true);
-    if (soundOn) {
-      const ctx = makeCtx(audioCtxRef);
-      playStartChime(ctx);
-      startDroneOsc(ctx, droneRef);
+      beginSession(); // No Web Locks support in this browser -- storage-event sync above is the fallback safety net
     }
   }, [mode, modeMinutes, secondsLeft, soundOn, askDone]);
 
@@ -384,8 +556,9 @@ export function useFocusTimer({ onComplete } = {}) {
     setRunning(false);
     endAtRef.current = null;
     stopwatchAnchorRef.current = null;
+    releaseTimerLock();
     stopDroneOsc(audioCtxRef.current, droneRef);
-  }, [mode]);
+  }, [mode, releaseTimerLock]);
 
   const reset = useCallback(() => {
     setRunning(false);
@@ -402,8 +575,9 @@ export function useFocusTimer({ onComplete } = {}) {
     setSecondsLeft(mode === STOPWATCH_MODE ? 0 : (modeMinutes[mode] ?? 25) * 60);
     setStartedMinutes(0);
     setSessionInProgress(false);
+    releaseTimerLock();
     stopDroneOsc(audioCtxRef.current, droneRef);
-  }, [mode, modeMinutes]);
+  }, [mode, modeMinutes, releaseTimerLock]);
 
   // Ends the session early (e.g. a 40-min timer wrapped up in 30) without
   // forcing the user to sit through the rest of the countdown — or, for
@@ -459,6 +633,7 @@ export function useFocusTimer({ onComplete } = {}) {
     setRunning(false);
     endAtRef.current = null;
     stopwatchAnchorRef.current = null;
+    releaseTimerLock();
     stopDroneOsc(audioCtxRef.current, droneRef);
     setStartedMinutes(elapsedMinutes);
     setSecondsLeft(0);
@@ -471,7 +646,7 @@ export function useFocusTimer({ onComplete } = {}) {
       completed: true,
     });
     return true;
-  }, [mode, modeMinutes, startedMinutes, secondsLeft, running, soundOn]);
+  }, [mode, modeMinutes, startedMinutes, secondsLeft, running, soundOn, releaseTimerLock]);
 
   const resetForNewSession = useCallback(() => {
     setAskDone(false);
@@ -519,7 +694,7 @@ export function useFocusTimer({ onComplete } = {}) {
   return {
     modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
     secondsLeft, total, pct, elapsedSeconds, canSave, sessionActive, aggressiveMode,
-    aggressiveModeLocked, isStopwatch,
+    aggressiveModeLocked, isStopwatch, lockBlocked,
     changeMode, setCustomMinutes, start, pause, reset, resetForNewSession, saveEarly,
     toggleSound, setRadioChoice, setRadioCustomUrl, toggleAggressiveMode,
   };

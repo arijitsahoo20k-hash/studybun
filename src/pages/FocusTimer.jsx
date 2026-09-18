@@ -140,9 +140,20 @@ export default function FocusTimer(p) {
   const [durationDraft, setDurationDraft] = useState(t.modeMinutes[t.mode]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [studyingOpen, setStudyingOpen] = useState(false);
+  // BUG FIX (critical): Reset used to fire instantly with zero confirmation,
+  // even mid-session -- sitting one tap away from Pause/Save. A stray tap
+  // (easy on mobile, where all three buttons sit close together) silently
+  // wiped real, unsaved study progress with no undo. Every other destructive
+  // action in the app (deleting a chat, a channel, a member) already goes
+  // through a confirm step first; Reset was the one exception. Only prompts
+  // when there's actually something to lose (t.sessionActive) -- resetting
+  // an idle timer (e.g. after fiddling with a custom duration) still just
+  // works instantly, same as before.
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const studyingCount = p.studyingIds ? p.studyingIds.size : 0;
   const studyingDialogRef = useRef(null);
   const settingsDialogRef = useRef(null);
+  const confirmResetDialogRef = useRef(null);
   // BUG FIX: this dialog reuses .sb-pt-overlay/.sb-pt-dialog (same chrome as
   // the Periodic Table's element detail and MessageInfoModal) but was
   // missing the scroll lock those two already have -- see
@@ -201,6 +212,26 @@ export default function FocusTimer(p) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [settingsOpen]);
+
+  // Same Escape-to-close + initial-focus pattern as the other dialogs above.
+  useEffect(() => {
+    if (!confirmResetOpen) return;
+    confirmResetDialogRef.current?.focus();
+    const onKey = (e) => { if (e.key === "Escape") setConfirmResetOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmResetOpen]);
+
+  // Gate: only interrupt with a confirm step when there's a real session to
+  // lose. An idle timer (never started, or already reset) just resets.
+  const handleResetClick = () => {
+    if (t.sessionActive) setConfirmResetOpen(true);
+    else t.reset();
+  };
+  const confirmReset = () => {
+    setConfirmResetOpen(false);
+    t.reset();
+  };
 
   const mm = String(Math.floor(t.secondsLeft / 60)).padStart(2, "0");
   const ss = String(t.secondsLeft % 60).padStart(2, "0");
@@ -380,8 +411,11 @@ export default function FocusTimer(p) {
               </Btn>
             </span>
           )}
-          <Btn variant="ghost" onClick={t.reset}><RefreshCw size={16} /> Reset</Btn>
+          <Btn variant="ghost" onClick={handleResetClick}><RefreshCw size={16} /> Reset</Btn>
         </div>
+        {t.lockBlocked && (
+          <p className="sb-radio-error"><AlertTriangle size={14} /> A timer's already running in another tab/window on this device — switch there to pause/save it before starting a new one.</p>
+        )}
       </Card>
 
       <FocusSideRail
@@ -526,6 +560,34 @@ export default function FocusTimer(p) {
                   </a>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>,
+        document.querySelector(".sb-app") || document.body
+      )}
+
+      {confirmResetOpen && createPortal(
+        <div className="sb-pt-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setConfirmResetOpen(false); }}>
+          <div
+            className="sb-pt-dialog sb-timer-confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Confirm reset"
+            ref={confirmResetDialogRef}
+            tabIndex={-1}
+          >
+            <button className="sb-pt-dialog-close" title="Close" aria-label="Close" onClick={() => setConfirmResetOpen(false)}>
+              <X size={15} />
+            </button>
+            <SectionTitle icon={AlertTriangle}>Reset this session?</SectionTitle>
+            <p className="sb-muted" style={{ fontSize: 13, lineHeight: 1.5, margin: "4px 0 4px" }}>
+              {t.elapsedSeconds >= 60
+                ? `You've put in ${Math.round(t.elapsedSeconds / 60)} min on this ${t.mode} session. Resetting throws it away — it won't be saved or counted.`
+                : `Resetting will discard this ${t.mode} session. It won't be saved or counted.`}
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
+              <Btn variant="ghost" onClick={() => setConfirmResetOpen(false)}>Cancel</Btn>
+              <Btn variant="soft" onClick={confirmReset}><RefreshCw size={14} /> Reset anyway</Btn>
             </div>
           </div>
         </div>,
