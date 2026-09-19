@@ -1825,6 +1825,34 @@ export default function GlobalStyle() {
       .sb-plan-row.overdue { border-color: #C0435A; }
       .sb-plan-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
       .sb-plan-meta .sb-tag { text-transform: capitalize; }
+
+      /* Recurring-task delete dialog (Planner) — reuses .sb-pt-overlay/
+         .sb-pt-dialog chrome (see ConfirmDialog.jsx for the same pattern)
+         but needs its own body: the choice here is "today vs. entire
+         series", not a plain single confirm. */
+      .sb-plan-delete-dialog { max-width: 380px; }
+      .sb-plan-delete-title { display: flex; align-items: center; gap: 7px; font-family: var(--font-display); font-size: 16.5px; font-weight: 800; color: var(--mascot-ink); margin: 4px 0 6px; }
+      .sb-plan-delete-body { font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0 0 14px; }
+      .sb-plan-delete-options { display: flex; flex-direction: column; gap: 9px; }
+      .sb-plan-delete-option { display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; padding: 11px 13px; border-radius: 14px; border: 2px solid var(--mascot-outline); background: var(--bg); cursor: pointer; font-family: inherit; transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease; }
+      .sb-plan-delete-option:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--accent2); }
+      .sb-plan-delete-option-icon { flex-shrink: 0; margin-top: 1px; color: var(--mascot-ink); }
+      .sb-plan-delete-option.danger { border-color: #C0435A; }
+      .sb-plan-delete-option.danger .sb-plan-delete-option-icon { color: #C0435A; }
+      .sb-plan-delete-option-text { display: flex; flex-direction: column; }
+      .sb-plan-delete-option-text b { font-size: 13.5px; font-weight: 800; color: var(--ink); }
+      .sb-plan-delete-option-text span { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+
+      /* "Repeating tasks" sidebar card — the one place a recurring pattern
+         can always be stopped for good, even once its own row has fallen
+         out of the dated Pending groups above (see materializeRecurringTasks
+         in App.jsx: a template whose own due_date has slipped into the past
+         is deliberately dropped from that grouped view, which used to leave
+         no way at all to reach it again). */
+      .sb-plan-repeating-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 2px; border-bottom: 1.5px dashed var(--mascot-outline); }
+      .sb-plan-repeating-row:last-child { border-bottom: none; }
+      .sb-plan-repeating-info b { display: block; font-size: 12.5px; font-weight: 800; color: var(--ink); }
+      .sb-plan-repeating-info span { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); margin-top: 1px; }
       @keyframes sb-check-pop { 0% { transform: scale(0.7); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
       .sb-spark { position: absolute; font-size: 11px; color: var(--accent); opacity: 0; pointer-events: none; animation: sb-spark-burst .6s ease-out forwards; }
       .sb-spark.s1 { top: 50%; left: 50%; animation-delay: .02s; --tx: -16px; --ty: -14px; }

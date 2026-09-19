@@ -1,17 +1,31 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   CheckSquare, CheckCircle2, X, Plus, Pencil, Check,
   ChevronDown, AlertTriangle, CalendarClock, CalendarDays, Repeat, XCircle,
+  Trash2, CalendarX,
 } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
 import { SYLLABUS } from "../data/syllabus";
 import { todayIST, formatISTCalendarDate, daysBetweenDateStrs, weekdayShortIST } from "../lib/dateIST";
+import { useModalScrollLock } from "../hooks/useModalScrollLock";
+import { recurringParentId, canSkipOccurrence } from "../lib/recurring";
 
 const SUBJECT_OPTIONS = [...Object.keys(SYLLABUS), "Personal"];
 const PRIORITY_OPTIONS = ["Low", "Medium", "High"];
 const PRIORITY_RANK = { High: 0, Medium: 1, Low: 2 };
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const RECURRING_MARKER_PREFIX = "__recurring_from:";
+
+// Single source of truth for "how does this recurring pattern read as a
+// sentence" — used by both the recurring badge's tooltip on a task row and
+// the always-visible Repeating tasks card, so the wording can't drift
+// between the two.
+function describeRecurring(pattern) {
+  if (!pattern) return "";
+  if (pattern === "Daily") return "Repeats daily";
+  const day = pattern.split(":")[1];
+  return day ? `Repeats weekly on ${day}` : "Repeats weekly";
+}
 
 function dateGroupLabel(dateStr, today) {
   const diff = daysBetweenDateStrs(dateStr, today);
@@ -86,13 +100,21 @@ function EditTaskRow({ task, onSave, onCancel }) {
   );
 }
 
-function TaskRow({ t, editing, onEdit, onCancelEdit, onSave, onToggle, onDelete, onStopRepeat, showDate, today }) {
+function TaskRow({ t, editing, onEdit, onCancelEdit, onSave, onToggle, onDelete, onRequestDelete, onStopRepeat, activeTemplateIds, showDate, today }) {
   if (editing) return <EditTaskRow task={t} onSave={onSave} onCancel={onCancelEdit} />;
 
   const overdue = t.status === "Pending" && t.due_date && t.due_date < today;
   const done = t.status === "Completed";
   const isRecurringTemplate = !!t.recurring;
-  const isRecurringChild = (t.description || "").startsWith(RECURRING_MARKER_PREFIX);
+  // A spawned child only counts as "repeating" while its template still
+  // repeats — after the template is deleted or Stop-ped, leftovers are plain
+  // tasks (no badge, no series choice pointing at nothing).
+  const parentId = recurringParentId(t);
+  const isRecurringChild = !!parentId && activeTemplateIds.has(parentId);
+  // Anything that belongs to a live repeating pattern asks before deleting.
+  // Exception: an OLD finished child (past day, already Completed) is plain
+  // history — there is no today-vs-series question to ask about it.
+  const offerDeleteChoice = isRecurringTemplate || (isRecurringChild && (t.status === "Pending" || (t.due_date || "") >= today));
 
   return (
     <div className={`sb-task-row sb-plan-row ${done ? "done" : ""} ${overdue ? "overdue" : ""}`}>
@@ -107,7 +129,7 @@ function TaskRow({ t, editing, onEdit, onCancelEdit, onSave, onToggle, onDelete,
         <b>
           {t.title}
           {isRecurringTemplate && (
-            <span className="sb-tag sb-recurring-badge" title={t.recurring === "Daily" ? "Repeats daily" : `Repeats weekly on ${t.recurring.split(":")[1]}`}>
+            <span className="sb-tag sb-recurring-badge" title={describeRecurring(t.recurring)}>
               <Repeat size={11} /> repeating
             </span>
           )}
@@ -129,8 +151,130 @@ function TaskRow({ t, editing, onEdit, onCancelEdit, onSave, onToggle, onDelete,
         </button>
       )}
       <button className="sb-icon-btn" title="Edit task" onClick={() => onEdit(t.id)}><Pencil size={15} /></button>
-      <button className="sb-icon-btn" title="Delete task" onClick={() => onDelete(t.id)}><X size={16} /></button>
+      <button
+        className="sb-icon-btn"
+        title="Delete task"
+        onClick={() => (offerDeleteChoice ? onRequestDelete(t) : onDelete(t.id))}
+      >
+        <X size={16} />
+      </button>
     </div>
+  );
+}
+
+// Asks whether a recurring task's delete should just skip today's
+// occurrence or stop the whole series for good — the choice the app used
+// to make silently (and, for templates whose own day had already passed,
+// couldn't offer at all — see the Repeating tasks card below). Reuses the
+// .sb-pt-overlay/.sb-pt-dialog chrome shared with Periodic Table / Focus
+// Timer / Private Chat's confirm dialogs (see
+// components/community/private/ConfirmDialog.jsx) rather than inventing a
+// new modal shell, and the same scroll-lock hook those dialogs use so
+// dragging the backdrop on mobile can't scroll the page underneath it.
+//
+// `task` doubles as the open/closed flag (null = closed) so the parent can
+// stay a single piece of state instead of a separate boolean.
+function RecurringDeleteDialog({ task, today, showTodayOption = true, onToday, onSeries, onCancel }) {
+  const dialogRef = useRef(null);
+  // onCancel is usually an inline arrow (new identity every render); keep the
+  // latest in a ref so the effect below doesn't tear down / re-focus the
+  // dialog on every parent re-render (e.g. each realtime task update).
+  const cancelRef = useRef(onCancel);
+  cancelRef.current = onCancel;
+  useModalScrollLock(dialogRef, !!task);
+
+  useEffect(() => {
+    if (!task) return undefined;
+    dialogRef.current?.focus();
+    const onKey = (e) => { if (e.key === "Escape") cancelRef.current(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [task]);
+
+  if (!task) return null;
+
+  const portalTarget =
+    (typeof document !== "undefined" && document.querySelector(".sb-app")) ||
+    (typeof document !== "undefined" ? document.body : null);
+  if (!portalTarget) return null;
+
+  // A finished (Completed) template is history: "series" keeps the row and
+  // only stops the repetition; every other case really deletes.
+  const keepsRow = task.status === "Completed";
+
+  return createPortal(
+    <div className="sb-pt-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div
+        className="sb-pt-dialog sb-plan-delete-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Delete repeating task"
+        ref={dialogRef}
+        tabIndex={-1}
+      >
+        <button className="sb-pt-dialog-close" title="Close" aria-label="Close" onClick={onCancel}>
+          <X size={15} />
+        </button>
+        <h3 className="sb-plan-delete-title"><Repeat size={15} /> {task.title}</h3>
+        <p className="sb-plan-delete-body">
+          {showTodayOption
+            ? "This is a repeating task. Delete just this one, or stop the whole series?"
+            : keepsRow
+              ? "This stops the task repeating for good. The finished task itself stays in your history, so your streak isn't affected."
+              : "This deletes the task and stops it repeating for good. Days already marked done keep their history."}
+        </p>
+        <div className="sb-plan-delete-options">
+          {showTodayOption && (
+            <button type="button" className="sb-plan-delete-option" onClick={onToday}>
+              <CalendarX size={18} className="sb-plan-delete-option-icon" />
+              <span className="sb-plan-delete-option-text">
+                <b>{task.due_date === today ? "Just today" : "Just this one"}</b>
+                <span>Skips it, keeps repeating</span>
+              </span>
+            </button>
+          )}
+          <button type="button" className="sb-plan-delete-option danger" onClick={onSeries}>
+            <Trash2 size={18} className="sb-plan-delete-option-icon" />
+            <span className="sb-plan-delete-option-text">
+              <b>{showTodayOption ? "Entire series" : keepsRow ? "Stop repeating" : "Delete forever"}</b>
+              <span>{keepsRow ? "Keeps this finished task" : "Removes it and all pending copies"}</span>
+            </span>
+          </button>
+        </div>
+        <Btn variant="ghost" onClick={onCancel} style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>Cancel</Btn>
+      </div>
+    </div>,
+    portalTarget
+  );
+}
+
+// Always-visible list of every active repeating task, regardless of
+// whether its own row is currently shown in the dated Pending groups
+// below. A template's own due_date never moves on its own once its first
+// occurrence has passed — see materializeRecurringTasks in App.jsx — so a
+// Daily/Weekly task the user never explicitly deleted-for-today or
+// completed on day one used to become a row with no visible "Stop
+// repeating" button anywhere, spawning a fresh child every day forever
+// with no way to make it stop short of editing the database directly.
+// This card is the one place that's guaranteed to always have it, so
+// "how do I delete this repeating task for good" always has an answer.
+function RepeatingTasksCard({ templates, onRequestStop }) {
+  if (!templates.length) return null;
+  return (
+    <Card>
+      <SectionTitle icon={Repeat}>Repeating tasks</SectionTitle>
+      {templates.map((t) => (
+        <div className="sb-plan-repeating-row" key={t.id}>
+          <div className="sb-plan-repeating-info">
+            <b>{t.title}</b>
+            <span><Repeat size={10} /> {describeRecurring(t.recurring)}</span>
+          </div>
+          <button className="sb-icon-btn danger" title="Stop repeating forever" onClick={() => onRequestStop(t)}>
+            <Trash2 size={15} />
+          </button>
+        </div>
+      ))}
+    </Card>
   );
 }
 
@@ -164,6 +308,12 @@ export default function PlannerPage(p) {
   const [editingId, setEditingId] = useState(null);
   const [openGroups, setOpenGroups] = useState(() => new Set(["overdue", today]));
   const [completedOpen, setCompletedOpen] = useState(false);
+  // Task pending a "just today or the whole series?" choice (from the X
+  // button on a task row) and a template pending a "stop repeating
+  // forever?" confirmation (from the Repeating tasks card) — see
+  // RecurringDeleteDialog above. Each is null when its dialog is closed.
+  const [deleteChoiceTask, setDeleteChoiceTask] = useState(null);
+  const [stopSeriesTarget, setStopSeriesTarget] = useState(null);
 
   // Recurring templates never move their own due_date (see materializeRecurringTasks
   // in App.jsx — that's what keeps spawned-child completion history independent).
@@ -181,6 +331,12 @@ export default function PlannerPage(p) {
 
   const groups = useMemo(() => groupTasksByDate(pending, today), [pending, today]);
   const overdueCount = groups.find((g) => g.key === "overdue")?.count || 0;
+
+  // Every active repeating pattern, independent of what's currently
+  // visible in `pending`/`done` above — see RepeatingTasksCard's comment
+  // for why this can't just reuse the grouped view.
+  const repeatingTemplates = useMemo(() => p.tasks.filter((t) => !!t.recurring && !recurringParentId(t)), [p.tasks]);
+  const activeTemplateIds = useMemo(() => new Set(repeatingTemplates.map((t) => t.id)), [repeatingTemplates]);
 
   const toggleGroup = (key) => setOpenGroups((prev) => {
     const next = new Set(prev);
@@ -206,8 +362,23 @@ export default function PlannerPage(p) {
     onEdit: setEditingId, onCancelEdit: () => setEditingId(null),
     onSave: (patch) => saveEdit(editingId, patch),
     onToggle: p.toggleTask, onDelete: p.deleteTask,
+    onRequestDelete: setDeleteChoiceTask,
     onStopRepeat: (id) => p.updateTask(id, { recurring: null }),
+    activeTemplateIds,
     today,
+  };
+
+  const confirmDeleteToday = () => {
+    if (deleteChoiceTask) p.deleteTask(deleteChoiceTask.id, "occurrence");
+    setDeleteChoiceTask(null);
+  };
+  const confirmDeleteSeries = () => {
+    if (deleteChoiceTask) p.deleteTask(deleteChoiceTask.id, "series");
+    setDeleteChoiceTask(null);
+  };
+  const confirmStopSeries = () => {
+    if (stopSeriesTarget) p.deleteRecurringSeries(stopSeriesTarget.id);
+    setStopSeriesTarget(null);
   };
 
   return (
@@ -274,6 +445,8 @@ export default function PlannerPage(p) {
               </div>
             )}
           </Card>
+
+          <RepeatingTasksCard templates={repeatingTemplates} onRequestStop={setStopSeriesTarget} />
         </div>
 
         <div className="sb-plan-main">
@@ -301,6 +474,22 @@ export default function PlannerPage(p) {
           )}
         </div>
       </div>
+
+      <RecurringDeleteDialog
+        task={deleteChoiceTask}
+        today={today}
+        showTodayOption={!!deleteChoiceTask && canSkipOccurrence(deleteChoiceTask, today)}
+        onToday={confirmDeleteToday}
+        onSeries={confirmDeleteSeries}
+        onCancel={() => setDeleteChoiceTask(null)}
+      />
+      <RecurringDeleteDialog
+        task={stopSeriesTarget}
+        today={today}
+        showTodayOption={false}
+        onSeries={confirmStopSeries}
+        onCancel={() => setStopSeriesTarget(null)}
+      />
     </div>
   );
 }

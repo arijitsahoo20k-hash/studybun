@@ -115,18 +115,52 @@ export function useRealtimeTable(table, { orderBy = "created_at", ascending = fa
     [table]
   );
 
+  // Returns true/false so callers can tell a failed delete apart from a
+  // successful one instead of assuming success either way (see deleteTask
+  // in App.jsx, which used to fire its "Task deleted" toast unconditionally
+  // here — a network/RLS failure left the row untouched in the database
+  // while the UI still claimed it was gone). Existing callers that don't
+  // check the return value are unaffected; they just keep ignoring it.
   const remove = useCallback(
     async (id) => {
       const { error: err } = await supabase.from(table).delete().eq("id", id);
-      if (err) { setError(err); console.error(`[StudyBun] delete on ${table} failed:`, err.message); return; }
+      if (err) { setError(err); console.error(`[StudyBun] delete on ${table} failed:`, err.message); return false; }
       setRows((prev) => prev.filter((r) => r.id !== id));
+      return true;
+    },
+    [table]
+  );
+
+  // Bulk delete, returning true/false like remove(). ids go in the request URL
+  // (`id=in.(...)`), so a big list (a daily task ignored for months leaves
+  // hundreds of pending copies) is sent in chunks to stay far below URL-length
+  // limits. Deleting ids that are already gone is not an error, so a Retry
+  // after a partial outcome is always safe.
+  const removeMany = useCallback(
+    async (ids) => {
+      if (!ids || !ids.length) return true;
+      const CHUNK = 80;
+      const gone = new Set();
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const slice = ids.slice(i, i + CHUNK);
+        const { error: err } = await supabase.from(table).delete().in("id", slice);
+        if (err) {
+          setError(err);
+          console.error(`[StudyBun] bulk delete on ${table} failed:`, err.message);
+          if (gone.size) setRows((prev) => prev.filter((r) => !gone.has(r.id)));
+          return false;
+        }
+        slice.forEach((id) => gone.add(id));
+      }
+      setRows((prev) => prev.filter((r) => !gone.has(r.id)));
+      return true;
     },
     [table]
   );
 
   const refetch = useCallback(() => loadRef.current?.(), []);
 
-  return { rows, loading, error, insert, update, remove, setRows, refetch };
+  return { rows, loading, error, insert, update, remove, removeMany, setRows, refetch };
 }
 
 /** Single-row-per-user table (profiles, user_settings, user_statistics). */
