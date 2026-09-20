@@ -1668,6 +1668,29 @@ export default function GlobalStyle() {
       }
       .sb-timer-logged-note { font-size: 12.5px; color: var(--muted); margin: -4px 0 4px; }
 
+      /* Bouncing cue pointing at the save-session card (see FocusTimer.jsx)
+         when a session just ended and that card isn't on screen yet. Sits
+         bottom-center so it doesn't collide with .sb-buddy in the
+         bottom-right corner. */
+      .sb-save-scroll-hint {
+        position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        width: 44px; height: 44px; border-radius: 50%;
+        background: var(--accent); color: #fff; border: 2.5px solid var(--mascot-outline);
+        box-shadow: 3px 3px 0 var(--mascot-outline);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; z-index: 58; padding: 0;
+        animation: sb-save-scroll-hint-bounce 1.3s ease-in-out infinite;
+      }
+      .sb-save-scroll-hint:hover { animation-play-state: paused; transform: translateX(-50%) translateY(-1px); }
+      @keyframes sb-save-scroll-hint-bounce {
+        0%, 100% { transform: translateX(-50%) translateY(0); }
+        50% { transform: translateX(-50%) translateY(7px); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-save-scroll-hint { animation: none; }
+      }
+
       .sb-subject-head { display: flex; justify-content: space-between; font-family: var(--font-display); font-weight: 700; margin-bottom: 4px; }
       .sb-subject-meta { display: flex; gap: 6px; font-size: 11.5px; color: var(--muted); margin-top: 8px; font-weight: 700; }
       .sb-chapter-group { margin-bottom: 18px; }

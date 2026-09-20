@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
   Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock, ShieldAlert, Users,
-  Clock3, Flame, Info,
+  Clock3, Flame, Info, ChevronDown,
 } from "lucide-react";
 import { Card, Btn, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
@@ -163,6 +163,16 @@ export default function FocusTimer(p) {
   const studyingDialogRef = useRef(null);
   const settingsDialogRef = useRef(null);
   const confirmResetDialogRef = useRef(null);
+  // BUG FIX: the "What did you study?" save-session card renders at the very
+  // bottom of the page (see t.askDone below), often well past the fold --
+  // the timer hero + companion rail above it are usually already a full
+  // screen on their own. Nothing on screen signaled there was more to
+  // scroll to, so people would finish a session, see the timer just sit
+  // there looking "done" with no visible way to log it, and assume the app
+  // had silently dropped their progress. A bouncing scroll-down cue (below)
+  // only shows up while the save card genuinely isn't in view yet.
+  const saveCardRef = useRef(null);
+  const [showSaveScrollHint, setShowSaveScrollHint] = useState(false);
   // BUG FIX: this dialog reuses .sb-pt-overlay/.sb-pt-dialog (same chrome as
   // the Periodic Table's element detail and MessageInfoModal) but was
   // missing the scroll lock those two already have -- see
@@ -230,6 +240,29 @@ export default function FocusTimer(p) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [confirmResetOpen]);
+
+  // Tracks whether the save-session card is actually on screen so the
+  // bouncing hint (rendered further down) only shows while it's genuinely
+  // out of view -- not for the entire time a session sits unsaved. Reset to
+  // hidden whenever askDone goes false (card left the tree, saved/discarded)
+  // so a stale hint never lingers into the next session.
+  useEffect(() => {
+    if (!t.askDone) { setShowSaveScrollHint(false); return; }
+    const el = saveCardRef.current;
+    // Same fallback as Reveal.jsx: without IntersectionObserver (old
+    // browsers, jsdom in tests) just skip the hint rather than crash.
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowSaveScrollHint(!entry.isIntersecting),
+      { threshold: 0.4 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [t.askDone]);
+
+  const scrollToSaveCard = () => {
+    saveCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   // Gate: only interrupt with a confirm step when there's a real session to
   // lose. An idle timer (never started, or already reset) just resets.
@@ -635,26 +668,47 @@ export default function FocusTimer(p) {
       )}
 
       {t.askDone && (
-        <Card>
-          <SectionTitle icon={Sparkles}>What did you study?</SectionTitle>
-          <p className="sb-timer-logged-note">Your {t.startedMinutes} min is already counted in today's study hours — tag it with a chapter so it also updates your syllabus progress.</p>
-          <div className="sb-form-grid">
-            <div><label>Subject</label>
-              <select className="sb-input" value={subject} onChange={(e) => { setSubject(e.target.value); setChapter(Object.values(SYLLABUS[e.target.value].groups).flat()[0]); }}>
-                {Object.keys(SYLLABUS).map((s) => <option key={s}>{s}</option>)}
-              </select>
+        <div ref={saveCardRef}>
+          <Card>
+            <SectionTitle icon={Sparkles}>What did you study?</SectionTitle>
+            <p className="sb-timer-logged-note">Your {t.startedMinutes} min is already counted in today's study hours — tag it with a chapter so it also updates your syllabus progress.</p>
+            <div className="sb-form-grid">
+              <div><label>Subject</label>
+                <select className="sb-input" value={subject} onChange={(e) => { setSubject(e.target.value); setChapter(Object.values(SYLLABUS[e.target.value].groups).flat()[0]); }}>
+                  {Object.keys(SYLLABUS).map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div><label>Chapter</label>
+                <select className="sb-input" value={chapter} onChange={(e) => setChapter(e.target.value)}>
+                  {Object.values(SYLLABUS[subject].groups).flat().map((c) => <option key={c}>{c}</option>)}
+                </select>
+              </div>
             </div>
-            <div><label>Chapter</label>
-              <select className="sb-input" value={chapter} onChange={(e) => setChapter(e.target.value)}>
-                {Object.values(SYLLABUS[subject].groups).flat().map((c) => <option key={c}>{c}</option>)}
-              </select>
+            <div style={{ display: "flex", gap: 10 }}>
+              <Btn onClick={logAndReset}><CheckCircle2 size={16} /> Save session</Btn>
+              <Btn variant="ghost" onClick={discardSession}><X size={16} /> Discard, don't log</Btn>
             </div>
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <Btn onClick={logAndReset}><CheckCircle2 size={16} /> Save session</Btn>
-            <Btn variant="ghost" onClick={discardSession}><X size={16} /> Discard, don't log</Btn>
-          </div>
-        </Card>
+          </Card>
+        </div>
+      )}
+
+      {/* Portaled (same reason as the dialogs above -- .sb-main's
+          `contain: layout` would otherwise turn this "fixed" button into
+          something that scrolls away with the page instead of staying
+          pinned to the screen) bouncing cue pointing at the save-session
+          card once a session ends. Only shows while that card is actually
+          out of view; disappears the moment it scrolls on screen. */}
+      {t.askDone && showSaveScrollHint && createPortal(
+        <button
+          type="button"
+          className="sb-save-scroll-hint"
+          onClick={scrollToSaveCard}
+          title="Scroll down to save your session"
+          aria-label="Scroll down to save your session"
+        >
+          <ChevronDown size={22} />
+        </button>,
+        document.querySelector(".sb-app") || document.body
       )}
     </div>
   );
