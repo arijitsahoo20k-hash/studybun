@@ -177,6 +177,10 @@ export default function App() {
   // disappeared the instant you left the page or refreshed; now it
   // survives nav/refresh/devices while still only staying open when needed.
   const aiInsightsRow = useDeviceRow("ai_insights", { result: null, generated_at: null }, { enabled: page === "ai" });
+  // Focus Mode's last-picked ambient scene (see supabase/migration_focus_mode_settings.sql).
+  // Only the Focus Timer page ever opens Focus Mode, so it's gated to that page
+  // like the other page-scoped single-row caches above.
+  const focusModeRow = useDeviceRow("focus_mode_settings", { scene: "rain" }, { enabled: page === "timer" });
   const revisionsQ = useRealtimeTable("revision_plans", { orderBy: "due_date", ascending: true, enabled: page === "dashboard" || page === "recap" || isPage("syllabus", "mocks", "backlog", "revision", "ai", "profile") });
   const tasksQ = useRealtimeTable("tasks", { orderBy: "due_date", enabled: page === "dashboard" || page === "recap" || isPage("backlog", "planner", "profile") });
   const backlogItemsQ = useRealtimeTable("backlog_items", { orderBy: "created_at", enabled: page === "dashboard" || isPage("backlog", "ai") });
@@ -1304,6 +1308,7 @@ export default function App() {
     featureUnlockStreak: FEATURE_UNLOCK_STREAK,
     mascotMood: buddyMood, mascotEnergy: buddyEnergy,
     focusTimer,
+    focusModeScene: focusModeRow.row?.scene, saveFocusModeScene: (scene) => focusModeRow.save({ scene }),
     exportBackup, importBackup,
   };
 

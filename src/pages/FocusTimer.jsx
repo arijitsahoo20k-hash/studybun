@@ -3,11 +3,13 @@ import { createPortal } from "react-dom";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
   Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock, ShieldAlert, Users,
-  Clock3, Flame, Info, ChevronDown,
+  Clock3, Flame, Info, ChevronDown, Maximize2,
 } from "lucide-react";
 import { Card, Btn, SectionTitle } from "../components/ui";
 import Mascot from "../components/Mascot";
 import StudyingNowCard from "../components/StudyingNowCard";
+import FocusModeOverlay from "../components/FocusModeOverlay";
+import FocusModeStyle from "../styles/FocusModeStyle";
 import { SYLLABUS } from "../data/syllabus";
 import { RADIO_OPTIONS, RADIO_LINKS, extractYouTubeId, getActiveRadio } from "../lib/radio";
 import { todayIST } from "../lib/dateIST";
@@ -149,6 +151,11 @@ export default function FocusTimer(p) {
   // use, since the lock itself can't close it.
   const [multiBrowserInfoOpen, setMultiBrowserInfoOpen] = useState(false);
   const [studyingOpen, setStudyingOpen] = useState(false);
+  // Fullscreen distraction-free view -- see FocusModeOverlay.jsx. Only ever
+  // opened by the person tapping the button below (never auto-opened), and
+  // closes itself the moment a session finishes (needs the normal "what did
+  // you study?" save flow, which only exists on this page).
+  const [focusModeOpen, setFocusModeOpen] = useState(false);
   // BUG FIX (critical): Reset used to fire instantly with zero confirmation,
   // even mid-session -- sitting one tap away from Pause/Save. A stray tap
   // (easy on mobile, where all three buttons sit close together) silently
@@ -377,6 +384,15 @@ export default function FocusTimer(p) {
             </button>
             <button className={`sb-icon-round ${settingsOpen ? "on" : ""}`} title="Timer settings" onClick={() => setSettingsOpen((v) => !v)}>
               <Settings size={15} />
+            </button>
+            <button
+              className="sb-icon-round"
+              title={t.askDone ? "Save or discard your last session first" : "Focus Mode — fullscreen, distraction-free"}
+              onClick={() => setFocusModeOpen(true)}
+              disabled={t.askDone}
+              style={t.askDone ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+            >
+              <Maximize2 size={15} />
             </button>
             <button
               className={`sb-icon-round ${multiBrowserInfoOpen ? "on" : ""}`}
@@ -709,6 +725,24 @@ export default function FocusTimer(p) {
           <ChevronDown size={22} />
         </button>,
         document.querySelector(".sb-app") || document.body
+      )}
+
+      {focusModeOpen && (
+        <>
+          <FocusModeStyle />
+          <FocusModeOverlay
+            t={t}
+            mascot={p.mascot}
+            savedScene={p.focusModeScene}
+            onSceneChange={p.saveFocusModeScene}
+            onClose={(info) => {
+              setFocusModeOpen(false);
+              // Session ended inside Focus Mode: bring the save card into view
+              // once the overlay is gone and fullscreen has fully exited.
+              if (info?.finished) setTimeout(scrollToSaveCard, 120);
+            }}
+          />
+        </>
       )}
     </div>
   );

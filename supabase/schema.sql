@@ -369,6 +369,15 @@ create table if not exists ai_insights (
   updated_at timestamptz default now()
 );
 
+-- ---------- FOCUS MODE: AMBIENT SCENE PREFERENCE ----------
+-- One row per user: the ambient scene last picked in Focus Mode.
+-- See migration_focus_mode_settings.sql.
+create table if not exists focus_mode_settings (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  scene text not null default 'rain',
+  updated_at timestamptz default now()
+);
+
 -- ---------- THEMES / MASCOTS (reference tables; app also has built-in defaults) ----------
 create table if not exists themes (
   id text primary key,
@@ -410,7 +419,7 @@ begin
       'syllabus_subjects','syllabus_chapters','chapter_progress','backlog_items','goals',
       'question_logs','mock_tests','mock_analysis','revision_plans','revision_logs',
       'tasks','achievements','notifications','ai_insights_history','user_statistics',
-      'mock_ai_comparison','ai_insights'
+      'mock_ai_comparison','ai_insights','focus_mode_settings'
     ])
   loop
     execute format('alter table %I enable row level security;', t);
