@@ -185,7 +185,25 @@ export default function FocusModeStyle() {
 
       /* chrome fades away while the timer runs and you're not touching anything */
       .is-idle .sb-focusmode-controls,
-      .is-idle .sb-focusmode-env-picker { opacity: 0; pointer-events: none; }
+      .is-idle .sb-focusmode-env-picker,
+      .is-idle .sb-focusmode-float-btn { opacity: 0; pointer-events: none; }
+
+      /* ── float button: drop out of OS fullscreen without closing Focus
+         Mode -- the overlay keeps filling the browser window exactly as
+         before and the timer keeps running, but the OS taskbar/other apps
+         become reachable again (see the bottom-row "Exit" for a full close
+         instead). Tapping it again restores fullscreen. */
+      .sb-focusmode-float-btn {
+        position: absolute; top: 14px; right: 14px; z-index: 5;
+        width: 34px; height: 34px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(10,12,20,.45); border: 1.5px solid rgba(255,255,255,.24); color: #fff;
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        cursor: pointer; transition: background-color .2s ease, transform .15s ease, opacity .6s ease;
+      }
+      .sb-focusmode-float-btn:hover:not(:disabled) { background: rgba(10,12,20,.65); transform: translateY(-1px); }
+      .sb-focusmode-float-btn:disabled { opacity: .4; cursor: not-allowed; }
+      .sb-focusmode-float-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
       @media (max-width: 520px) {
         .sb-focusmode-content { padding: 16px; gap: 10px; }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Play, Pause, Minimize2, RefreshCw, Save, ChevronUp } from "lucide-react";
+import { Play, Pause, Minimize2, RefreshCw, Save, ChevronUp, PictureInPicture2, Maximize2 } from "lucide-react";
 import Mascot from "./Mascot";
 import FocusModeAmbient from "./FocusModeAmbient";
 import { AMBIENT_ENVIRONMENTS } from "../lib/focusAmbience";
@@ -132,6 +132,13 @@ export default function FocusModeOverlay({ t, mascot, onClose, savedScene, onSce
   const savedByUserRef = useRef(false);
   const idleRef = useRef(false);
   const swallowRef = useRef(false);
+  // Windowed = dropped out of OS fullscreen while staying mounted and
+  // running, as opposed to Minimize/exit below which tears the whole
+  // overlay down. windowedRef exists so the fullscreenchange listener
+  // (which fires async, after our own leaveFs()) can tell "we did that on
+  // purpose" apart from "the browser kicked us out of fullscreen" without
+  // waiting on a state update.
+  const windowedRef = useRef(false);
 
   const [envKey, setEnvKey] = useState(() => {
     const start = AMBIENT_ENVIRONMENTS[savedScene] ? savedScene : lastEnvKey;
@@ -139,6 +146,7 @@ export default function FocusModeOverlay({ t, mascot, onClose, savedScene, onSce
   });
   const pickedRef = useRef(false); // once you choose a scene here, a late-arriving saved value must not override it
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [windowed, setWindowed] = useState(false);
   const [locked, setLocked] = useState(false);
   const [idle, setIdle] = useState(false);
   // Same "don't wipe an active session on one stray tap" gate FocusTimer.jsx
@@ -157,12 +165,32 @@ export default function FocusModeOverlay({ t, mascot, onClose, savedScene, onSce
     onCloseRef.current?.(info);
   }, []);
 
-  // User-initiated leave (Minimize / Escape). Ignored while locked -- the
+  // User-initiated leave (Minimize / Escape). Ends the session view entirely
+  // -- fullscreen exits AND the overlay unmounts. Ignored while locked -- the
   // finish hand-off owns the exit then.
   const exit = useCallback(() => {
     if (lockedRef.current || closedRef.current) return;
     leaveFs().then(() => closeOnce());
   }, [closeOnce]);
+
+  // Float button (top-right corner): drops out of OS fullscreen WITHOUT
+  // closing the overlay -- Focus Mode keeps filling the browser window
+  // exactly as before and the timer keeps running, but the OS taskbar and
+  // your other windows/apps become reachable again, same as any normal
+  // browser tab. Tapping it again restores fullscreen. This is deliberately
+  // a different action from `exit` above, which closes Focus Mode entirely.
+  const toggleWindowed = useCallback(() => {
+    if (lockedRef.current || closedRef.current) return;
+    if (!windowedRef.current) {
+      windowedRef.current = true; // set first: the async fullscreenchange event must see this
+      setWindowed(true);
+      leaveFs();
+    } else {
+      windowedRef.current = false;
+      setWindowed(false);
+      requestFs(rootRef.current);
+    }
+  }, []);
 
   // Enter fullscreen, best-effort. Quietly no-ops if unsupported/refused
   // (iOS Safari has no element fullscreen) -- still a fixed full-viewport view.
@@ -184,7 +212,9 @@ export default function FocusModeOverlay({ t, mascot, onClose, savedScene, onSce
   // but the overlay would stay up with no obvious way out.
   useEffect(() => {
     const onFsChange = () => {
-      if (!fsElement()) closeOnce({ finished: lockedRef.current });
+      // A leaveFs() triggered by the float button (windowedRef already true)
+      // must not tear the overlay down -- only an unrequested exit should.
+      if (!fsElement() && !windowedRef.current) closeOnce({ finished: lockedRef.current });
     };
     document.addEventListener("fullscreenchange", onFsChange);
     document.addEventListener("webkitfullscreenchange", onFsChange);
@@ -290,6 +320,17 @@ export default function FocusModeOverlay({ t, mascot, onClose, savedScene, onSce
       <FocusModeAmbient envKey={envKey} />
       <div className="sb-focusmode-scrim" aria-hidden="true" />
 
+      <button
+        type="button"
+        className="sb-focusmode-float-btn"
+        onClick={toggleWindowed}
+        disabled={locked}
+        title={windowed ? "Restore full screen" : "Exit full screen — keeps running so you can use the rest of your computer"}
+        aria-label={windowed ? "Restore Focus Mode to full screen" : "Exit full screen, keep Focus Mode running"}
+      >
+        {windowed ? <Maximize2 size={16} /> : <PictureInPicture2 size={16} />}
+      </button>
+
       <div className="sb-focusmode-content">
         <span className="sb-focusmode-mode-label">
           <span className="sb-focusmode-live-dot" aria-hidden="true" />
@@ -325,7 +366,7 @@ export default function FocusModeOverlay({ t, mascot, onClose, savedScene, onSce
           )}
           {!t.askDone && (
             <button
-              className="sb-focusmode-btn"
+              className="sb-focusmode-btn sb-focusmode-btn-save"
               onClick={handleSave}
               disabled={!t.canSave || locked}
               title={t.canSave ? `Save ${Math.round(t.elapsedSeconds / 60)} min so far` : "Runs for 5+ min before you can save early"}
@@ -335,7 +376,7 @@ export default function FocusModeOverlay({ t, mascot, onClose, savedScene, onSce
           )}
           {confirmReset ? (
             <button
-              className="sb-focusmode-btn danger"
+              className="sb-focusmode-btn sb-focusmode-btn-reset danger"
               onClick={() => { setConfirmReset(false); t.reset(); }}
               disabled={locked}
               title="Tap again to confirm — this discards the session"
@@ -343,12 +384,12 @@ export default function FocusModeOverlay({ t, mascot, onClose, savedScene, onSce
               <RefreshCw size={17} /> Confirm reset
             </button>
           ) : (
-            <button className="sb-focusmode-btn icon" onClick={handleResetClick} disabled={locked} title="Reset this session" aria-label="Reset this session">
+            <button className="sb-focusmode-btn sb-focusmode-btn-reset icon" onClick={handleResetClick} disabled={locked} title="Reset this session" aria-label="Reset this session">
               <RefreshCw size={17} />
             </button>
           )}
-          <button className="sb-focusmode-btn" onClick={exit} disabled={locked} title="Back to normal view">
-            <Minimize2 size={17} /> Minimize
+          <button className="sb-focusmode-btn sb-focusmode-btn-exit" onClick={exit} disabled={locked} title="Leave Focus Mode entirely">
+            <Minimize2 size={17} /> Exit
           </button>
         </div>
         {confirmReset && (

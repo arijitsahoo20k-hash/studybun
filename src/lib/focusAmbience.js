@@ -3,18 +3,25 @@
  *
  * Ported from the Zenith focus-timer project's animations.js. Zenith ships ~56
  * renderers, many of them near-duplicates (ten "Aura" palettes, three rain
- * variants, three starfields...). This file keeps 12 that look and feel
+ * variants, three starfields...). This file keeps 18 that look and feel
  * genuinely different from one another:
  *
  *   as-shipped from Zenith .... Rain, Forest, Night Sky, Cosmic, Candlelight, Lantern Night
  *   rebuilt for StudyBun ...... Deep Sea, Snowfall, Fireplace, Cherry Blossom,
  *                               Rainy Window, Midnight Library
+ *   original for StudyBun ..... Fireflies, Meteor Shower, Wormhole,
+ *                               Pastel Sky, Boba Café, Jelly Aquarium
  *
  * The rebuilt six replace Zenith originals that were nearly invisible at Focus
  * Mode's canvas opacity (and, for the library, drew its book spines at ~5%
  * alpha and re-randomised them every frame). Café / Lofi Rain / Petrichor /
  * Monsoon Window / Zen Garden were dropped as overlaps of Rain, Rainy Window
- * and Cherry Blossom.
+ * and Cherry Blossom. The six "original for StudyBun" scenes are new,
+ * following the same static-layer-plus-animated-particles technique as the
+ * rebuilt six. Pastel Sky / Boba Café / Jelly Aquarium are a kawaii-aesthetic
+ * trio (pastel gradients, puffball clouds, a boba cup, drifting jellyfish)
+ * that replaced an Atom scene, plus Neon City and Bioluminescent Shore which
+ * didn't earn their slots.
  *
  * Each renderer is a self-contained factory: create*Renderer() returns a
  * (ctx, canvas, time) => void function that FocusModeAmbient.jsx drives on a
@@ -734,11 +741,385 @@ export function createLibraryRenderer() {
   };
 }
 
+/* ── Wormhole — a spiralling energy vortex pulling stardust inward ──
+   New scene, genuinely different register from Cosmic (static nebula field):
+   a flattened accretion-disk perspective with three soft spiral arms and
+   ~260 particles orbiting inward on a log-spiral path, respawning at the rim
+   once they cross the event horizon, so the whole thing visibly *flows*. */
+export function createWormholeRenderer() {
+  const parts = [];
+  const step = makeStepper();
+  let lw = 0, lh = 0;
+  const spawn = (w, h) => { const R = Math.min(w, h) * .62; return { a: rand(0, TAU), r: rand(R * .4, R), rs: rand(.12, .32), as: rand(.15, .5) * (Math.random() < .5 ? 1 : -1), hue: rand(255, 330), size: rand(.8, 2.6) }; };
+  const init = (w, h) => { parts.length = 0; for (let i = 0; i < 240; i++) parts.push(spawn(w, h)); };
+  return (ctx, canvas, time) => {
+    const { width: w, height: h } = canvas;
+    if (w !== lw || h !== lh) { init(w, h); lw = w; lh = h; }
+    const dt = step(time), t = time * .001;
+    const cx = w * .5, cy = h * .5, R = Math.min(w, h) * .62;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgb(3,2,10)'; ctx.fillRect(0, 0, w, h);
+    const neb = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.3);
+    neb.addColorStop(0, 'rgba(120,40,180,.35)'); neb.addColorStop(.4, 'rgba(70,20,140,.18)'); neb.addColorStop(.75, 'rgba(20,10,60,.08)'); neb.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = neb; ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'lighter';
+    for (let arm = 0; arm < 3; arm++) {
+      ctx.beginPath();
+      for (let i = 0; i <= 140; i++) {
+        const u = i / 140, rr = R * u, ang = rr * .045 + arm * (TAU / 3) + t * .25;
+        const x = cx + Math.cos(ang) * rr, y = cy + Math.sin(ang) * rr * .62;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = `hsla(${268 + arm * 20},90%,65%,.12)`; ctx.lineWidth = R * .09; ctx.stroke();
+    }
+    parts.forEach((p, i) => {
+      p.a += p.as * .01 * dt; p.r -= p.rs * dt;
+      if (p.r < R * .07) { parts[i] = spawn(w, h); return; }
+      const x = cx + Math.cos(p.a) * p.r, y = cy + Math.sin(p.a) * p.r * .62;
+      const fade = Math.min(1, (R - p.r) / R * 1.6);
+      ctx.beginPath(); ctx.arc(x, y, p.size, 0, TAU); ctx.fillStyle = `hsla(${p.hue},95%,72%,${.75 * fade})`; ctx.fill();
+    });
+    const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * .16);
+    core.addColorStop(0, 'rgba(255,240,255,.9)'); core.addColorStop(.4, 'rgba(200,140,255,.55)'); core.addColorStop(1, 'rgba(140,60,220,0)');
+    ctx.fillStyle = core; ctx.beginPath(); ctx.arc(cx, cy, R * .16, 0, TAU); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    const vg = ctx.createRadialGradient(cx, cy, R * .3, cx, cy, Math.max(w, h) * .75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.55)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, w, h);
+  };
+}
+
+/* ── Pastel Sky — kawaii cotton-candy dreamscape ───────────────────────
+   A soft pink-to-lavender-to-mint gradient sky with puffball clouds built
+   from overlapping circles (the same trick sticker/kawaii art uses), a
+   crescent moon carved out with the sky's own gradient (so the bite matches
+   perfectly instead of a flat colour), rising pastel bokeh orbs and small
+   cross-shaped sparkles that pulse in and out. */
+export function createPastelSkyRenderer() {
+  const stars = [], clouds = [], orbs = [];
+  const step = makeStepper();
+  let lw = 0, lh = 0, sky = null;
+  const HUES = [330, 270, 190, 42];
+  const newStar = (w, h) => ({ x: rand(0, w), y: rand(0, h * .82), ph: rand(0, TAU), ps: rand(.02, .05), size: rand(2, 5), hue: randChoice(HUES) });
+  const newCloud = (w, h, i) => ({ x: rand(-.1, 1.1) * w, y: rand(h * .08, h * .52), sc: rand(.6, 1.3), speed: rand(4, 9) + i * 1.2, hue: randChoice([345, 20, 265]), op: rand(.55, .85) });
+  const newOrb = (w, h) => ({ x: rand(0, w), y: rand(h * .3, h * 1.05), r: rand(3, 8), vy: rand(.06, .17), hue: randChoice(HUES), ph: rand(0, TAU) });
+  const init = (w, h) => {
+    stars.length = 0; clouds.length = 0; orbs.length = 0;
+    for (let i = 0; i < 42; i++) stars.push(newStar(w, h));
+    for (let i = 0; i < 6; i++) clouds.push(newCloud(w, h, i));
+    for (let i = 0; i < 26; i++) orbs.push(newOrb(w, h));
+    sky = null;
+  };
+  const drawCloud = (ctx, x, y, sc, hue, op) => {
+    const blobs = [[0, 0, 26], [22, -8, 20], [-22, -6, 19], [40, 2, 15], [-40, 0, 14], [10, 8, 22], [-10, 9, 20]];
+    ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+    blobs.forEach(([bx, by, br]) => { ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fillStyle = `hsla(${hue},70%,94%,${op})`; ctx.fill(); });
+    ctx.beginPath(); ctx.ellipse(-6, -6, 16, 8, 0, 0, TAU); ctx.fillStyle = `hsla(${hue},80%,99%,${op * .6})`; ctx.fill();
+    ctx.restore();
+  };
+  const drawSparkle = (ctx, x, y, size, hue, glow) => {
+    ctx.save(); ctx.translate(x, y); ctx.globalAlpha = glow;
+    ctx.strokeStyle = `hsla(${hue},90%,80%,1)`; ctx.lineWidth = Math.max(1, size * .28); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-size, 0); ctx.lineTo(size, 0); ctx.moveTo(0, -size); ctx.lineTo(0, size); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, size * .35, 0, TAU); ctx.fillStyle = `hsla(${hue},100%,92%,1)`; ctx.fill();
+    ctx.restore();
+  };
+  return (ctx, canvas, time) => {
+    const { width: w, height: h } = canvas;
+    if (w !== lw || h !== lh) { init(w, h); lw = w; lh = h; }
+    const dt = step(time);
+    ctx.globalCompositeOperation = 'source-over';
+    sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, 'rgb(255,214,235)'); sky.addColorStop(.45, 'rgb(232,205,250)'); sky.addColorStop(.75, 'rgb(198,212,250)'); sky.addColorStop(1, 'rgb(255,236,214)');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+
+    const mx = w * .84, my = h * .16, mr = Math.max(18, h * .045);
+    const mg = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 3);
+    mg.addColorStop(0, 'rgba(255,244,214,.55)'); mg.addColorStop(1, 'rgba(255,244,214,0)');
+    ctx.fillStyle = mg; ctx.fillRect(0, 0, w, h);
+    ctx.beginPath(); ctx.arc(mx, my, mr, 0, TAU); ctx.fillStyle = 'rgb(255,247,224)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(mx + mr * .42, my - mr * .12, mr * .92, 0, TAU); ctx.fillStyle = sky; ctx.fill();
+
+    orbs.forEach((o) => {
+      o.ph += dt * .01; o.y -= o.vy * dt;
+      if (o.y < -10) { o.y = h + 10; o.x = rand(0, w); }
+      const glow = .4 + .4 * Math.sin(o.ph);
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, TAU); ctx.fillStyle = `hsla(${o.hue},90%,85%,${glow * .5})`; ctx.fill();
+    });
+    clouds.forEach((c) => {
+      c.x -= c.speed * .01 * dt; if (c.x < -120) c.x = w + 120;
+      drawCloud(ctx, c.x, c.y, c.sc, c.hue, c.op);
+    });
+    stars.forEach((s) => {
+      s.ph += s.ps * dt;
+      drawSparkle(ctx, s.x, s.y, s.size, s.hue, Math.max(0, Math.sin(s.ph)) * .9 + .1);
+    });
+  };
+}
+
+/* ── Boba Café — cozy kawaii bubble-tea corner ─────────────────────────
+   New scene. A caramel-cream gradient with soft bokeh painted once to an
+   offscreen layer, a hand-drawn boba cup silhouette (body, milk-tea fill,
+   lid, straw) baked into the same layer, then animated string-light
+   twinkle, rising steam wisps and tapioca-pearl bubbles drifting up through
+   the drink every frame. */
+export function createBobaCafeRenderer() {
+  const bubbles = [], fairy = [], steam = [];
+  const step = makeStepper();
+  let bgLayer = null, lw = 0, lh = 0;
+  const spawnBubble = (w, h, cx, cupW, topY, cupH) => ({ x: cx + rand(-cupW * .3, cupW * .3), y: rand(topY + cupH * .5, topY + cupH - 10), r: rand(3, 7), vy: rand(.08, .22), hue: randChoice([28, 340, 20]) });
+  const spawnSteam = (cx, topY) => ({ x: cx + rand(-14, 14), y: topY - 10, o: rand(.15, .3), vy: rand(.1, .2), life: 0, max: rand(120, 200), wob: rand(0, TAU) });
+  let cupGeom = null;
+  const init = (w, h) => {
+    bgLayer = makeLayer(w, h); const c = bgLayer.getContext('2d');
+    const sky = c.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, 'rgb(255,235,214)'); sky.addColorStop(.55, 'rgb(255,214,196)'); sky.addColorStop(1, 'rgb(232,182,168)');
+    c.fillStyle = sky; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 10; i++) {
+      const x = rand(0, w), y = rand(0, h * .5), r = rand(20, 60);
+      const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(255,255,255,.18)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g; c.fillRect(0, 0, w, h);
+    }
+    const cx = w * .72, cupW = Math.min(w * .32, 220), cupH = cupW * 1.3, topY = h * .98 - cupH;
+    cupGeom = { cx, cupW, cupH, topY };
+    c.beginPath();
+    c.moveTo(cx - cupW * .42, topY); c.lineTo(cx + cupW * .42, topY);
+    c.lineTo(cx + cupW * .34, topY + cupH); c.lineTo(cx - cupW * .34, topY + cupH); c.closePath();
+    const cupGrad = c.createLinearGradient(0, topY, 0, topY + cupH);
+    cupGrad.addColorStop(0, 'rgba(255,255,255,.5)'); cupGrad.addColorStop(1, 'rgba(255,255,255,.28)');
+    c.fillStyle = cupGrad; c.fill(); c.lineWidth = 3; c.strokeStyle = 'rgba(120,80,60,.35)'; c.stroke();
+    c.beginPath();
+    const fillTopY = topY + cupH * .4;
+    c.moveTo(cx - cupW * .4, fillTopY); c.lineTo(cx + cupW * .4, fillTopY);
+    c.lineTo(cx + cupW * .34, topY + cupH - 4); c.lineTo(cx - cupW * .34, topY + cupH - 4); c.closePath();
+    c.fillStyle = 'rgba(196,140,92,.55)'; c.fill();
+    if (c.roundRect) { c.beginPath(); c.roundRect(cx - cupW * .46, topY - 10, cupW * .92, 14, 6); }
+    else { c.beginPath(); c.rect(cx - cupW * .46, topY - 10, cupW * .92, 14); }
+    c.fillStyle = 'rgba(255,255,255,.6)'; c.fill();
+    c.beginPath(); c.moveTo(cx + cupW * .14, topY - 34); c.lineTo(cx + cupW * .2, topY + cupH * .5);
+    c.strokeStyle = 'rgba(255,200,220,.85)'; c.lineWidth = 7; c.lineCap = 'round'; c.stroke();
+
+    bubbles.length = 0; steam.length = 0; fairy.length = 0;
+    for (let i = 0; i < 22; i++) bubbles.push(spawnBubble(w, h, cx, cupW, topY, cupH));
+    for (let i = 0; i < 4; i++) steam.push(spawnSteam(cx, topY));
+    for (let i = 0; i < 16; i++) fairy.push({ x: rand(0, w), y: h * .07 + Math.sin(i) * 8, ph: rand(0, TAU), ps: rand(.02, .05), hue: randChoice([48, 330, 270]) });
+  };
+  return (ctx, canvas, time) => {
+    const { width: w, height: h } = canvas;
+    if (w !== lw || h !== lh) { init(w, h); lw = w; lh = h; }
+    const dt = step(time), t = time * .001;
+    const { cx, cupW, cupH, topY } = cupGeom;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(bgLayer, 0, 0);
+    fairy.forEach((f) => {
+      f.ph += f.ps * dt; const glow = .4 + .6 * Math.max(0, Math.sin(f.ph));
+      ctx.beginPath(); ctx.arc(f.x, f.y, 3, 0, TAU); ctx.fillStyle = `hsla(${f.hue},95%,80%,${glow})`; ctx.fill();
+    });
+    ctx.globalCompositeOperation = 'lighter';
+    steam.forEach((s, i) => {
+      s.life += dt; s.y -= s.vy * dt; s.x += Math.sin(t * .6 + s.wob) * .15;
+      const fade = 1 - s.life / s.max;
+      if (fade <= 0) { steam[i] = spawnSteam(cx, topY); return; }
+      ctx.beginPath(); ctx.arc(s.x, s.y, 10 + s.life * .15, 0, TAU); ctx.fillStyle = `rgba(255,255,255,${s.o * fade * .5})`; ctx.fill();
+    });
+    ctx.globalCompositeOperation = 'source-over';
+    bubbles.forEach((b) => {
+      b.y -= b.vy * dt;
+      if (b.y < topY + cupH * .4) { const nb = spawnBubble(w, h, cx, cupW, topY, cupH); Object.assign(b, nb); }
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fillStyle = `hsla(${b.hue},55%,32%,.85)`; ctx.fill();
+      ctx.beginPath(); ctx.arc(b.x - b.r * .3, b.y - b.r * .3, b.r * .3, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fill();
+    });
+  };
+}
+
+/* ── Jelly Aquarium — pastel jellyfish drifting through soft light rays ──
+   New scene. A lavender-to-periwinkle water gradient with diagonal light
+   shafts painted once; jellyfish are drawn each frame as a quadratic-curve
+   bell plus wavy tentacle strokes that sway with a shared sine, rising and
+   sinking slowly and pulsing a soft halo, with plain rising bubbles for
+   scale and depth. */
+export function createJellyAquariumRenderer() {
+  const jellies = [], bubbles = [];
+  const step = makeStepper();
+  let bgLayer = null, lw = 0, lh = 0;
+  const spawnJelly = (w, h) => ({ x: rand(w * .1, w * .9), y: rand(h * .15, h * .85), vy: rand(-.05, -.015) - rand(0, .02), sway: rand(0, TAU), sws: rand(.01, .02), size: rand(18, 34), hue: randChoice([280, 330, 190, 250]), ph: rand(0, TAU), tentacles: Math.floor(rand(5, 7)) });
+  const spawnBub = (w, h) => ({ x: rand(0, w), y: h + rand(0, 40), vy: rand(.15, .35), r: rand(1.5, 4), wob: rand(0, TAU) });
+  const init = (w, h) => {
+    jellies.length = 0; bubbles.length = 0;
+    for (let i = 0; i < 9; i++) jellies.push(spawnJelly(w, h));
+    for (let i = 0; i < 40; i++) bubbles.push(spawnBub(w, h));
+    bgLayer = makeLayer(w, h); const c = bgLayer.getContext('2d');
+    const sea = c.createLinearGradient(0, 0, 0, h);
+    sea.addColorStop(0, 'rgb(214,224,255)'); sea.addColorStop(.5, 'rgb(196,200,252)'); sea.addColorStop(1, 'rgb(158,168,232)');
+    c.fillStyle = sea; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 5; i++) {
+      const x = rand(w * .1, w * .9);
+      c.beginPath(); c.moveTo(x - 40, 0); c.lineTo(x + 40, 0); c.lineTo(x + 120, h); c.lineTo(x - 120, h); c.closePath();
+      const g = c.createLinearGradient(x, 0, x + 60, h);
+      g.addColorStop(0, 'rgba(255,255,255,.16)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g; c.fill();
+    }
+  };
+  const drawJelly = (ctx, x, y, size, hue, sway, tentacles, glow) => {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(sway) * .06);
+    ctx.beginPath();
+    ctx.moveTo(-size, 0);
+    ctx.quadraticCurveTo(-size, -size * 1.1, 0, -size * 1.15);
+    ctx.quadraticCurveTo(size, -size * 1.1, size, 0);
+    ctx.quadraticCurveTo(size * .6, size * .22, 0, size * .14);
+    ctx.quadraticCurveTo(-size * .6, size * .22, -size, 0);
+    ctx.closePath();
+    const bg = ctx.createLinearGradient(0, -size * 1.15, 0, size * .14);
+    bg.addColorStop(0, `hsla(${hue},95%,88%,${.85 * glow})`); bg.addColorStop(1, `hsla(${hue},95%,75%,${.35 * glow})`);
+    ctx.fillStyle = bg; ctx.fill();
+    for (let i = 0; i < tentacles; i++) {
+      const tx = -size * .7 + (i / (tentacles - 1)) * size * 1.4;
+      const wob = Math.sin(sway * 1.6 + i) * size * .22;
+      ctx.beginPath(); ctx.moveTo(tx, size * .1);
+      ctx.quadraticCurveTo(tx + wob * .5, size * .9, tx + wob, size * 1.5);
+      ctx.strokeStyle = `hsla(${hue},90%,82%,${.5 * glow})`; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke();
+    }
+    const hg = ctx.createRadialGradient(0, -size * .4, 0, 0, -size * .4, size * 2.2);
+    hg.addColorStop(0, `hsla(${hue},100%,90%,${.28 * glow})`); hg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(0, -size * .4, size * 2.2, 0, TAU); ctx.fill();
+    ctx.restore();
+  };
+  return (ctx, canvas, time) => {
+    const { width: w, height: h } = canvas;
+    if (w !== lw || h !== lh) { init(w, h); lw = w; lh = h; }
+    const dt = step(time);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(bgLayer, 0, 0);
+    bubbles.forEach((b) => {
+      b.y -= b.vy * dt; b.wob += dt * .02; b.x += Math.sin(b.wob) * .1;
+      if (b.y < -10) { b.y = h + 10; b.x = rand(0, w); }
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 1; ctx.stroke();
+    });
+    ctx.globalCompositeOperation = 'lighter';
+    jellies.forEach((j) => {
+      j.y += j.vy * dt; j.sway += j.sws * dt; j.ph += .01 * dt;
+      if (j.y < -60) j.y = h + 60; if (j.y > h + 60) j.y = -60;
+      const glow = .6 + .4 * Math.sin(j.ph);
+      drawJelly(ctx, j.x, j.y, j.size, j.hue, j.sway, j.tentacles, glow);
+    });
+    ctx.globalCompositeOperation = 'source-over';
+  };
+}
+
+/* ── Fireflies — dusk meadow, drifting glow-bugs, moonlit hill ─────
+   New scene. Grass hill + moon + sparse stars painted once to an offscreen
+   layer; fireflies wander with independent sine-wobble paths and pulse
+   individually, drawn additively for a genuine glow rather than a flat dot. */
+export function createFirefliesRenderer() {
+  const flies = [];
+  const step = makeStepper();
+  let bgLayer = null, lw = 0, lh = 0;
+  const newFly = (w, h) => ({ x: rand(0, w), y: rand(h * .35, h * .92), vx: rand(-.15, .15), vy: rand(-.12, .12), ph: rand(0, TAU), ps: rand(.012, .03), size: rand(1.6, 3.4), hue: rand(46, 70), wob: rand(0, TAU), ws: rand(.004, .009) });
+  const init = (w, h) => {
+    flies.length = 0; for (let i = 0; i < 50; i++) flies.push(newFly(w, h));
+    bgLayer = makeLayer(w, h); const c = bgLayer.getContext('2d');
+    const sky = c.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, 'rgb(9,15,34)'); sky.addColorStop(.5, 'rgb(21,27,50)'); sky.addColorStop(.8, 'rgb(46,40,58)'); sky.addColorStop(1, 'rgb(28,24,32)');
+    c.fillStyle = sky; c.fillRect(0, 0, w, h);
+    const mx = w * .82, my = h * .16;
+    const mg = c.createRadialGradient(mx, my, 0, mx, my, h * .3);
+    mg.addColorStop(0, 'rgba(240,240,220,.32)'); mg.addColorStop(1, 'rgba(240,240,220,0)');
+    c.fillStyle = mg; c.fillRect(0, 0, w, h);
+    c.beginPath(); c.arc(mx, my, Math.max(12, h * .026), 0, TAU); c.fillStyle = 'rgb(236,234,214)'; c.fill();
+    for (let i = 0; i < 40; i++) { c.beginPath(); c.arc(rand(0, w), rand(0, h * .4), rand(.4, 1.2), 0, TAU); c.fillStyle = `rgba(230,235,255,${rand(.2, .6)})`; c.fill(); }
+    const ph1 = rand(0, 6);
+    c.beginPath(); c.moveTo(0, h);
+    for (let x = 0; x <= w; x += 8) c.lineTo(x, h * .72 + Math.sin(x * .0026 + ph1) * h * .04);
+    c.lineTo(w, h); c.closePath(); c.fillStyle = 'rgb(13,19,15)'; c.fill();
+    for (let i = 0; i < Math.floor(w / 9); i++) {
+      const x = rand(0, w), baseY = h * (.9 + rand(0, .09)), bh = rand(h * .03, h * .09), lean = rand(-.3, .3);
+      c.strokeStyle = 'rgba(4,8,6,.9)'; c.lineWidth = rand(1, 2);
+      c.beginPath(); c.moveTo(x, baseY); c.quadraticCurveTo(x + lean * bh * .5, baseY - bh * .6, x + lean * bh, baseY - bh); c.stroke();
+    }
+  };
+  return (ctx, canvas, time) => {
+    const { width: w, height: h } = canvas;
+    if (w !== lw || h !== lh) { init(w, h); lw = w; lh = h; }
+    const dt = step(time);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(bgLayer, 0, 0);
+    ctx.globalCompositeOperation = 'lighter';
+    flies.forEach(f => {
+      f.ph += f.ps * dt; f.wob += f.ws * dt;
+      f.x += (f.vx + Math.sin(f.wob) * .25) * dt; f.y += (f.vy + Math.cos(f.wob * .8) * .2) * dt;
+      if (f.x < -10) f.x = w + 10; if (f.x > w + 10) f.x = -10;
+      if (f.y < h * .3) f.y = h * .3; if (f.y > h * .95) f.y = h * .95;
+      const glow = .3 + .7 * Math.max(0, Math.sin(f.ph));
+      const r = f.size * (1 + glow * 1.4);
+      const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r * 4);
+      g.addColorStop(0, `hsla(${f.hue},100%,75%,${.85 * glow})`); g.addColorStop(.3, `hsla(${f.hue},100%,65%,${.35 * glow})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, r * 4, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(f.x, f.y, r * .5, 0, TAU); ctx.fillStyle = `hsla(${f.hue},100%,90%,${.9 * glow})`; ctx.fill();
+    });
+    ctx.globalCompositeOperation = 'source-over';
+  };
+}
+
+/* ── Meteor Shower — desert dunes under a streaking night sky ──────
+   New scene. Three layered dune silhouettes + dense stars painted once;
+   meteors are respawned on a stagger so there's always 1-2 in flight, each
+   a gradient-stroked line with a bright head, angled low across the sky. */
+export function createMeteorRenderer() {
+  const stars = [], meteors = [];
+  const step = makeStepper();
+  let bgLayer = null, lw = 0, lh = 0;
+  const spawnMeteor = (w, h) => ({ x: rand(w * .1, w * 1.1), y: rand(-h * .05, h * .35), len: rand(60, 160), speed: rand(6, 11), angle: rand(.55, .75), life: rand(-40, 0), max: rand(40, 80), op: rand(.6, 1) });
+  const init = (w, h) => {
+    stars.length = 0; meteors.length = 0;
+    for (let i = 0; i < 220; i++) stars.push({ x: rand(0, w), y: rand(0, h * .75), r: rand(.3, 2), base: rand(.2, .9), ts: rand(.4, 2), to: rand(0, TAU) });
+    for (let i = 0; i < 2; i++) meteors.push(spawnMeteor(w, h));
+    bgLayer = makeLayer(w, h); const c = bgLayer.getContext('2d');
+    const sky = c.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, 'rgb(8,10,28)'); sky.addColorStop(.55, 'rgb(20,18,40)'); sky.addColorStop(.82, 'rgb(58,36,42)'); sky.addColorStop(1, 'rgb(80,52,40)');
+    c.fillStyle = sky; c.fillRect(0, 0, w, h);
+    const band = c.createLinearGradient(w * .1, 0, w * .9, h * .6);
+    band.addColorStop(0, 'rgba(200,190,255,0)'); band.addColorStop(.5, 'rgba(200,190,255,.05)'); band.addColorStop(1, 'rgba(200,190,255,0)');
+    c.fillStyle = band; c.fillRect(0, 0, w, h);
+    const dune = (baseY, amp, ph, f, col) => {
+      c.beginPath(); c.moveTo(0, h);
+      for (let x = 0; x <= w; x += 8) c.lineTo(x, baseY + Math.sin(x * f + ph) * amp + Math.sin(x * f * 2.2 + ph * 1.4) * amp * .35);
+      c.lineTo(w, h); c.closePath(); c.fillStyle = col; c.fill();
+    };
+    dune(h * .8, h * .03, rand(0, 6), .0022, 'rgb(64,40,34)');
+    dune(h * .87, h * .022, rand(0, 6), .003, 'rgb(38,22,20)');
+    dune(h * .94, h * .015, rand(0, 6), .0038, 'rgb(18,10,10)');
+  };
+  return (ctx, canvas, time) => {
+    const { width: w, height: h } = canvas;
+    if (w !== lw || h !== lh) { init(w, h); lw = w; lh = h; }
+    const dt = step(time), t = time * .001;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(bgLayer, 0, 0);
+    stars.forEach(s => { const f = s.base * (.5 + .5 * Math.sin(t * s.ts + s.to)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fillStyle = `rgba(235,235,255,${f})`; ctx.fill(); });
+    ctx.globalCompositeOperation = 'lighter';
+    meteors.forEach((m, i) => {
+      m.life += dt;
+      if (m.life > 0) {
+        m.x -= Math.cos(m.angle) * m.speed * dt; m.y += Math.sin(m.angle) * m.speed * dt;
+        const tailX = m.x + Math.cos(m.angle) * m.len, tailY = m.y - Math.sin(m.angle) * m.len;
+        const g = ctx.createLinearGradient(m.x, m.y, tailX, tailY);
+        g.addColorStop(0, `rgba(255,250,235,${m.op})`); g.addColorStop(.4, `rgba(255,220,180,${m.op * .5})`); g.addColorStop(1, 'rgba(255,200,150,0)');
+        ctx.strokeStyle = g; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(tailX, tailY); ctx.stroke();
+        ctx.beginPath(); ctx.arc(m.x, m.y, 2.2, 0, TAU); ctx.fillStyle = `rgba(255,255,245,${m.op})`; ctx.fill();
+      }
+      if (m.life > m.max || m.y > h * .85 || m.x < -m.len) meteors[i] = spawnMeteor(w, h);
+    });
+    ctx.globalCompositeOperation = 'source-over';
+  };
+}
+
 /* ── Curated registry ─────────────────────────────────────────────────────
    `opacity` is how strongly the canvas sits over `base` (the colour under it,
    also used while scenes cross-fade). The six Zenith originals keep the
    translucent overlay treatment they were designed for; the rebuilt scenes
-   paint their own full backdrop, so they run at (nearly) full strength. */
+   and the three new ones below paint their own full backdrop, so they run
+   at (nearly) full strength. */
 export const AMBIENT_ENVIRONMENTS = {
   rain:        { label: 'Rain',             icon: '🌧', create: createRainRenderer,          opacity: .55, base: '#0b0b12' },
   forest:      { label: 'Forest',           icon: '🌿', create: createForestRenderer,        opacity: .55, base: '#0b0b12' },
@@ -752,4 +1133,10 @@ export const AMBIENT_ENVIRONMENTS = {
   cherry:      { label: 'Cherry Blossom',   icon: '🌸', create: createCherryBlossomRenderer, opacity: 1,   base: '#602e56' },
   window:      { label: 'Rainy Window',     icon: '🪟', create: createRainyWindowRenderer,   opacity: 1,   base: '#141a2c' },
   library:     { label: 'Midnight Library', icon: '📚', create: createLibraryRenderer,       opacity: 1,   base: '#1a0f09' },
+  pastelsky:   { label: 'Pastel Sky',       icon: '🎀', create: createPastelSkyRenderer,     opacity: 1,   base: '#e8c7e8' },
+  fireflies:   { label: 'Fireflies',        icon: '✨', create: createFirefliesRenderer,     opacity: 1,   base: '#0d1128' },
+  meteor:      { label: 'Meteor Shower',    icon: '☄️', create: createMeteorRenderer,        opacity: 1,   base: '#08122c' },
+  wormhole:    { label: 'Wormhole',         icon: '🌀', create: createWormholeRenderer,      opacity: 1,   base: '#03020a' },
+  bobacafe:    { label: 'Boba Café',        icon: '🧋', create: createBobaCafeRenderer,      opacity: 1,   base: '#f3d3bd' },
+  jellyaquarium: { label: 'Jelly Aquarium', icon: '🪼', create: createJellyAquariumRenderer, opacity: 1,   base: '#c6c8fc' },
 };
