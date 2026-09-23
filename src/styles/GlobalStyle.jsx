@@ -2114,6 +2114,41 @@ export default function GlobalStyle() {
       .sb-lock-screen .sb-progress-track { width: 100%; max-width: 260px; margin-top: 4px; }
       .sb-lock-screen-count { font-size: 11.5px; font-weight: 800; color: var(--muted); }
 
+      /* ===== AI Insights page redesign =====
+         Was a long, visually-flat stack of near-identical cards. This gives
+         "going well" / "needs attention" their own color-coded identity,
+         turns the priority list into an actual numbered list, and adds a
+         real chart (matching the Mocks page's own trend line) instead of a
+         plain paragraph for performance trends. */
+      .sb-insights-generate { text-align: center; }
+      .sb-insights-generate .sb-btn { margin: 0 auto; }
+
+      .sb-insights-highlights { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 18px; }
+      .sb-insights-highlight { border-left-width: 5px; border-left-style: solid; }
+      .sb-insights-highlight.good { border-left-color: #59B37D; }
+      .sb-insights-highlight.warn { border-left-color: #E3A24A; }
+      .sb-insights-highlight-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+      .sb-insights-highlight-icon { width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+      .sb-insights-highlight.good .sb-insights-highlight-icon { background: color-mix(in srgb, #59B37D 20%, transparent); color: #3f8f61; }
+      .sb-insights-highlight.warn .sb-insights-highlight-icon { background: color-mix(in srgb, #E3A24A 22%, transparent); color: #a3691c; }
+      .sb-insights-highlight-head h3 { font-family: var(--font-display); font-weight: 800; font-size: 14.5px; margin: 0; }
+
+      .sb-insights-priority-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+      .sb-insights-priority-list li { display: flex; align-items: flex-start; gap: 12px; font-size: 13.5px; line-height: 1.55; }
+      .sb-insights-priority-num {
+        flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+        background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-display); font-weight: 800; font-size: 11.5px; margin-top: 1px;
+      }
+
+      .sb-insights-trend-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+      .sb-insights-trend-note { font-size: 13px; line-height: 1.6; margin: 16px 0 0; padding-top: 14px; border-top: 2px dashed var(--soft); color: var(--mascot-ink); }
+      .sb-insights-copy { font-size: 13.5px; line-height: 1.6; margin: 0; }
+
+      @media (max-width: 480px) {
+        .sb-insights-trend-stats { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      }
+
       .sb-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 24px 10px; position: relative; }
       .sb-empty-doodle { position: absolute; top: 2px; right: 14px; font-size: 22px; opacity: .35; transform: rotate(12deg); }
       .sb-empty-text { font-weight: 800; }

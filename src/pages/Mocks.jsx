@@ -5,6 +5,7 @@ import { Card, SectionTitle, Btn, EmptyState, ProgressRing } from "../components
 import { formatISTCalendarDate, todayIST } from "../lib/dateIST";
 import { generateMockComparison } from "../services/groqMockCompare";
 import { ALL_CHAPTERS, SYLLABUS } from "../data/syllabus";
+import { MAINS_TOTAL_MARKS, totalOf, defaultTotalFor, pctOf } from "../lib/mockScore";
 
 // ---------- Mistake-tagging (mock review) ----------
 // The categories that actually change what a student should do next:
@@ -27,7 +28,7 @@ const dayLabel = (d) => formatISTCalendarDate(d, { month: "short", day: "numeric
 const num = (v) => Number(v) || 0;
 
 // JEE Main: fixed pattern — 25 questions per subject, +4 correct / -1 incorrect, 300 total.
-const MAINS_TOTAL_MARKS = 300;
+// (MAINS_TOTAL_MARKS itself now lives in ../lib/mockScore, shared with AI Insights.)
 const MAINS_QUESTIONS_PER_SUBJECT = 25;
 const mainsMarksFor = (correct, incorrect) => num(correct) * 4 - num(incorrect) * 1;
 
@@ -45,10 +46,6 @@ const emptyForm = () => ({
   // Optional per-subject time spent (minutes) — powers the pacing insight.
   physics_minutes: "", chemistry_minutes: "", math_minutes: "",
 });
-
-const totalOf = (m) => num(m.physics_marks) + num(m.chemistry_marks) + num(m.math_marks);
-const defaultTotalFor = (m) => (m.exam_type === "JEE Advanced" ? (num(m.total_marks) || 360) : MAINS_TOTAL_MARKS);
-const pctOf = (m) => Math.round((totalOf(m) / (num(m.total_marks) || defaultTotalFor(m))) * 100);
 
 const toAIRow = (m) => ({
   exam_name: m.exam_name,

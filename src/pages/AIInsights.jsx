@@ -1,11 +1,13 @@
-import React, { useState } from "react";
-import { Sparkles, RefreshCw, AlertTriangle, Lock } from "lucide-react";
-import { Card, SectionTitle, Btn, ProgressBar } from "../components/ui";
+import React, { useState, useMemo } from "react";
+import { Sparkles, RefreshCw, AlertTriangle, Lock, CheckCircle2, Target, TrendingUp, Flame, NotebookPen, RotateCcw, Lightbulb, BookOpen, Compass } from "lucide-react";
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Card, SectionTitle, Btn, ProgressBar, EmptyState } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { generateAIInsights } from "../services/gemini";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
 import { buildStatsSnapshot } from "../lib/statsSnapshot";
+import { pctOf } from "../lib/mockScore";
 
 export default function AIInsightsPage(p) {
   const { user } = useAuth();
@@ -21,6 +23,23 @@ export default function AIInsightsPage(p) {
   const hasEnoughData = p.sessions.length > 0 || p.questions.length > 0 || p.mocks.length > 0;
   const unlockAt = p.featureUnlockStreak ?? 6;
   const streakLocked = (p.streak || 0) < unlockAt;
+
+  // Same normalized scoring (../lib/mockScore) the Mocks page's own trend
+  // chart uses, so this line reads exactly like the one there instead of an
+  // older, separately-computed version.
+  const trendData = useMemo(() => {
+    const mainsMocks = [...p.mocks].filter((m) => (m.exam_type || "JEE Main") === "JEE Main").reverse();
+    const advancedMocks = [...p.mocks].filter((m) => m.exam_type === "JEE Advanced").reverse();
+    const len = Math.max(mainsMocks.length, advancedMocks.length);
+    return Array.from({ length: len }, (_, i) => ({
+      name: `#${i + 1}`,
+      "JEE Main": mainsMocks[i] ? pctOf(mainsMocks[i]) : null,
+      "JEE Advanced": advancedMocks[i] ? pctOf(advancedMocks[i]) : null,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.mocks]);
+  const latestPct = p.mocks.length ? pctOf(p.mocks[0]) : null;
+  const bestPct = p.mocks.length ? Math.max(...p.mocks.map(pctOf)) : null;
 
   if (streakLocked) {
     return (
@@ -75,7 +94,7 @@ export default function AIInsightsPage(p) {
   };
 
   return (
-    <div className="sb-page">
+    <div className="sb-page sb-insights-page">
       <Card className="sb-hero">
         <div>
           <div className="sb-hero-greet">StudyBun AI</div>
@@ -86,10 +105,10 @@ export default function AIInsightsPage(p) {
       </Card>
 
       {!hasEnoughData && !result && (
-        <Card><div className="sb-empty"><Mascot species={p.mascot} mood="idle" size={64} /><p className="sb-empty-text">Not much data yet.</p><p className="sb-empty-sub">Log a few study sessions, questions, or a mock first — insights are only useful once there's something real to analyze.</p></div></Card>
+        <Card><EmptyState mascot={p.mascot} mood="idle" text="Not much data yet." sub="Log a few study sessions, questions, or a mock first — insights are only useful once there's something real to analyze." /></Card>
       )}
 
-      <Card>
+      <Card className="sb-insights-generate">
         <Btn onClick={generate} disabled={loading}>
           {loading ? <><RefreshCw size={16} className="sb-spin" /> Thinking...</> : <><Sparkles size={16} /> {result ? "Re-run AI Insights" : "Generate AI Insights"}</>}
         </Btn>
@@ -108,34 +127,79 @@ export default function AIInsightsPage(p) {
 
       {result && (
         <>
-          <div className="sb-grid-2">
-            <Card>
-              <SectionTitle icon={Sparkles}>🌸 What's going well</SectionTitle>
+          <div className="sb-insights-highlights">
+            <Card className="sb-insights-highlight good">
+              <div className="sb-insights-highlight-head">
+                <span className="sb-insights-highlight-icon"><CheckCircle2 size={17} /></span>
+                <h3>What's going well</h3>
+              </div>
               <ul className="sb-suggestion-list">{(result.going_well || []).map((x, i) => <li key={i}>{x}</li>)}</ul>
             </Card>
-            <Card>
-              <SectionTitle icon={AlertTriangle}>⚠️ Needs attention</SectionTitle>
+            <Card className="sb-insights-highlight warn">
+              <div className="sb-insights-highlight-head">
+                <span className="sb-insights-highlight-icon"><AlertTriangle size={16} /></span>
+                <h3>Needs attention</h3>
+              </div>
               <ul className="sb-suggestion-list">{(result.needs_attention || []).map((x, i) => <li key={i}>{x}</li>)}</ul>
             </Card>
           </div>
 
-          <Card>
-            <SectionTitle icon={Sparkles}>🎯 Top priorities</SectionTitle>
-            <ul className="sb-suggestion-list">{(result.top_priorities || []).map((x, i) => <li key={i}>{x}</li>)}</ul>
+          <Card className="sb-insights-priorities">
+            <SectionTitle icon={Target}>Top priorities</SectionTitle>
+            <ol className="sb-insights-priority-list">
+              {(result.top_priorities || []).map((x, i) => (
+                <li key={i}><span className="sb-insights-priority-num">{i + 1}</span><span>{x}</span></li>
+              ))}
+            </ol>
+          </Card>
+
+          <Card className="sb-insights-trend">
+            <SectionTitle icon={TrendingUp}>Performance trend</SectionTitle>
+            {trendData.length ? (
+              <>
+                {(latestPct !== null || bestPct !== null) && (
+                  <div className="sb-insights-trend-stats">
+                    <div className="sb-mini-stat"><div className="sb-mini-num">{latestPct}%</div><div className="sb-muted">Latest mock</div></div>
+                    <div className="sb-mini-stat"><div className="sb-mini-num">{bestPct}%</div><div className="sb-muted">Best mock</div></div>
+                    <div className="sb-mini-stat"><div className="sb-mini-num">{p.mocks.length}</div><div className="sb-muted">Mocks logged</div></div>
+                  </div>
+                )}
+                <ResponsiveContainer width="100%" height={190}>
+                  <LineChart data={trendData} margin={{ top: 6, right: 14, left: 4, bottom: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" vertical={false} />
+                    <XAxis dataKey="name" stroke="var(--muted)" fontSize={11.5} tickLine={false} axisLine={false} padding={{ left: 12, right: 12 }} />
+                    <YAxis stroke="var(--muted)" fontSize={11.5} tickLine={false} axisLine={false} unit="%" width={40} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 14, border: "1.5px solid var(--mascot-outline)", background: "var(--card-bg, #fff)", fontSize: 12.5, boxShadow: "3px 3px 0 var(--mascot-outline)" }}
+                      labelStyle={{ fontWeight: 800, marginBottom: 4 }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} iconType="circle" />
+                    <Line type="monotone" dataKey="JEE Main" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: "var(--bg)" }} activeDot={{ r: 6 }} connectNulls />
+                    <Line type="monotone" dataKey="JEE Advanced" stroke="var(--p3, #8b5cf6)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: "var(--bg)" }} activeDot={{ r: 6 }} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </>
+            ) : (
+              <EmptyState mascot={p.mascot} mood="idle" text="No mocks logged yet." sub="Log a mock to start tracking your score trend here." />
+            )}
+            {result.performance_trends && <p className="sb-insights-trend-note">{result.performance_trends}</p>}
           </Card>
 
           <div className="sb-grid-2">
-            <Card><SectionTitle icon={Sparkles}>📈 Performance trends</SectionTitle><p>{result.performance_trends}</p></Card>
-            <Card><SectionTitle icon={Sparkles}>🔥 Backlog strategy</SectionTitle><p>{result.backlog_strategy}</p></Card>
+            <Card><SectionTitle icon={Flame}>Backlog strategy</SectionTitle><p className="sb-insights-copy">{result.backlog_strategy}</p></Card>
+            <Card><SectionTitle icon={NotebookPen}>Mock suggestions</SectionTitle><p className="sb-insights-copy">{result.mock_suggestions}</p></Card>
           </div>
 
           <div className="sb-grid-2">
-            <Card><SectionTitle icon={Sparkles}>📝 Mock suggestions</SectionTitle><p>{result.mock_suggestions}</p></Card>
-            <Card><SectionTitle icon={Sparkles}>🔄 Revision advice</SectionTitle><p>{result.revision_advice}</p></Card>
+            <Card><SectionTitle icon={RotateCcw}>Revision advice</SectionTitle><p className="sb-insights-copy">{result.revision_advice}</p></Card>
+            <Card>
+              <SectionTitle icon={Lightbulb}>Productivity tips</SectionTitle>
+              <ul className="sb-suggestion-list">{(result.productivity_tips || []).map((x, i) => <li key={i}>{x}</li>)}</ul>
+            </Card>
           </div>
 
           <Card>
-            <SectionTitle icon={Sparkles}>📚 Recommended chapters</SectionTitle>
+            <SectionTitle icon={BookOpen}>Recommended chapters</SectionTitle>
             <div className="sb-quick-actions">
               {(result.recommended_chapters || []).map((c, i) => (
                 <Btn key={i} variant="soft" onClick={() => p.setPage("syllabus")}>{c}</Btn>
@@ -143,14 +207,9 @@ export default function AIInsightsPage(p) {
             </div>
           </Card>
 
-          <Card>
-            <SectionTitle icon={Sparkles}>💡 Productivity tips</SectionTitle>
-            <ul className="sb-suggestion-list">{(result.productivity_tips || []).map((x, i) => <li key={i}>{x}</li>)}</ul>
-          </Card>
-
           {result.predictions && (
             <Card>
-              <SectionTitle icon={Sparkles}>Predictions <span className="sb-muted" style={{ fontSize: 11 }}>(estimates, not guarantees)</span></SectionTitle>
+              <SectionTitle icon={Compass}>Predictions <span className="sb-muted" style={{ fontSize: 11 }}>(estimates, not guarantees)</span></SectionTitle>
               <div className="sb-grid-3">
                 <div className="sb-mini-stat"><div className="sb-mini-num" style={{ fontSize: 15 }}>{result.predictions.estimated_syllabus_completion}</div><div className="sb-muted">Syllabus completion</div></div>
                 <div className="sb-mini-stat"><div className="sb-mini-num" style={{ fontSize: 15 }}>{result.predictions.estimated_backlog_completion}</div><div className="sb-muted">Backlog completion</div></div>

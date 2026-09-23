@@ -1,4 +1,5 @@
 import { SYLLABUS } from "../data/syllabus";
+import { totalOf, defaultTotalFor, pctOf } from "./mockScore";
 
 const num = (v) => Number(v) || 0;
 
@@ -71,10 +72,16 @@ export function buildStatsSnapshot(p) {
     backlog: { total_pending_chapters: p.backlogChapters.length, overall_completion_pct: Math.round(p.overallPct) },
     questions: { total_lifetime: p.totalQuestions, today: p.todayQuestions },
     revisions: { due_today: p.dueRevisions.length, overdue: p.overdueRevisions.length, upcoming: p.upcomingRevisions.length },
+    // Same scoring math the Mocks page's own trend chart uses (../lib/mockScore) —
+    // total falls back to the right default per exam type instead of the raw
+    // (sometimes unset) total_marks field, and percentage is included so the AI
+    // reasons in the same normalized terms the trend chart shows.
     mocks: (p.mocks || []).slice(0, 10).map((m) => ({
-      name: m.exam_name, date: m.mock_date,
-      score: Number(m.physics_marks) + Number(m.chemistry_marks) + Number(m.math_marks),
-      total: m.total_marks, correct: m.correct, incorrect: m.incorrect,
+      name: m.exam_name, date: m.mock_date, exam_type: m.exam_type || "JEE Main",
+      score: totalOf(m),
+      total: num(m.total_marks) || defaultTotalFor(m),
+      percentage: pctOf(m),
+      correct: m.correct, incorrect: m.incorrect,
     })),
     mistake_patterns: analysisRows.length > 0 ? {
       mocks_reviewed: analysisRows.length,
