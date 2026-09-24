@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Play, Pause, RefreshCw, Sparkles, CheckCircle2, Volume2, VolumeX,
-  Pencil, Settings, Minus, Plus, X, Radio, ExternalLink, Link2, AlertTriangle, Save, Lock, ShieldAlert, Users,
+  Pencil, Settings, Minus, Plus, X, AlertTriangle, Save, Lock, ShieldAlert, Users,
   Clock3, Flame, Info, ChevronDown, Maximize2,
 } from "lucide-react";
 import { Card, Btn, SectionTitle } from "../components/ui";
@@ -11,7 +11,7 @@ import StudyingNowCard from "../components/StudyingNowCard";
 import FocusModeOverlay from "../components/FocusModeOverlay";
 import FocusModeStyle from "../styles/FocusModeStyle";
 import { SYLLABUS } from "../data/syllabus";
-import { RADIO_OPTIONS, RADIO_LINKS, extractYouTubeId, getActiveRadio } from "../lib/radio";
+import FocusMusicSettings, { FocusMusicMiniBar } from "../components/FocusMusicSettings";
 import { todayIST } from "../lib/dateIST";
 import { pauseDecor } from "../lib/decorPause";
 import { STOPWATCH_MODE } from "../hooks/useFocusTimer";
@@ -308,24 +308,6 @@ export default function FocusTimer(p) {
   };
   const discardSession = () => t.resetForNewSession();
 
-  const [customDraft, setCustomDraft] = useState(t.radioCustomUrl || "");
-  const [customError, setCustomError] = useState(false);
-  useEffect(() => { setCustomDraft(t.radioCustomUrl || ""); }, [t.radioCustomUrl]);
-
-  // NOTE: the actual playing <iframe> is NOT rendered here — it lives at the
-  // app root (see App.jsx) so it keeps playing no matter which page you're
-  // on or whether this settings panel is open. This page only shows the
-  // picker UI and reflects what's currently selected.
-  const { preset: activePreset, label: activeLabel, embedSrc: activeEmbedSrc } = getActiveRadio(t);
-
-  const saveCustomUrl = () => {
-    const id = extractYouTubeId(customDraft);
-    if (!id) { setCustomError(true); return; }
-    setCustomError(false);
-    t.setRadioCustomUrl(customDraft.trim());
-    t.setRadioChoice("custom");
-  };
-
   return (
     <div className="sb-page sb-focus-page">
       <div className="sb-focus-layout">
@@ -505,6 +487,7 @@ export default function FocusTimer(p) {
         {t.lockBlocked && (
           <p className="sb-radio-error"><AlertTriangle size={14} /> A timer's already running in another tab/window on this device — switch there to pause/save it before starting a new one.</p>
         )}
+        <FocusMusicMiniBar music={p.music} running={t.running} onOpenSettings={() => setSettingsOpen(true)} />
       </Card>
 
       <FocusSideRail
@@ -602,53 +585,7 @@ export default function FocusTimer(p) {
                   : "When on, you can't wander off to other pages while a session is actively running — pausing always lets you leave."}
               </p>
 
-              <div className="sb-timer-settings-row sb-timer-settings-radio-head">
-                <span className="sb-timer-settings-label"><Radio size={16} /> Focus radio</span>
-              </div>
-              <div className="sb-radio-options">
-                <button className={`sb-radio-chip ${t.radioChoice === "none" ? "active" : ""}`} onClick={() => t.setRadioChoice("none")}>No music</button>
-                {RADIO_OPTIONS.map((r) => (
-                  <button key={r.id} className={`sb-radio-chip ${t.radioChoice === r.id ? "active" : ""}`} onClick={() => t.setRadioChoice(r.id)}>
-                    {r.label}
-                  </button>
-                ))}
-                <button className={`sb-radio-chip ${t.radioChoice === "custom" ? "active" : ""}`} onClick={() => t.setRadioChoice("custom")}>
-                  <Link2 size={14} /> Custom link
-                </button>
-              </div>
-
-              {t.radioChoice === "custom" && (
-                <div className="sb-radio-custom-row">
-                  <input
-                    className="sb-input"
-                    placeholder="Paste any YouTube video or live link…"
-                    value={customDraft}
-                    onChange={(e) => { setCustomDraft(e.target.value); setCustomError(false); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") saveCustomUrl(); }}
-                  />
-                  <Btn variant="soft" onClick={saveCustomUrl}>Use</Btn>
-                </div>
-              )}
-              {t.radioChoice === "custom" && customError && (
-                <p className="sb-radio-error"><AlertTriangle size={14} /> Couldn't read a video from that link — try copying it straight from YouTube's address bar or share button.</p>
-              )}
-
-              {activeEmbedSrc ? (
-                <p className="sb-radio-hint">
-                  Now playing: {t.radioChoice === "custom" ? "your link" : activePreset?.label}
-                  {" — keeps playing in the background across pages and even after you close this panel. If it shows \"Video unavailable\", the stream itself has ended; paste a fresh link above."}
-                </p>
-              ) : (t.radioChoice !== "none" && t.radioChoice !== "custom") ? (
-                <p className="sb-radio-hint">Pick a station above, or paste your own link.</p>
-              ) : null}
-              <div className="sb-radio-links">
-                {RADIO_LINKS.map((l) => (
-                  <a key={l.label} className="sb-radio-link" target="_blank" rel="noopener noreferrer"
-                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(l.query)}`}>
-                    {l.label} <ExternalLink size={13} />
-                  </a>
-                ))}
-              </div>
+              <FocusMusicSettings music={p.music} timerRunning={t.running} />
             </div>
           </div>
         </div>,

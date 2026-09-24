@@ -12,7 +12,8 @@ import { useDeviceRow, useRealtimeTable, useChapterProgress, useMockAnalysis } f
 import { useFocusTimer } from "./hooks/useFocusTimer";
 import { useStudyPresence } from "./hooks/useStudyPresence";
 import { useLeaderboardReconciliation } from "./hooks/useLeaderboardReconciliation";
-import { getActiveRadio } from "./lib/radio";
+import { useFocusMusic } from "./hooks/useFocusMusic";
+import FocusMusicStage from "./components/FocusMusicStage";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { useAuth } from "./lib/AuthContext";
 import { buildExportPayload, downloadJSON, readFileAsJSON, importPayload, totalImported } from "./lib/dataPortability";
@@ -223,11 +224,11 @@ export default function App() {
       saveTimerSession({ mode, planned_minutes: plannedMinutes, actual_minutes: actualMinutes, completed });
     },
   });
-  // Derived here (not inside FocusTimer's page component) for the same
-  // reason the timer itself lives here: so the actual playing <iframe>,
-  // rendered below outside the `page === "timer"` switch, never unmounts
-  // when the user navigates to another page or the settings panel closes.
-  const activeRadio = getActiveRadio(focusTimer);
+  // Focus music lives up here for the same reason the timer does: the one
+  // real player must survive page navigation and the settings dialog
+  // closing. It only ever makes sound while the timer is running (see
+  // useFocusMusic) -- never just because the app was opened.
+  const focusMusic = useFocusMusic({ timerRunning: focusTimer.running, page });
 
   // Lifted to the root (not inside the Leaderboard page) so presence stays
   // accurate — and other users can see it — even while running the timer
@@ -1307,7 +1308,7 @@ export default function App() {
     longestStreak, totalStudyDays, totalHours, masteredCount,
     featureUnlockStreak: FEATURE_UNLOCK_STREAK,
     mascotMood: buddyMood, mascotEnergy: buddyEnergy,
-    focusTimer,
+    focusTimer, music: focusMusic,
     focusModeScene: focusModeRow.row?.scene, saveFocusModeScene: (scene) => focusModeRow.save({ scene }),
     exportBackup, importBackup,
   };
@@ -1329,22 +1330,10 @@ export default function App() {
       <DecorLayer theme={theme} />
       <PWAPrompt />
       {celebrateType && <Confetti type={celebrateType} theme={theme} />}
-      {/* Lives here, not inside the Focus Timer page, so switching pages or
-          closing the timer's settings panel never unmounts (and thus never
-          silences) the radio. */}
-      {activeRadio.embedSrc && (
-        <div className="sb-radio-embed-tucked">
-          <iframe
-            key={activeRadio.embedSrc}
-            src={activeRadio.embedSrc}
-            title={activeRadio.label}
-            width="1"
-            height="1"
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-          />
-        </div>
-      )}
+      {/* The one YouTube player behind Focus Music. Lives here, not inside the
+          Focus Timer page, so switching pages or closing the timer's settings
+          dialog never unmounts (and thus never silences) it. */}
+      <FocusMusicStage music={focusMusic} />
       {toast && (
         <div className="sb-toast">
           <Mascot species={mascot} mood="celebrate" size={28} hop={hopping} />

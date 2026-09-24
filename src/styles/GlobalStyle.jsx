@@ -1620,18 +1620,15 @@ export default function GlobalStyle() {
          studying" and Periodic Table dialogs -- sized generously and with
          larger type throughout since it's no longer squeezed into the
          narrow inline pop-under. */
-      .sb-timer-settings-dialog { width: min(480px, 100%); }
+      .sb-timer-settings-dialog { width: min(520px, 100%); }
       .sb-timer-settings { display: flex; flex-direction: column; gap: 16px; }
       .sb-timer-settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
       .sb-timer-settings-label { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: 15px; color: var(--muted); }
-      .sb-timer-settings-radio-head { margin-top: 4px; }
       .sb-sound-toggle { padding: 8px 16px; font-size: 13.5px; }
       .sb-radio-options { display: flex; flex-wrap: wrap; gap: 8px; }
       .sb-radio-chip { padding: 8px 15px; border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--card); color: var(--mascot-ink); font-weight: 700; font-size: 13.5px; cursor: pointer; }
       .sb-radio-chip.active { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
       .sb-radio-chip { display: inline-flex; align-items: center; gap: 5px; }
-      .sb-radio-custom-row { display: flex; gap: 8px; align-items: center; }
-      .sb-radio-custom-row .sb-input { flex: 1; font-size: 14px; padding: 10px 12px; }
       .sb-radio-error { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #d1495b; margin: 0; }
 
       /* "Run this in one browser only" banner (Focus Timer info toggle) --
@@ -1653,9 +1650,6 @@ export default function GlobalStyle() {
         color: #d1495b; opacity: .65;
       }
       .sb-timer-guilt-banner-close:hover { opacity: 1; }
-      .sb-radio-embed-wrap { display: flex; flex-direction: column; gap: 4px; }
-      .sb-radio-embed-tucked { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
-      .sb-radio-embed { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; border: 2px solid var(--mascot-outline); }
       .sb-radio-hint { font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.5; }
       .sb-radio-links { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 6px; border-top: 2px dashed var(--mascot-outline); }
       .sb-radio-link { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; color: var(--muted); text-decoration: none; }
