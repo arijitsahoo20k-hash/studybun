@@ -1620,7 +1620,14 @@ export default function GlobalStyle() {
          studying" and Periodic Table dialogs -- sized generously and with
          larger type throughout since it's no longer squeezed into the
          narrow inline pop-under. */
-      .sb-timer-settings-dialog { width: min(520px, 100%); }
+      .sb-timer-settings-dialog {
+        width: min(520px, 100%);
+        /* Still scrolls when content overflows (see .sb-pt-dialog above) but
+           the always-on OS scrollbar it inherits reads as a stray UI glitch
+           on desktop -- hide the track, keep the scroll behaviour. */
+        scrollbar-width: none; -ms-overflow-style: none;
+      }
+      .sb-timer-settings-dialog::-webkit-scrollbar { display: none; width: 0; height: 0; }
       .sb-timer-settings { display: flex; flex-direction: column; gap: 16px; }
       .sb-timer-settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
       .sb-timer-settings-label { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: 15px; color: var(--muted); }

@@ -324,13 +324,10 @@ export function FocusMusicMiniBar({ music, running, onOpenSettings }) {
   if (!music) return null;
   const m = music;
 
-  if (!m.enabled) {
-    return (
-      <div className="sb-music-mini-solo">
-        <button className="sb-music-mini-link" onClick={onOpenSettings}>🎧 Set up focus music</button>
-      </div>
-    );
-  }
+  // Music is off entirely -- don't spend a row nagging the user to set it
+  // up; just render nothing so the layout reclaims that space, same as
+  // before focus music existed. It reappears the moment they turn it on.
+  if (!m.enabled) return null;
   if (!m.hasQueue) {
     return (
       <div className="sb-music-mini">

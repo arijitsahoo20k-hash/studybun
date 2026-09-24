@@ -108,9 +108,10 @@ describe("Focus music settings UI", () => {
     await waitFor(() => expect(stage.classList.contains("in-slot")).toBe(false));
   });
 
-  it("the timer card shows a setup link when music is off, and a 'starts with your timer' note when on", async () => {
+  it("the timer card shows nothing when music is off, and a 'starts with your timer' note when on", async () => {
     const { rerender } = render(<Harness />);
-    expect(await screen.findByText(/Set up focus music/)).toBeInTheDocument();
+    await waitFor(() => expect(document.querySelector(".sb-music-mini-solo")).not.toBeInTheDocument());
+    expect(screen.queryByText(/Set up focus music/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^On$|^Off$/ }));
     await waitFor(() => expect(screen.getByText(/plays when you start/)).toBeInTheDocument());
     rerender(<Harness running />);
