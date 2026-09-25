@@ -137,6 +137,59 @@ export default function CommunityStyle() {
       .sb-channel-lock-label { letter-spacing: .02em; text-transform: uppercase; }
       .sb-channel-lock-err { font-size: 10.5px; font-weight: 700; color: #C24444; max-width: 160px; text-align: right; }
 
+      /* ---------- chat: header switches row ----------
+         Wraps FocusLockToggle + ChannelLockToggle together so, on the one
+         account that can see both, they sit side by side instead of
+         stacking/overlapping in the SectionTitle's "right" slot. Wraps
+         to a second line on narrow widths rather than clipping. */
+      .sb-chat-header-switches { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+      /* ---------- chat: focus lock switch (personal, self-service) ----------
+         Deliberately NOT red/green like the founder-only channel lock —
+         this one can only ever affect the person clicking it, so it reads
+         as a personal setting (violet), not a danger control. Book icon
+         (not a padlock) for the same reason: it's a "go study" switch, not
+         a moderation power. */
+      .sb-focus-lock { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+      .sb-focus-lock-switch {
+        display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px;
+        border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--card);
+        box-shadow: 2px 2px 0 var(--mascot-outline); cursor: pointer; font-weight: 800; font-size: 11.5px;
+        color: var(--mascot-ink); transition: transform .12s ease;
+      }
+      .sb-focus-lock-switch:hover:not(:disabled) { transform: translateY(-1px); }
+      .sb-focus-lock-switch:disabled { cursor: default; opacity: .75; }
+      .sb-focus-lock-track {
+        position: relative; width: 34px; height: 20px; border-radius: 999px;
+        border: 2px solid var(--mascot-outline); flex-shrink: 0;
+        background: #B9B0D8; transition: background .15s ease;
+      }
+      .sb-focus-lock-switch.locked .sb-focus-lock-track { background: #7C5CD1; }
+      .sb-focus-lock-knob {
+        position: absolute; top: 50%; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+        background: #fff; display: flex; align-items: center; justify-content: center; color: #6B5B95;
+        transform: translate(0, -50%); transition: transform .15s ease;
+      }
+      .sb-focus-lock-switch.locked .sb-focus-lock-knob { transform: translate(14px, -50%); color: #7C5CD1; }
+      .sb-focus-lock-label { letter-spacing: .02em; text-transform: uppercase; }
+      .sb-focus-lock-err { font-size: 10.5px; font-weight: 700; color: #C24444; max-width: 160px; text-align: right; }
+
+      /* ---------- chat: focus-locked panel (personal — replaces pills + list + composer) ----------
+         Unlike sb-channel-closed-banner (a slim strip that only ever
+         replaces the composer, for everyone), this replaces the ENTIRE
+         chat body for just this one user, so it takes up the full card
+         height instead of sitting as a thin bar. Same violet as the
+         switch above so the two visually read as one feature. */
+      .sb-focus-locked-panel {
+        flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; text-align: center; gap: 10px; padding: 32px 20px;
+        border-radius: 18px; border: 2px dashed #7C5CD1;
+        background: color-mix(in srgb, #7C5CD1 10%, var(--card)); color: #6B5B95;
+      }
+      .sb-focus-locked-panel svg { color: #7C5CD1; }
+      .sb-focus-locked-title { font-size: 16px; font-weight: 900; margin: 0; color: #6B5B95; }
+      .sb-focus-locked-sub { font-size: 12.5px; font-weight: 600; margin: 0; max-width: 320px; color: var(--muted); }
+
       /* ---------- chat: channel closed banner (replaces the composer) ---------- */
       .sb-channel-closed-banner {
         display: flex; align-items: center; justify-content: center; gap: 8px;

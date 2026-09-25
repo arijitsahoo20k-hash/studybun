@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle, Lock } from "lucide-react";
+import { MessageCircle, Lock, BookOpen } from "lucide-react";
 import { Card, SectionTitle, EmptyState } from "../ui";
 import ChatMessage from "./ChatMessage";
 import ChatComposer from "./ChatComposer";
 import ChannelSelector from "./ChannelSelector";
 import ChannelLockToggle from "./ChannelLockToggle";
+import FocusLockToggle from "./FocusLockToggle";
 import ConfirmDialog from "./private/ConfirmDialog";
 import MessageInfoModal from "./MessageInfoModal";
+import { useCommunityFocusLock } from "../../hooks/useCommunityFocusLock";
 
 // Same-sender messages within this window are visually grouped (avatar
 // and name shown once, bubbles pulled tighter) instead of repeating the
@@ -79,6 +81,18 @@ export default function CommunityChat({
   // this only intercepts what that callback does with it.
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+  // Personal self-lock — entirely separate from the founder-only channel
+  // lock above (`setChannelLock`/`isChannelLocked` further down). See
+  // supabase/migration_focus_lock.sql for why these are two independent
+  // booleans that can be on/off in any combination, never one state.
+  const focusLock = useCommunityFocusLock();
+  // Belt-and-suspenders alongside the FK cascade in the migration (which
+  // clears is_locked the instant eligibility is revoked): only ever treat
+  // the lock as "in effect" while the user is BOTH still eligible AND
+  // locked, so a stale/slow-to-refresh client can never stack up with a
+  // DB-level edge case into someone being stuck on the banner with no
+  // toggle left to undo it.
+  const isFocusLocked = focusLock.eligible && focusLock.locked;
   const listRef = useRef(null);
   const msgRefs = useRef({});
   const refCallbacks = useRef(new Map());
@@ -256,16 +270,6 @@ export default function CommunityChat({
   );
   const renderItems = useMemo(() => buildRenderItems(visible), [visible]);
 
-  // Mark the channel read whenever it's open and has messages on screen —
-  // covers both "just switched into this channel" and "a new message
-  // arrived while it's open". markChannelRead itself throttles the actual
-  // network write (see useCommunityChat), so this firing on every message
-  // list change is cheap, not a write per message.
-  useEffect(() => {
-    if (!markChannelRead || visible.length === 0) return;
-    markChannelRead();
-  }, [activeChannelId, visible.length, markChannelRead]);
-
   // ChatMessage fires onDelete(id)/onShowInfo(message) the instant its
   // icon is tapped — requestDelete just intercepts what that does (same
   // split as PrivateChatWindow's requestDelete/confirmDelete) so a tap
@@ -305,78 +309,117 @@ export default function CommunityChat({
     [setChannelLock, activeChannelId]
   );
 
+  // Mark the channel read whenever it's open and has messages on screen —
+  // covers both "just switched into this channel" and "a new message
+  // arrived while it's open". markChannelRead itself throttles the actual
+  // network write (see useCommunityChat), so this firing on every message
+  // list change is cheap, not a write per message.
+  //
+  // Skipped entirely while focus-locked (see "nor my seen by counts" in
+  // the design note) — mark_channel_read() already no-ops server-side
+  // for a locked user as defense in depth, but not calling it at all
+  // client-side means it also never fires a network request in the
+  // first place.
+  useEffect(() => {
+    if (!markChannelRead || isFocusLocked || visible.length === 0) return;
+    markChannelRead();
+  }, [activeChannelId, visible.length, markChannelRead, isFocusLocked]);
+
   return (
     <Card washi className="sb-community-chat">
       <SectionTitle
         icon={MessageCircle}
         right={
-          moderation.isChannelLockAdmin && activeChannel ? (
-            <ChannelLockToggle
-              key={activeChannel.id}
-              channelName={activeChannel.name}
-              locked={isChannelLocked}
-              onToggle={handleToggleLock}
-            />
+          (moderation.isChannelLockAdmin && activeChannel) || focusLock.eligible ? (
+            <div className="sb-chat-header-switches">
+              {focusLock.eligible && (
+                <FocusLockToggle locked={focusLock.locked} onToggle={focusLock.toggle} />
+              )}
+              {moderation.isChannelLockAdmin && activeChannel && (
+                <ChannelLockToggle
+                  key={activeChannel.id}
+                  channelName={activeChannel.name}
+                  locked={isChannelLocked}
+                  onToggle={handleToggleLock}
+                />
+              )}
+            </div>
           ) : null
         }
       >
         Community Chat
       </SectionTitle>
-      <ChannelSelector channels={channels} activeId={activeChannelId} onSelect={onSelectChannel} />
 
-      <div className="sb-chat-list" ref={listRef} onScroll={handleScroll}>
-        {hasMore && (
-          <button type="button" className="sb-chat-load-older" onClick={handleLoadOlder}>Load earlier messages</button>
-        )}
-        {loading ? (
-          <div className="sb-muted small" style={{ padding: 8 }}>Loading...</div>
-        ) : visible.length === 0 ? (
-          <EmptyState mascot={mascot} mood="idle" text="Start the conversation." sub="What are you studying today?" />
-        ) : (
-          renderItems.map((item) =>
-            item.kind === "date" ? (
-              <div key={item.key} className="sb-chat-date-sep"><span>{item.label}</span></div>
-            ) : (
-              <ChatMessage
-                key={item.key}
-                ref={getRefCallback(item.message.id)}
-                message={item.message}
-                showMeta={item.showMeta}
-                isOwn={item.message.user_id === currentUserId}
-                myName={myName}
-                myMascotSpecies={myMascotSpecies}
-                canDelete={moderation.canDelete(item.message.user_id)}
-                founderIds={founderIds}
-                memberIds={memberIds}
-                onDelete={requestDelete}
-                onReply={setReplyTo}
-                onJumpToReply={scrollToMessage}
-                onShowInfo={setInfoMessage}
-                highlighted={highlightedId === item.message.id}
-              />
-            )
-          )
-        )}
-      </div>
-
-      {deleteError && <div className="sb-chat-delete-err">{deleteError}</div>}
-
-      {isChannelLocked ? (
-        // Replaces the composer entirely — for EVERYONE, including the
-        // person who closed it. No half-measures like a disabled input;
-        // a closed channel shouldn't even look like typing is an option.
-        <div className="sb-channel-closed-banner" role="status">
-          <Lock size={16} aria-hidden="true" />
-          <span>This channel is closed right now — no new messages.</span>
+      {isFocusLocked ? (
+        // Personal self-lock: replaces the channel pills, the message
+        // list AND the composer, all at once — for THIS user only.
+        // Nothing here touches `channels`, `messages`, `isChannelLocked`
+        // or anyone else's view; flipping the switch above is the only
+        // way out, same click either direction.
+        <div className="sb-focus-locked-panel" role="status">
+          <BookOpen size={28} aria-hidden="true" />
+          <p className="sb-focus-locked-title">You closed this off.</p>
+          <p className="sb-focus-locked-sub">Community Chat is hidden for you right now — go study. Flip the switch above whenever you're ready to come back.</p>
         </div>
       ) : (
-        <ChatComposer
-          channelId={activeChannelId}
-          replyTo={replyTo}
-          onCancelReply={cancelReply}
-          sendMessage={handleSendMessage}
-          sending={sending}
-        />
+        <>
+          <ChannelSelector channels={channels} activeId={activeChannelId} onSelect={onSelectChannel} />
+
+          <div className="sb-chat-list" ref={listRef} onScroll={handleScroll}>
+            {hasMore && (
+              <button type="button" className="sb-chat-load-older" onClick={handleLoadOlder}>Load earlier messages</button>
+            )}
+            {loading ? (
+              <div className="sb-muted small" style={{ padding: 8 }}>Loading...</div>
+            ) : visible.length === 0 ? (
+              <EmptyState mascot={mascot} mood="idle" text="Start the conversation." sub="What are you studying today?" />
+            ) : (
+              renderItems.map((item) =>
+                item.kind === "date" ? (
+                  <div key={item.key} className="sb-chat-date-sep"><span>{item.label}</span></div>
+                ) : (
+                  <ChatMessage
+                    key={item.key}
+                    ref={getRefCallback(item.message.id)}
+                    message={item.message}
+                    showMeta={item.showMeta}
+                    isOwn={item.message.user_id === currentUserId}
+                    myName={myName}
+                    myMascotSpecies={myMascotSpecies}
+                    canDelete={moderation.canDelete(item.message.user_id)}
+                    founderIds={founderIds}
+                    memberIds={memberIds}
+                    onDelete={requestDelete}
+                    onReply={setReplyTo}
+                    onJumpToReply={scrollToMessage}
+                    onShowInfo={setInfoMessage}
+                    highlighted={highlightedId === item.message.id}
+                  />
+                )
+              )
+            )}
+          </div>
+
+          {deleteError && <div className="sb-chat-delete-err">{deleteError}</div>}
+
+          {isChannelLocked ? (
+            // Replaces the composer entirely — for EVERYONE, including the
+            // person who closed it. No half-measures like a disabled input;
+            // a closed channel shouldn't even look like typing is an option.
+            <div className="sb-channel-closed-banner" role="status">
+              <Lock size={16} aria-hidden="true" />
+              <span>This channel is closed right now — no new messages.</span>
+            </div>
+          ) : (
+            <ChatComposer
+              channelId={activeChannelId}
+              replyTo={replyTo}
+              onCancelReply={cancelReply}
+              sendMessage={handleSendMessage}
+              sending={sending}
+            />
+          )}
+        </>
       )}
 
       <ConfirmDialog
