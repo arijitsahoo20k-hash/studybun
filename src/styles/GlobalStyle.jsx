@@ -2027,6 +2027,18 @@ export default function GlobalStyle() {
       .sb-podium-spot.p2 .sb-podium-avatar { border-color: #A7ADB8; box-shadow: 3px 3px 0 #A7ADB8; }
       .sb-podium-spot.p3 .sb-podium-avatar { border-color: #C7864E; box-shadow: 3px 3px 0 #C7864E; }
       .sb-podium-spot.me .sb-podium-avatar { outline: 2.5px dashed var(--accent); outline-offset: 3px; }
+      /* Soft gold glow behind #1 only -- a quiet crown-adjacent touch, not
+         another badge. Sits behind the avatar via negative inset + z-index,
+         same recipe as .sb-hero-mascot-wrap's sticker-platform backing. */
+      .sb-podium-spot.p1 .sb-podium-avatar-wrap::before {
+        content: ""; position: absolute; inset: -16px; z-index: -1; border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,215,0,.45) 0%, transparent 70%);
+        animation: sb-lb-glow-pulse 2.6s ease-in-out infinite;
+      }
+      @keyframes sb-lb-glow-pulse { 0%, 100% { opacity: .55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-podium-spot.p1 .sb-podium-avatar-wrap::before { animation: none; }
+      }
 
       .sb-podium-name {
         font-family: var(--font-display); font-weight: 800; font-size: 12.5px; margin-top: 8px;
@@ -2064,6 +2076,47 @@ export default function GlobalStyle() {
       .sb-lb-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: sb-lb-pulse 1.6s ease-in-out infinite; }
       @keyframes sb-lb-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: .45; } }
 
+      /* Hero-side action cluster: Live badge + the single Info toggle that
+         replaces the two old always-on "scoring" / "streak tiers" cards.
+         Wraps under the badge on narrow phones instead of squeezing. */
+      .sb-lb-hero-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+      .sb-lb-info-btn {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-family: var(--font-body); font-size: 11.5px; font-weight: 800; color: var(--mascot-ink);
+        background: var(--card); border: 1.5px solid var(--mascot-outline); border-radius: 999px;
+        padding: 5px 12px; cursor: pointer; box-shadow: 2px 2px 0 var(--mascot-outline); flex-shrink: 0;
+        transition: transform .12s ease, box-shadow .12s ease, background-color .15s ease, color .15s ease;
+      }
+      .sb-lb-info-btn:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--mascot-outline); }
+      .sb-lb-info-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .sb-lb-info-btn svg:last-child { transition: transform .2s ease; }
+      .sb-lb-info-btn.active svg:last-child { transform: rotate(180deg); }
+
+      /* Unified info drawer -- scoring write-up + streak-tier legend behind
+         one optional panel (switched via tabs) instead of two permanent
+         card shells. Simply isn't in the DOM when closed, so the podium is
+         the first thing anyone sees below the hero. */
+      .sb-lb-info-panel { animation: sb-lb-panel-in .22s ease; }
+      @keyframes sb-lb-panel-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+      .sb-lb-info-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+      .sb-lb-info-head .sb-section-title { margin-bottom: 0; flex: 1; }
+      .sb-lb-info-close {
+        display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+        border-radius: 50%; border: 1.5px solid var(--mascot-outline); background: var(--card); color: var(--muted);
+        cursor: pointer; flex-shrink: 0; transition: background-color .15s ease, color .15s ease;
+      }
+      .sb-lb-info-close:hover { background: var(--soft); color: var(--mascot-ink); }
+      .sb-lb-info-tabs { display: flex; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
+      .sb-lb-info-tab {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-family: var(--font-body); font-size: 12px; font-weight: 800; padding: 7px 14px;
+        border-radius: 999px; border: 1.5px solid var(--mascot-outline); background: var(--bg); color: var(--muted);
+        cursor: pointer; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+      }
+      .sb-lb-info-tab:hover { color: var(--mascot-ink); }
+      .sb-lb-info-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 2px 2px 0 var(--mascot-outline); }
+      .sb-lb-info-text { font-size: 12.5px; line-height: 1.75; color: var(--muted); margin: 0; }
+
       .sb-lb-list { display: flex; flex-direction: column; gap: 8px; }
       .sb-lb-row {
         display: flex; align-items: center; gap: 12px; padding: 10px 12px;
@@ -2077,8 +2130,16 @@ export default function GlobalStyle() {
       .sb-lb-row.medal-2 { border-color: #A7ADB8; }
       .sb-lb-row.medal-3 { border-color: #C7864E; }
 
-      .sb-lb-rank { width: 34px; flex-shrink: 0; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--muted); }
-      .sb-lb-row.medal .sb-lb-rank { font-size: 22px; }
+      /* Rank as a real circular chip (matches the avatar/icon-badge visual
+         language) instead of bare floating text -- reads as a proper badge
+         at a glance rather than a table column. */
+      .sb-lb-rank {
+        width: 30px; height: 30px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+        font-family: var(--font-display); font-weight: 800; font-size: 12.5px; color: var(--muted);
+        background: var(--card); border: 1.5px solid var(--mascot-outline); border-radius: 50%;
+      }
+      .sb-lb-row.me .sb-lb-rank { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .sb-lb-row.medal .sb-lb-rank { font-size: 22px; width: auto; height: auto; background: none; border: none; }
 
       .sb-lb-avatar-wrap { position: relative; flex-shrink: 0; }
       .sb-lb-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--card); border: 2px solid var(--mascot-outline); display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -2119,6 +2180,9 @@ export default function GlobalStyle() {
 
       .sb-lb-you-card { border-color: var(--accent); }
       .sb-lb-you-row { display: flex; align-items: center; gap: 12px; }
+      .sb-lb-you-progress { margin-top: 14px; }
+      .sb-lb-you-progress-label { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+      .sb-lb-you-progress-label strong { color: var(--accent); font-family: var(--font-display); font-size: 12px; }
 
       @media (max-width: 560px) {
         .sb-lb-row { gap: 8px; padding: 8px 10px; }
