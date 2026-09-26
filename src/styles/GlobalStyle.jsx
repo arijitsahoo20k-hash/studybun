@@ -2089,7 +2089,25 @@ export default function GlobalStyle() {
       .sb-lb-you-tag { font-family: var(--font-body); font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; background: var(--accent); color: #fff; border-radius: 999px; padding: 2px 7px; flex-shrink: 0; }
       .sb-founder-badge { font-family: var(--font-body); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; display: inline-flex; align-items: center; gap: 2px; background: linear-gradient(135deg, #ffe9a8, #ffcf6b); color: #6b4a02; border: 1.5px solid var(--mascot-outline, #6b4a02); border-radius: 999px; padding: 1.5px 7px 1.5px 5px; box-shadow: 1.5px 1.5px 0 var(--mascot-outline, #6b4a02); flex-shrink: 0; white-space: nowrap; line-height: 1.5; }
       .sb-mod-badge { font-family: var(--font-body); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; display: inline-flex; align-items: center; gap: 2px; background: linear-gradient(135deg, #cfe2ff, #93b8ff); color: #1f3d80; border: 1.5px solid var(--mascot-outline, #1f3d80); border-radius: 999px; padding: 1.5px 7px 1.5px 5px; box-shadow: 1.5px 1.5px 0 var(--mascot-outline, #1f3d80); flex-shrink: 0; white-space: nowrap; line-height: 1.5; }
-      .sb-member-badge { font-family: var(--font-body); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; display: inline-flex; align-items: center; gap: 2px; background: linear-gradient(135deg, #ffd4b3, #ff9d66); color: #7a3410; border: 1.5px solid var(--mascot-outline, #7a3410); border-radius: 999px; padding: 1.5px 7px 1.5px 5px; box-shadow: 1.5px 1.5px 0 var(--mascot-outline, #7a3410); flex-shrink: 0; white-space: nowrap; line-height: 1.5; }
+      .sb-streak-badge { font-family: var(--font-body); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; display: inline-flex; align-items: center; gap: 2px; border-radius: 999px; padding: 1.5px 7px 1.5px 5px; flex-shrink: 0; white-space: nowrap; line-height: 1.5; }
+      /* 3-6 days: the starter tier, same look the old flat "Member" pill always had. */
+      .sb-streak-member { background: linear-gradient(135deg, #ffd4b3, #ff9d66); color: #7a3410; border: 1.5px solid var(--mascot-outline, #7a3410); box-shadow: 1.5px 1.5px 0 var(--mascot-outline, #7a3410); }
+      /* 7-13 days: a week+ of real work — tips into red to read as "heating up". */
+      .sb-streak-grinder { background: linear-gradient(135deg, #ffb199, #ff5b3d); color: #7a1f10; border: 1.5px solid var(--mascot-outline, #7a1f10); box-shadow: 1.5px 1.5px 0 var(--mascot-outline, #7a1f10); }
+      /* 14-29 days: two weeks+ — purple, visibly a different league from orange/red. */
+      .sb-streak-warrior { background: linear-gradient(135deg, #e0c3ff, #b366ff); color: #4a1a7a; border: 1.5px solid var(--mascot-outline, #4a1a7a); box-shadow: 1.5px 1.5px 0 var(--mascot-outline, #4a1a7a); }
+      /* 30-59 days: a full month+ — blue. */
+      .sb-streak-titan { background: linear-gradient(135deg, #bcd4ff, #5b8dff); color: #1a2f7a; border: 1.5px solid var(--mascot-outline, #1a2f7a); box-shadow: 1.5px 1.5px 0 var(--mascot-outline, #1a2f7a); }
+      /* 60-99 days: two months+ — emerald. */
+      .sb-streak-legend { background: linear-gradient(135deg, #b3ffe0, #33e6a3); color: #0d5c3f; border: 1.5px solid var(--mascot-outline, #0d5c3f); box-shadow: 1.5px 1.5px 0 var(--mascot-outline, #0d5c3f); }
+      /* 100+ days: the top tier — gold, deliberately close to the Founder badge's palette since at this point the streak IS the achievement. */
+      .sb-streak-immortal { background: linear-gradient(135deg, #fff3b0, #ffd700 55%, #ff8c00); color: #6b3a00; border: 1.5px solid var(--mascot-outline, #6b3a00); box-shadow: 1.5px 1.5px 0 var(--mascot-outline, #6b3a00); }
+      /* Streak-tier legend on the Leaderboard "Streak tiers" card — one row
+         per tier, the real pill on the left so it matches what's rendered
+         next to names, the day range spelled out on the right. */
+      .sb-tier-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+      .sb-tier-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .sb-tier-days { font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--muted); }
       .sb-lb-streak { display: flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 700; color: var(--muted); margin-top: 2px; }
       .sb-lb-streak svg { color: #E8874A; }
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Crown, Flame, Info, Sparkles, Medal } from "lucide-react";
-import { Card, SectionTitle, EmptyState, PersonBadge } from "../components/ui";
+import { Card, SectionTitle, EmptyState, PersonBadge, STREAK_TIERS } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { useLeaderboard } from "../hooks/useLeaderboard";
 import { useFounderIds } from "../hooks/useFounderIds";
@@ -57,6 +57,15 @@ export default function LeaderboardPage(p) {
   const { top, myRank, amInTop, pointsToTop20, loading, error, refetch } = useLeaderboard();
   const founderIds = useFounderIds();
   const [showInfo, setShowInfo] = useState(false);
+  const [showTiers, setShowTiers] = useState(false);
+  // Ascending (Member first) for the legend — STREAK_TIERS itself is ordered
+  // highest-min-first since that's what getStreakTier needs to walk down.
+  // Each tier's upper bound is just the next tier's min minus 1; the top
+  // tier (index 0 here, after reversing) has no ceiling.
+  const tierRows = [...STREAK_TIERS].reverse().map((tier, i, arr) => {
+    const next = arr[i + 1];
+    return { ...tier, range: next ? `${tier.min}–${next.min - 1} days` : `${tier.min}+ days` };
+  });
   const userId = p.userId;
   const studyingIds = p.studyingIds || new Set();
 
@@ -87,6 +96,26 @@ export default function LeaderboardPage(p) {
             more than a real day's worth of points. Idle or abandoned timers don't count — only sessions
             that actually finish.
           </p>
+        )}
+      </Card>
+
+      <Card>
+        <SectionTitle icon={Flame} right={
+          <button className="sb-chip small" onClick={() => setShowTiers((v) => !v)}>
+            {showTiers ? "Hide" : "Streak tiers"}
+          </button>
+        }>
+          Streak tiers
+        </SectionTitle>
+        {showTiers && (
+          <div className="sb-tier-list">
+            {tierRows.map((tier) => (
+              <div className="sb-tier-row" key={tier.className}>
+                <span className={`sb-streak-badge ${tier.className}`}>🔥 {tier.label}</span>
+                <span className="sb-tier-days">{tier.range}</span>
+              </div>
+            ))}
+          </div>
         )}
       </Card>
 

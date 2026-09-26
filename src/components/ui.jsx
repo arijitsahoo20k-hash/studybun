@@ -30,23 +30,53 @@ export const ModBadge = () => (
   <span className="sb-mod-badge" title="StudyBun moderator">⚡ Mod</span>
 );
 
-// Small "Member" pill — shown next to a name wherever founderIds does NOT
-// have that user_id but they have a 3+ day real-activity streak (see
-// useStreakMemberIds). Same spots as FounderBadge: Leaderboard
-// podium/rows/my-rank, Community posts/replies, Community chat.
-export const MemberBadge = () => (
-  <span className="sb-member-badge" title="3+ day streak">🔥 Member</span>
-);
-
 // Single source of truth for the streak threshold — used here and by
 // useStreakMemberIds.js's query. Change it in exactly one place.
 export const MEMBER_STREAK_MIN = 3;
 
+// The streak ladder. Six named tiers instead of one flat "Member" label —
+// a 3-day streak and a 100-day streak are not the same achievement and
+// shouldn't wear the same pill. Highest min first: getStreakTier walks
+// down until it finds a tier the streak clears. Add a tier here (and a
+// matching .sb-streak-<name> rule in GlobalStyle.jsx) to add a rung.
+export const STREAK_TIERS = [
+  { min: 100, label: "Immortal", className: "sb-streak-immortal" },
+  { min: 60, label: "Legend", className: "sb-streak-legend" },
+  { min: 30, label: "Titan", className: "sb-streak-titan" },
+  { min: 14, label: "Warrior", className: "sb-streak-warrior" },
+  { min: 7, label: "Grinder", className: "sb-streak-grinder" },
+  { min: MEMBER_STREAK_MIN, label: "Member", className: "sb-streak-member" },
+];
+
+export function getStreakTier(streak) {
+  if (typeof streak !== "number") return null;
+  return STREAK_TIERS.find((t) => streak >= t.min) || null;
+}
+
+// The streak pill — shown next to a name wherever founderIds does NOT
+// have that user_id but they have a 3+ day real-activity streak (see
+// useStreakMemberIds). Same spots as FounderBadge: Leaderboard
+// podium/rows/my-rank, Community posts/replies, Community chat.
+//
+// Which tier renders (and what it's called/colored) depends on the streak
+// length itself — see STREAK_TIERS above. `streak` is always a real
+// number here (PersonBadge never renders this without one); the fallback
+// only guards against a stray direct call.
+export const MemberBadge = ({ streak }) => {
+  const tier = getStreakTier(streak) || STREAK_TIERS[STREAK_TIERS.length - 1];
+  return (
+    <span className={`sb-streak-badge ${tier.className}`} title={`${streak}-day streak`}>
+      🔥 {tier.label}
+    </span>
+  );
+};
+
 // Single source of truth for "which pill (if any) goes next to this
-// user_id". Handles both call shapes: pass `memberIds` (a Set, for
-// Community posts/replies/chat) OR `streak` (a number, for Leaderboard
-// rows which already carry current_streak inline and don't need a
-// separate query).
+// user_id". Handles both call shapes: pass `memberIds` (a Map of
+// user_id -> current_streak, for Community posts/replies/chat) OR
+// `streak` (a number, for Leaderboard rows which already carry
+// current_streak inline and don't need a separate query). Either way,
+// MemberBadge gets the real day count to render.
 //
 // Precedence is Founder > Mod > Member — exactly one pill ever renders,
 // and a role always beats a streak.
@@ -70,9 +100,9 @@ export const PersonBadge = ({ founderIds, moderatorIds, memberIds, userId, strea
   if (mods.has(userId)) return <ModBadge />;
   if (memberIds !== undefined) {
     if (!memberIds) return null; // memberIds query also still loading
-    return memberIds.has(userId) ? <MemberBadge /> : null;
+    return memberIds.has(userId) ? <MemberBadge streak={memberIds.get(userId)} /> : null;
   }
-  return typeof streak === "number" && streak >= MEMBER_STREAK_MIN ? <MemberBadge /> : null;
+  return typeof streak === "number" && streak >= MEMBER_STREAK_MIN ? <MemberBadge streak={streak} /> : null;
 };
 
 export const ProgressBar = ({ pct, color, paw = true }) => {

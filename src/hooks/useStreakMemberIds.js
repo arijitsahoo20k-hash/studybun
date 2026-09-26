@@ -2,9 +2,18 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { MEMBER_STREAK_MIN } from "../components/ui";
 
-/** user_ids with current_streak >= 3 in leaderboard_public, for rendering
- * the "Member" badge next to a name (same spots as FounderBadge: Leaderboard
- * podium/rows/my-rank line, Community posts/replies, Community chat).
+/** user_id -> current_streak, for every user with current_streak >= 3 in
+ * leaderboard_public. Used to render the "Member" badge next to a name
+ * (same spots as FounderBadge: Leaderboard podium/rows/my-rank line,
+ * Community posts/replies, Community chat), now WITH the day count
+ * ("🔥 12d Member") instead of a flat "Member" pill, so a 3-day streak and
+ * a 90-day streak don't look identical — the whole point is to make the
+ * longer streak feel earned.
+ *
+ * A Map instead of a Set: every existing call site only ever did
+ * `memberIds.has(userId)`, and Map.has() behaves identically to Set.has(),
+ * so nothing downstream breaks by accident. The day count is one
+ * `memberIds.get(userId)` away for whoever wants to render it.
  *
  * `current_streak` is the same server-computed value the Leaderboard shows
  * (see lb_calc_streak in supabase/migration_streak_tasks.sql) — it only
@@ -20,7 +29,7 @@ import { MEMBER_STREAK_MIN } from "../components/ui";
  * query with no dependency on the founder list. */
 export function useStreakMemberIds() {
   // Same reasoning as useFounderIds: start at `null` (unknown), not an
-  // empty Set, so PersonBadge can tell "still loading" apart from
+  // empty Map, so PersonBadge can tell "still loading" apart from
   // "confirmed no 3-day streak" and never renders early on a guess.
   const [memberIds, setMemberIds] = useState(null);
 
@@ -31,7 +40,7 @@ export function useStreakMemberIds() {
       .select("user_id, current_streak")
       .gte("current_streak", MEMBER_STREAK_MIN)
       .then(({ data }) => {
-        if (mounted) setMemberIds(new Set((data || []).map((r) => r.user_id)));
+        if (mounted) setMemberIds(new Map((data || []).map((r) => [r.user_id, r.current_streak])));
       });
     return () => { mounted = false; };
   }, []);
