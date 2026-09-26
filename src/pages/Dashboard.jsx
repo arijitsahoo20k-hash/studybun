@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { Target, Clock3, Flame, TrendingUp, BookOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Card, ProgressRing, SectionTitle, EmptyState } from "../components/ui";
@@ -29,7 +29,98 @@ const flameTierFor = (streak) => {
   return { tier: FLAME_TIERS.length - idx, label: FLAME_TIERS[idx].label };
 };
 
-export default function Dashboard(p) {
+// The two Recharts blocks are, by a wide margin, the most expensive thing
+// on this page -- ResponsiveContainer's own ResizeObserver, D3 scale/path
+// recalculation, and (by default) an entrance animation replay on every
+// single mount. Splitting them out into their own memoized component means
+// a Dashboard re-render that has nothing to do with study data (see the
+// note on `export default memo(...)` below) skips this entirely instead of
+// tearing down and rebuilding two SVG charts every time. `weeklyData` and
+// `subjectPie` are already useMemo'd in App.jsx off real session data, so
+// their references only actually change when there's something new to
+// draw -- that's what makes the shallow-compare here effective.
+const DashboardCharts = memo(function DashboardCharts({ weeklyData, subjectPie, mascot }) {
+  const subjectTotal = subjectPie.reduce((a, s) => a + s.value, 0) || 1;
+  const subjectRows = [...subjectPie].sort((a, b) => b.value - a.value);
+
+  return (
+    <div className="sb-grid-2">
+      <Card paper>
+        <SectionTitle icon={TrendingUp}>Weekly study hours</SectionTitle>
+        <div className="sb-dash-chart">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={weeklyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
+              <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />
+              <YAxis stroke="var(--muted)" fontSize={12} />
+              <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} />
+              <Legend wrapperStyle={{ fontSize: 11.5 }} />
+              <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--outline)" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+      <Card paper>
+        <SectionTitle icon={BookOpen}>Subject split</SectionTitle>
+        {subjectRows.length ? (
+          <div className="sb-subject-donut-wrap">
+            <div className="sb-subject-donut">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={subjectRows}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius="64%"
+                    outerRadius="100%"
+                    paddingAngle={4}
+                    cornerRadius={6}
+                    stroke="var(--card)"
+                    strokeWidth={3}
+                    isAnimationActive={true}
+                  >
+                    {subjectRows.map((s) => (
+                      <Cell key={s.name} fill={SYLLABUS[s.name]?.color || "var(--accent)"} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }}
+                    formatter={(value, name) => [`${value}h`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="sb-subject-donut-center">
+                <div className="sb-subject-donut-total">{Math.round(subjectTotal)}h</div>
+                <div className="sb-subject-donut-label">total</div>
+              </div>
+            </div>
+            <div className="sb-subject-legend">
+              {subjectRows.map((s) => {
+                const pct = Math.round((s.value / subjectTotal) * 100);
+                return (
+                  <div className="sb-subject-legend-row" key={s.name}>
+                    <span className="sb-subject-dot" style={{ background: SYLLABUS[s.name]?.color || "var(--accent)" }} />
+                    <span className="sb-subject-legend-name">{s.name}</span>
+                    <span className="sb-subject-legend-meta">
+                      <span className="sb-subject-legend-pct">{pct}%</span>
+                      <span className="sb-subject-legend-hrs">{Math.round(s.value)}h</span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : <EmptyState mascot={mascot} mood="idle" text="No study logged yet." sub="Log your first session and I'll chart it here." />}
+      </Card>
+    </div>
+  );
+});
+
+// NOTE: every `p.<field>` read anywhere in this function must also appear
+// in DASHBOARD_PROP_KEYS below the component, or the memo wrapping the
+// default export can hand back a stale value for it.
+function DashboardInner(p) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const goalPct = (p.todayHours / (p.profile.daily_goal || 6)) * 100;
@@ -44,11 +135,6 @@ export default function Dashboard(p) {
   // and the floating buddy always agree on how the day is actually going.
   const mascotMood = p.mascotMood || "idle";
   const mascotEnergyLevel = p.mascotEnergy;
-
-  // Subject split as a donut + legend, sorted by time spent, sharing the
-  // same per-subject colors as the rest of the app (SYLLABUS).
-  const subjectTotal = p.subjectPie.reduce((a, s) => a + s.value, 0) || 1;
-  const subjectRows = [...p.subjectPie].sort((a, b) => b.value - a.value);
 
   const backlogOpen = p.backlogItems.filter((b) => b.status !== "Completed").length;
   const revisionsDue = p.dueRevisions.length + p.overdueRevisions.length;
@@ -103,76 +189,7 @@ export default function Dashboard(p) {
             </Card>
           </div>
 
-          <div className="sb-grid-2">
-            <Card paper>
-              <SectionTitle icon={TrendingUp}>Weekly study hours</SectionTitle>
-              <div className="sb-dash-chart">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={p.weeklyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
-                    <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />
-                    <YAxis stroke="var(--muted)" fontSize={12} />
-                    <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} />
-                    <Legend wrapperStyle={{ fontSize: 11.5 }} />
-                    <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
-                    <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--outline)" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-            <Card paper>
-              <SectionTitle icon={BookOpen}>Subject split</SectionTitle>
-              {subjectRows.length ? (
-                <div className="sb-subject-donut-wrap">
-                  <div className="sb-subject-donut">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={subjectRows}
-                          dataKey="value"
-                          nameKey="name"
-                          innerRadius="64%"
-                          outerRadius="100%"
-                          paddingAngle={4}
-                          cornerRadius={6}
-                          stroke="var(--card)"
-                          strokeWidth={3}
-                          isAnimationActive={true}
-                        >
-                          {subjectRows.map((s) => (
-                            <Cell key={s.name} fill={SYLLABUS[s.name]?.color || "var(--accent)"} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }}
-                          formatter={(value, name) => [`${value}h`, name]}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="sb-subject-donut-center">
-                      <div className="sb-subject-donut-total">{Math.round(subjectTotal)}h</div>
-                      <div className="sb-subject-donut-label">total</div>
-                    </div>
-                  </div>
-                  <div className="sb-subject-legend">
-                    {subjectRows.map((s) => {
-                      const pct = Math.round((s.value / subjectTotal) * 100);
-                      return (
-                        <div className="sb-subject-legend-row" key={s.name}>
-                          <span className="sb-subject-dot" style={{ background: SYLLABUS[s.name]?.color || "var(--accent)" }} />
-                          <span className="sb-subject-legend-name">{s.name}</span>
-                          <span className="sb-subject-legend-meta">
-                            <span className="sb-subject-legend-pct">{pct}%</span>
-                            <span className="sb-subject-legend-hrs">{Math.round(s.value)}h</span>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : <EmptyState mascot={p.mascot} mood="idle" text="No study logged yet." sub="Log your first session and I'll chart it here." />}
-            </Card>
-          </div>
+          <DashboardCharts weeklyData={p.weeklyData} subjectPie={p.subjectPie} mascot={p.mascot} />
         </div>
 
         <div className="sb-pinboard">
@@ -209,3 +226,44 @@ export default function Dashboard(p) {
     </div>
   );
 }
+
+// App.jsx builds one big `pageProps` object fresh on every one of its own
+// renders and hands the whole thing to whichever page is mounted -- and
+// among the ~50 fields riding along in that object is the Focus Timer's
+// live state, which updates once a second while any session is running,
+// *regardless of which page is open* (there may well be others -- realtime
+// presence/chat pings, for instance). Without this memo, any one of those
+// was fully re-rendering Dashboard -- rebuilding both Recharts charts and
+// repainting every one of its `paper`-textured cards (Dashboard uses more
+// of those than any other page) -- for reasons that have nothing to do
+// with anything Dashboard actually shows. That's the "laggy / high GPU on
+// a page that isn't even that heavy" pattern: the page itself is light,
+// but it was being asked to fully redraw far more often than anything on
+// it ever changes.
+//
+// This compares an explicit allowlist -- exactly the `p.*` fields
+// DashboardInner reads below -- rather than "everything except the fields
+// we know are noisy": most of pageProps' other ~30 fields are plain inline
+// functions/values that App.jsx doesn't stabilize with useCallback/useMemo,
+// so a few of those are almost certainly a fresh reference every render
+// too; comparing against all of them would just silently re-arm this memo
+// to fire on every render again, with no way to notice it'd stopped
+// helping. An allowlist can't have that failure mode, at the cost of one
+// explicit rule: if you add a new `p.something` read to DashboardInner,
+// add "something" to DASHBOARD_PROP_KEYS too, or this will keep showing
+// the old value for it. Forgetting only produces an extra render for
+// everyone else's changes (safe) or a stale value for the one field you
+// just added (loud and obvious in review) -- never silent for anything
+// already in the list.
+const DASHBOARD_PROP_KEYS = [
+  "profile", "mascot", "mascotMood", "mascotEnergy",
+  "todayHours", "todayLoggedHours", "todayTimerHours", "daysToExam",
+  "streak", "streakActiveToday", "weeklyData", "subjectPie",
+  "backlogItems", "dueRevisions", "overdueRevisions",
+  "todayQuestions", "dailyQuestionTarget", "questionTargetMet", "setPage",
+];
+function dashboardPropsEqual(prev, next) {
+  return DASHBOARD_PROP_KEYS.every((key) => prev[key] === next[key]);
+}
+
+export default memo(DashboardInner, dashboardPropsEqual);

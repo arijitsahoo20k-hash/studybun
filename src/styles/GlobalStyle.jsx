@@ -423,8 +423,18 @@ export default function GlobalStyle() {
          An SVG fractal-noise grain (baked once as a data-URI, tiled, and
          blended with multiply) reads as rough paper fiber. It's a static
          image the browser decodes once and reuses, not a per-frame
-         filter/blur, so it costs nothing extra on scroll or re-render. */
-      .sb-paper { position: relative; }
+         filter/blur, so it costs nothing extra on scroll or re-render.
+         "isolation: isolate" matters here too: without it, a
+         mix-blend-mode element blends against everything painted behind it
+         in the page's shared stacking context -- including the always-on,
+         continuously-animating .sb-decor-layer bobbing underneath -- which
+         can force the browser to keep recompositing this blend every frame
+         that backdrop moves. Isolating scopes the blend to just this
+         card's own (opaque) background, matching what it already looks
+         like, but without tying its paint cost to an unrelated animation.
+         Dashboard stacks more of these paper cards at once than any other
+         page, which is exactly where that cost was showing up. */
+      .sb-paper { position: relative; isolation: isolate; }
       .sb-paper::before {
         content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
         border-radius: inherit; opacity: .5; mix-blend-mode: multiply;
@@ -482,7 +492,7 @@ export default function GlobalStyle() {
          so the whole app reads like it's printed on stock paper. Static
          data-URI + opacity only, no blend mode on the card itself, no
          per-frame cost. */
-      .sb-app[data-paper="true"] .sb-card { box-shadow: 4px 4px 0 var(--mascot-outline); }
+      .sb-app[data-paper="true"] .sb-card { box-shadow: 4px 4px 0 var(--mascot-outline); isolation: isolate; }
       .sb-app[data-paper="true"] .sb-card::before {
         content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
         border-radius: inherit; opacity: .45; mix-blend-mode: multiply;

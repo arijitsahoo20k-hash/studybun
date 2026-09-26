@@ -648,9 +648,17 @@ export default function App() {
 
   const daysToExam = profile ? daysUntilIST(profile.exam_date) : 0;
 
-  const dueRevisions = revisions.filter((r) => r.status === "Pending" && r.due_date <= todayStr());
-  const upcomingRevisions = revisions.filter((r) => r.status === "Pending" && r.due_date > todayStr());
-  const overdueRevisions = revisions.filter((r) => r.status === "Pending" && r.due_date < todayStr());
+  // useMemo here (matching weeklyData/subjectPie/streakActiveToday above)
+  // isn't just tidiness: Dashboard.jsx now does a shallow-compare React.memo
+  // to skip re-rendering (and re-running its two Recharts charts) on
+  // renders that don't concern it -- e.g. the Focus Timer's once-a-second
+  // tick, which lives in this same component and re-renders everything
+  // downstream regardless of page. A plain `.filter()` call here would
+  // hand Dashboard a brand-new array every single render even when nothing
+  // about revisions changed, which defeats that memo before it can help.
+  const dueRevisions = useMemo(() => revisions.filter((r) => r.status === "Pending" && r.due_date <= todayStr()), [revisions]);
+  const upcomingRevisions = useMemo(() => revisions.filter((r) => r.status === "Pending" && r.due_date > todayStr()), [revisions]);
+  const overdueRevisions = useMemo(() => revisions.filter((r) => r.status === "Pending" && r.due_date < todayStr()), [revisions]);
 
   const buddyMood = reactionMood({
     finishedGoal: todayHours >= (profile?.daily_goal || 6),
@@ -1312,6 +1320,7 @@ export default function App() {
     focusModeScene: focusModeRow.row?.scene, saveFocusModeScene: (scene) => focusModeRow.save({ scene }),
     exportBackup, importBackup,
   };
+
 
   return (
     // WARNING: `cssVars` below is the ONLY place theme colors (--card,
