@@ -8,7 +8,6 @@ import ChannelLockToggle from "./ChannelLockToggle";
 import FocusLockToggle from "./FocusLockToggle";
 import ConfirmDialog from "./private/ConfirmDialog";
 import MessageInfoModal from "./MessageInfoModal";
-import { useCommunityFocusLock } from "../../hooks/useCommunityFocusLock";
 
 // Same-sender messages within this window are visually grouped (avatar
 // and name shown once, bubbles pulled tighter) instead of repeating the
@@ -60,7 +59,7 @@ function buildRenderItems(messages) {
 export default function CommunityChat({
   channels, activeChannelId, onSelectChannel, setChannelLock,
   messages, loading, sending, sendMessage, deleteMessage, hasMore, loadOlder, markChannelRead,
-  currentUserId, myProfile, moderation, founderIds, memberIds, mascot,
+  currentUserId, myProfile, moderation, founderIds, memberIds, mascot, focusLock,
 }) {
   // NOTE: the old `isModerator` prop is gone — "can I delete this" is now
   // a per-author question (a mod may not delete a founder's message), so
@@ -85,7 +84,21 @@ export default function CommunityChat({
   // lock above (`setChannelLock`/`isChannelLocked` further down). See
   // supabase/migration_focus_lock.sql for why these are two independent
   // booleans that can be on/off in any combination, never one state.
-  const focusLock = useCommunityFocusLock();
+  //
+  // BUG FIX: this used to call useCommunityFocusLock() directly here,
+  // which meant its eligible/locked state was tied to CommunityChat's
+  // own mount lifetime. Since CommunityChat only exists in the tree
+  // while the "chat" tab is active (see Community.jsx), leaving any
+  // other tab (e.g. Study feed) and coming back unmounted and remounted
+  // this hook every time — re-running its two network calls
+  // (is_focus_lock_eligible RPC + community_focus_locks select) from
+  // scratch before the banner could reflect the real state, which is
+  // exactly the 1-2s lag on switching into this tab. Lifting the hook up
+  // to Community.jsx (which stays mounted for as long as the whole
+  // Community page is open, independent of which inner tab is active)
+  // and passing its result down as a prop means the state persists
+  // across tab switches, so it's already known the instant this tab
+  // renders.
   // Belt-and-suspenders alongside the FK cascade in the migration (which
   // clears is_locked the instant eligibility is revoked): only ever treat
   // the lock as "in effect" while the user is BOTH still eligible AND
@@ -162,7 +175,19 @@ export default function CommunityChat({
     if (stickToBottomRef.current) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [messages]);
+    // BUG FIX: isFocusLocked added as a dependency. The message list
+    // (.sb-chat-list, holding listRef) only exists in the DOM while
+    // !isFocusLocked — it's swapped out for the sb-focus-locked-panel
+    // entirely while locked (see the render below). Turning Focus Lock
+    // off remounts that list fresh, with the browser default scrollTop
+    // of 0 (top), but this effect previously only re-ran when `messages`
+    // changed — and unlocking doesn't change `messages` at all, so the
+    // freshly-mounted list stayed stuck at the top instead of jumping
+    // back down to the latest message. Re-running this effect whenever
+    // isFocusLocked flips (in the same layout-effect pass the list
+    // remounts in, so listRef.current is already populated) re-applies
+    // the normal stick-to-bottom behavior right away.
+  }, [messages, isFocusLocked]);
 
   useEffect(() => {
     // Fresh channel: always open anchored to the latest messages, and

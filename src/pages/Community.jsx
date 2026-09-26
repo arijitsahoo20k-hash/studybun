@@ -15,6 +15,7 @@ import { useCommunityModeration } from "../hooks/useCommunityModeration";
 import { useFounderIds } from "../hooks/useFounderIds";
 import { useStreakMemberIds } from "../hooks/useStreakMemberIds";
 import { usePrivateChatAccess } from "../hooks/usePrivateChatAccess";
+import { useCommunityFocusLock } from "../hooks/useCommunityFocusLock";
 
 // Same tab shape as Settings' TABS — each card that used to be stacked on
 // one long page now lives behind its own side-nav entry, so only one card
@@ -36,6 +37,16 @@ export default function CommunityPage(p) {
   const founderIds = useFounderIds();
   const memberIds = useStreakMemberIds();
   const privateAccess = usePrivateChatAccess();
+  // BUG FIX: lifted up from CommunityChat, which used to call this hook
+  // itself. CommunityChat only mounts while the "chat" tab is active, so
+  // its eligible/locked state was being lost and re-fetched from scratch
+  // (two network calls) every time someone left and came back to this
+  // tab — the source of the 1-2s lag before the focus-lock banner could
+  // show. This page-level component stays mounted for the whole time the
+  // Community page is open, regardless of which inner tab is selected,
+  // so calling it here means the state is already known by the time the
+  // chat tab renders.
+  const focusLock = useCommunityFocusLock();
   const [tab, setTab] = useState("checkins");
 
   // BUG FIX: this used to be `moderation.isModerator`, which was correct
@@ -180,6 +191,7 @@ export default function CommunityPage(p) {
               founderIds={founderIds}
               memberIds={memberIds}
               mascot={p.mascot}
+              focusLock={focusLock}
             />
           )}
 
