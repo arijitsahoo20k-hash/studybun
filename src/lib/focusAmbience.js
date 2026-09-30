@@ -28,6 +28,12 @@
  * requestAnimationFrame loop. No shared state between renderers.
  */
 
+import {
+  createSolarSystemRenderer,
+  createMilkyWayRenderer,
+  createBlackHoleRenderer,
+} from './focusAmbienceSpace.js';
+
 export const rand      = (a,b) => Math.random()*(b-a)+a;
 export const randInt   = (a,b) => Math.floor(rand(a,b+1));
 export const randChoice= (arr) => arr[randInt(0,arr.length-1)];
@@ -1139,4 +1145,7 @@ export const AMBIENT_ENVIRONMENTS = {
   wormhole:    { label: 'Wormhole',         icon: '🌀', create: createWormholeRenderer,      opacity: 1,   base: '#03020a' },
   bobacafe:    { label: 'Boba Café',        icon: '🧋', create: createBobaCafeRenderer,      opacity: 1,   base: '#f3d3bd' },
   jellyaquarium: { label: 'Jelly Aquarium', icon: '🪼', create: createJellyAquariumRenderer, opacity: 1,   base: '#c6c8fc' },
+  solarsystem: { label: 'Solar System',   icon: '🪐', create: createSolarSystemRenderer,   opacity: 1,   base: '#03030a' },
+  milkyway:    { label: 'Milky Way',      icon: '🌌', create: createMilkyWayRenderer,      opacity: 1,   base: '#020207' },
+  blackhole:   { label: 'Black Hole',     icon: '🕳',  create: createBlackHoleRenderer,     opacity: 1,   base: '#080605' },
 };
