@@ -16,6 +16,7 @@ import { useFounderIds } from "../hooks/useFounderIds";
 import { useStreakMemberIds } from "../hooks/useStreakMemberIds";
 import { usePrivateChatAccess } from "../hooks/usePrivateChatAccess";
 import { useCommunityFocusLock } from "../hooks/useCommunityFocusLock";
+import { useCommunityChatBan } from "../hooks/useCommunityChatBan";
 
 // Same tab shape as Settings' TABS — each card that used to be stacked on
 // one long page now lives behind its own side-nav entry, so only one card
@@ -47,6 +48,10 @@ export default function CommunityPage(p) {
   // so calling it here means the state is already known by the time the
   // chat tab renders.
   const focusLock = useCommunityFocusLock();
+  // "Blocked from Community Chat" (single-founder moderation) — lifted here
+  // for the same reason as focusLock above: stays mounted across inner-tab
+  // switches so the banner state is known the instant the chat tab renders.
+  const chatBan = useCommunityChatBan();
   const [tab, setTab] = useState("checkins");
 
   // BUG FIX: this used to be `moderation.isModerator`, which was correct
@@ -192,6 +197,7 @@ export default function CommunityPage(p) {
               memberIds={memberIds}
               mascot={p.mascot}
               focusLock={focusLock}
+              chatBan={chatBan}
             />
           )}
 

@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle, Lock, BookOpen } from "lucide-react";
+import { MessageCircle, Lock, BookOpen, Ban } from "lucide-react";
 import { Card, SectionTitle, EmptyState } from "../ui";
 import ChatMessage from "./ChatMessage";
 import ChatComposer from "./ChatComposer";
 import ChannelSelector from "./ChannelSelector";
 import ChannelLockToggle from "./ChannelLockToggle";
 import FocusLockToggle from "./FocusLockToggle";
+import ChatBanManager from "./ChatBanManager";
 import ConfirmDialog from "./private/ConfirmDialog";
 import MessageInfoModal from "./MessageInfoModal";
 
@@ -59,7 +60,7 @@ function buildRenderItems(messages) {
 export default function CommunityChat({
   channels, activeChannelId, onSelectChannel, setChannelLock,
   messages, loading, sending, sendMessage, deleteMessage, hasMore, loadOlder, markChannelRead,
-  currentUserId, myProfile, moderation, founderIds, memberIds, mascot, focusLock,
+  currentUserId, myProfile, moderation, founderIds, memberIds, mascot, focusLock, chatBan,
 }) {
   // NOTE: the old `isModerator` prop is gone — "can I delete this" is now
   // a per-author question (a mod may not delete a founder's message), so
@@ -106,6 +107,16 @@ export default function CommunityChat({
   // DB-level edge case into someone being stuck on the banner with no
   // toggle left to undo it.
   const isFocusLocked = focusLock.eligible && focusLock.locked;
+  // "Blocked from Community Chat" by the chat-ban admin (see
+  // supabase/migration_chat_ban.sql). A fourth, independent state — not
+  // Focus Lock, not the channel lock, not the personal per-user block.
+  // Takes precedence over Focus Lock in what's rendered (a blocked user
+  // sees the block banner, not "go study"); Focus Lock state itself is
+  // left untouched and comes back as-is after an unblock.
+  const isChatBanned = !!chatBan?.banned;
+  // Pending block/unblock confirmation: { userId, name, banned } | null.
+  const [pendingBan, setPendingBan] = useState(null);
+  const [banError, setBanError] = useState(null);
   const listRef = useRef(null);
   const msgRefs = useRef({});
   const refCallbacks = useRef(new Map());
@@ -159,10 +170,22 @@ export default function CommunityChat({
     async (text, reply, imageFile) => {
       const res = await sendMessage(text, reply, imageFile);
       if (res.ok) stickToBottomRef.current = true;
+      // Server refused because I'm blocked but my client hadn't heard yet
+      // (e.g. a missed realtime event) — re-read my state so the banner
+      // appears instead of leaving a composer that can never send.
+      else if (res.code === "chat_banned") chatBan?.refresh?.();
       return res;
     },
-    [sendMessage]
+    [sendMessage, chatBan]
   );
+
+  // While blocked the message list isn't mounted, so there is no scroll
+  // position to preserve: make sure the list reopens anchored to the
+  // latest message after an unblock (same remount issue as Focus Lock
+  // below). Declared before the effect that consumes the flag.
+  useLayoutEffect(() => {
+    if (isChatBanned) stickToBottomRef.current = true;
+  }, [isChatBanned]);
 
   useLayoutEffect(() => {
     const el = listRef.current;
@@ -187,7 +210,7 @@ export default function CommunityChat({
     // isFocusLocked flips (in the same layout-effect pass the list
     // remounts in, so listRef.current is already populated) re-applies
     // the normal stick-to-bottom behavior right away.
-  }, [messages, isFocusLocked]);
+  }, [messages, isFocusLocked, isChatBanned]);
 
   useEffect(() => {
     // Fresh channel: always open anchored to the latest messages, and
@@ -203,6 +226,8 @@ export default function CommunityChat({
     setInfoMessage(null);
     setPendingDeleteId(null);
     setDeleteError(null);
+    setPendingBan(null);
+    setBanError(null);
   }, [activeChannelId]);
 
   useEffect(() => {
@@ -311,6 +336,24 @@ export default function CommunityChat({
     setDeleteError(res.ok ? null : (res.error || "Couldn't delete that message."));
   }, [pendingDeleteId, deleteMessage]);
 
+  // Block / unblock from a message's action row. Like delete, it goes
+  // through a confirm step first — blocking silences someone, so it
+  // should never fire from a stray tap.
+  const requestBanToggle = useCallback((target) => {
+    setBanError(null);
+    setPendingBan(target);
+  }, []);
+  const confirmBanToggle = useCallback(async () => {
+    const target = pendingBan;
+    setPendingBan(null);
+    if (!target || !chatBan) return;
+    const res = await chatBan.setBan(target.userId, target.banned);
+    setBanError(res.ok ? null : (res.error || "Couldn't update that. Try again."));
+  }, [pendingBan, chatBan]);
+  const handleBanFromList = useCallback((userId) => chatBan.setBan(userId, true), [chatBan]);
+  const handleUnbanFromList = useCallback((userId) => chatBan.setBan(userId, false), [chatBan]);
+  const isBanAdmin = !!chatBan?.isBanAdmin;
+
   // Passing `myProfile` itself down to every ChatMessage meant *any* field
   // on your own profile row changing (theme, streak-freeze tokens, none of
   // it chat-related) — see useDeviceRow's realtime UPDATE handler — handed
@@ -346,17 +389,28 @@ export default function CommunityChat({
   // client-side means it also never fires a network request in the
   // first place.
   useEffect(() => {
-    if (!markChannelRead || isFocusLocked || visible.length === 0) return;
+    // Also skipped while blocked: the chat isn't shown to them, so they
+    // must not appear as having "seen" anything.
+    if (!markChannelRead || isFocusLocked || isChatBanned || visible.length === 0) return;
     markChannelRead();
-  }, [activeChannelId, visible.length, markChannelRead, isFocusLocked]);
+  }, [activeChannelId, visible.length, markChannelRead, isFocusLocked, isChatBanned]);
 
   return (
     <Card washi className="sb-community-chat">
       <SectionTitle
         icon={MessageCircle}
         right={
-          (moderation.isChannelLockAdmin && activeChannel) || focusLock.eligible ? (
+          (moderation.isChannelLockAdmin && activeChannel) || focusLock.eligible || isBanAdmin ? (
             <div className="sb-chat-header-switches">
+              {isBanAdmin && (
+                <ChatBanManager
+                  bannedIds={chatBan.bannedIds}
+                  onBan={handleBanFromList}
+                  onUnban={handleUnbanFromList}
+                  fetchDirectory={chatBan.fetchDirectory}
+                  founderIds={founderIds}
+                />
+              )}
               {focusLock.eligible && (
                 <FocusLockToggle locked={focusLock.locked} onToggle={focusLock.toggle} />
               )}
@@ -375,7 +429,19 @@ export default function CommunityChat({
         Community Chat
       </SectionTitle>
 
-      {isFocusLocked ? (
+      {isChatBanned ? (
+        // Blocked by the chat-ban admin: replaces the channel pills, the
+        // message list AND the composer for THIS user only, and only
+        // inside Community Chat — every other tab/page is untouched. No
+        // toggle here on purpose; only the admin unblocking lifts it,
+        // and the realtime update on their own row restores the chat
+        // instantly (no reload needed).
+        <div className="sb-chat-banned-panel" role="status">
+          <Ban size={28} aria-hidden="true" />
+          <p className="sb-chat-banned-title">You're blocked from Community Chat.</p>
+          <p className="sb-chat-banned-sub">You can't read or send messages here for now. Everything else in StudyBun works as usual.</p>
+        </div>
+      ) : isFocusLocked ? (
         // Personal self-lock: replaces the channel pills, the message
         // list AND the composer, all at once — for THIS user only.
         // Nothing here touches `channels`, `messages`, `isChannelLocked`
@@ -419,6 +485,9 @@ export default function CommunityChat({
                     onJumpToReply={scrollToMessage}
                     onShowInfo={setInfoMessage}
                     highlighted={highlightedId === item.message.id}
+                    canBan={isBanAdmin && item.message.user_id !== currentUserId}
+                    isAuthorBanned={isBanAdmin && chatBan.bannedIds.has(item.message.user_id)}
+                    onToggleBan={isBanAdmin ? requestBanToggle : undefined}
                   />
                 )
               )
@@ -426,6 +495,7 @@ export default function CommunityChat({
           </div>
 
           {deleteError && <div className="sb-chat-delete-err">{deleteError}</div>}
+          {banError && <div className="sb-chat-delete-err">{banError}</div>}
 
           {isChannelLocked ? (
             // Replaces the composer entirely — for EVERYONE, including the
@@ -454,6 +524,18 @@ export default function CommunityChat({
         confirmLabel="Delete"
         onConfirm={confirmDelete}
         onCancel={() => setPendingDeleteId(null)}
+      />
+
+      <ConfirmDialog
+        open={pendingBan != null}
+        title={pendingBan?.banned ? `Block ${pendingBan?.name || "this user"} from Community Chat?` : `Unblock ${pendingBan?.name || "this user"}?`}
+        body={pendingBan?.banned
+          ? "They'll see a banner instead of the chat and can't send messages until you unblock them. Nothing else in the app is affected."
+          : "They'll get Community Chat back right away."}
+        confirmLabel={pendingBan?.banned ? "Block" : "Unblock"}
+        danger={!!pendingBan?.banned}
+        onConfirm={confirmBanToggle}
+        onCancel={() => setPendingBan(null)}
       />
 
       <MessageInfoModal

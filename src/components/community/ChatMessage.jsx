@@ -1,5 +1,5 @@
 import React, { forwardRef, memo, useCallback, useEffect, useRef, useState } from "react";
-import { Reply as ReplyIcon, Trash2, Info } from "lucide-react";
+import { Reply as ReplyIcon, Trash2, Info, Ban, UserCheck } from "lucide-react";
 import Mascot from "../Mascot";
 import { PersonBadge } from "../ui";
 import ImageLightbox from "./ImageLightbox";
@@ -14,7 +14,7 @@ function formatTime(iso) {
 // message's render fixed once it's on screen — it only re-renders if its own
 // props (e.g. `highlighted` flipping) change.
 const ChatMessage = memo(forwardRef(function ChatMessage(
-  { message, isOwn, myName, myMascotSpecies, canDelete: canDeleteProp, founderIds, memberIds, onDelete, onReply, onJumpToReply, onShowInfo, highlighted, showMeta = true },
+  { message, isOwn, myName, myMascotSpecies, canDelete: canDeleteProp, founderIds, memberIds, onDelete, onReply, onJumpToReply, onShowInfo, highlighted, showMeta = true, canBan = false, isAuthorBanned = false, onToggleBan },
   forwardedRef
 ) {
   const [active, setActive] = useState(false);
@@ -99,6 +99,16 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
     onShowInfo?.(message);
   }, [message, onShowInfo]);
 
+  // Chat-ban control (see supabase/migration_chat_ban.sql). Only the
+  // single chat-ban admin is ever passed canBan=true, never on their own
+  // messages; every other caller (private chat, normal members) leaves it
+  // at the default false, so nothing renders for them.
+  const handleToggleBan = useCallback((e) => {
+    e.stopPropagation();
+    setActive(false);
+    onToggleBan?.({ userId: message.user_id, name, banned: !isAuthorBanned });
+  }, [message.user_id, name, isAuthorBanned, onToggleBan]);
+
   return (
     <>
       <div
@@ -116,6 +126,7 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
               <span className="sb-chat-msg-name">
                 {name}
                 <PersonBadge founderIds={founderIds} memberIds={memberIds} userId={message.user_id} />
+                {isAuthorBanned && <span className="sb-chat-msg-blocked-chip">Blocked</span>}
               </span>
               <span className="sb-chat-msg-time">{time}</span>
             </div>
@@ -186,6 +197,17 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
           {isOwn && onShowInfo && (
             <button type="button" className="sb-chat-msg-action-btn" onClick={handleShowInfo} aria-label="Message info">
               <Info size={13} />
+            </button>
+          )}
+          {canBan && onToggleBan && (
+            <button
+              type="button"
+              className={`sb-chat-msg-action-btn ${isAuthorBanned ? "" : "danger"}`}
+              onClick={handleToggleBan}
+              aria-label={isAuthorBanned ? "Unblock from chat" : "Block from chat"}
+              title={isAuthorBanned ? "Unblock from chat" : "Block from chat"}
+            >
+              {isAuthorBanned ? <UserCheck size={13} /> : <Ban size={13} />}
             </button>
           )}
           {canDelete && (

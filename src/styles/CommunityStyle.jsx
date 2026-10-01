@@ -190,6 +190,53 @@ export default function CommunityStyle() {
       .sb-focus-locked-title { font-size: 16px; font-weight: 900; margin: 0; color: #6B5B95; }
       .sb-focus-locked-sub { font-size: 12.5px; font-weight: 600; margin: 0; max-width: 320px; color: var(--muted); }
 
+      /* ---------- chat: blocked-from-chat panel (chat-ban admin blocked this user) ----------
+         Same footprint as the focus-locked panel (replaces pills + list +
+         composer for that one user) but in the red used for the channel
+         lock / destructive actions, so it reads as "you were blocked", not
+         "you chose to study". */
+      .sb-chat-banned-panel {
+        flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; text-align: center; gap: 10px; padding: 32px 20px;
+        border-radius: 18px; border: 2px dashed #C24444;
+        background: color-mix(in srgb, #C24444 10%, var(--card)); color: #C24444;
+      }
+      .sb-chat-banned-panel svg { color: #C24444; }
+      .sb-chat-banned-title { font-size: 16px; font-weight: 900; margin: 0; color: #C24444; }
+      .sb-chat-banned-sub { font-size: 12.5px; font-weight: 600; margin: 0; max-width: 320px; color: var(--muted); }
+
+      /* ---------- chat: block-from-chat admin controls ---------- */
+      .sb-chat-ban-manager { display: flex; flex-direction: column; align-items: flex-end; }
+      .sb-chat-ban-manager-btn {
+        display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px;
+        border: 2px solid var(--mascot-outline); background: var(--card); color: #C24444;
+        box-shadow: 2px 2px 0 var(--mascot-outline); cursor: pointer; font-weight: 800; font-size: 11.5px;
+        letter-spacing: .02em; text-transform: uppercase; transition: transform .12s ease;
+      }
+      .sb-chat-ban-manager-btn:hover { transform: translateY(-1px); }
+      .sb-chat-ban-list { list-style: none; margin: 0 0 4px; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
+      .sb-chat-ban-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .sb-chat-ban-name { font-weight: 800; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+      .sb-chat-ban-unblock { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; }
+      .sb-chat-ban-dialog { max-width: 400px; }
+      .sb-chat-ban-section-title { font-size: 10.5px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 8px; }
+      .sb-chat-ban-section-title:first-of-type { margin-top: 6px; }
+      .sb-chat-ban-search { position: relative; display: block; margin-bottom: 8px; }
+      .sb-chat-ban-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+      .sb-chat-ban-search .sb-input { padding-left: 30px; }
+      .sb-chat-ban-results { max-height: 34vh; }
+      .sb-chat-ban-empty { font-size: 12.5px; font-weight: 600; color: var(--muted); margin: 4px 0 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+      .sb-chat-ban-more { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 6px; }
+      .sb-chat-ban-tag { margin-left: 6px; padding: 1px 6px; border-radius: 999px; font-size: 9px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border: 1.5px solid var(--mascot-outline); vertical-align: middle; }
+      .sb-chat-ban-block { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; color: #C24444; }
+      .sb-chat-ban-confirm { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+      .sb-chat-ban-confirm-yes { background: #C24444; color: #fff; border-color: #C24444; padding: 6px 12px; font-size: 12px; }
+      .sb-chat-ban-retry { padding: 4px 10px; font-size: 12px; }
+      .sb-chat-msg-blocked-chip {
+        margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 900;
+        letter-spacing: .04em; text-transform: uppercase; color: #fff; background: #C24444; vertical-align: middle;
+      }
+
       /* ---------- chat: channel closed banner (replaces the composer) ---------- */
       .sb-channel-closed-banner {
         display: flex; align-items: center; justify-content: center; gap: 8px;

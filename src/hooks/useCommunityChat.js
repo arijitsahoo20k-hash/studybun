@@ -214,12 +214,17 @@ export function useCommunityChat(channelId) {
 
       setSending(false);
       if (err) {
-        const friendly = err.message?.includes("rate_limited")
+        const isBanned = err.message?.includes("chat_banned");
+        const friendly = isBanned
+          ? "You're blocked from Community Chat right now."
+          : err.message?.includes("rate_limited")
           ? "You're sending messages too fast — take a breath and try again in a bit."
           : err.message?.includes("invalid_reply")
           ? "That message isn't available to reply to anymore."
           : "Couldn't send that message. Try again.";
-        return { ok: false, error: friendly };
+        // `code` is additive — lets the caller re-check block state when
+        // the server refused for that reason (e.g. a missed realtime event).
+        return { ok: false, error: friendly, ...(isBanned ? { code: "chat_banned" } : {}) };
       }
 
       if (activeChannelIdRef.current === channelId) {
