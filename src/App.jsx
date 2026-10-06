@@ -10,6 +10,7 @@ import { THEMES, themeVars, timeWash } from "./data/themes";
 import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS, defaultChapterProgressFor } from "./data/syllabus";
 import { useDeviceRow, useRealtimeTable, useChapterProgress, useMockAnalysis } from "./hooks/useRealtimeTable";
 import { useFocusTimer } from "./hooks/useFocusTimer";
+import { createTimerSessionTracker } from "./lib/timerSessionTracker";
 import { useStudyPresence } from "./hooks/useStudyPresence";
 import { useLeaderboardReconciliation } from "./hooks/useLeaderboardReconciliation";
 import { useFocusMusic } from "./hooks/useFocusMusic";
@@ -213,16 +214,37 @@ export default function App() {
   // original insert actually committed and only the response was lost, the
   // retry upserts onto that same row (see insert()'s idempotencyKey +
   // migration_retry_idempotency.sql) instead of creating a duplicate.
-  const saveTimerSession = async (payload, clientToken = crypto.randomUUID()) => {
-    const row = await timerSessionsQ.insert(payload, { idempotencyKey: clientToken });
-    if (!row) {
-      showToast("Couldn't save your session — check your connection.", () => saveTimerSession(payload, clientToken), "Retry");
-    }
-  };
+  //
+  // The row is logged the instant the timer ends, but the person can still
+  // hit "Discard" (or Reset) on the "What did you study?" card afterwards.
+  // lib/timerSessionTracker remembers the just-logged row and deletes it on
+  // discard (the DB's delete trigger re-runs the leaderboard recompute, so
+  // points/streak roll back too). Created once; it reads the latest
+  // insert/remove/user through trackerDepsRef so it never goes stale.
+  const trackerDepsRef = useRef({});
+  trackerDepsRef.current = { user, insert: timerSessionsQ.insert, remove: timerSessionsQ.remove };
+  const timerTrackerRef = useRef(null);
+  if (!timerTrackerRef.current) {
+    timerTrackerRef.current = createTimerSessionTracker({
+      getUserId: () => trackerDepsRef.current.user?.id,
+      insert: (payload, opts) => trackerDepsRef.current.insert(payload, opts),
+      remove: (id) => trackerDepsRef.current.remove(id),
+      onInsertFailed: (retry) => showToast("Couldn't save your session — check your connection.", retry, "Retry"),
+      onRemoveFailed: (retry) => showToast("Couldn't remove that session — check your connection.", retry, "Retry"),
+    });
+  }
   const focusTimer = useFocusTimer({
-    onComplete: ({ mode, plannedMinutes, actualMinutes, completed }) => {
-      saveTimerSession({ mode, planned_minutes: plannedMinutes, actual_minutes: actualMinutes, completed });
+    onComplete: ({ mode, plannedMinutes, actualMinutes, completed, endedAt }) => {
+      // endedAt is only set for a late finish (app reopened after the timer
+      // already ran out): date the row when it really ended so it lands on
+      // the right day (e.g. a session ending 23:50 isn't pushed to the next
+      // day). Normal finishes omit it and keep the DB's default now().
+      timerTrackerRef.current.log({
+        mode, planned_minutes: plannedMinutes, actual_minutes: actualMinutes, completed,
+        ...(endedAt ? { created_at: endedAt } : {}),
+      });
     },
+    onSessionSettled: (info) => timerTrackerRef.current.settle(info),
   });
   // Focus music lives up here for the same reason the timer does: the one
   // real player must survive page navigation and the settings dialog

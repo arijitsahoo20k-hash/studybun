@@ -31,6 +31,10 @@ export const STOPWATCH_MODE = "Stopwatch";
 // can NEVER produce an insert that the database rejects.
 const MAX_LOGGABLE_MINUTES = 600;
 
+// A countdown noticed more than this long after its end time is treated as a
+// late finish (app was closed/asleep) and dated at its real end time.
+const LATE_FINISH_GRACE_MS = 5000;
+
 function loadPersisted() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -131,9 +135,18 @@ function stopDroneOsc(ctx, droneRef) {
  * Mount this once near the app root and pass the returned object down —
  * do NOT call it per-page, or every page will keep its own timer.
  */
-export function useFocusTimer({ onComplete } = {}) {
+export function useFocusTimer({ onComplete, onSessionSettled } = {}) {
   const onCompleteRef = useRef(onComplete);
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+  // A finished/early-saved session is logged to timer_sessions by onComplete
+  // the instant it ends (so it can never be lost), well BEFORE the person
+  // answers the "What did you study?" card. onSessionSettled({ discarded })
+  // fires once that card is resolved: discarded:false = they kept it (Save
+  // session), discarded:true = they threw it away (Discard, or Reset while
+  // the card was still up) and the caller must remove the already-logged
+  // row, otherwise "discarded" minutes keep showing up in study hours.
+  const onSessionSettledRef = useRef(onSessionSettled);
+  useEffect(() => { onSessionSettledRef.current = onSessionSettled; }, [onSessionSettled]);
 
   const persisted = useRef(loadPersisted()).current;
 
@@ -167,6 +180,14 @@ export function useFocusTimer({ onComplete } = {}) {
       ? persisted.sessionInProgress
       : !!(persisted?.running || persisted?.askDone)
   );
+
+  // ISO time the countdown REALLY ended, set only when the app was closed /
+  // backgrounded past the end time and noticed late (see finish()). null for
+  // a normal on-time finish or early save (those end "now"). Lets the logged
+  // session be dated when it actually ended instead of when the app was
+  // reopened -- matters for anyone studying across midnight. Persisted so the
+  // "What did you study?" card still knows it after a reload.
+  const [finishedAt, setFinishedAt] = useState(persisted?.finishedAt || null);
 
   const endAtRef = useRef(
     persisted?.running && persisted?.mode !== STOPWATCH_MODE ? persisted?.endAt || null : null
@@ -222,9 +243,9 @@ export function useFocusTimer({ onComplete } = {}) {
     savePersisted({
       modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
       secondsLeft, endAt: endAtRef.current, stopwatchAnchor: stopwatchAnchorRef.current,
-      sessionInProgress, aggressiveMode,
+      sessionInProgress, aggressiveMode, finishedAt,
     });
-  }, [modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes, secondsLeft, sessionInProgress, aggressiveMode]);
+  }, [modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes, secondsLeft, sessionInProgress, aggressiveMode, finishedAt]);
 
   useEffect(() => () => stopDroneOsc(audioCtxRef.current, droneRef), []);
   useEffect(() => () => {
@@ -277,6 +298,7 @@ export function useFocusTimer({ onComplete } = {}) {
       setAskDone(!!incoming.askDone);
       setSessionInProgress(!!incoming.sessionInProgress);
       setAggressiveMode(!!incoming.aggressiveMode);
+      setFinishedAt(incoming.finishedAt || null);
 
       endAtRef.current = incomingMode !== STOPWATCH_MODE && nowRunning ? (incoming.endAt || null) : null;
       stopwatchAnchorRef.current = incomingMode === STOPWATCH_MODE && nowRunning ? (incoming.stopwatchAnchor || null) : null;
@@ -342,6 +364,14 @@ export function useFocusTimer({ onComplete } = {}) {
   const finish = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
+    // If the app was closed/backgrounded past the end time and is only
+    // noticing now, the session really ended at endAt, not now. Only treat it
+    // as "late" past a small grace so a normal on-time finish (tick lag of
+    // ~1s) is left completely untouched. Never in the future.
+    const nowMs = Date.now();
+    const lateEndAt = endAtRef.current && nowMs - endAtRef.current > LATE_FINISH_GRACE_MS ? endAtRef.current : null;
+    const endedAtIso = lateEndAt ? new Date(lateEndAt).toISOString() : null;
+    setFinishedAt(endedAtIso);
     setRunning(false);
     setSecondsLeft(0);
     setAskDone(true);
@@ -360,6 +390,7 @@ export function useFocusTimer({ onComplete } = {}) {
       plannedMinutes: Math.min(MAX_LOGGABLE_MINUTES, modeMinutes[mode] ?? 25),
       actualMinutes: Math.min(MAX_LOGGABLE_MINUTES, startedMinutes || modeMinutes[mode] || 25),
       completed: true,
+      endedAt: endedAtIso,
     });
   }, [soundOn, mode, modeMinutes, startedMinutes, releaseTimerLock]);
 
@@ -482,6 +513,7 @@ export function useFocusTimer({ onComplete } = {}) {
       }
       finishedRef.current = false;
       setAskDone(false);
+      setFinishedAt(null);
       const isStopwatch = mode === STOPWATCH_MODE;
       setStartedMinutes(isStopwatch ? 0 : modeMinutes[mode] ?? (Math.round(secondsLeft / 60) || 1));
       setSessionInProgress(true);
@@ -561,6 +593,10 @@ export function useFocusTimer({ onComplete } = {}) {
   }, [mode, releaseTimerLock]);
 
   const reset = useCallback(() => {
+    // Reset while the "What did you study?" card is still up = throwing away
+    // a session that onComplete already logged. Running/paused sessions
+    // haven't been logged yet, so there's nothing to remove for those.
+    if (askDone) onSessionSettledRef.current && onSessionSettledRef.current({ discarded: true });
     setRunning(false);
     // Also clear askDone: without this, hitting the generic Reset button
     // while the post-session log card is showing zeroed out
@@ -575,9 +611,10 @@ export function useFocusTimer({ onComplete } = {}) {
     setSecondsLeft(mode === STOPWATCH_MODE ? 0 : (modeMinutes[mode] ?? 25) * 60);
     setStartedMinutes(0);
     setSessionInProgress(false);
+    setFinishedAt(null);
     releaseTimerLock();
     stopDroneOsc(audioCtxRef.current, droneRef);
-  }, [mode, modeMinutes, releaseTimerLock]);
+  }, [mode, modeMinutes, releaseTimerLock, askDone]);
 
   // Ends the session early (e.g. a 40-min timer wrapped up in 30) without
   // forcing the user to sit through the rest of the countdown — or, for
@@ -637,6 +674,7 @@ export function useFocusTimer({ onComplete } = {}) {
     stopDroneOsc(audioCtxRef.current, droneRef);
     setStartedMinutes(elapsedMinutes);
     setSecondsLeft(0);
+    setFinishedAt(null);
     setAskDone(true);
     if (soundOn) playEndChime(makeCtx(audioCtxRef));
     onCompleteRef.current && onCompleteRef.current({
@@ -648,12 +686,26 @@ export function useFocusTimer({ onComplete } = {}) {
     return true;
   }, [mode, modeMinutes, startedMinutes, secondsLeft, running, soundOn, releaseTimerLock]);
 
-  const resetForNewSession = useCallback(() => {
+  const clearFinishedSession = useCallback(() => {
     setAskDone(false);
+    setFinishedAt(null);
     setSecondsLeft(mode === STOPWATCH_MODE ? 0 : (modeMinutes[mode] ?? 25) * 60);
     setStartedMinutes(0);
     setSessionInProgress(false);
   }, [mode, modeMinutes]);
+
+  // "Save session" path: the already-logged timer_sessions row is kept.
+  const resetForNewSession = useCallback(() => {
+    onSessionSettledRef.current && onSessionSettledRef.current({ discarded: false });
+    clearFinishedSession();
+  }, [clearFinishedSession]);
+
+  // "Discard, don't count" path: also removes the row that was auto-logged
+  // when the timer ended, so the minutes stop counting everywhere.
+  const discardSession = useCallback(() => {
+    onSessionSettledRef.current && onSessionSettledRef.current({ discarded: true });
+    clearFinishedSession();
+  }, [clearFinishedSession]);
 
   const toggleSound = useCallback(() => {
     setSoundOn((v) => {
@@ -693,9 +745,9 @@ export function useFocusTimer({ onComplete } = {}) {
 
   return {
     modeMinutes, mode, running, askDone, soundOn, radioChoice, radioCustomUrl, startedMinutes,
-    secondsLeft, total, pct, elapsedSeconds, canSave, sessionActive, aggressiveMode,
+    secondsLeft, total, pct, elapsedSeconds, canSave, sessionActive, aggressiveMode, finishedAt,
     aggressiveModeLocked, isStopwatch, lockBlocked,
-    changeMode, setCustomMinutes, start, pause, reset, resetForNewSession, saveEarly,
+    changeMode, setCustomMinutes, start, pause, reset, resetForNewSession, discardSession, saveEarly,
     toggleSound, setRadioChoice, setRadioCustomUrl, toggleAggressiveMode,
   };
 }

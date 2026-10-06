@@ -12,7 +12,7 @@ import FocusModeOverlay from "../components/FocusModeOverlay";
 import FocusModeStyle from "../styles/FocusModeStyle";
 import { SYLLABUS } from "../data/syllabus";
 import FocusMusicSettings, { FocusMusicMiniBar } from "../components/FocusMusicSettings";
-import { todayIST } from "../lib/dateIST";
+import { todayIST, tsToISTDateStr } from "../lib/dateIST";
 import { pauseDecor } from "../lib/decorPause";
 import { STOPWATCH_MODE } from "../hooks/useFocusTimer";
 import { useModalScrollLock } from "../hooks/useModalScrollLock";
@@ -303,10 +303,20 @@ export default function FocusTimer(p) {
   const [chapter, setChapter] = useState(Object.values(SYLLABUS.Physics.groups).flat()[0]);
 
   const logAndReset = () => {
-    p.addSession({ subject, chapter, session_type: t.mode === "Pomodoro" ? "Practice" : t.mode, minutes: t.startedMinutes, platform: "Focus Timer" });
+    p.addSession({
+      subject, chapter, session_type: t.mode === "Pomodoro" ? "Practice" : t.mode, minutes: t.startedMinutes, platform: "Focus Timer",
+      // Late finish (app reopened after the timer ran out): file it under the day it really ended.
+      ...(t.finishedAt ? { session_date: tsToISTDateStr(t.finishedAt) } : {}),
+    });
     t.resetForNewSession();
   };
-  const discardSession = () => t.resetForNewSession();
+  const discardSession = () => t.discardSession();
+  // Only set when a late-finished session lands on an earlier day than today
+  // (e.g. timer ended 11:50pm, app reopened after midnight) so the card can
+  // say which day the minutes went to instead of claiming "today".
+  const lateEndDay = t.finishedAt && tsToISTDateStr(t.finishedAt) !== todayIST()
+    ? new Date(t.finishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })
+    : null;
 
   return (
     <div className="sb-page sb-focus-page">
@@ -624,7 +634,12 @@ export default function FocusTimer(p) {
         <div ref={saveCardRef}>
           <Card>
             <SectionTitle icon={Sparkles}>What did you study?</SectionTitle>
-            <p className="sb-timer-logged-note">Your {t.startedMinutes} min is already counted in today's study hours — tag it with a chapter so it also updates your syllabus progress.</p>
+            <p className="sb-timer-logged-note">
+              {lateEndDay
+                ? `Your ${t.startedMinutes} min is counted on ${lateEndDay} (when the timer actually ended)`
+                : `Your ${t.startedMinutes} min is counted in today's study hours`}
+              {" "}— tag it with a chapter so it also updates your syllabus progress, or discard it to remove it.
+            </p>
             <div className="sb-form-grid">
               <div><label>Subject</label>
                 <select className="sb-input" value={subject} onChange={(e) => { setSubject(e.target.value); setChapter(Object.values(SYLLABUS[e.target.value].groups).flat()[0]); }}>
@@ -639,7 +654,7 @@ export default function FocusTimer(p) {
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <Btn onClick={logAndReset}><CheckCircle2 size={16} /> Save session</Btn>
-              <Btn variant="ghost" onClick={discardSession}><X size={16} /> Discard, don't log</Btn>
+              <Btn variant="ghost" onClick={discardSession}><X size={16} /> Discard, don't count</Btn>
             </div>
           </Card>
         </div>
