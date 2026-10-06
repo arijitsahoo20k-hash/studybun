@@ -3,6 +3,7 @@ import { HeartHandshake, Lightbulb, Rocket, MessageSquare, Camera, X } from "luc
 import Mascot from "../Mascot";
 import ContentActions from "./ContentActions";
 import ImageLightbox from "./ImageLightbox";
+import LinkifiedText from "./LinkifiedText";
 import { PersonBadge } from "../ui";
 import { validateImageFile } from "../../lib/imageValidation";
 
@@ -176,7 +177,7 @@ export default function CommunityPost({ post, reactions, currentUserId, myProfil
       {(post.subject || post.chapter) && (
         <div className="sb-post-tag">{post.subject}{post.chapter ? ` — ${post.chapter}` : ""}</div>
       )}
-      <div className="sb-post-content">{post.content}</div>
+      <div className="sb-post-content"><LinkifiedText text={post.content} /></div>
       {actionErr && <div className="sb-cm-error">{actionErr}</div>}
 
       {/* Image grid — handles 0/1/2/3 images, backward-compat with old image_url */}
@@ -213,7 +214,7 @@ export default function CommunityPost({ post, reactions, currentUserId, myProfil
                     </span>
                     <span className="sb-post-reply-time">{timeAgo(rp.created_at)}</span>
                   </div>
-                  <div className="sb-post-reply-text">{rp.content}</div>
+                  <div className="sb-post-reply-text"><LinkifiedText text={rp.content} /></div>
                   {rp.image_url && (
                     <button
                       type="button"

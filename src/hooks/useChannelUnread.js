@@ -174,6 +174,7 @@ export function useChannelUnread({ channels, activeChannelId, userId, enabled = 
             .select("id")
             .eq("channel_id", id)
             .neq("user_id", userId)
+            .gt("expires_at", new Date().toISOString())
             .limit(1);
           if (since) q = q.gt("created_at", since);
           const { data, error: err } = await q;

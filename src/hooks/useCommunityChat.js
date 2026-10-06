@@ -58,6 +58,7 @@ export function useCommunityChat(channelId) {
       .from("community_messages")
       .select(SELECT)
       .eq("channel_id", channelId)
+      .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(PAGE_SIZE);
     if (!mounted.current || activeChannelIdRef.current !== channelId) return;
@@ -80,6 +81,7 @@ export function useCommunityChat(channelId) {
       .from("community_messages")
       .select(SELECT)
       .eq("channel_id", channelId)
+      .gt("expires_at", new Date().toISOString())
       .lt("created_at", oldest)
       .order("created_at", { ascending: false })
       .limit(PAGE_SIZE);

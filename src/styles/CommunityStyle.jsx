@@ -302,6 +302,16 @@ export default function CommunityStyle() {
       }
       .sb-chat-msg.own .sb-chat-msg-content { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
 
+      /* ---------- clickable links in chat messages, feed posts + replies ----------
+         color: inherit keeps contrast correct on every theme / dark mode and on
+         the accent-coloured own-message bubble; the underline is the affordance. */
+      .sb-link {
+        color: inherit; font-weight: 700; text-decoration: underline;
+        text-underline-offset: 2px; cursor: pointer;
+      }
+      @media (hover: hover) { .sb-link:hover { opacity: .8; } }
+      .sb-link:focus-visible { outline: 2px solid var(--mascot-outline); outline-offset: 2px; border-radius: 3px; }
+
       /* ---------- chat: hover/tap-to-reveal message actions ----------
          Lives as its own flex sibling (avatar, body, actions) instead of
          inside the meta row, so it's there for every message — including

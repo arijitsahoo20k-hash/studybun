@@ -3,6 +3,7 @@ import { Reply as ReplyIcon, Trash2, Info, Ban, UserCheck } from "lucide-react";
 import Mascot from "../Mascot";
 import { PersonBadge } from "../ui";
 import ImageLightbox from "./ImageLightbox";
+import LinkifiedText from "./LinkifiedText";
 
 function formatTime(iso) {
   return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -179,7 +180,7 @@ const ChatMessage = memo(forwardRef(function ChatMessage(
             {/* Text content — shown as caption below image, or as the full bubble */}
             {hasText && (
               <div className="sb-chat-msg-content" title={showMeta ? undefined : time}>
-                {message.content}
+                <LinkifiedText text={message.content} />
               </div>
             )}
 
