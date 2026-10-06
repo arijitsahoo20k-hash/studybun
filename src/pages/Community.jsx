@@ -9,6 +9,7 @@ import CommunityFeed from "../components/community/CommunityFeed";
 import PrivateChatPage from "../components/community/private/PrivateChatPage";
 import { useCommunityChannels } from "../hooks/useCommunityChannels";
 import { useCommunityChat } from "../hooks/useCommunityChat";
+import { useChannelUnread } from "../hooks/useChannelUnread";
 import { useAccountability } from "../hooks/useAccountability";
 import { useCommunityFeed } from "../hooks/useCommunityFeed";
 import { useCommunityModeration } from "../hooks/useCommunityModeration";
@@ -53,6 +54,21 @@ export default function CommunityPage(p) {
   // switches so the banner state is known the instant the chat tab renders.
   const chatBan = useCommunityChatBan();
   const [tab, setTab] = useState("checkins");
+
+  // Red ring on channel pills that have messages from others the user
+  // hasn't seen. Lives here (not in CommunityChat) for the same reason as
+  // focusLock/chatBan above: CommunityChat unmounts whenever another inner
+  // tab is open, but new messages keep arriving — this page-level hook
+  // keeps listening the whole time. `viewing` is true only while the chat
+  // is genuinely on screen (not blocked, not self-locked).
+  const chatVisibleToMe = tab === "chat" && !chatBan?.banned && !(focusLock.eligible && focusLock.locked);
+  const unreadChannelIds = useChannelUnread({
+    channels,
+    activeChannelId,
+    userId: p.userId,
+    enabled: !chatBan?.banned,
+    viewing: chatVisibleToMe,
+  });
 
   // BUG FIX: this used to be `moderation.isModerator`, which was correct
   // only while founder was the sole role that satisfied is_moderator().
@@ -182,6 +198,7 @@ export default function CommunityPage(p) {
               activeChannelId={activeChannelId}
               onSelectChannel={setActiveChannelId}
               setChannelLock={setChannelLock}
+              unreadChannelIds={unreadChannelIds}
               messages={chat.messages}
               loading={chat.loading}
               sending={chat.sending}

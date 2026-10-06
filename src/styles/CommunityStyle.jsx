@@ -106,6 +106,27 @@ export default function CommunityStyle() {
       .sb-channel-selector .sb-chip.locked { opacity: .72; }
       .sb-channel-selector .sb-chip-lock-icon { flex-shrink: 0; color: #C24444; }
 
+      /* Unread channel: a red pill-shaped ring around the chip, with a
+         thin gap in the card colour so it reads as a separate outline,
+         not a thicker border. Box-shadow (not outline) so it follows the
+         pill radius in every browser. Hard offset shadow is swapped out
+         for the ring while unread so the two don't fight. */
+      .sb-channel-selector { padding: 5px; margin: -5px -5px 9px; }
+      .sb-channel-selector .sb-chip.unread {
+        opacity: 1;
+        border-color: #E5484D;
+        box-shadow: 0 0 0 2px var(--card), 0 0 0 4px #E5484D;
+        animation: sb-unread-ring 1.9s ease-in-out infinite;
+      }
+      .sb-channel-selector .sb-chip.unread:hover { transform: translate(-1px, -1px); }
+      @keyframes sb-unread-ring {
+        0%, 100% { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px #E5484D; }
+        50% { box-shadow: 0 0 0 2px var(--card), 0 0 0 5px rgba(229, 72, 77, .5); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sb-channel-selector .sb-chip.unread { animation: none; }
+      }
+
       /* ---------- chat: channel lock switch (founder-only) ---------- */
       /* Reads as a real physical switch, not a settings checkbox — this
          is the one control that can silence the whole channel, for

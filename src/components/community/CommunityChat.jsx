@@ -58,7 +58,7 @@ function buildRenderItems(messages) {
 }
 
 export default function CommunityChat({
-  channels, activeChannelId, onSelectChannel, setChannelLock,
+  channels, activeChannelId, onSelectChannel, setChannelLock, unreadChannelIds,
   messages, loading, sending, sendMessage, deleteMessage, hasMore, loadOlder, markChannelRead,
   currentUserId, myProfile, moderation, founderIds, memberIds, mascot, focusLock, chatBan,
 }) {
@@ -454,7 +454,7 @@ export default function CommunityChat({
         </div>
       ) : (
         <>
-          <ChannelSelector channels={channels} activeId={activeChannelId} onSelect={onSelectChannel} />
+          <ChannelSelector channels={channels} activeId={activeChannelId} onSelect={onSelectChannel} unreadIds={unreadChannelIds} />
 
           <div className="sb-chat-list" ref={listRef} onScroll={handleScroll}>
             {hasMore && (
