@@ -1,31 +1,28 @@
 import React, { useState } from "react";
 import { FAQS } from "../../auth/info/faqs";
 import LandingFaqItem from "./LandingFaqItem";
-import Reveal from "../Reveal";
 
 export default function FaqSection() {
   const [openIdx, setOpenIdx] = useState(0);
 
   return (
-    <section className="sb-land-section" id="sb-land-faq">
-      <Reveal className="sb-land-section-head">
-        <span className="sb-land-eyebrow">🎀 Little FAQ</span>
-        <h2 className="sb-land-h2">Questions, answered kawaii-ly</h2>
-      </Reveal>
-
-      <Reveal className="sb-land-faq">
-        {FAQS.map((f, i) => (
-          <LandingFaqItem
-            key={f.q}
-            q={f.q}
-            a={f.a}
-            emoji={f.emoji}
-            custom={f.custom}
-            open={openIdx === i}
-            onToggle={() => setOpenIdx(openIdx === i ? -1 : i)}
-          />
-        ))}
-      </Reveal>
+    <section className="lp-faq" id="sb-land-faq">
+      <div className="lp-wrap lp-faq-grid">
+        <h2 className="lp-h2 lp-h2-light">Questions, answered kawaii-ly</h2>
+        <div className="lp-faq-list">
+          {FAQS.map((f, i) => (
+            <LandingFaqItem
+              key={f.q}
+              id={i}
+              q={f.q}
+              a={f.a}
+              custom={f.custom}
+              open={openIdx === i}
+              onToggle={() => setOpenIdx(openIdx === i ? -1 : i)}
+            />
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

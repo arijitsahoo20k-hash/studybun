@@ -1,38 +1,50 @@
 import React from "react";
-import Reveal from "../Reveal";
 
+const A = "/landing/";
+
+// Each feature gets one of the plush props. Dimensions are the exported
+// files' real sizes so the browser can reserve space before they load.
 const FEATURES = [
-  { emoji: "⏱️", label: "Study timer & sessions", blurb: "Log focused sessions and watch your minutes stack up, subject by subject, so a good day actually shows up somewhere." },
-  { emoji: "✏️", label: "Questions & mocks", blurb: "Track questions solved, and log JEE Main and JEE Advanced mocks separately with auto-scoring, subject-wise breakdowns, and an AI-powered head-to-head comparison." },
-  { emoji: "🗓️", label: "Study calendar", blurb: "Your whole month at a glance, colour-dotted and satisfyingly clickable. See the streaks build in real time." },
-  { emoji: "🔁", label: "Revision reminders", blurb: "Chapters quietly resurface before you forget them, not after — spaced repetition without the spreadsheet." },
-  { emoji: "🧠", label: "AI insights", blurb: "Gentle, Gemini-powered nudges based only on your own study data — no generic advice, just what actually applies to you." },
-  { emoji: "👑", label: "Leaderboard", blurb: "An opt-in podium of the Top 20, ranked by a fair, anti-cheat Study Score — study with (or against) the community." },
-  { emoji: "🎨", label: "Mascots & themes", blurb: "Pick a buddy and a vibe — sakura, matcha, mossy blockland, and more — across a cozy or a cleaner Studio look. Make the grind feel like yours." },
+  { img: "prop-stopwatch", w: 395, h: 478, label: "Study timer and sessions", blurb: "Log focused sessions and watch your minutes stack up, subject by subject, so a good day actually shows up somewhere." },
+  { img: "prop-pencil", w: 394, h: 485, label: "Questions and mocks", blurb: "Track questions solved, and log JEE Main and JEE Advanced mocks separately with auto-scoring, subject-wise breakdowns, and an AI-powered head-to-head comparison." },
+  { img: "prop-notebook", w: 405, h: 288, label: "Study calendar", blurb: "Your whole month at a glance, colour-dotted and satisfyingly clickable. See the streaks build in real time." },
+  { img: "prop-books", w: 406, h: 297, label: "Revision reminders", blurb: "Chapters quietly resurface before you forget them, not after. Spaced repetition without the spreadsheet." },
+  { img: "spark-2", w: 178, h: 197, label: "AI insights", blurb: "Gentle, Gemini-powered nudges based only on your own study data. No generic advice, just what actually applies to you." },
+  { img: "prop-trophy", w: 397, h: 375, label: "Leaderboard", blurb: "An opt-in podium of the Top 20, ranked by a fair, anti-cheat Study Score. Study with (or against) the community." },
+  { img: "bunny-sit", w: 560, h: 835, head: true, label: "Mascots and themes", blurb: "Pick a buddy and a vibe, from sakura to matcha to mossy blockland, across a cozy or a cleaner Studio look. Make the grind feel like yours." },
 ];
 
 export default function FeatureShowcase() {
   return (
-    <section className="sb-land-section" id="sb-land-features">
-      <Reveal className="sb-land-section-head">
-        <span className="sb-land-eyebrow">✨ What's inside</span>
-        <h2 className="sb-land-h2">Everything your prep has been missing</h2>
-        <p className="sb-land-h2-sub">Seven tools, one bunny-shaped home for all of it.</p>
-      </Reveal>
+    <section className="lp-features" id="sb-land-features">
+      <div className="lp-wrap lp-features-grid">
+        <div className="lp-features-lead">
+          <h2 className="lp-h2">Everything your prep has been missing</h2>
+          <p className="lp-lede">Seven tools, one bunny-shaped home for all of it.</p>
+          <img
+            className="lp-features-bunny"
+            src={`${A}bunny-study.webp`}
+            width="640"
+            height="870"
+            alt="A plush bunny taking notes next to a stack of books"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
 
-      <div>
-        {FEATURES.map((f, i) => (
-          <Reveal as="div" key={f.label} delay={i * 60} className={`sb-land-feature-row${i % 2 === 1 ? " rev" : ""}`}>
-            <div className="sb-land-feature-visual" style={{ background: `var(--p${(i % 6) + 1})` }}>
-              <span className="sb-land-feature-num">{String(i + 1).padStart(2, "0")}</span>
-              <span className="emoji">{f.emoji}</span>
-            </div>
-            <div className="sb-land-feature-text">
-              <div className="sb-land-feature-label">{f.label}</div>
-              <div className="sb-land-feature-blurb">{f.blurb}</div>
-            </div>
-          </Reveal>
-        ))}
+        <ul className="lp-features-list">
+          {FEATURES.map((f) => (
+            <li key={f.label}>
+              <div className="lp-prop" aria-hidden="true">
+                <img className={f.head ? "is-head" : undefined} src={`${A}${f.img}.webp`} width={f.w} height={f.h} alt="" loading="lazy" decoding="async" />
+              </div>
+              <div>
+                <h3>{f.label}</h3>
+                <p>{f.blurb}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

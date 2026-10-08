@@ -27,7 +27,7 @@ export const FAQS = [
   {
     q: "Who's actually behind this?",
     emoji: "🐰",
-    a: "Just one JEE dropper building the study tool he wished existed. Bugs, ideas and gentle roasting are all welcome 🐰",
+    a: "Just two JEE droppers building the study tool they wished existed. Bugs, ideas and gentle roasting are all welcome 🐰",
   },
   {
     q: "How do I actually reach you?",
