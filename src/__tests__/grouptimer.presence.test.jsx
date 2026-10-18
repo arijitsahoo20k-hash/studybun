@@ -18,6 +18,7 @@ vi.mock("../lib/supabaseClient", () => {
   return {
     supabase: {
       channel: makeChannel,
+      rpc: async () => ({ data: Date.now() + 60000, error: null }), // server clock 60s ahead
       removeChannel: async (ch) => { h.removed.push(ch); return "ok"; },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { id: "g1", name: "G" } }) }) }) }),
     },
@@ -46,6 +47,15 @@ describe("useGroupTimerRoom presence", () => {
     rerender();
     await tick();
     expect(ch.tracked.at(-1)).toMatchObject({ phase: "studying", elapsed: 30 });
+    // anchor is in SERVER time (device clock is ~60s behind) and net of elapsed
+    const last = ch.tracked.at(-1);
+    expect(Math.abs((last.anchor + 30000) - (Date.now() + 60000))).toBeLessThan(3000);
+
+    // pausing is announced right away with a fresh entry
+    t = timer({ running: false, sessionActive: true, elapsedSeconds: 45 });
+    rerender();
+    await tick();
+    expect(ch.tracked.at(-1)).toMatchObject({ phase: "paused", elapsed: 45, anchor: null });
 
     ch.state_ = {
       me: [{ phase: "studying", sentAt: 1 }],

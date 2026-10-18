@@ -256,6 +256,15 @@ $$;
 revoke all on function gt_delete_group(uuid) from public;
 grant execute on function gt_delete_group(uuid) to authenticated;
 
+-- ---------- 7c. server clock ----------
+-- Milliseconds since epoch on the DB server. The room uses it to align every
+-- device's clock, so a member's live "studying for" time is identical on
+-- everyone's screen even if their phone clocks disagree.
+create or replace function gt_server_time() returns bigint
+language sql stable as $$ select (extract(epoch from clock_timestamp()) * 1000)::bigint; $$;
+revoke all on function gt_server_time() from public;
+grant execute on function gt_server_time() to authenticated;
+
 -- ---------- 8. lists ----------
 -- Public list with member counts. Counts are computed here (security
 -- definer) so the lobby doesn't need read access to everybody's membership.

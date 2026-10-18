@@ -90,6 +90,8 @@ await db.exec(`insert into auth.users select ('10000000-0000-0000-0000-'||lpad(i
  insert into study_group_members(group_id,user_id) select '${big.id}', id from auth.users where id::text like '10000000%' limit 29`);
 r = await as("a", "select * from gt_join_by_code($1)", [big.join_code]); ok(r.err?.includes("full"), "member cap: " + (r.err || "joined"));
 
+r = await as("c", "select gt_server_time() t"); ok(Math.abs(Number(r.rows?.[0]?.t) - Date.now()) < 5000, "gt_server_time ~ now: " + (r.err || r.rows?.[0]?.t));
+
 // signed-out
 await db.exec("set role authenticated; select set_config('request.jwt.claim.sub','',false)");
 try { await db.query("select * from gt_create_group('x1',false)"); ok(false, "anon create should fail"); } catch (e) { ok(/sign in/i.test(e.message), "anon: " + e.message); }

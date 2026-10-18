@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { SYLLABUS } from "../data/syllabus";
 import { fetchGroup } from "./useStudyGroups";
-import { pickMeta } from "../lib/groupTimer";
+import { pickMeta, measureClockOffset } from "../lib/groupTimer";
 
 const ROOM_KEY = "sb.groupTimer.room.v1";
 const PREFS_KEY = "sb.groupTimer.prefs.v1";
@@ -66,6 +66,10 @@ export function useGroupTimerRoom({ timer, userId }) {
   const [topicSent, setTopicSent] = useState(() => loadPrefs().topic);
   const [members, setMembers] = useState([]);
   const [connected, setConnected] = useState(false);
+  const [clockOffset, setClockOffset] = useState(0);
+  const offsetRef = useRef(0);
+  // Identifies THIS tab inside a user's presence entries (see pickMeta).
+  const tabIdRef = useRef(Math.random().toString(36).slice(2, 10));
 
   const groupId = activeGroup?.id || null;
 
@@ -97,7 +101,15 @@ export function useGroupTimerRoom({ timer, userId }) {
   const trackNow = useCallback(() => {
     const ch = channelRef.current;
     if (!ch || !subscribedRef.current) return;
-    ch.track({ ...latestRef.current, sentAt: Date.now() }).catch(() => {});
+    const cur = latestRef.current;
+    const nowMs = Date.now();
+    ch.track({
+      ...cur,
+      tab: tabIdRef.current,
+      // server-clock moment this focus began (elapsed already excludes pauses)
+      anchor: cur.phase === "studying" ? Math.round(nowMs + offsetRef.current - cur.elapsed * 1000) : null,
+      sentAt: nowMs,
+    }).catch(() => {});
   }, []);
 
   // Persist subject/topic (per device) and debounce the topic: typing
@@ -220,6 +232,14 @@ export function useGroupTimerRoom({ timer, userId }) {
     };
 
     connect();
+    // Align to server time once per room visit; re-announce with the
+    // corrected anchor if the offset turned out to matter.
+    measureClockOffset((fn) => supabase.rpc(fn)).then((off) => {
+      if (cancelled) return;
+      offsetRef.current = off;
+      setClockOffset(off);
+      trackNow();
+    });
 
     const onVisibility = () => {
       if (document.hidden) { hiddenAt = Date.now(); return; }
@@ -275,6 +295,6 @@ export function useGroupTimerRoom({ timer, userId }) {
     activeGroup, restoring, notice, clearNotice: () => setNotice(null),
     enterRoom, leaveRoom,
     subject: prefs.subject, topic: prefs.topic, setSubject, setTopic,
-    members, connected, phase,
+    members, connected, phase, clockOffset,
   };
 }

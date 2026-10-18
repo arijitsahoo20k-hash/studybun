@@ -23,6 +23,20 @@ describe("group timer lib", () => {
     expect(pickMeta([])).toBeNull();
   });
 
+  it("rejoining shows the TRUE elapsed time, not a restart (anchor based)", () => {
+    const m = { phase: "studying", elapsed: 0, anchor: 1_000_000 };
+    expect(liveElapsed(m, 1_000_000 + 754_000)).toBe(754);       // joined 12:34 after they started
+    expect(liveElapsed(m, 1_000_000 - 5_000)).toBe(0);            // never negative
+  });
+
+  it("a stale same-tab entry can't outvote the newest one (pause must show)", () => {
+    const stale = { tab: "t1", phase: "studying", sentAt: 1, anchor: 5 };
+    const fresh = { tab: "t1", phase: "paused", sentAt: 9, elapsed: 300 };
+    expect(pickMeta([stale, fresh]).phase).toBe("paused");
+    // but studying on another device still wins
+    expect(pickMeta([{ tab: "p", phase: "studying", sentAt: 1 }, { tab: "l", phase: "idle", sentAt: 9 }]).phase).toBe("studying");
+  });
+
   it("ticks elapsed locally only while studying", () => {
     expect(liveElapsed({ phase: "studying", elapsed: 60, receivedAt: 1000 }, 6000)).toBe(65);
     expect(liveElapsed({ phase: "paused", elapsed: 60, receivedAt: 1000 }, 99000)).toBe(60);

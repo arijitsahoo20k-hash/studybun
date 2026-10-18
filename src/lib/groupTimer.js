@@ -113,29 +113,64 @@ export function sanitizeMeta(raw) {
     mode: str(raw.mode, 20),
     elapsed: num(raw.elapsed, 0, MAX_ELAPSED) ?? 0,
     total: num(raw.total, 1, MAX_ELAPSED),
+    // Server-clock ms at which this person's current focus "started" (already
+    // net of pauses). Lets ANY viewer compute the true elapsed time at ANY
+    // moment -- including right after joining -- with no extra messages.
+    anchor: num(raw.anchor, 0, Number.MAX_SAFE_INTEGER),
+    tab: str(raw.tab, 16),
     sentAt: num(raw.sentAt, 0, Number.MAX_SAFE_INTEGER) ?? 0,
   };
 }
 
 // One user can have several presence entries (two tabs, or phone + laptop).
-// "Studying" wins over everything -- if they're studying anywhere, they're
-// studying -- then the most recently sent entry.
+// 1) Within ONE tab only its newest entry counts -- an old entry from the same
+//    tab that lingers (missed leave diff, ghost socket) must never outvote the
+//    fresh one; that is what made "paused" look like "still studying".
+// 2) Across tabs, "studying" wins (studying anywhere = studying), then newest.
 export function pickMeta(metas) {
   const clean = (metas || []).map(sanitizeMeta).filter(Boolean);
   if (!clean.length) return null;
-  const studying = clean.filter((m) => m.phase === "studying");
-  const pool = studying.length ? studying : clean;
+  const perTab = new Map();
+  clean.forEach((m, i) => {
+    const k = m.tab || `#${i}`;
+    const cur = perTab.get(k);
+    if (!cur || m.sentAt >= cur.sentAt) perTab.set(k, m);
+  });
+  const pool0 = [...perTab.values()];
+  const studying = pool0.filter((m) => m.phase === "studying");
+  const pool = studying.length ? studying : pool0;
   return pool.reduce((best, m) => (m.sentAt >= best.sentAt ? m : best), pool[0]);
 }
 
-// Seconds a member has been studying, as of `nowMs`. `receivedAtMs` is when
-// THIS client first saw that exact entry (from the same clock as nowMs), so
-// no cross-device clock skew ever enters the maths.
+// Seconds a member has been studying, as of `nowMs` (pass SERVER-aligned time:
+// Date.now() + clockOffset). With an anchor this is exact no matter when we
+// joined; the receivedAt path is only a fallback for old clients.
 export function liveElapsed(member, nowMs) {
   if (!member) return 0;
   if (member.phase !== "studying") return member.elapsed || 0;
+  if (member.anchor) return Math.min(MAX_ELAPSED, Math.max(0, Math.floor((nowMs - member.anchor) / 1000)));
   const since = Math.max(0, (nowMs - (member.receivedAt || nowMs)) / 1000);
   return Math.min(MAX_ELAPSED, Math.floor((member.elapsed || 0) + since));
+}
+
+// Server-vs-device clock difference (ms), measured once via gt_server_time().
+// Everyone converts through server time, so two phones whose clocks disagree
+// by a minute still show the same number for the same person.
+let cachedOffset = null;
+export async function measureClockOffset(rpc) {
+  if (cachedOffset && Date.now() - cachedOffset.at < 10 * 60 * 1000) return cachedOffset.value;
+  try {
+    const t0 = Date.now();
+    const { data, error } = await rpc("gt_server_time");
+    const t1 = Date.now();
+    const server = Number(data);
+    if (error || !Number.isFinite(server)) return 0;
+    const value = Math.round(server - (t0 + t1) / 2);
+    cachedOffset = { value, at: Date.now() };
+    return value;
+  } catch {
+    return 0;
+  }
 }
 
 export function fmtClock(totalSeconds) {

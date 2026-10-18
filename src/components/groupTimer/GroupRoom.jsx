@@ -102,7 +102,7 @@ const MemberCard = React.memo(function MemberCard({ entry, profile, isMe }) {
   );
 });
 
-function MembersPane({ others, self, userId, myMascot, myName, connected, group }) {
+function MembersPane({ others, self, userId, myMascot, myName, connected, group, clockOffset }) {
   const anyStudying = self.phase === "studying" || others.some((m) => m.phase === "studying");
   const now = useNow(anyStudying);
   const profiles = useProfileMap(useMemo(() => others.map((m) => m.userId), [others]));
@@ -118,12 +118,12 @@ function MembersPane({ others, self, userId, myMascot, myName, connected, group 
 
   const entries = useMemo(() => {
     const rest = others
-      .map((m) => ({ ...m, seconds: liveElapsed(m, now) }))
+      .map((m) => ({ ...m, seconds: liveElapsed(m, now + (clockOffset || 0)) }))
       .sort((a, b) => comparePhase(a.phase, b.phase)
         || (profiles.get(a.userId)?.name || "").localeCompare(profiles.get(b.userId)?.name || "")
         || a.userId.localeCompare(b.userId));
     return rest;
-  }, [others, now, profiles]);
+  }, [others, now, profiles, clockOffset]);
 
   const studyingCount = entries.filter((e) => e.phase === "studying").length + (self.phase === "studying" ? 1 : 0);
   const inRoom = entries.length + 1;
@@ -470,6 +470,7 @@ export default function GroupRoom({
           myMascot={mascot}
           myName={myName}
           connected={g.connected}
+          clockOffset={g.clockOffset}
           group={group}
         />
       </div>
