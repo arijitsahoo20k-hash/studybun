@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
   RotateCcw, CheckSquare, BarChart3, Sparkles, Trophy, Crown, User, Settings, Menu,
-  NotebookPen, ChevronsLeft, ChevronsRight, Users, Layers, Camera,
+  NotebookPen, ChevronsLeft, ChevronsRight, Users, Layers, Camera, UsersRound,
 } from "lucide-react";
 
 import { THEMES, themeVars, timeWash } from "./data/themes";
@@ -12,6 +12,7 @@ import { useDeviceRow, useRealtimeTable, useChapterProgress, useMockAnalysis } f
 import { useFocusTimer } from "./hooks/useFocusTimer";
 import { createTimerSessionTracker } from "./lib/timerSessionTracker";
 import { useStudyPresence } from "./hooks/useStudyPresence";
+import { useGroupTimerRoom } from "./hooks/useGroupTimerRoom";
 import { useLeaderboardReconciliation } from "./hooks/useLeaderboardReconciliation";
 import { useFocusMusic } from "./hooks/useFocusMusic";
 import FocusMusicStage from "./components/FocusMusicStage";
@@ -42,6 +43,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DailyOverview = lazy(() => import("./pages/DailyOverview"));
 const StudyTracker = lazy(() => import("./pages/StudyTracker"));
 const FocusTimer = lazy(() => import("./pages/FocusTimer"));
+const GroupTimerPage = lazy(() => import("./pages/GroupTimer"));
 const SyllabusPage = lazy(() => import("./pages/Syllabus"));
 const BacklogPage = lazy(() => import("./pages/Backlog"));
 const GoalsPage = lazy(() => import("./pages/Goals"));
@@ -67,6 +69,7 @@ const PAGE_LOADERS = {
   recap: () => import("./pages/DailyOverview"),
   study: () => import("./pages/StudyTracker"),
   timer: () => import("./pages/FocusTimer"),
+  grouptimer: () => import("./pages/GroupTimer"),
   syllabus: () => import("./pages/Syllabus"),
   backlog: () => import("./pages/Backlog"),
   goals: () => import("./pages/Goals"),
@@ -89,6 +92,7 @@ const NAV = [
   { id: "recap", label: "Daily Recap", icon: Camera },
   { id: "study", label: "Study Tracker", icon: BookOpen },
   { id: "timer", label: "Focus Timer", icon: Timer },
+  { id: "grouptimer", label: "Group Timer", icon: UsersRound },
   { id: "syllabus", label: "Syllabus", icon: Library },
   { id: "backlog", label: "Backlog", icon: FolderClock },
   { id: "goals", label: "Goals", icon: NotebookPen },
@@ -148,7 +152,7 @@ export default function App() {
   // are activated when their page is visible, preventing navigation from
   // waking every table, realtime channel and derived list at once.
   const pageData = {
-    dashboard: true, recap: true, study: true, timer: true, syllabus: true, backlog: true,
+    dashboard: true, recap: true, study: true, timer: true, grouptimer: true, syllabus: true, backlog: true,
     goals: true, questions: true, mocks: true, revision: true, planner: true,
     analytics: true, ai: true, achievements: true, leaderboard: true, profile: true, settings: true,
   };
@@ -256,6 +260,9 @@ export default function App() {
   // accurate — and other users can see it — even while running the timer
   // from a completely different page.
   const studyingIds = useStudyPresence(focusTimer.running);
+  // Group Timer rooms: which room I'm in + telling that room what my timer
+  // is doing. Root-level for the same reason as presence above.
+  const groupRoom = useGroupTimerRoom({ timer: focusTimer, userId: user?.id });
 
   // Aggressive Focus Mode: an opt-in Focus Timer setting (see useFocusTimer)
   // that blocks switching to any other page while a session is actively
@@ -268,7 +275,7 @@ export default function App() {
   // paused, finished, or reset (sessionActive/running goes false), so no
   // one can ever get stuck on one page.
   const setPage = (id) => {
-    if (id !== "timer" && focusTimer.running && focusTimer.aggressiveMode) {
+    if (id !== "timer" && id !== "grouptimer" && focusTimer.running && focusTimer.aggressiveMode) {
       showToast("Aggressive mode is on — pause or finish your session to leave 🐰");
       return;
     }
@@ -1338,7 +1345,7 @@ export default function App() {
     longestStreak, totalStudyDays, totalHours, masteredCount,
     featureUnlockStreak: FEATURE_UNLOCK_STREAK,
     mascotMood: buddyMood, mascotEnergy: buddyEnergy,
-    focusTimer, music: focusMusic,
+    focusTimer, groupRoom, music: focusMusic,
     focusModeScene: focusModeRow.row?.scene, saveFocusModeScene: (scene) => focusModeRow.save({ scene }),
     exportBackup, importBackup,
   };
@@ -1442,6 +1449,7 @@ export default function App() {
             {page === "recap" && <DailyOverview {...pageProps} />}
             {page === "study" && <StudyTracker {...pageProps} />}
             {page === "timer" && <FocusTimer {...pageProps} />}
+            {page === "grouptimer" && <GroupTimerPage {...pageProps} />}
             {page === "syllabus" && <SyllabusPage {...pageProps} />}
             {page === "backlog" && <BacklogPage {...pageProps} />}
             {page === "goals" && <GoalsPage {...pageProps} />}
