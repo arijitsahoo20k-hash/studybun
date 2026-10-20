@@ -12,7 +12,18 @@ import { BookOpen, Sparkles, Loader2 } from "lucide-react";
 // (sb-focus-lock-*, not sb-channel-lock-*) — so on the rare account that
 // has both switches, they read as two unrelated controls, not two states
 // of the same one. This one only ever affects the person clicking it.
-export default function FocusLockToggle({ locked, onToggle }) {
+export default function FocusLockToggle({ locked, onToggle, copy }) {
+  // `copy` lets another surface (e.g. Group Timer's room lock) reuse this exact
+  // switch with its own wording. Omitted = the Community Chat wording, unchanged.
+  const c = {
+    ariaOn: "Turn off Focus Lock",
+    ariaOff: "Turn on Focus Lock — hide chat for yourself and study",
+    titleOn: "Chat is hidden just for you — tap to turn off",
+    titleOff: "Hide chat for yourself only, everyone else is unaffected",
+    labelOn: "Focus",
+    labelOff: "Chat",
+    ...copy,
+  };
   const [pending, setPending] = useState(false);
   const [err, setErr] = useState(null);
 
@@ -32,17 +43,17 @@ export default function FocusLockToggle({ locked, onToggle }) {
         className={`sb-focus-lock-switch ${locked ? "locked" : "unlocked"}`}
         role="switch"
         aria-checked={locked}
-        aria-label={locked ? "Turn off Focus Lock" : "Turn on Focus Lock — hide chat for yourself and study"}
+        aria-label={locked ? c.ariaOn : c.ariaOff}
         onClick={handleClick}
         disabled={pending}
-        title={locked ? "Chat is hidden just for you — tap to turn off" : "Hide chat for yourself only, everyone else is unaffected"}
+        title={locked ? c.titleOn : c.titleOff}
       >
         <span className="sb-focus-lock-track">
           <span className="sb-focus-lock-knob">
             {pending ? <Loader2 size={12} className="sb-spin" /> : locked ? <BookOpen size={12} /> : <Sparkles size={12} />}
           </span>
         </span>
-        <span className="sb-focus-lock-label">{locked ? "Focus" : "Chat"}</span>
+        <span className="sb-focus-lock-label">{locked ? c.labelOn : c.labelOff}</span>
       </button>
       {err && <span className="sb-focus-lock-err">{err}</span>}
     </div>

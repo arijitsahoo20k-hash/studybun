@@ -1,20 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-// PostgREST returns this when an RPC doesn't exist yet -- i.e. the SQL
-// migration hasn't been run on this project. Worth a specific message
-// because it's the one failure that's the developer's, not the user's.
-function friendlyError(error) {
-  if (!error) return null;
-  const msg = String(error.message || "");
-  if (error.code === "PGRST202" || /could not find the function/i.test(msg)) {
-    return "Group Timer isn't set up on the server yet (run supabase/migration_group_timer.sql).";
-  }
-  if (/Failed to fetch|NetworkError|network/i.test(msg)) {
-    return "Couldn't reach the server — check your connection.";
-  }
-  return msg || "Something went wrong.";
-}
+import { friendlyError, fetchGroup } from "../lib/groupApi";
+
+// fetchGroup now lives in lib/groupApi (shared with the room hook); re-exported so
+// existing imports keep working.
+export { fetchGroup };
 
 /**
  * Lobby data + membership actions for Group Timer.
@@ -97,20 +88,6 @@ export function useStudyGroups({ userId, enabled = true } = {}) {
   }, [refresh]);
 
   return { publicGroups, myGroups, loading, error, refresh, createGroup, joinPublic, joinByCode, leaveGroup, deleteGroup };
-}
-
-// Fetches one group row the caller is allowed to see (public, or one they
-// belong to). Resolves null if it's gone / no longer accessible -- used to
-// kick someone out of a room whose group was deleted underneath them.
-export async function fetchGroup(groupId) {
-  if (!groupId) return null;
-  const { data, error } = await supabase
-    .from("study_groups")
-    .select("id,name,is_public,join_code,created_by,created_at")
-    .eq("id", groupId)
-    .maybeSingle();
-  if (error) return undefined; // unknown (network) -- caller keeps what it has
-  return data || null;
 }
 
 // Member count for the room header / info popup.

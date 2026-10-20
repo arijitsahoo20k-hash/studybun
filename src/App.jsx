@@ -262,7 +262,7 @@ export default function App() {
   const studyingIds = useStudyPresence(focusTimer.running);
   // Group Timer rooms: which room I'm in + telling that room what my timer
   // is doing. Root-level for the same reason as presence above.
-  const groupRoom = useGroupTimerRoom({ timer: focusTimer, userId: user?.id });
+  const groupRoom = useGroupTimerRoom({ timer: focusTimer, userId: user?.id, notify: (m) => showToast(m) });
 
   // Aggressive Focus Mode: an opt-in Focus Timer setting (see useFocusTimer)
   // that blocks switching to any other page while a session is actively

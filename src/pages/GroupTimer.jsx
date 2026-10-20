@@ -68,6 +68,7 @@ export default function GroupTimerPage(p) {
           mascot={p.mascot}
           myName={p.profile?.name || "You"}
           canDelete={group.created_by === p.userId || isMod}
+          isHost={group.created_by === p.userId || isMod}
           settings={settings}
           onSettingsChange={updateSettings}
           timer={t}

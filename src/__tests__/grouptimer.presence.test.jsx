@@ -7,7 +7,7 @@ vi.mock("../lib/supabaseClient", () => {
   const makeChannel = (topic) => {
     const ch = {
       topic, state: "joined", handlers: {}, tracked: [], state_: {},
-      on(_t, _f, cb) { ch.handlers.sync = cb; return ch; },
+      on(_t, f, cb) { ch.handlers[f.event] = cb; return ch; },
       subscribe(cb) { ch.status = cb; cb("SUBSCRIBED"); return ch; },
       track: async (p) => { ch.tracked.push(p); },
       presenceState: () => ch.state_,
@@ -18,7 +18,7 @@ vi.mock("../lib/supabaseClient", () => {
   return {
     supabase: {
       channel: makeChannel,
-      rpc: async () => ({ data: Date.now() + 60000, error: null }), // server clock 60s ahead
+      rpc: async (name) => (name === "gt_server_time" ? { data: Date.now() + 60000, error: null } : { data: name === "gt_group_roster" ? [{ user_id: "me" }, { user_id: "u2" }] : [], error: null }), // server clock 60s ahead
       removeChannel: async (ch) => { h.removed.push(ch); return "ok"; },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { id: "g1", name: "G" } }) }) }) }),
     },

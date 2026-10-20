@@ -118,6 +118,9 @@ export function sanitizeMeta(raw) {
     // moment -- including right after joining -- with no extra messages.
     anchor: num(raw.anchor, 0, Number.MAX_SAFE_INTEGER),
     tab: str(raw.tab, 16),
+    goal: str(raw.goal, 60),
+    // server-clock ms when the current phase began (drives "paused for 7m")
+    since: num(raw.since, 0, Number.MAX_SAFE_INTEGER),
     sentAt: num(raw.sentAt, 0, Number.MAX_SAFE_INTEGER) ?? 0,
   };
 }
@@ -159,18 +162,26 @@ export function liveElapsed(member, nowMs) {
 let cachedOffset = null;
 export async function measureClockOffset(rpc) {
   if (cachedOffset && Date.now() - cachedOffset.at < 10 * 60 * 1000) return cachedOffset.value;
-  try {
-    const t0 = Date.now();
-    const { data, error } = await rpc("gt_server_time");
-    const t1 = Date.now();
-    const server = Number(data);
-    if (error || !Number.isFinite(server)) return 0;
-    const value = Math.round(server - (t0 + t1) / 2);
-    cachedOffset = { value, at: Date.now() };
-    return value;
-  } catch {
-    return 0;
+  // NTP-style: the sample with the SHORTEST round trip is the most trustworthy
+  // (a slow/queued request can't tell us when the server read its clock). Up to
+  // 3 tries; stop early once one is quick.
+  let best = null;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const t0 = Date.now();
+      const { data, error } = await rpc("gt_server_time");
+      const t1 = Date.now();
+      const server = Number(data);
+      if (!error && Number.isFinite(server)) {
+        const sample = { rtt: t1 - t0, value: Math.round(server - (t0 + t1) / 2) };
+        if (!best || sample.rtt < best.rtt) best = sample;
+        if (sample.rtt < 120) break;
+      } else if (error) break;
+    } catch { break; }
   }
+  if (!best) return 0;
+  cachedOffset = { value: best.value, at: Date.now() };
+  return best.value;
 }
 
 export function fmtClock(totalSeconds) {
@@ -195,4 +206,60 @@ export function normalizeCode(input) {
 export function prettyCode(code) {
   const c = String(code || "");
   return c.length === 6 ? `${c.slice(0, 3)}-${c.slice(3)}` : c;
+}
+
+
+// ---------------------------------------------------------------------------
+// Room hours rule (v1). ONE source of truth for what the app tells people.
+// Mirrors the header of supabase/migration_group_timer_v2.sql point for point
+// (a test keeps the numbers in sync). Change both together.
+// ---------------------------------------------------------------------------
+export const GT_RULES_VERSION = "v1";
+export const GT_LIMITS = { dailyCapMinutes: 780, maxSessionMinutes: 600, roomDayMinutes: 10 };
+export const GT_RULES = [
+  { title: "Only saved sessions count", body: "Room hours come from the Focus Timer sessions you save (the same records behind your study hours) — never from the live \"studying now\" cards, so they can't be faked." },
+  { title: "Every minute counts", body: "A finished or early-saved session counts minute for minute, up to 600 min in one session. There's no minimum length, no bonus points and no multipliers." },
+  { title: "From the moment you join", body: "A session counts for the room if you saved it while you were a member — whichever page you started it from. Minutes you've already earned stay in the room's totals if you leave or are removed; nothing is ever taken back. The leaderboard lists current members." },
+  { title: "Days are IST", body: "Indian Standard Time, same as your streak. A session belongs to the day it was saved on — one day, one week, never two. Weeks run Monday to Sunday." },
+  { title: "One daily ceiling", body: "At most 13 hours (780 min) per person per day count — the same ceiling as the global leaderboard. It's the only thing that can stop a saved minute from counting." },
+  { title: "Ranking", body: "Ranked by exact minutes in the period you're viewing (rounded to the minute only when shown). Equal minutes share the same rank (1, 1, 3). On a tie the list shows more sessions first, then whoever joined earlier." },
+  { title: "Room streak", body: "A day is a room day when at least one member studied 10+ minutes. The streak is the run of room days ending today — or yesterday if today has none yet, so it never shows broken before the day is over." },
+  { title: "Weekly goal", body: "The host can set a weekly goal in hours. Progress is this week's room total (including members who've since left) divided by the goal. Last week's recap is measured against the goal as it's set now." },
+];
+
+export const GT_CHEERS = ["🔥", "👏", "💪", "🧠", "⚡", "❤️"];
+export const NUDGE_AFTER_MS = 5 * 60 * 1000;      // paused this long before you can nudge
+export const NUDGE_COOLDOWN_MS = 10 * 60 * 1000;  // per person you nudge
+export const CHEER_COOLDOWN_MS = 4000;
+
+export function sanitizeGoal(v) {
+  return typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, 60) : "";
+}
+
+// Minutes -> "2h 05m" / "45m". Rounds ONCE, here, to the nearest minute.
+export function fmtMinutes(minutes) {
+  const m = Math.max(0, Math.round(Number(minutes) || 0));
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  return h > 0 ? `${h}h ${String(r).padStart(2, "0")}m` : `${r}m`;
+}
+
+export function timeAgo(ts, nowMs = Date.now()) {
+  if (!ts) return "Hasn't studied yet";
+  const sec = Math.max(0, Math.floor((nowMs - new Date(ts).getTime()) / 1000));
+  if (sec < 90) return "Just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? "Yesterday" : `${d}d ago`;
+}
+
+// 7 ISO dates (Mon..Sun) starting at `fromISO` (the stats RPC's "from").
+export function weekDates(fromISO) {
+  if (!fromISO) return [];
+  const [y, m, d] = String(fromISO).slice(0, 10).split("-").map(Number);
+  const base = Date.UTC(y, m - 1, d);
+  return Array.from({ length: 7 }, (_, i) => new Date(base + i * 86400000).toISOString().slice(0, 10));
 }

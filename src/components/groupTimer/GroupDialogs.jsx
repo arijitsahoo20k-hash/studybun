@@ -122,7 +122,7 @@ function CopyButton({ text, label = "Copy code" }) {
 /* ------------------------------------------------------------------ */
 /* Info (i): join code for private rooms, details, leave / delete       */
 /* ------------------------------------------------------------------ */
-export function GroupInfoDialog({ group, memberCount, canDelete, onLeave, onDelete, onClose }) {
+export function GroupInfoDialog({ group, memberCount, canDelete, isHost, onManage, onLeave, onDelete, onClose }) {
   // Two-step confirm for the two destructive buttons, same spirit as the
   // reset / delete confirms elsewhere in the app -- a stray tap never leaves
   // a group or deletes it.
@@ -150,6 +150,14 @@ export function GroupInfoDialog({ group, memberCount, canDelete, onLeave, onDele
           <span className="sb-gt-vis neutral"><Users size={13} /> {memberCount} {memberCount === 1 ? "member" : "members"}</span>
         )}
       </div>
+
+      {group.description && <p className="sb-gt-info-text sb-gt-desc">{group.description}</p>}
+      {group.rules && (
+        <div className="sb-gt-rules-box">
+          <span className="sb-gt-code-label">Room rules</span>
+          <p className="sb-gt-info-text" style={{ margin: 0, whiteSpace: "pre-wrap" }}>{group.rules}</p>
+        </div>
+      )}
 
       {group.is_public ? (
         <p className="sb-muted sb-gt-info-text">
@@ -183,6 +191,7 @@ export function GroupInfoDialog({ group, memberCount, canDelete, onLeave, onDele
           </>
         ) : (
           <>
+            {isHost && onManage && <Btn variant="soft" onClick={onManage}><Settings size={14} /> Manage room</Btn>}
             <Btn variant="ghost" onClick={() => setConfirm("leave")}><LogOut size={14} /> Leave group</Btn>
             {canDelete && <Btn variant="ghost" onClick={() => setConfirm("delete")}><Trash2 size={14} /> Delete</Btn>}
           </>
