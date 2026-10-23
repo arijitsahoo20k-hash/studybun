@@ -45,7 +45,7 @@ export default function PrivateChatStyle() {
       /* ---------- shell: two panes side by side ---------- */
       .sb-pchat-wrap {
         display: flex; border: 2px solid var(--mascot-outline); border-radius: 22px;
-        background: var(--card); box-shadow: 5px 5px 0 var(--mascot-outline);
+        background: var(--card); box-shadow: 5px 5px 0 var(--sticker-shadow, var(--mascot-outline));
         overflow: hidden;
         flex: 1;
         min-height: 0;
@@ -86,7 +86,7 @@ export default function PrivateChatStyle() {
         transition: background .12s ease, border-color .12s ease;
       }
       .sb-pchat-channel-row:hover { background: var(--card); }
-      .sb-pchat-channel-row.active { background: var(--card); border-color: var(--mascot-outline); box-shadow: 2px 2px 0 var(--mascot-outline); }
+      .sb-pchat-channel-row.active { background: var(--card); border-color: var(--mascot-outline); box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline)); }
       .sb-pchat-channel-avatar { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; overflow: hidden; background: var(--card); border: 2px solid var(--mascot-outline); display: flex; align-items: center; justify-content: center; }
       .sb-pchat-channel-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
       .sb-pchat-channel-name { font-weight: 800; font-size: 13.5px; color: var(--mascot-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -112,7 +112,7 @@ export default function PrivateChatStyle() {
       .sb-pchat-kebab-menu {
         position: absolute; top: calc(100% + 6px); right: 0; z-index: 50; min-width: 190px;
         background: var(--card); border: 2px solid var(--mascot-outline); border-radius: 14px;
-        box-shadow: 4px 4px 0 var(--mascot-outline); padding: 6px; display: flex; flex-direction: column; gap: 2px;
+        box-shadow: 4px 4px 0 var(--sticker-shadow, var(--mascot-outline)); padding: 6px; display: flex; flex-direction: column; gap: 2px;
       }
       .sb-pchat-kebab-menu button {
         display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px;
@@ -202,6 +202,40 @@ export default function PrivateChatStyle() {
       @media (min-width: 769px) {
         .sb-pchat-mobile-only { display: none !important; }
       }
+
+      /* ---------- Dark Mode overrides for Private Chat ---------- */
+      [data-dark="true"] .sb-pchat-shell {
+        background: var(--card);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--clay-raised);
+      }
+      [data-dark="true"] .sb-pchat-list-pane {
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border-subtle);
+      }
+      [data-dark="true"] .sb-pchat-channel-row.active {
+        background: var(--card-hi);
+        border-color: var(--border-hi);
+        box-shadow: var(--clay-raised-sm);
+      }
+      [data-dark="true"] .sb-pchat-modal {
+        background: var(--card-hi);
+        border: 1px solid var(--border-hi);
+        box-shadow: var(--clay-raised);
+      }
+      [data-dark="true"] .sb-pchat-modal-input,
+      [data-dark="true"] .sb-pchat-modal-search {
+        background: var(--surface-inset);
+        color: var(--ink);
+        border: 1px solid var(--border-hi);
+        box-shadow: var(--clay-pressed);
+      }
+      [data-dark="true"] .sb-pchat-chat-err {
+        background: rgba(255, 110, 108, 0.14);
+        border-color: rgba(255, 110, 108, 0.36);
+        color: #FF9492;
+      }
+
     `}</style>
   );
 }

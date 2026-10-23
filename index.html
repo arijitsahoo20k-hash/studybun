@@ -39,6 +39,14 @@
       />
     </noscript>
     <title>StudyBun · Your Cozy JEE Study Companion</title>
+    <style>
+      html[data-dark="true"],
+      html[data-dark="true"] body {
+        background: #0D0D0F;
+        color: #F0EFF3;
+        color-scheme: dark;
+      }
+    </style>
     <!-- `beforeinstallprompt` fires as soon as the browser decides the app is
          installable, which is regularly BEFORE the React bundle has finished
          downloading and mounting. A listener added inside a component would
@@ -50,6 +58,12 @@
          mini-infobar so our themed banner is the only nudge on screen. -->
     <script>
       (function () {
+        try {
+          var dm = window.localStorage && window.localStorage.getItem("sb-dark-mode-v1");
+          if (dm === "1" || dm === "true") {
+            document.documentElement.setAttribute("data-dark", "true");
+          }
+        } catch (err) {}
         window.__sbInstallPrompt = null;
         window.addEventListener("beforeinstallprompt", function (e) {
           e.preventDefault();

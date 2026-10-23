@@ -56,7 +56,7 @@ const DashboardCharts = memo(function DashboardCharts({ weeklyData, subjectPie, 
               <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} />
               <Legend wrapperStyle={{ fontSize: 11.5 }} />
               <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
-              <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--outline)" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--chart-secondary, var(--outline))" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -177,7 +177,7 @@ function DashboardInner(p) {
                   <span className="sb-chip" style={{ fontSize: 11, cursor: "default", boxShadow: "none" }}>{flameTierFor(p.streak).label}</span>
                 )}
               </div>
-              <div className="sb-countdown" style={{ color: "var(--outline)" }}>{p.streak}<span>day streak</span></div>
+              <div className="sb-countdown" style={{ color: "var(--countdown-ink, var(--outline))" }}>{p.streak}<span>day streak</span></div>
               <div className="sb-muted" style={{ marginTop: 2 }}>
                 {p.streak === 0 ? "Log today or clear your plan to start one" : p.streakActiveToday ? "Today's logged 🔥" : "Study or clear today's plan to keep it lit"}
               </div>
@@ -197,7 +197,7 @@ function DashboardInner(p) {
           <div className="sb-pin-note sb-pin-quote sb-paper" style={{ "--pin-ink": "var(--muted)" }}>"{line}"</div>
           <div
             className="sb-pin-note sb-paper sb-clickable"
-            style={{ background: "color-mix(in srgb, var(--p2) 30%, var(--card) 70%)", "--pin-ink": "color-mix(in srgb, var(--p2) 35%, var(--outline) 65%)" }}
+            style={{ background: "color-mix(in srgb, var(--p2) 30%, var(--card) 70%)", "--pin-ink": "color-mix(in srgb, var(--p2) 35%, var(--pin-base-ink, var(--outline)) 65%)" }}
             onClick={() => p.setPage("backlog")}
           >
             <div className="sb-pin-label">backlog</div>
@@ -205,7 +205,7 @@ function DashboardInner(p) {
           </div>
           <div
             className="sb-pin-note sb-paper sb-clickable"
-            style={{ background: "color-mix(in srgb, var(--p5) 30%, var(--card) 70%)", "--pin-ink": "color-mix(in srgb, var(--p5) 35%, var(--outline) 65%)" }}
+            style={{ background: "color-mix(in srgb, var(--p5) 30%, var(--card) 70%)", "--pin-ink": "color-mix(in srgb, var(--p5) 35%, var(--pin-base-ink, var(--outline)) 65%)" }}
             onClick={() => p.setPage("revision")}
           >
             <div className="sb-pin-label">revisions</div>
@@ -213,11 +213,11 @@ function DashboardInner(p) {
           </div>
           <div
             className="sb-pin-note sb-paper sb-clickable"
-            style={{ background: "color-mix(in srgb, var(--p1) 30%, var(--card) 70%)", "--pin-ink": "color-mix(in srgb, var(--p1) 35%, var(--outline) 65%)" }}
+            style={{ background: "color-mix(in srgb, var(--p1) 30%, var(--card) 70%)", "--pin-ink": "color-mix(in srgb, var(--p1) 35%, var(--pin-base-ink, var(--outline)) 65%)" }}
             onClick={() => p.setPage("questions")}
           >
             <div className="sb-pin-label">questions</div>
-            <div className="sb-pin-value" style={{ color: p.questionTargetMet ? "#3E9E5C" : undefined }}>
+            <div className="sb-pin-value" style={{ color: p.questionTargetMet ? "var(--status-success, #3E9E5C)" : undefined }}>
               {p.todayQuestions || 0}<span style={{ fontSize: "0.55em", opacity: 0.75 }}> / {p.dailyQuestionTarget || 50}</span>
             </div>
           </div>

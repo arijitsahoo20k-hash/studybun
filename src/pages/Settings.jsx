@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Settings, Sparkles, Rabbit, LogOut, UserCircle, GraduationCap, CheckCircle2, Circle, Download, Upload, DatabaseBackup, BookOpen } from "lucide-react";
+import { Settings, Sparkles, Rabbit, LogOut, UserCircle, GraduationCap, CheckCircle2, Circle, Download, Upload, DatabaseBackup, BookOpen, Moon, Sun } from "lucide-react";
 import { Card, SectionTitle, Btn } from "../components/ui";
 import Mascot from "../components/Mascot";
-import { THEMES } from "../data/themes";
+import { THEMES, readStoredDarkMode, writeStoredDarkMode } from "../data/themes";
 import { pickableMascots, exclusiveMascotLabel } from "../data/mascots";
 import { useIsFounder } from "../hooks/useIsFounder";
 import { useIsModerator } from "../hooks/useIsModerator";
@@ -103,12 +103,26 @@ const TABS = [
 ];
 
 export default function SettingsPage(p) {
-  const { profile, saveProfile, exportBackup, importBackup } = p;
+  const { profile, saveProfile, exportBackup, importBackup, darkMode: darkModeProp, setDarkMode } = p;
   const { user, signOut } = useAuth();
   const [tab, setTab] = useState("profile");
   // Unlocks the founder-only mascots in the Look tab's picker.
   const isFounder = useIsFounder();
   const isModerator = useIsModerator();
+
+  const isDark = typeof darkModeProp === "boolean"
+    ? darkModeProp
+    : (typeof profile?.dark_mode === "boolean" ? profile.dark_mode : readStoredDarkMode(false));
+
+  const chooseDarkMode = (nextDark) => {
+    const val = Boolean(nextDark);
+    writeStoredDarkMode(val);
+    if (typeof setDarkMode === "function") {
+      setDarkMode(val);
+    } else {
+      saveProfile({ dark_mode: val });
+    }
+  };
 
   return (
     <div className="sb-page">
@@ -165,6 +179,41 @@ export default function SettingsPage(p) {
           {tab === "look" && (
             <>
               <Card>
+                <SectionTitle icon={isDark ? Moon : Sun}>Appearance</SectionTitle>
+                <p className="sb-muted" style={{ fontSize: 12.5, marginTop: -2, marginBottom: 14 }}>
+                  Switch between warm daylight paper and sculpted dark claymorphism. Your active theme palette adapts automatically.
+                </p>
+                <div className="sb-appearance-mode-grid" role="radiogroup" aria-label="Appearance mode">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={!isDark}
+                    className={`sb-appearance-mode-option ${!isDark ? "active" : ""}`}
+                    onClick={() => chooseDarkMode(false)}
+                  >
+                    <span className="sb-appearance-mode-icon"><Sun size={18} /></span>
+                    <span className="sb-appearance-mode-copy">
+                      <span className="sb-appearance-mode-title">Light mode</span>
+                      <span className="sb-appearance-mode-sub">Warm cream canvas & playful sticker outlines</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={isDark}
+                    className={`sb-appearance-mode-option ${isDark ? "active" : ""}`}
+                    onClick={() => chooseDarkMode(true)}
+                  >
+                    <span className="sb-appearance-mode-icon"><Moon size={18} /></span>
+                    <span className="sb-appearance-mode-copy">
+                      <span className="sb-appearance-mode-title">Dark mode</span>
+                      <span className="sb-appearance-mode-sub">Deep charcoal canvas & tactile clay surfaces</span>
+                    </span>
+                  </button>
+                </div>
+              </Card>
+
+              <Card>
                 <SectionTitle icon={Rabbit}>Mascot</SectionTitle>
                 <div className="sb-mascot-grid">
                   {/* Dragon/Axolotl only enter this list for a founder; Lion also
@@ -185,7 +234,7 @@ export default function SettingsPage(p) {
                 <div className="sb-theme-grid">
                   {Object.entries(THEMES).map(([name, val]) => (
                     <button key={name} className={`sb-theme-swatch ${profile.theme === name ? "active" : ""}`}
-                      style={{ background: val.soft, borderColor: val.accent }}
+                      style={{ background: val.soft, borderColor: val.accent, "--swatch-accent": val.accent, "--swatch-soft": val.soft, "--swatch-ink": val.ink }}
                       onClick={() => saveProfile({ theme: name })}>
                       <span style={{ background: val.accent }} className="sb-theme-dot" />{val.emoji} {name}
                     </button>

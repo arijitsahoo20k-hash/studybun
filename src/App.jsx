@@ -6,7 +6,7 @@ import {
   NotebookPen, ChevronsLeft, ChevronsRight, Users, Layers, Camera, UsersRound,
 } from "lucide-react";
 
-import { THEMES, themeVars, timeWash } from "./data/themes";
+import { THEMES, themeVars, timeWash, readStoredDarkMode, writeStoredDarkMode } from "./data/themes";
 import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS, defaultChapterProgressFor } from "./data/syllabus";
 import { useDeviceRow, useRealtimeTable, useChapterProgress, useMockAnalysis } from "./hooks/useRealtimeTable";
 import { useFocusTimer } from "./hooks/useFocusTimer";
@@ -145,8 +145,25 @@ export default function App() {
   const [page, setPageRaw] = useState("dashboard");
   const { row: profile, loading: profileLoading, save: saveProfile, refetch: refetchProfile } = useDeviceRow("profiles", {
     name: "", exam: "JEE Main", exam_date: "2027-01-24", daily_goal: 6, daily_question_target: 50, theme: "Sakura Bloom", mascot: "bunny",
-    streak_freeze_tokens: 1, streak_freeze_granted_days: 0,
+    dark_mode: readStoredDarkMode(false), streak_freeze_tokens: 1, streak_freeze_granted_days: 0,
   });
+  // Appearance. `localDarkMode` is the single source of truth for what's on
+  // screen, so flipping the switch in Settings repaints instantly (optimistic)
+  // instead of waiting for the profiles round-trip. A value that arrives from
+  // the server (first load, or changed on another device) is adopted below.
+  const [localDarkMode, setLocalDarkMode] = useState(() => readStoredDarkMode(false));
+  const darkMode = localDarkMode;
+  useEffect(() => {
+    if (typeof profile?.dark_mode === "boolean") setLocalDarkMode(profile.dark_mode);
+  }, [profile?.dark_mode]);
+  useEffect(() => { writeStoredDarkMode(darkMode); }, [darkMode]);
+  const setDarkMode = (next) => {
+    const val = typeof next === "function" ? Boolean(next(darkMode)) : Boolean(next);
+    if (val === darkMode) return;
+    setLocalDarkMode(val);
+    saveProfile({ dark_mode: val });
+  };
+  const toggleDarkMode = () => setDarkMode((d) => !d);
 
   // Keep only genuinely global data live. Page-specific datasets/subscriptions
   // are activated when their page is visible, preventing navigation from
@@ -512,7 +529,15 @@ export default function App() {
   const theme = THEMES[profile?.theme] || THEMES["Sakura Bloom"];
   const mascot = profile?.mascot || "bunny";
   const mTheme = mascotTheme(mascot);
-  const cssVars = { ...themeVars(theme), "--time-wash": timeWash() };
+  // Memoised: App re-renders every second while the focus timer runs, and an
+  // unchanged style object lets React skip re-applying ~70 custom properties.
+  // `hour` keeps the time-of-day wash moving like it always did.
+  const washHour = new Date().getHours();
+  const cssVars = useMemo(
+    () => ({ ...themeVars(theme, darkMode), "--time-wash": timeWash(darkMode) }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [theme, darkMode, washHour]
+  );
 
   /* ---------- derived stats (shared by Dashboard / Analytics / AI Insights) ---------- */
   const sessions = sessionsQ.rows;
@@ -1304,7 +1329,7 @@ export default function App() {
 
   if (profileLoading || !profile) {
     return (
-      <div style={cssVars}>
+      <div style={cssVars} data-dark={darkMode ? "true" : "false"}>
         <GlobalStyle />
         <DecorLayer theme={theme} />
         <LoadingScreen message="Preparing your study desk..." />
@@ -1314,7 +1339,7 @@ export default function App() {
 
   if (!profile.name) {
     return (
-      <div style={cssVars}>
+      <div style={cssVars} data-dark={darkMode ? "true" : "false"}>
         <GlobalStyle />
         <DecorLayer theme={theme} />
         <Suspense fallback={<LoadingScreen message="Preparing your study desk..." />}>
@@ -1325,7 +1350,7 @@ export default function App() {
   }
 
   const pageProps = {
-    profile, saveProfile, mascot,
+    profile, saveProfile, mascot, darkMode, setDarkMode, toggleDarkMode,
     userId: user?.id, studyingIds,
     sessions, timerSessions, addSession, deleteSession: sessionsQ.remove, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
     questions, addQuestions, deleteQuestion: questionsQ.remove, mocks, addMock, updateMock, deleteMock,
@@ -1361,10 +1386,11 @@ export default function App() {
     // document.body: portaling to body escapes this variable scope and
     // the portaled content renders with no theme colors at all
     // (transparent surfaces, invisible borders).
-    <div className="sb-app" style={cssVars} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"} data-paper={theme.paper ? "true" : "false"} data-photo-bg={theme.photoBg ? "true" : "false"}>
+    <div className="sb-app" style={cssVars} data-dark={darkMode ? "true" : "false"} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"} data-paper={theme.paper ? "true" : "false"} data-photo-bg={theme.photoBg ? "true" : "false"}>
       <GlobalStyle />
       <ThemePhotoLayer theme={theme} />
       <CustomBackgroundLayer />
+      {darkMode && <div className="sb-dark-glow-mesh" aria-hidden="true" />}
       <DecorLayer theme={theme} />
       <PWAPrompt />
       {celebrateType && <Confetti type={celebrateType} theme={theme} />}

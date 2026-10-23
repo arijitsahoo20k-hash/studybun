@@ -24,7 +24,7 @@ export default function AnalyticsPage(p) {
               <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
               <Legend wrapperStyle={{ fontSize: 11.5 }} />
               <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} />
-              <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--outline)" strokeWidth={3} strokeDasharray="5 3" />
+              <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--chart-secondary, var(--outline))" strokeWidth={3} strokeDasharray="5 3" />
             </LineChart>
           </ResponsiveContainer>
         </Card>

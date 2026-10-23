@@ -383,22 +383,279 @@ export const THEMES = {
   },
 };
 
-/** Build the full set of CSS custom properties for a given theme, including the
- *  time-of-day ambient wash. Shared by App.jsx and Onboarding.jsx so both stay
- *  pixel-identical. */
-export function themeVars(theme) {
+/* ===================================================================
+ * Dark mode
+ * ---------------------------------------------------------------
+ * Appearance is a per-user flag (profiles.dark_mode) mirrored in
+ * localStorage so the very first paint -- before the profile row has
+ * loaded -- already matches (index.html reads the same key and sets
+ * <html data-dark> before React mounts, so there's no light flash).
+ *
+ * Dark palettes are DERIVED from each theme's own accent / accent2 /
+ * palette, so all themes keep their identity in the dark. The result is
+ * cached per theme object: themeVars() runs on every App render (the
+ * focus timer re-renders it each second), and the colour maths below
+ * should be paid once, not 60 times a minute.
+ * =================================================================== */
+export const DARK_MODE_STORAGE_KEY = "sb-dark-mode-v1";
+
+export function readStoredDarkMode(fallback = false) {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return Boolean(fallback);
+    const raw = window.localStorage.getItem(DARK_MODE_STORAGE_KEY);
+    if (raw === "1" || raw === "true") return true;
+    if (raw === "0" || raw === "false") return false;
+  } catch {
+    // storage blocked (private mode etc.) -- fall through to the fallback
+  }
+  return Boolean(fallback);
+}
+
+export function writeStoredDarkMode(enabled) {
+  const val = Boolean(enabled);
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(DARK_MODE_STORAGE_KEY, val ? "1" : "0");
+    }
+  } catch {
+    // ignore storage errors
+  }
+  try {
+    if (typeof document !== "undefined" && document.documentElement) {
+      document.documentElement.setAttribute("data-dark", val ? "true" : "false");
+      if (document.body) document.body.setAttribute("data-dark", val ? "true" : "false");
+    }
+  } catch {
+    // ignore DOM errors
+  }
+  return val;
+}
+
+/* ---------- colour helpers (dark palette calibration) ---------- */
+function hexToRgb(hex) {
+  if (!hex || typeof hex !== "string") return [255, 111, 94];
+  const clean = hex.replace("#", "").trim();
+  const full = clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;
+  const num = parseInt(full, 16);
+  if (Number.isNaN(num)) return [255, 111, 94];
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+
+function rgbToHex([r, g, b]) {
+  const cl = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  return `#${cl(r)}${cl(g)}${cl(b)}`.toUpperCase();
+}
+
+function rgba(hex, alpha) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function relativeLuminance([r, g, b]) {
+  const a = [r, g, b].map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+}
+
+export function contrastRatio(hex1, hex2) {
+  const l1 = relativeLuminance(hexToRgb(hex1));
+  const l2 = relativeLuminance(hexToRgb(hex2));
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+
+function rgbToHsl([r, g, b]) {
+  const rn = r / 255, gn = g / 255, bn = b / 255;
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case rn: h = (gn - bn) / d + (gn < bn ? 6 : 0); break;
+      case gn: h = (bn - rn) / d + 2; break;
+      case bn: h = (rn - gn) / d + 4; break;
+      default: break;
+    }
+    h /= 6;
+  }
+  return [h, s, l];
+}
+
+function hslToRgb([h, s, l]) {
+  if (s === 0) {
+    const v = l * 255;
+    return [v, v, v];
+  }
+  const hue2rgb = (p, q, t) => {
+    let tt = t;
+    if (tt < 0) tt += 1;
+    if (tt > 1) tt -= 1;
+    if (tt < 1 / 6) return p + (q - p) * 6 * tt;
+    if (tt < 1 / 2) return q;
+    if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
+    return p;
+  };
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return [hue2rgb(p, q, h + 1 / 3) * 255, hue2rgb(p, q, h) * 255, hue2rgb(p, q, h - 1 / 3) * 255];
+}
+
+/* Lift a light-mode accent until it reads (>= minContrast) on a dark surface. */
+function adaptAccentForDark(hex, minContrast = 4.8, surfaceHex = "#19191D") {
+  let [h, s, l] = rgbToHsl(hexToRgb(hex));
+  if (s < 0.25 && l < 0.45) s = Math.max(s, 0.36);
+  let cur = rgbToHex(hslToRgb([h, s, l]));
+  while (contrastRatio(cur, surfaceHex) < minContrast && l < 0.86) {
+    l += 0.02;
+    cur = rgbToHex(hslToRgb([h, s, l]));
+  }
+  return cur;
+}
+
+function shiftLightness(hex, deltaL) {
+  const [h, s, l] = rgbToHsl(hexToRgb(hex));
+  const nextL = Math.max(0.12, Math.min(0.92, l + deltaL));
+  return rgbToHex(hslToRgb([h, s, nextL]));
+}
+
+function mixHex(hexA, hexB, weightA = 0.5) {
+  const [r1, g1, b1] = hexToRgb(hexA);
+  const [r2, g2, b2] = hexToRgb(hexB);
+  const w = Math.max(0, Math.min(1, weightA));
+  return rgbToHex([r1 * w + r2 * (1 - w), g1 * w + g2 * (1 - w), b1 * w + b2 * (1 - w)]);
+}
+
+const FONT_VARS = {
+  "--font-display": "'Baloo 2', system-ui, sans-serif",
+  "--font-body": "'Nunito', system-ui, sans-serif",
+  "--font-hand": "'Caveat', cursive",
+};
+
+function buildLightVars(theme) {
   return {
     "--bg": theme.bg, "--card": theme.card, "--accent": theme.accent, "--accent2": theme.accent2,
     "--soft": theme.soft, "--ink": theme.ink, "--muted": theme.muted, "--outline": theme.outline,
     "--dot": theme.dot, "--figure-body": theme.mascotFill, "--figure-inner": theme.mascotInner, "--figure-blush": theme.mascotBlush, "--figure-outline": theme.outline, "--figure-ink": theme.ink, "--mascot-fill": theme.mascotFill, "--mascot-body": theme.mascotFill, "--mascot-inner": theme.mascotInner, "--mascot-blush": theme.mascotBlush, "--mascot-outline": theme.outline, "--mascot-ink": theme.ink,
     "--p1": theme.palette[0], "--p2": theme.palette[1], "--p3": theme.palette[2],
     "--p4": theme.palette[3], "--p5": theme.palette[4], "--p6": theme.palette[5],
-    "--font-display": "'Baloo 2', system-ui, sans-serif", "--font-body": "'Nunito', system-ui, sans-serif",
-    "--font-hand": "'Caveat', cursive",
+    ...FONT_VARS,
+    // Light-mode values of the tokens dark mode overrides (identical to the
+    // hard-coded fallbacks wherever they are consumed, so light is unchanged).
+    "--countdown-ink": theme.outline,
+    "--pin-base-ink": theme.outline,
+    "--chart-secondary": theme.outline,
+    "--subj-physics-ink": "#2F62C7",
+    "--subj-chemistry-ink": "#2E9955",
+    "--subj-math-ink": "#7C3FD6",
   };
 }
 
-export function timeWash() {
+function buildDarkVars(theme) {
+  const surface = "#19191D";
+  const darkAccent = adaptAccentForDark(theme.accent, 4.85, surface);
+  const darkAccent2 = adaptAccentForDark(theme.accent2, 4.85, surface);
+  const darkCard = mixHex(darkAccent, "#19191D", 0.025);
+  const darkCardHi = mixHex(darkAccent, "#202025", 0.035);
+  const palette = (theme.palette || []).map((c) => adaptAccentForDark(c, 4.6, darkCard));
+  const onAccent = contrastRatio("#26100C", darkAccent) >= 4.5 ? "#26100C" : "#FFF8F5";
+
+  return {
+    "--bg": mixHex(darkAccent, "#0D0D0F", 0.02),
+    "--bg-secondary": mixHex(darkAccent, "#121215", 0.025),
+    "--surface-inset": mixHex(darkAccent, "#131317", 0.02),
+    "--card": darkCard,
+    "--card-hi": darkCardHi,
+    "--card-bg": darkCardHi,
+    "--accent": darkAccent,
+    "--accent-light": shiftLightness(darkAccent, 0.11),
+    "--accent-deep": shiftLightness(darkAccent, -0.18),
+    "--on-accent": onAccent,
+    "--accent2": darkAccent2,
+    "--accent2-deep": shiftLightness(darkAccent2, -0.18),
+    "--soft": mixHex(darkAccent, "#202026", 0.18),
+    "--soft-hi": mixHex(darkAccent, "#26262E", 0.26),
+    "--ink": "#F0EFF3",
+    "--ink-secondary": "#B5B2BE",
+    "--muted": "#9693A3",
+    "--muted-dim": "#6E6B7B",
+    "--outline": "#302F3A",
+    "--border-subtle": "rgba(255, 255, 255, 0.07)",
+    "--border-hi": "rgba(255, 255, 255, 0.13)",
+    "--dot": "rgba(255, 255, 255, 0.025)",
+    // nested rows / wells sit INSIDE a card: tint only, never their own shadow
+    "--row-bg": "rgba(255, 255, 255, 0.035)",
+    "--row-bg-hover": "rgba(255, 255, 255, 0.06)",
+    // pre-resolved glow colours so the ambient layer is one cheap static paint
+    "--glow-1": rgba(darkAccent, 0.1),
+    "--glow-2": rgba(darkAccent2, 0.06),
+    "--accent-wash": rgba(darkAccent, 0.14),
+    "--accent-ring": rgba(darkAccent, 0.3),
+    "--figure-body": theme.mascotFill,
+    "--figure-inner": theme.mascotInner,
+    "--figure-blush": theme.mascotBlush,
+    "--figure-outline": theme.outline,
+    "--figure-ink": theme.ink,
+    "--mascot-fill": theme.mascotFill,
+    "--mascot-body": theme.mascotFill,
+    "--mascot-inner": theme.mascotInner,
+    "--mascot-blush": theme.mascotBlush,
+    "--mascot-outline": "#2D2C36",
+    "--mascot-ink": "#F0EFF3",
+    "--mascot-orig-card": theme.card,
+    "--mascot-orig-outline": theme.outline,
+    "--mascot-orig-ink": theme.ink,
+    "--mascot-orig-soft": theme.soft,
+    "--mascot-orig-accent": theme.accent,
+    "--mascot-orig-accent2": theme.accent2,
+    "--mascot-orig-muted": theme.muted,
+    "--countdown-ink": "#F0EFF3",
+    "--pin-base-ink": "#F0EFF3",
+    "--chart-secondary": darkAccent2,
+    "--subj-physics-ink": "#82B4FF",
+    "--subj-chemistry-ink": "#6ADBA0",
+    "--subj-math-ink": "#C6A3FF",
+    "--status-success": "#56CE8E",
+    "--status-warning": "#F2C879",
+    "--status-error": "#FF7A78",
+    // Surface depth. Deliberately cheap: ONE small blurred drop shadow + a
+    // 1px (blur-free) top highlight. The old 4-layer neumorphic stack
+    // (two 14-18px blurs per element) was the main reason dark mode
+    // scrolled at ~25fps on phones.
+    "--clay-raised": "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 6px 18px -8px rgba(0, 0, 0, 0.7)",
+    "--clay-raised-sm": "inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 5px rgba(0, 0, 0, 0.3)",
+    "--clay-pressed": "inset 0 2px 5px rgba(0, 0, 0, 0.42)",
+    "--clay-flat": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+    // the original sticker look uses hard offset shadows in the outline colour;
+    // in dark they would read as grey ghost-frames, so they are switched off
+    "--sticker-shadow": "transparent",
+    "--p1": palette[0] || darkAccent,
+    "--p2": palette[1] || darkAccent2,
+    "--p3": palette[2] || darkAccent,
+    "--p4": palette[3] || darkAccent2,
+    "--p5": palette[4] || darkAccent,
+    "--p6": palette[5] || darkAccent2,
+    ...FONT_VARS,
+  };
+}
+
+const VAR_CACHE = new WeakMap();
+
+/** CSS custom properties for a theme. `darkMode` swaps in the derived dark
+ *  palette + surface tokens. The returned object is cached per theme and
+ *  shared -- treat it as read-only (spread it if you need to add keys). */
+export function themeVars(theme, darkMode = false) {
+  const t = theme || THEMES["Sakura Bloom"];
+  let entry = VAR_CACHE.get(t);
+  if (!entry) { entry = {}; VAR_CACHE.set(t, entry); }
+  const key = darkMode ? "dark" : "light";
+  return entry[key] || (entry[key] = darkMode ? buildDarkVars(t) : buildLightVars(t));
+}
+
+export function timeWash(darkMode = false) {
+  if (darkMode) return "rgba(0,0,0,0)"; // the dark canvas owns its own ambient glow
   const h = new Date().getHours();
   if (h < 6) return "rgba(110,120,210,0.07)";      // late night — cool violet
   if (h < 11) return "rgba(140,190,255,0.05)";      // morning — cool blue
@@ -406,4 +663,3 @@ export function timeWash() {
   if (h < 20) return "rgba(255,165,110,0.06)";      // evening — warm amber
   return "rgba(150,100,200,0.07)";                  // night — warm violet
 }
-

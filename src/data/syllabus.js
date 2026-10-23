@@ -6,7 +6,7 @@ export const SYLLABUS = {
     // near-white card and needs to stay soft), but used directly as text
     // color it reads too washed-out to be legible at a glance. `deepColor`
     // is for the handful of spots where the subject name itself is the text.
-    deepColor: "#2F62C7",
+    deepColor: "var(--subj-physics-ink, #2F62C7)",
     groups: {
       "Foundations": ["Basic Mathematics", "Units and Measurement"],
       "Kinematics & Laws of Motion": ["Motion in 1 Dimension", "Motion in a Plane", "Laws of Motion", "Circular Motion"],
@@ -22,7 +22,7 @@ export const SYLLABUS = {
   },
   Chemistry: {
     color: "#B8E6C1",
-    deepColor: "#2E9955",
+    deepColor: "var(--subj-chemistry-ink, #2E9955)",
     groups: {
       "Physical Chemistry": ["Some Basic Concepts of Chemistry", "Redox Reactions", "Structure of Atom", "State of Matter", "Solutions", "Chemical Kinetics", "Thermodynamics", "Chemical Equilibrium", "Ionic Equilibrium", "Electrochemistry", "The Solid State", "Surface Chemistry"],
       "Inorganic Chemistry": ["Classification of Elements and Periodicity in Properties", "Chemical Bonding and Molecular Structure", "Coordination Compounds", "General Principles and Processes of Isolation of Elements", "P-Block Elements", "Hydrogen and its Compounds", "The d and f-Block Elements", "S-Block Elements", "Principles of Qualitative Analysis"],
@@ -31,7 +31,7 @@ export const SYLLABUS = {
   },
   Mathematics: {
     color: "#D8C2FF",
-    deepColor: "#7C3FD6",
+    deepColor: "var(--subj-math-ink, #7C3FD6)",
     groups: {
       "Algebra": ["Basic Mathematics", "Quadratic Equations", "Sequence and Series", "Permutation and Combination", "Binomial Theorem", "Determinants", "Matrices", "Sets", "Relations and Functions", "Complex Numbers"],
       "Trigonometry": ["Trigonometric Functions", "Trigonometric Equations", "Inverse Trigonometric Functions", "Solution of Triangles"],

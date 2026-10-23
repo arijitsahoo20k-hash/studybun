@@ -204,7 +204,7 @@ export function ThemePicker({ value, onChange, compact = false }) {
     <div className={`sb-theme-picker ${compact ? "compact" : ""}`}>
       {Object.entries(THEMES).map(([name, t]) => (
         <button key={name} type="button" className={`sb-theme-chip ${value === name ? "active" : ""}`}
-          style={{ background: value === name ? t.soft : "var(--card)", borderColor: t.outline }}
+          style={{ background: value === name ? t.soft : "var(--card)", borderColor: t.outline, "--swatch-accent": t.accent, "--swatch-soft": t.soft, "--swatch-ink": t.ink }}
           onClick={() => onChange(name)} title={name}>
           <span className="sb-theme-chip-swatch" style={{ background: t.accent, borderColor: t.outline }} />
           {!compact && name}

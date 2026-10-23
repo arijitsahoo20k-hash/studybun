@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { THEMES, themeVars } from "../../data/themes";
+import { THEMES, themeVars, readStoredDarkMode, writeStoredDarkMode } from "../../data/themes";
 import AuthOnboardStyle from "../../styles/AuthOnboardStyle";
 import OnboardingShell from "./OnboardingShell";
 import { ONBOARDING_STEPS } from "./steps";
@@ -19,24 +19,30 @@ export default function Onboarding({ profile, onSave }) {
     daily_goal: profile?.daily_goal || 6,
     theme: profile?.theme || "Sakura Bloom",
     mascot: profile?.mascot || "bunny",
+    dark_mode: typeof profile?.dark_mode === "boolean" ? profile.dark_mode : readStoredDarkMode(false),
   });
   const [step, setStep] = useState(0);
 
-  const t = THEMES[form.theme];
-  const cssVars = themeVars(t);
+  const t = THEMES[form.theme] || THEMES["Sakura Bloom"];
+  const cssVars = themeVars(t, form.dark_mode);
   const stepId = ONBOARDING_STEPS[step].id;
   const StepComponent = STEP_COMPONENTS[stepId];
   const isLastStep = step === ONBOARDING_STEPS.length - 1;
   const nextDisabled = stepId === "name" && !form.name.trim();
 
   const goNext = () => {
-    if (isLastStep) onSave(form);
-    else setStep((s) => s + 1);
+    if (isLastStep) {
+      writeStoredDarkMode(Boolean(form.dark_mode));
+      onSave(form);
+    } else {
+      setStep((s) => s + 1);
+    }
   };
 
   return (
-    <div className="sb-onboard" style={cssVars}>
+    <div className="sb-onboard" style={cssVars} data-dark={form.dark_mode ? "true" : "false"}>
       <AuthOnboardStyle />
+      {form.dark_mode && <div className="sb-dark-glow-mesh" aria-hidden="true" />}
       <OnboardingShell
         mascot={form.mascot}
         stepIndex={step}

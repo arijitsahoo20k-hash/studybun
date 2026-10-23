@@ -2,7 +2,7 @@ import React, { useState, lazy, Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 import { isSupabaseConfigured } from "./lib/supabaseClient";
-import { THEMES, themeVars } from "./data/themes";
+import { THEMES, themeVars, readStoredDarkMode } from "./data/themes";
 import { DecorLayer, LoadingScreen } from "./components/ui";
 import GlobalStyle from "./styles/GlobalStyle";
 import Landing from "./pages/landing";
@@ -22,7 +22,8 @@ const DEFAULT_THEME = THEMES["Sakura Bloom"];
 function Gate() {
   const { user, loading, passwordRecovery, signOut } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
-  const cssVars = themeVars(DEFAULT_THEME);
+  const darkMode = readStoredDarkMode(false);
+  const cssVars = themeVars(DEFAULT_THEME, darkMode);
 
   // Supabase isn't configured yet — skip the auth wall so the existing
   // "not configured" banner inside App can explain what to do next.
@@ -36,7 +37,7 @@ function Gate() {
 
   if (loading) {
     return (
-      <div style={cssVars}>
+      <div style={cssVars} data-dark={darkMode ? "true" : "false"}>
         <GlobalStyle />
         <DecorLayer theme={DEFAULT_THEME} />
         <LoadingScreen message="Waking up your study buddy..." />
@@ -52,15 +53,16 @@ function Gate() {
   if (!user || passwordRecovery) {
     if (!showAuth && !passwordRecovery) {
       return (
-        <div style={cssVars}>
+        <div style={themeVars(DEFAULT_THEME, false)}>
           <GlobalStyle />
           <Landing onGetStarted={() => setShowAuth(true)} />
         </div>
       );
     }
     return (
-      <div className="sb-onboard sb-auth-page" style={cssVars}>
+      <div className="sb-onboard sb-auth-page" style={cssVars} data-dark={darkMode ? "true" : "false"}>
         <GlobalStyle />
+        {darkMode && <div className="sb-dark-glow-mesh" aria-hidden="true" />}
         <DecorLayer theme={DEFAULT_THEME} />
         {passwordRecovery ? (
           // Regular "Back to explore" would be a dead click here: Gate's

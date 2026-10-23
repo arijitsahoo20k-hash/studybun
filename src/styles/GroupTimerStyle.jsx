@@ -107,11 +107,11 @@ export default function GroupTimerStyle() {
         width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 14px 11px 11px;
         border-radius: 999px; border: 2.5px solid var(--mascot-outline); background: var(--bg);
         color: var(--mascot-ink); text-align: left; cursor: pointer; font-family: inherit;
-        box-shadow: 3px 3px 0 var(--mascot-outline);
+        box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline));
         transition: transform .12s ease, box-shadow .12s ease, background-color .18s ease;
       }
-      .sb-gt-row:hover:not(:disabled) { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--mascot-outline); background: var(--soft); }
-      .sb-gt-row:active:not(:disabled) { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--mascot-outline); }
+      .sb-gt-row:hover:not(:disabled) { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--sticker-shadow, var(--mascot-outline)); background: var(--soft); }
+      .sb-gt-row:active:not(:disabled) { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--sticker-shadow, var(--mascot-outline)); }
       .sb-gt-row:disabled { opacity: .65; cursor: wait; }
       .sb-gt-row-icon {
         flex: none; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
@@ -137,10 +137,10 @@ export default function GroupTimerStyle() {
         display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 16px;
         border-radius: 20px; border: 2.5px solid var(--mascot-outline); background: var(--bg);
         color: var(--mascot-ink); text-align: left; cursor: pointer; font-family: inherit;
-        box-shadow: 3px 3px 0 var(--mascot-outline);
+        box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline));
         transition: transform .12s ease, box-shadow .12s ease, background-color .18s ease;
       }
-      .sb-gt-option:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--mascot-outline); background: var(--soft); }
+      .sb-gt-option:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--sticker-shadow, var(--mascot-outline)); background: var(--soft); }
       .sb-gt-option-icon {
         width: 38px; height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
         background: var(--soft); border: 2px solid var(--mascot-outline); margin-bottom: 4px;
@@ -254,11 +254,11 @@ export default function GroupTimerStyle() {
       .sb-gt-card {
         position: relative; display: flex; flex-direction: column; align-items: center; text-align: center;
         gap: 5px; padding: 12px 10px; min-width: 0; border-radius: 20px;
-        border: 2.5px solid var(--mascot-outline); background: var(--bg); box-shadow: 3px 3px 0 var(--mascot-outline);
+        border: 2.5px solid var(--mascot-outline); background: var(--bg); box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline));
         transition: opacity .2s ease;
       }
       .sb-gt-card.me { background: var(--soft); }
-      .sb-gt-card.idle { opacity: .72; box-shadow: 2px 2px 0 var(--mascot-outline); }
+      .sb-gt-card.idle { opacity: .72; box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline)); }
       .sb-gt-card-avatar {
         display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%;
         background: var(--card); border: 2.5px solid var(--mascot-outline);
@@ -300,7 +300,7 @@ export default function GroupTimerStyle() {
         position: relative; display: flex; flex-direction: column; gap: 6px; padding: 6px; border-radius: 14px;
         border: 2.5px solid var(--mascot-outline); background: var(--bg); color: var(--mascot-ink); cursor: pointer;
         font-family: inherit; font-weight: 800; font-size: 12px; text-align: center;
-        box-shadow: 2px 2px 0 var(--mascot-outline);
+        box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline));
       }
       .sb-gt-gif-opt img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; image-rendering: pixelated; background: #111; }
       .sb-gt-gif-opt.on { background: var(--soft); outline: 3px solid var(--accent); outline-offset: 1px; }
@@ -311,7 +311,7 @@ export default function GroupTimerStyle() {
       .sb-gt-swatches { display: flex; flex-wrap: wrap; gap: 10px; }
       .sb-gt-swatch {
         width: 34px; height: 34px; padding: 0; border-radius: 50%; border: 2.5px solid var(--mascot-outline); cursor: pointer;
-        display: inline-flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 var(--mascot-outline);
+        display: inline-flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline));
       }
       .sb-gt-swatch.on { outline: 3px solid var(--accent); outline-offset: 2px; }
       .sb-gt-swatch-custom {
@@ -478,7 +478,7 @@ export default function GroupTimerStyle() {
       .sb-gt-cheer-btn:hover { background: var(--soft); }
       .sb-gt-cheer-pop {
         position: absolute; top: 36px; right: 4px; z-index: 5; display: flex; flex-wrap: wrap; width: 112px; gap: 2px; padding: 5px; border-radius: 14px;
-        border: 2px solid var(--mascot-outline); background: var(--card); box-shadow: 3px 3px 0 var(--mascot-outline);
+        border: 2px solid var(--mascot-outline); background: var(--card); box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline));
       }
       .sb-gt-cheer-pop button, .sb-gt-cheer-row button {
         width: 30px; height: 30px; border-radius: 10px; border: 0; background: transparent; cursor: pointer; font-size: 17px; line-height: 1;
@@ -518,7 +518,7 @@ export default function GroupTimerStyle() {
       .sb-focus-lock-switch {
         display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px;
         border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--card);
-        box-shadow: 2px 2px 0 var(--mascot-outline); cursor: pointer; font-weight: 800; font-size: 11.5px;
+        box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline)); cursor: pointer; font-weight: 800; font-size: 11.5px;
         color: var(--mascot-ink); transition: transform .12s ease;
       }
       .sb-focus-lock-switch:hover:not(:disabled) { transform: translateY(-1px); }
@@ -551,6 +551,30 @@ export default function GroupTimerStyle() {
         .sb-gt-gear:hover { transform: none; }
         .sb-gt-stage-bar > span, .sb-gt-card-bar > span { transition: none; }
       }
+
+      /* ---------- Dark Mode overrides for Group Study Timer ---------- */
+      [data-dark="true"] .sb-gt-card,
+      [data-dark="true"] .sb-gt-stage,
+      [data-dark="true"] .sb-gt-stats,
+      [data-dark="true"] .sb-gt-recap,
+      [data-dark="true"] .sb-gt-lobby-card,
+      [data-dark="true"] .sb-gt-row {
+        background: var(--card);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--clay-raised);
+      }
+      [data-dark="true"] .sb-gt-card-subject {
+        background: var(--soft);
+        color: var(--ink);
+        border: 1px solid var(--border-hi);
+      }
+      [data-dark="true"] .sb-gt-dialog {
+        background: var(--card-hi);
+        color: var(--ink);
+        border: 1px solid var(--border-hi);
+        box-shadow: var(--clay-raised);
+      }
+
     `}</style>
   );
 }

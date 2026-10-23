@@ -31,7 +31,7 @@ export default function FocusMusicStyle() {
       .sb-music-preview {
         position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px;
         border: 2px solid var(--mascot-outline); background: var(--soft) center / cover no-repeat;
-        box-shadow: 3px 3px 0 var(--mascot-outline); display: flex; align-items: center; justify-content: center;
+        box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline)); display: flex; align-items: center; justify-content: center;
         color: var(--muted); font-size: 13px; font-weight: 700; text-align: center; padding: 12px;
         box-sizing: border-box;
       }
@@ -70,7 +70,7 @@ export default function FocusMusicStyle() {
       .sb-music-pill-thumb {
         position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px);
         border-radius: 999px; background: var(--accent); border: 2px solid var(--mascot-outline);
-        box-shadow: 2px 2px 0 var(--mascot-outline); box-sizing: border-box;
+        box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline)); box-sizing: border-box;
         transition: transform .28s cubic-bezier(.4,1.3,.5,1);
       }
       .sb-music-pill[data-active="own"] .sb-music-pill-thumb { transform: translateX(100%); }
@@ -152,6 +152,21 @@ export default function FocusMusicStyle() {
         .sb-music-eq.on i { animation: none; height: 9px; }
         .sb-music-pill-thumb { transition: none; }
       }
+
+      /* ---------- Dark Mode overrides for Focus Music ---------- */
+      [data-dark="true"] .sb-music-mini,
+      [data-dark="true"] .sb-music-track-row {
+        background: var(--card-hi);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--clay-raised-sm);
+      }
+      [data-dark="true"] .sb-music-mini-cta {
+        background: linear-gradient(150deg, var(--accent-light, var(--accent)), var(--accent));
+        color: var(--on-accent, #26100C);
+        border-color: rgba(255, 255, 255, 0.18);
+        box-shadow: var(--clay-raised-sm);
+      }
+
     `}</style>
   );
 }

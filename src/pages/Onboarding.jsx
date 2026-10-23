@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { ChevronRight } from "lucide-react";
-import { THEMES, themeVars } from "../data/themes";
+import { ChevronRight, Moon, Sun } from "lucide-react";
+import { THEMES, themeVars, readStoredDarkMode, writeStoredDarkMode } from "../data/themes";
 import { pickableMascots, exclusiveMascotLabel } from "../data/mascots";
 import { useIsFounder } from "../hooks/useIsFounder";
 import { useIsModerator } from "../hooks/useIsModerator";
@@ -15,6 +15,7 @@ export default function Onboarding({ profile, onSave }) {
     daily_goal: profile?.daily_goal || 6,
     theme: profile?.theme || "Sakura Bloom",
     mascot: profile?.mascot || "bunny",
+    dark_mode: typeof profile?.dark_mode === "boolean" ? profile.dark_mode : readStoredDarkMode(false),
   });
   const [step, setStep] = useState(0);
   // Founders get two extra species in the picker below; a moderator
@@ -22,11 +23,18 @@ export default function Onboarding({ profile, onSave }) {
   const isFounder = useIsFounder();
   const isModerator = useIsModerator();
   const steps = ["name", "exam", "goal", "mascot", "theme"];
-  const t = THEMES[form.theme];
-  const cssVars = themeVars(t);
+  const t = THEMES[form.theme] || THEMES["Sakura Bloom"];
+  const cssVars = themeVars(t, form.dark_mode);
+
+  const setDark = (val) => {
+    const next = Boolean(val);
+    writeStoredDarkMode(next);
+    setForm((prev) => ({ ...prev, dark_mode: next }));
+  };
 
   return (
-    <div className="sb-onboard" style={cssVars}>
+    <div className="sb-onboard" style={cssVars} data-dark={form.dark_mode ? "true" : "false"}>
+      {form.dark_mode && <div className="sb-dark-glow-mesh" aria-hidden="true" />}
       <div className="sb-onboard-card">
         <Mascot species={form.mascot} mood="happy" size={80} />
         <h1 className="sb-onboard-title">Welcome to StudyBun 🌸</h1>
@@ -72,11 +80,19 @@ export default function Onboarding({ profile, onSave }) {
         )}
         {steps[step] === "theme" && (
           <div className="sb-onboard-step">
-            <label>Pick a theme</label>
+            <div className="sb-ob-mode-row" role="radiogroup" aria-label="Appearance mode">
+              <button type="button" className={`sb-chip ${!form.dark_mode ? "active" : ""}`} onClick={() => setDark(false)}>
+                <Sun size={13} style={{ marginRight: 5, verticalAlign: "-2px" }} />Light
+              </button>
+              <button type="button" className={`sb-chip ${form.dark_mode ? "active" : ""}`} onClick={() => setDark(true)}>
+                <Moon size={13} style={{ marginRight: 5, verticalAlign: "-2px" }} />Dark
+              </button>
+            </div>
+            <label style={{ marginTop: 10 }}>Pick a theme</label>
             <div className="sb-theme-grid">
               {Object.entries(THEMES).map(([name, val]) => (
                 <button key={name} className={`sb-theme-swatch ${form.theme === name ? "active" : ""}`}
-                  style={{ background: val.soft, borderColor: val.accent }}
+                  style={{ background: val.soft, borderColor: val.accent, "--swatch-accent": val.accent, "--swatch-soft": val.soft, "--swatch-ink": val.ink }}
                   onClick={() => setForm({ ...form, theme: name })}>
                   <span style={{ background: val.accent }} className="sb-theme-dot" />{val.emoji} {name}
                 </button>

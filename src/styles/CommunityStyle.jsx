@@ -14,7 +14,7 @@ export default function CommunityStyle() {
         display: inline-flex; align-items: center; gap: 6px;
         background: var(--card); border: 2px solid var(--mascot-outline);
         border-radius: 999px; padding: 6px 12px; font-weight: 800; font-size: 12px;
-        color: var(--mascot-ink); box-shadow: 2px 2px 0 var(--mascot-outline);
+        color: var(--mascot-ink); box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline));
       }
 
       .sb-community-page { max-width: 1180px; margin: 0 auto; }
@@ -138,7 +138,7 @@ export default function CommunityStyle() {
       .sb-channel-lock-switch {
         display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px;
         border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--card);
-        box-shadow: 2px 2px 0 var(--mascot-outline); cursor: pointer; font-weight: 800; font-size: 11.5px;
+        box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline)); cursor: pointer; font-weight: 800; font-size: 11.5px;
         color: var(--mascot-ink); transition: transform .12s ease;
       }
       .sb-channel-lock-switch:hover:not(:disabled) { transform: translateY(-1px); }
@@ -175,7 +175,7 @@ export default function CommunityStyle() {
       .sb-focus-lock-switch {
         display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px;
         border-radius: 999px; border: 2px solid var(--mascot-outline); background: var(--card);
-        box-shadow: 2px 2px 0 var(--mascot-outline); cursor: pointer; font-weight: 800; font-size: 11.5px;
+        box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline)); cursor: pointer; font-weight: 800; font-size: 11.5px;
         color: var(--mascot-ink); transition: transform .12s ease;
       }
       .sb-focus-lock-switch:hover:not(:disabled) { transform: translateY(-1px); }
@@ -231,7 +231,7 @@ export default function CommunityStyle() {
       .sb-chat-ban-manager-btn {
         display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px;
         border: 2px solid var(--mascot-outline); background: var(--card); color: #C24444;
-        box-shadow: 2px 2px 0 var(--mascot-outline); cursor: pointer; font-weight: 800; font-size: 11.5px;
+        box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline)); cursor: pointer; font-weight: 800; font-size: 11.5px;
         letter-spacing: .02em; text-transform: uppercase; transition: transform .12s ease;
       }
       .sb-chat-ban-manager-btn:hover { transform: translateY(-1px); }
@@ -298,7 +298,7 @@ export default function CommunityStyle() {
       .sb-chat-msg-content {
         display: inline-block; margin-top: 3px; padding: 9px 13px; border-radius: 14px;
         background: var(--card); border: 2px solid var(--mascot-outline); font-size: 14.5px; line-height: 1.42;
-        white-space: pre-wrap; word-break: break-word; box-shadow: 2px 2px 0 var(--mascot-outline);
+        white-space: pre-wrap; word-break: break-word; box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline));
       }
       .sb-chat-msg.own .sb-chat-msg-content { background: var(--accent); color: #fff; border-color: var(--mascot-outline); }
 
@@ -339,7 +339,7 @@ export default function CommunityStyle() {
         display: inline-flex; align-items: center; justify-content: center;
         width: 28px; height: 28px; border-radius: 999px; flex-shrink: 0;
         background: var(--card); border: 2px solid var(--mascot-outline); color: var(--muted);
-        cursor: pointer; box-shadow: 1px 1px 0 var(--mascot-outline);
+        cursor: pointer; box-shadow: 1px 1px 0 var(--sticker-shadow, var(--mascot-outline));
       }
       .sb-chat-msg-action-btn:hover { background: var(--soft); color: var(--ink); }
       .sb-chat-msg-action-btn.danger:hover { background: #C24444; border-color: #C24444; color: #fff; }
@@ -447,10 +447,10 @@ export default function CommunityStyle() {
       .sb-chat-composer {
         display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
         background: var(--card); border: 2.5px solid var(--mascot-outline); border-radius: 20px;
-        padding: 8px 8px 8px 16px; box-shadow: 3px 3px 0 var(--mascot-outline);
+        padding: 8px 8px 8px 16px; box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline));
         transition: box-shadow .15s ease, transform .15s ease;
       }
-      .sb-chat-composer:focus-within { box-shadow: 4px 4px 0 var(--mascot-outline); transform: translate(-1px, -1px); }
+      .sb-chat-composer:focus-within { box-shadow: 4px 4px 0 var(--sticker-shadow, var(--mascot-outline)); transform: translate(-1px, -1px); }
       .sb-chat-composer textarea {
         flex: 1; resize: none; border: none; outline: none; background: transparent;
         padding: 10px 0; font-family: var(--font-body); font-size: 15px; line-height: 1.4;
@@ -584,7 +584,7 @@ export default function CommunityStyle() {
       }
       .sb-composer-image-thumb {
         position: relative; width: 80px; height: 80px; border-radius: 10px; overflow: hidden;
-        border: 2px solid var(--mascot-outline); box-shadow: 2px 2px 0 var(--mascot-outline); flex-shrink: 0;
+        border: 2px solid var(--mascot-outline); box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline)); flex-shrink: 0;
       }
       .sb-composer-image-thumb img {
         display: block; width: 100%; height: 100%; object-fit: cover;
@@ -598,13 +598,13 @@ export default function CommunityStyle() {
 
       /* Legacy single-image preview (kept for future non-grid uses) */
       .sb-composer-image-preview { position: relative; width: 100%; max-width: 260px; border-radius: 14px; overflow: hidden;
-        border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline); }
+        border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline)); }
       .sb-composer-image-preview img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
 
       /* ---------- post image grid ---------- */
       .sb-post-img-grid {
         margin-top: 10px; border-radius: 14px; overflow: hidden;
-        border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--mascot-outline);
+        border: 2px solid var(--mascot-outline); box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline));
       }
 
       /* 1 image — full width */
@@ -753,7 +753,7 @@ export default function CommunityStyle() {
       .sb-post-list { display: flex; flex-direction: column; gap: 14px; }
       .sb-post {
         border: 2px solid var(--mascot-outline); border-radius: 16px; padding: 12px 14px;
-        background: var(--card); box-shadow: 3px 3px 0 var(--mascot-outline); position: relative;
+        background: var(--card); box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline)); position: relative;
       }
       .sb-post-head { display: flex; align-items: center; gap: 9px; }
       .sb-post-who { flex: 1; min-width: 0; }
@@ -797,7 +797,7 @@ export default function CommunityStyle() {
       .sb-post-reply-img-tile {
         display: block; margin-top: 6px; width: 120px; height: 90px;
         border-radius: 10px; overflow: hidden; cursor: pointer;
-        border: 2px solid var(--mascot-outline); box-shadow: 2px 2px 0 var(--mascot-outline);
+        border: 2px solid var(--mascot-outline); box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline));
         background: none; padding: 0;
         min-width: 44px; min-height: 44px;
         position: relative;
@@ -845,7 +845,7 @@ export default function CommunityStyle() {
       /* Reply image preview */
       .sb-post-reply-img-preview {
         position: relative; width: 80px; height: 60px; border-radius: 8px; overflow: hidden;
-        border: 2px solid var(--mascot-outline); box-shadow: 2px 2px 0 var(--mascot-outline);
+        border: 2px solid var(--mascot-outline); box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline));
       }
       .sb-post-reply-img-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
       .sb-post-reply-img-preview .sb-composer-image-remove {
@@ -865,7 +865,7 @@ export default function CommunityStyle() {
       .sb-cm-actions-menu, .sb-cm-actions-panel {
         position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 41;
         background: var(--card); border: 2px solid var(--mascot-outline); border-radius: 12px;
-        box-shadow: 3px 3px 0 var(--mascot-outline); min-width: 170px; width: max-content; padding: 6px;
+        box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline)); min-width: 170px; width: max-content; padding: 6px;
         display: flex; flex-direction: column; gap: 2px;
       }
       .sb-cm-actions-menu button {
@@ -942,7 +942,7 @@ export default function CommunityStyle() {
         position: relative; width: 72px; height: 72px;
         border-radius: 12px; overflow: hidden; flex-shrink: 0;
         border: 2px solid var(--mascot-outline);
-        box-shadow: 2px 2px 0 var(--mascot-outline);
+        box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline));
       }
       .sb-chat-img-preview-thumb img {
         display: block; width: 100%; height: 100%; object-fit: cover;
@@ -981,7 +981,7 @@ export default function CommunityStyle() {
         border-radius: 14px;
         overflow: hidden;
         border: 2px solid var(--mascot-outline);
-        box-shadow: 2px 2px 0 var(--mascot-outline);
+        box-shadow: 2px 2px 0 var(--sticker-shadow, var(--mascot-outline));
         background: var(--soft);
         cursor: pointer; padding: 0;
         /* Margin below only when a text caption follows */
@@ -1041,6 +1041,73 @@ export default function CommunityStyle() {
         .sb-chat-img-bubble { max-height: 200px; }
         .sb-chat-attach-btn { width: 36px; height: 36px; }
         .sb-chat-img-preview-thumb { width: 64px; height: 64px; }
+      }
+
+      /* ---------- Dark Mode overrides for Community Feed, Posts & Chat ---------- */
+      [data-dark="true"] .sb-comm-tab,
+      [data-dark="true"] .sb-channel-pill {
+        background: var(--card-hi);
+        color: var(--ink-secondary);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--clay-raised-sm);
+      }
+      [data-dark="true"] .sb-comm-tab.active,
+      [data-dark="true"] .sb-channel-pill.active {
+        background: linear-gradient(150deg, var(--accent-light, var(--accent)), var(--accent));
+        color: var(--on-accent, #26100C);
+        border-color: rgba(255, 255, 255, 0.2);
+        box-shadow: var(--clay-raised-sm);
+      }
+      [data-dark="true"] .sb-chat-shell,
+      [data-dark="true"] .sb-post-card {
+        background: var(--card);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--clay-raised);
+      }
+      [data-dark="true"] .sb-chat-msg-content {
+        background: var(--card-hi);
+        color: var(--ink);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--clay-raised-sm);
+      }
+      [data-dark="true"] .sb-chat-msg.own .sb-chat-msg-content {
+        background: linear-gradient(150deg, var(--accent-light, var(--accent)), var(--accent) 65%, var(--accent-deep, var(--accent)));
+        color: var(--on-accent, #26100C);
+        border-color: rgba(255, 255, 255, 0.16);
+        box-shadow: var(--clay-raised-sm);
+      }
+      [data-dark="true"] .sb-chat-msg.own .sb-chat-msg-content a {
+        color: inherit;
+        text-decoration: underline;
+      }
+      [data-dark="true"] .sb-chat-composer,
+      [data-dark="true"] .sb-comm-composer {
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border-subtle);
+      }
+      [data-dark="true"] .sb-checkins-status.status-completed,
+      [data-dark="true"] .sb-goal-status-pill.status-completed {
+        background: rgba(86, 206, 142, 0.16);
+        color: #7CE0AA;
+        border-color: rgba(86, 206, 142, 0.36);
+      }
+      [data-dark="true"] .sb-checkins-status.status-partial,
+      [data-dark="true"] .sb-goal-status-pill.status-partial {
+        background: rgba(242, 200, 121, 0.16);
+        color: #F7D388;
+        border-color: rgba(242, 200, 121, 0.36);
+      }
+      [data-dark="true"] .sb-chat-delete-err {
+        background: rgba(255, 110, 108, 0.14);
+        border-color: rgba(255, 110, 108, 0.36);
+        color: #FF9492;
+      }
+      [data-dark="true"] .sb-focus-locked-panel {
+        background: rgba(198, 163, 255, 0.12);
+        border-color: rgba(198, 163, 255, 0.32);
+        color: #D2B8FF;
+      }
+
     `}</style>
   );
 }
