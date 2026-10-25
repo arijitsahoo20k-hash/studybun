@@ -22,7 +22,7 @@ export default defineConfig({
         short_name: "StudyBun",
         description:
           "Your cozy JEE study companion — study tracking, planning, revision, and AI insights.",
-        theme_color: "#FF9AAE",
+        theme_color: "#000000",
         background_color: "#FFF8EF",
         display: "standalone",
         start_url: "/",
