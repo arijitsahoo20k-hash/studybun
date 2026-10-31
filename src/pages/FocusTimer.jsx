@@ -189,6 +189,8 @@ export default function FocusTimer(p) {
   // after a session finishes, when the Save-session card has just made the
   // page taller.
   useModalScrollLock(studyingDialogRef, studyingOpen);
+  useModalScrollLock(settingsDialogRef, settingsOpen);
+  useModalScrollLock(confirmResetDialogRef, confirmResetOpen);
 
   useEffect(() => { setDurationDraft(t.modeMinutes[t.mode]); }, [t.mode, t.modeMinutes]);
   // Belt-and-suspenders: close the duration popover the instant a session
@@ -236,7 +238,11 @@ export default function FocusTimer(p) {
     settingsDialogRef.current?.focus();
     const onKey = (e) => { if (e.key === "Escape") setSettingsOpen(false); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const resumeDecor = pauseDecor();
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      resumeDecor();
+    };
   }, [settingsOpen]);
 
   // Same Escape-to-close + initial-focus pattern as the other dialogs above.
@@ -245,7 +251,11 @@ export default function FocusTimer(p) {
     confirmResetDialogRef.current?.focus();
     const onKey = (e) => { if (e.key === "Escape") setConfirmResetOpen(false); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const resumeDecor = pauseDecor();
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      resumeDecor();
+    };
   }, [confirmResetOpen]);
 
   // Tracks whether the save-session card is actually on screen so the

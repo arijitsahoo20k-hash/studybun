@@ -81,6 +81,7 @@ export default function GroupTimerPage(p) {
       ) : (
         <GroupLobby
           groups={groups}
+          studyingRooms={p.studyingRooms}
           canMakePublic={isMod}
           finishedSessionWaiting={t.askDone}
           onOpenFocusTimer={() => p.setPage("timer")}

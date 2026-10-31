@@ -1,10 +1,10 @@
-import React, { memo } from "react";
+import React, { memo, useEffect, useState } from "react";
 import { Target, Clock3, Flame, TrendingUp, BookOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Card, ProgressRing, SectionTitle, EmptyState } from "../components/ui";
 import Mascot from "../components/Mascot";
 import { SYLLABUS } from "../data/syllabus";
-import { todayIST, formatISTCalendarDate, dateStrToUTCms } from "../lib/dateIST";
+import { todayIST, formatISTCalendarDate, dateStrToUTCms, istHour } from "../lib/dateIST";
 
 // Daily quote pool lives in data/motivationalQuotes.js (shared with Focus Mode).
 // Re-exported here so `import { MOTIVATIONAL } from "./Dashboard"` keeps working.
@@ -39,6 +39,10 @@ const flameTierFor = (streak) => {
 // `subjectPie` are already useMemo'd in App.jsx off real session data, so
 // their references only actually change when there's something new to
 // draw -- that's what makes the shallow-compare here effective.
+//
+// `debounce={140}` on ResponsiveContainer prevents Recharts from running
+// 16-30 synchronous SVG path recalculations on every animation frame while
+// the sidebar collapses/expands over 260ms.
 const DashboardCharts = memo(function DashboardCharts({ weeklyData, subjectPie, mascot }) {
   const subjectTotal = subjectPie.reduce((a, s) => a + s.value, 0) || 1;
   const subjectRows = [...subjectPie].sort((a, b) => b.value - a.value);
@@ -48,15 +52,15 @@ const DashboardCharts = memo(function DashboardCharts({ weeklyData, subjectPie, 
       <Card paper>
         <SectionTitle icon={TrendingUp}>Weekly study hours</SectionTitle>
         <div className="sb-dash-chart">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" debounce={140}>
             <LineChart data={weeklyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--soft)" />
               <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />
               <YAxis stroke="var(--muted)" fontSize={12} />
               <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontFamily: "var(--font-body)" }} />
               <Legend wrapperStyle={{ fontSize: 11.5 }} />
-              <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} />
-              <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--chart-secondary, var(--outline))" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="hours" name="Logged" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} isAnimationActive={false} />
+              <Line type="monotone" dataKey="timerHours" name="Focus Timer" stroke="var(--chart-secondary, var(--outline))" strokeWidth={3} strokeDasharray="5 3" dot={{ r: 4 }} isAnimationActive={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -66,7 +70,7 @@ const DashboardCharts = memo(function DashboardCharts({ weeklyData, subjectPie, 
         {subjectRows.length ? (
           <div className="sb-subject-donut-wrap">
             <div className="sb-subject-donut">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={140}>
                 <PieChart>
                   <Pie
                     data={subjectRows}
@@ -78,7 +82,7 @@ const DashboardCharts = memo(function DashboardCharts({ weeklyData, subjectPie, 
                     cornerRadius={6}
                     stroke="var(--card)"
                     strokeWidth={3}
-                    isAnimationActive={true}
+                    isAnimationActive={false}
                   >
                     {subjectRows.map((s) => (
                       <Cell key={s.name} fill={SYLLABUS[s.name]?.color || "var(--accent)"} />
@@ -117,14 +121,35 @@ const DashboardCharts = memo(function DashboardCharts({ weeklyData, subjectPie, 
   );
 });
 
+const greetingForHour = (h) => (h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening");
+
 // NOTE: every `p.<field>` read anywhere in this function must also appear
 // in DASHBOARD_PROP_KEYS below the component, or the memo wrapping the
 // default export can hand back a stale value for it.
 function DashboardInner(p) {
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  // Check IST date + greeting bucket once a minute so keeping the tab open
+  // across noon/evening/midnight updates the greeting and date even while
+  // React.memo blocks 1Hz timer ticks.
+  const [clockState, setClockState] = useState(() => ({
+    todayStr: todayIST(),
+    greeting: greetingForHour(new Date().getHours()),
+  }));
+  useEffect(() => {
+    const id = setInterval(() => {
+      const nextToday = todayIST();
+      const nextGreet = greetingForHour(new Date().getHours());
+      setClockState((prev) =>
+        prev.todayStr === nextToday && prev.greeting === nextGreet
+          ? prev
+          : { todayStr: nextToday, greeting: nextGreet }
+      );
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const greeting = clockState.greeting;
+  const todayStr = clockState.todayStr;
   const goalPct = (p.todayHours / (p.profile.daily_goal || 6)) * 100;
-  const todayStr = todayIST();
   // Indexed off the absolute day count (not day-of-month), so the quote
   // rotates through the whole pool day by day instead of repeating on
   // the same calendar date every single month.

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import { X, Sparkles, Send, GraduationCap, Settings as SettingsIcon, RefreshCw, Lock } from "lucide-react";
 import Mascot from "./Mascot";
 import { buddyLine, MASCOTS, mascotTheme } from "../data/mascots";
@@ -18,7 +18,7 @@ import { ProgressBar } from "./ui";
  *    own multi-key pool (configured in Settings). Every answer is grounded
  *    in the same real stats snapshot the AI Insights page uses.
  */
-export default function BuddyGuide(p) {
+function BuddyGuide(p) {
   const [open, setOpen] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -203,3 +203,26 @@ export default function BuddyGuide(p) {
     </div>
   );
 }
+
+// Same allowlist-memo pattern as Dashboard.jsx: BuddyGuide is mounted at the
+// root of App.jsx and receives `{...pageProps}`. Without this memo, every 1Hz
+// Focus Timer tick re-rendered BuddyGuide and its SVG Mascot even when no
+// buddy-relevant stat changed. All keys read by BuddyGuide and
+// buildStatsSnapshot(p) are included below.
+const BUDDY_PROP_KEYS = [
+  "page", "profile", "mascot", "mood", "energy", "hopping",
+  "streak", "longestStreak", "todayHours", "totalHours", "totalStudyDays",
+  "overdueRevisions", "dueRevisions", "upcomingRevisions", "revisions",
+  "backlogChapters", "backlogItems", "allChapters", "getChStatus",
+  "totalQuestions", "todayQuestions", "questions",
+  "mocks", "mockAnalysisMap", "sessions", "tasks",
+  "unlockedAchievements", "achievementDefs",
+  "overallPct", "completedCount", "masteredCount", "weeklyData",
+  "featureUnlockStreak", "setPage",
+];
+
+function buddyPropsEqual(prev, next) {
+  return BUDDY_PROP_KEYS.every((k) => prev[k] === next[k]);
+}
+
+export default memo(BuddyGuide, buddyPropsEqual);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
 import { weightageFor } from "../data/syllabus";
@@ -246,8 +246,13 @@ export function useDeviceRow(table, defaults = {}, { enabled = true } = {}) {
 export function useMockAnalysis(options = {}) {
   const { rows, loading, insert, update, remove, refetch } = useRealtimeTable("mock_analysis", { orderBy: "created_at", ...options });
 
-  const map = {};
-  rows.forEach((r) => { map[r.mock_id] = r; });
+  // Memoized off `rows` so `mockAnalysis.map` keeps a stable reference across
+  // unrelated App renders (e.g. 1Hz Focus Timer ticks).
+  const map = useMemo(() => {
+    const m = {};
+    rows.forEach((r) => { m[r.mock_id] = r; });
+    return m;
+  }, [rows]);
 
   const upsert = useCallback(
     async (mockId, patch) => {
@@ -255,8 +260,7 @@ export function useMockAnalysis(options = {}) {
       if (existing) return update(existing.id, patch);
       return insert({ mock_id: mockId, ...patch });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows]
+    [map, update, insert]
   );
 
   return { map, rows, loading, upsert, remove, refetch };
@@ -266,8 +270,14 @@ export function useMockAnalysis(options = {}) {
 export function useChapterProgress(options = {}) {
   const { rows, loading, insert, update, refetch } = useRealtimeTable("chapter_progress", { orderBy: "updated_at", ...options });
 
-  const map = {};
-  rows.forEach((r) => { map[`${r.subject}::${r.chapter}`] = r; });
+  // Memoized off `rows` so `chapters.map` keeps a stable reference across
+  // 1Hz Focus Timer ticks, allowing `getChStatus` and `backlogChapters` in
+  // App.jsx (and thus BuddyGuide's React.memo) to remain referentially stable.
+  const map = useMemo(() => {
+    const m = {};
+    rows.forEach((r) => { m[`${r.subject}::${r.chapter}`] = r; });
+    return m;
+  }, [rows]);
 
   const upsert = useCallback(
     async (subject, chapter, patch) => {
@@ -279,8 +289,7 @@ export function useChapterProgress(options = {}) {
       const seededWeightage = patch.weightage != null ? {} : { weightage: weightageFor(chapter) };
       return insert({ subject, chapter, ...seededWeightage, ...patch });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows]
+    [map, update, insert]
   );
 
   return { map, rows, loading, upsert, refetch };

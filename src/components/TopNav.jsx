@@ -85,7 +85,7 @@ export default function TopNav({ nav, page, setPage, onHoverItem, collapsed }) {
         >
           {tooltip.label}
         </div>,
-        document.body
+        document.querySelector(".sb-app") || document.body
       )}
     </nav>
   );

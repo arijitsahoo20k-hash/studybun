@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { BookOpen, Clock3, ClipboardList, Plus, ChevronDown, ChevronUp, Trash2, BarChart3 } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState } from "../components/ui";
 import { SYLLABUS } from "../data/syllabus";
-import { todayIST, daysAgoIST, formatISTCalendarDate } from "../lib/dateIST";
+import { todayIST, daysAgoIST, formatISTCalendarDate, tsToISTDateStr } from "../lib/dateIST";
 
 const todayStr = todayIST;
 const dayLabel = (d) => {
@@ -79,14 +79,31 @@ export default function StudyTracker(p) {
   }, [p.sessions]);
 
   // ---- Last 7 calendar days (including empty ones), for the trend bars ----
+  // Uses the exact same deduplication policy as App.jsx: manual sessions
+  // exclude `platform === "Focus Timer"` and real Focus Timer minutes come
+  // from `p.timerSessions` (when provided), so untagged timer runs are
+  // included and chapter-tagged runs are never double-counted.
   const last7 = useMemo(() => {
     const days = Array.from({ length: 7 }, (_, i) => daysAgoIST(6 - i));
+    const hasTimerProp = Array.isArray(p.timerSessions);
+    const timerByDate = {};
+    if (hasTimerProp) {
+      p.timerSessions.forEach((ts) => {
+        if (ts?.created_at) {
+          const d = tsToISTDateStr(ts.created_at);
+          timerByDate[d] = (timerByDate[d] || 0) + Number(ts.actual_minutes || 0);
+        }
+      });
+    }
     return days.map((d) => ({
       date: d,
       label: d === todayStr() ? "Today" : formatISTCalendarDate(d, { weekday: "short" }),
-      minutes: p.sessions.filter((s) => s.session_date === d).reduce((a, s) => a + Number(s.minutes || 0), 0),
+      minutes:
+        p.sessions
+          .filter((s) => s.session_date === d && (!hasTimerProp || s.platform !== "Focus Timer"))
+          .reduce((a, s) => a + Number(s.minutes || 0), 0) + (timerByDate[d] || 0),
     }));
-  }, [p.sessions]);
+  }, [p.sessions, p.timerSessions]);
   const maxMinutes = Math.max(...last7.map((d) => d.minutes), 30);
 
   return (

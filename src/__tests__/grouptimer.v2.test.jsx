@@ -201,12 +201,27 @@ describe("room stats UI", () => {
     GT_RULES.forEach((r) => expect(screen.getByText(r.title + ".")).toBeInTheDocument());
   });
 
-  it("recap shows goal hit/miss and the 7 days", async () => {
-    h.stats = stats({ range: "last_week", total_minutes: 1500, goal_hours: 20, streak_days: 2 });
+  it("recap shows goal hit/miss and the 7 days, and collapses active contributors past 3", async () => {
+    h.stats = stats({
+      range: "last_week", total_minutes: 1500, goal_hours: 20, streak_days: 2,
+      board: [
+        { user_id: "u1", minutes: 500, sessions: 5, rank: 1 },
+        { user_id: "u2", minutes: 400, sessions: 4, rank: 2 },
+        { user_id: "u3", minutes: 300, sessions: 3, rank: 3 },
+        { user_id: "u4", minutes: 150, sessions: 2, rank: 4 },
+        { user_id: "u5", minutes: 90, sessions: 1, rank: 5 },
+        { user_id: "me", minutes: 60, sessions: 1, rank: 6 },
+      ],
+    });
     render(<GroupRecapCard groupId="g1" userId="me" refreshToken="0-0" />);
     await waitFor(() => expect(screen.getByText("25h 00m")).toBeInTheDocument());
     expect(screen.getByText(/Goal hit — 125% of 20h/)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /per day last week/ }).children).toHaveLength(7);
+    // 6 active contributors: top 3 (u1..u3) + pinned self (me) are visible, leaving 2 hidden (u4, u5)
+    const toggleBtn = screen.getByRole("button", { name: /Show 2 more/ });
+    expect(toggleBtn).toBeInTheDocument();
+    fireEvent.click(toggleBtn);
+    expect(screen.getByRole("button", { name: /Show top 3 only/ })).toBeInTheDocument();
   });
 });
 

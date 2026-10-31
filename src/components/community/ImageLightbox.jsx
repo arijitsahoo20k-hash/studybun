@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { pauseDecor } from "../../lib/decorPause";
 
@@ -21,11 +22,10 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
 
   // Scroll lock (consistent with sb-pt-overlay's fixed-inset approach).
   // NOTE: body.style.overflow alone is not enough here. The overlay is
-  // position:fixed, so it visually covers the whole screen, but it's still
-  // mounted *inside* .sb-main — the app's REAL scrollable element (it, not
-  // body, carries overflow-y:auto and the visible scrollbar; body itself
-  // never scrolls). So .sb-main's own overflow must be locked directly, or
-  // its native scrollbar thumb stays live and draggable behind the modal.
+  // position:fixed, so it visually covers the whole screen, and is portaled
+  // to .sb-app so it escapes .sb-main's `contain: layout`. .sb-main's own
+  // overflow must also be locked directly, or its native scrollbar thumb
+  // stays live and draggable behind the modal.
   // The wheel/touchmove listeners cover mouse-wheel and touch-drag scroll,
   // and iOS Safari in particular won't respect overflow:hidden for touch
   // scrolling anyway, but neither one fires for a scrollbar-thumb drag —
@@ -152,7 +152,9 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
   const currentUrl = images[idx];
   const multi = images.length > 1;
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       className="sb-pt-overlay sb-lightbox-overlay"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -224,6 +226,7 @@ export default function ImageLightbox({ images, startIndex = 0, onClose }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.querySelector(".sb-app") || document.body
   );
 }

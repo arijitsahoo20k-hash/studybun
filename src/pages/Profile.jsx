@@ -4,7 +4,18 @@ import Mascot from "../components/Mascot";
 import StudyCalendar from "../components/StudyCalendar";
 
 export default function ProfilePage(p) {
-  const totalStudyHours = Math.floor(p.sessions.reduce((a, s) => a + Number(s.minutes || 0), 0) / 60);
+  // Compute exact floored hours from raw unrounded minutes (manualSessions + timerSessions)
+  // so 1-decimal rounding on `p.totalHours` never overcounts Math.floor by up to 3 minutes.
+  const hasTimerProp = Array.isArray(p.timerSessions);
+  const manualMinutes = (p.sessions || [])
+    .filter((s) => !hasTimerProp || s.platform !== "Focus Timer")
+    .reduce((a, s) => a + Number(s.minutes || 0), 0);
+  const timerMinutes = hasTimerProp
+    ? p.timerSessions.reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0)
+    : 0;
+  const totalStudyHours = typeof p.totalMinutes === "number"
+    ? Math.floor(p.totalMinutes / 60)
+    : Math.floor((manualMinutes + timerMinutes) / 60);
   return (
     <div className="sb-page">
       <Card className="sb-hero" washi glass>

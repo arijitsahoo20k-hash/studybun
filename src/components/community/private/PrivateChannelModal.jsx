@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Search, Check } from "lucide-react";
 import Mascot from "../../Mascot";
+import { useModalScrollLock } from "../../../hooks/useModalScrollLock";
+import { pauseDecor } from "../../../lib/decorPause";
 
 /** Two modes sharing one dialog:
  *   - "create": name field + member picker, used by the "+" button.
@@ -19,7 +22,15 @@ export default function PrivateChannelModal({ open, mode, existingMemberIds, fet
   const [dirError, setDirError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const nameInputRef = useRef(null);
+  const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
+  useModalScrollLock(dialogRef, open);
+
+  // Reset form & fetch directory ONLY when `open`, `mode`, or `fetchDirectory`
+  // changes — never on `onClose` (which is an inline arrow in PrivateChatPage
+  // and would otherwise wipe the user's input on any parent re-render).
   useEffect(() => {
     if (!open) return;
     setName("");
@@ -35,7 +46,18 @@ export default function PrivateChannelModal({ open, mode, existingMemberIds, fet
     if (mode === "create") setTimeout(() => nameInputRef.current?.focus(), 30);
   }, [open, mode, fetchDirectory]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") onCloseRef.current?.(); };
+    window.addEventListener("keydown", onKey);
+    const resumeDecor = pauseDecor();
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      resumeDecor();
+    };
+  }, [open]);
+
+  if (!open || typeof document === "undefined") return null;
 
   const excluded = existingMemberIds || new Set();
   const pickable = directory.filter((u) => !excluded.has(u.user_id));
@@ -60,9 +82,9 @@ export default function PrivateChannelModal({ open, mode, existingMemberIds, fet
     setSubmitting(false);
   };
 
-  return (
+  return createPortal(
     <div className="sb-pt-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="sb-pt-dialog sb-pchat-modal" role="dialog" aria-modal="true" aria-label={mode === "create" ? "New private channel" : "Add members"}>
+      <div ref={dialogRef} tabIndex={-1} className="sb-pt-dialog sb-pchat-modal" role="dialog" aria-modal="true" aria-label={mode === "create" ? "New private channel" : "Add members"}>
         <button className="sb-pt-dialog-close" title="Close" aria-label="Close" onClick={onClose}>
           <X size={15} />
         </button>
@@ -141,6 +163,7 @@ export default function PrivateChannelModal({ open, mode, existingMemberIds, fet
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.querySelector(".sb-app") || document.body
   );
 }

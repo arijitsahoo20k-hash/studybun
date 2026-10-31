@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Settings2, Image as ImageIcon, Youtube, Palette, X, RotateCcw } from "lucide-react";
 import { useOverviewClockSettings, CLOCK_PALETTES, extractYouTubeId } from "../hooks/useOverviewClockSettings";
+import { useModalScrollLock } from "../hooks/useModalScrollLock";
+import { pauseDecor } from "../lib/decorPause";
 import { SectionTitle } from "./ui";
 
 // IST-pinned "now", ticking every second — independent of the device's own
@@ -23,6 +26,8 @@ export default function OverviewClockCard() {
   const panelDialogRef = useRef(null);
   const now = useISTNow();
 
+  useModalScrollLock(panelDialogRef, panelOpen);
+
   // Same Escape-to-close + initial-focus pattern as Focus Timer's "Timer
   // Settings" dialog (see FocusTimer.jsx) and the Periodic Table's element
   // dialog -- so every popup dialog in the app behaves identically.
@@ -31,7 +36,11 @@ export default function OverviewClockCard() {
     panelDialogRef.current?.focus();
     const onKey = (e) => { if (e.key === "Escape") setPanelOpen(false); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const resumeDecor = pauseDecor();
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      resumeDecor();
+    };
   }, [panelOpen]);
 
   // hourCycle: "h23" (rather than hour12: false) is the more explicit way
@@ -113,7 +122,7 @@ export default function OverviewClockCard() {
         <div className="sb-clock-tz" style={{ color: palette.sub, borderColor: palette.sub }}>IST · India</div>
       </div>
 
-      {panelOpen && (
+      {panelOpen && typeof document !== "undefined" && createPortal(
         <div className="sb-pt-overlay sb-clock-settings-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setPanelOpen(false); }}>
         <div
           className="sb-pt-dialog sb-clock-settings-dialog"
@@ -203,7 +212,8 @@ export default function OverviewClockCard() {
           </div>
           </div>
         </div>
-        </div>
+        </div>,
+        document.querySelector(".sb-app") || document.body
       )}
     </div>
   );

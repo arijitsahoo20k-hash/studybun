@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, startTransition, lazy, Suspense } from "react";
+import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback, startTransition, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, BookOpen, Timer, Library, FolderClock, HelpCircle, ClipboardList,
@@ -11,7 +11,8 @@ import { ALL_CHAPTERS, DEFAULT_CHAPTER_PROGRESS, defaultChapterProgressFor } fro
 import { useDeviceRow, useRealtimeTable, useChapterProgress, useMockAnalysis } from "./hooks/useRealtimeTable";
 import { useFocusTimer } from "./hooks/useFocusTimer";
 import { createTimerSessionTracker } from "./lib/timerSessionTracker";
-import { useStudyPresence } from "./hooks/useStudyPresence";
+import { useStudyPresenceDetailed } from "./hooks/useStudyPresence";
+import { roomPresenceTag } from "./lib/roomGlow";
 import { useGroupTimerRoom } from "./hooks/useGroupTimerRoom";
 import { useLeaderboardReconciliation } from "./hooks/useLeaderboardReconciliation";
 import { useFocusMusic } from "./hooks/useFocusMusic";
@@ -21,6 +22,7 @@ import { useAuth } from "./lib/AuthContext";
 import { buildExportPayload, downloadJSON, readFileAsJSON, importPayload, totalImported } from "./lib/dataPortability";
 import { todayIST, toISTDateStr, tsToISTDateStr, daysFromNowIST, daysUntilIST, formatISTCalendarDate, istHour, weekdayShortIST } from "./lib/dateIST";
 import { parseRecurringSkipDates, recurringParentId, createRecurringDeleters } from "./lib/recurring";
+import { pickBetterChapterRow } from "./lib/recoveryEngine";
 
 import Mascot from "./components/Mascot";
 import TopNav from "./components/TopNav";
@@ -143,6 +145,25 @@ export const FEATURE_UNLOCK_STREAK = 6;
 export default function App() {
   const { user } = useAuth();
   const [page, setPageRaw] = useState("dashboard");
+
+  // Lightweight 60-second IST date/hour check so keeping the app tab open
+  // past midnight or hour boundaries automatically rolls over `weeklyData`,
+  // `dueRevisions`, `overdueRevisions`, `todayHours`, and `buddyMood` without
+  // relying on accidental re-renders.
+  const [istClock, setIstClock] = useState(() => ({ today: todayIST(), hour: istHour() }));
+  useEffect(() => {
+    const id = setInterval(() => {
+      const nextToday = todayIST();
+      const nextHour = istHour();
+      setIstClock((prev) =>
+        prev.today === nextToday && prev.hour === nextHour ? prev : { today: nextToday, hour: nextHour }
+      );
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const currentToday = istClock.today;
+  const currentIstHour = istClock.hour;
+
   const { row: profile, loading: profileLoading, save: saveProfile, refetch: refetchProfile } = useDeviceRow("profiles", {
     name: "", exam: "JEE Main", exam_date: "2027-01-24", daily_goal: 6, daily_question_target: 50, theme: "Sakura Bloom", mascot: "bunny",
     dark_mode: readStoredDarkMode(false), streak_freeze_tokens: 1, streak_freeze_granted_days: 0,
@@ -179,7 +200,7 @@ export default function App() {
   // — so it rides along on every one of these `enabled` flags rather than
   // getting its own separate fetch.
   const sessionsQ = useRealtimeTable("study_sessions", { orderBy: "session_date", enabled: page === "dashboard" || page === "recap" || isPage("study", "backlog", "analytics", "ai", "leaderboard", "profile") });
-  const timerSessionsQ = useRealtimeTable("timer_sessions", { orderBy: "created_at", enabled: page === "dashboard" || page === "recap" || isPage("timer", "analytics", "leaderboard", "profile") });
+  const timerSessionsQ = useRealtimeTable("timer_sessions", { orderBy: "created_at", enabled: page === "dashboard" || page === "recap" || isPage("study", "timer", "analytics", "leaderboard", "profile") });
   const chapters = useChapterProgress({ enabled: page === "dashboard" || isPage("study", "timer", "syllabus", "mocks", "revision", "backlog", "ai", "leaderboard") });
   const questionsQ = useRealtimeTable("question_logs", { orderBy: "log_date", enabled: page === "dashboard" || page === "recap" || isPage("questions", "syllabus", "mocks", "backlog", "analytics", "ai", "leaderboard", "profile") });
   const mocksQ = useRealtimeTable("mock_tests", { orderBy: "mock_date", enabled: page === "dashboard" || page === "recap" || isPage("syllabus", "mocks", "backlog", "analytics", "ai", "leaderboard", "profile") });
@@ -213,6 +234,33 @@ export default function App() {
   // date is treated exactly like a genuine study day (folded into
   // streakDays below), so a missed day doesn't reset the streak to 0.
   const streakFreezesQ = useRealtimeTable("streak_freezes", { orderBy: "frozen_date", enabled: page === "dashboard" || page === "planner" || page === "profile" });
+
+  const [toast, setToast] = useState(null); // { message, undo? }
+  const [celebrateType, setCelebrateType] = useState(null); // null | "confetti" | "petals"
+  const [hopping, setHopping] = useState(false);
+  const toastTimer = useRef(null);
+
+  // Pass an `undo` callback for any action that can't otherwise be reversed —
+  // the toast then stays up longer and shows a button, labeled "Undo" by
+  // default. Pass `undoLabel` to relabel that button for a different
+  // purpose — e.g. "Retry" when the callback re-attempts a failed save
+  // rather than reversing a successful one.
+  const showToast = useCallback((msg, undo, undoLabel) => {
+    setToast({ message: msg, undo: undo || null, undoLabel: undoLabel || "Undo" });
+    setHopping(true);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), undo ? 5200 : 2600);
+    setTimeout(() => setHopping(false), 650);
+  }, []);
+  const runUndo = () => {
+    if (toast?.undo) toast.undo();
+    clearTimeout(toastTimer.current);
+    setToast(null);
+  };
+  const fireCelebrate = useCallback((type = "confetti") => {
+    setCelebrateType(type);
+    setTimeout(() => setCelebrateType(null), type === "petals" ? 1900 : 1400);
+  }, []);
 
   // Lives here (not inside FocusTimer) so switching pages never resets it.
   // Every session — whether it runs to the end naturally, is ended early via
@@ -276,10 +324,15 @@ export default function App() {
   // Lifted to the root (not inside the Leaderboard page) so presence stays
   // accurate — and other users can see it — even while running the timer
   // from a completely different page.
-  const studyingIds = useStudyPresence(focusTimer.running);
   // Group Timer rooms: which room I'm in + telling that room what my timer
   // is doing. Root-level for the same reason as presence above.
-  const groupRoom = useGroupTimerRoom({ timer: focusTimer, userId: user?.id, notify: (m) => showToast(m) });
+  const groupRoom = useGroupTimerRoom({ timer: focusTimer, userId: user?.id, notify: showToast });
+  // Presence also says which group room I'm studying in (opaque tag, only while
+  // my timer runs) so the Group Timer lobby can glow exactly that room.
+  const { studyingIds, roomsByUser: studyingRooms } = useStudyPresenceDetailed(
+    focusTimer.running,
+    groupRoom.activeGroup?.id ? roomPresenceTag(groupRoom.activeGroup.id) : null
+  );
 
   // Aggressive Focus Mode: an opt-in Focus Timer setting (see useFocusTimer)
   // that blocks switching to any other page while a session is actively
@@ -291,13 +344,20 @@ export default function App() {
   // returning to the timer itself, and clears the instant the session is
   // paused, finished, or reset (sessionActive/running goes false), so no
   // one can ever get stuck on one page.
-  const setPage = (id) => {
-    if (id !== "timer" && id !== "grouptimer" && focusTimer.running && focusTimer.aggressiveMode) {
+  //
+  // Stabilized with useCallback + ref so `setPage` keeps a single stable
+  // identity across all renders (including 1Hz timer ticks), allowing
+  // Dashboard's and BuddyGuide's allowlist `React.memo` to hold.
+  const focusTimerStateRef = useRef({ running: false, aggressiveMode: false });
+  focusTimerStateRef.current = { running: focusTimer.running, aggressiveMode: focusTimer.aggressiveMode };
+  const setPage = useCallback((id) => {
+    const { running, aggressiveMode } = focusTimerStateRef.current;
+    if (id !== "timer" && id !== "grouptimer" && running && aggressiveMode) {
       showToast("Aggressive mode is on — pause or finish your session to leave 🐰");
       return;
     }
     setPageRaw(id);
-  };
+  }, [showToast]);
   // The push-notification listener below is registered once (mount-only
   // effect, see its own comment) and could otherwise keep calling a stale
   // setPage closure -- one that was still holding whatever
@@ -362,7 +422,7 @@ export default function App() {
   // once the animation has finished.
   const [sidebarAnimating, setSidebarAnimating] = useState(false);
   const sidebarAnimTimeoutRef = useRef(null);
-  const toggleSidebarCollapsed = () => {
+  const toggleSidebarCollapsed = useCallback(() => {
     setSidebarAnimating(true);
     if (sidebarAnimTimeoutRef.current) clearTimeout(sidebarAnimTimeoutRef.current);
     sidebarAnimTimeoutRef.current = setTimeout(() => setSidebarAnimating(false), 300);
@@ -376,17 +436,12 @@ export default function App() {
       }
       return next;
     });
-  };
+  }, []);
   useEffect(() => {
     return () => {
       if (sidebarAnimTimeoutRef.current) clearTimeout(sidebarAnimTimeoutRef.current);
     };
   }, []);
-
-  const [toast, setToast] = useState(null); // { message, undo? }
-  const [celebrateType, setCelebrateType] = useState(null); // null | "confetti" | "petals"
-  const [hopping, setHopping] = useState(false);
-  const toastTimer = useRef(null);
 
   // Mobile dropdown's nav highlight: a single pill sliding between nav
   // items, moved with a plain CSS transform transition via refs rather than
@@ -486,35 +541,13 @@ export default function App() {
   // to show PageLoading at all -- the switch just feels instant. Each id is
   // only ever fetched once per session.
   const prefetchedPages = useRef(new Set());
-  const prefetchPage = (id) => {
+  const prefetchPage = useCallback((id) => {
     if (prefetchedPages.current.has(id)) return;
     const loader = PAGE_LOADERS[id];
     if (!loader) return;
     prefetchedPages.current.add(id);
     loader().catch(() => { prefetchedPages.current.delete(id); });
-  };
-
-  // Pass an `undo` callback for any action that can't otherwise be reversed —
-  // the toast then stays up longer and shows a button, labeled "Undo" by
-  // default. Pass `undoLabel` to relabel that button for a different
-  // purpose — e.g. "Retry" when the callback re-attempts a failed save
-  // rather than reversing a successful one.
-  const showToast = (msg, undo, undoLabel) => {
-    setToast({ message: msg, undo: undo || null, undoLabel: undoLabel || "Undo" });
-    setHopping(true);
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), undo ? 5200 : 2600);
-    setTimeout(() => setHopping(false), 650);
-  };
-  const runUndo = () => {
-    if (toast?.undo) toast.undo();
-    clearTimeout(toastTimer.current);
-    setToast(null);
-  };
-  const fireCelebrate = (type = "confetti") => {
-    setCelebrateType(type);
-    setTimeout(() => setCelebrateType(null), type === "petals" ? 1900 : 1400);
-  };
+  }, []);
 
   // Self-heals the leaderboard/points system: forces a fresh, race-free
   // server recompute on app open and on tab/app refocus (see
@@ -549,20 +582,28 @@ export default function App() {
   const backlogItems = backlogItemsQ.rows;
   const goals = goalsQ.rows;
 
-  const getChStatus = (key) => {
+  const getChStatus = useCallback((key) => {
     const [subject, chapter] = key.split("::");
     return chapters.map[key] || { ...defaultChapterProgressFor(chapter), subject, chapter };
-  };
+  }, [chapters.map]);
 
   // A study_sessions row logged from the "what did you study?" card after a
   // focus-timer session is tagged platform: "Focus Timer" so its minutes
   // aren't double counted — the real minutes for that session already live
   // in timer_sessions, logged automatically the moment the timer finishes.
-  const manualSessions = sessions.filter((s) => s.platform !== "Focus Timer");
+  const manualSessions = useMemo(
+    () => sessions.filter((s) => s.platform !== "Focus Timer"),
+    [sessions]
+  );
 
-  const todaySessions = sessions.filter((s) => s.session_date === todayStr());
-  const todayManualMinutes = manualSessions.filter((s) => s.session_date === todayStr()).reduce((a, s) => a + Number(s.minutes || 0), 0);
-  const todayTimerMinutes = timerSessions.filter((ts) => tsToISTDateStr(ts.created_at) === todayStr()).reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0);
+  const todayManualMinutes = useMemo(
+    () => manualSessions.filter((s) => s.session_date === currentToday).reduce((a, s) => a + Number(s.minutes || 0), 0),
+    [manualSessions, currentToday]
+  );
+  const todayTimerMinutes = useMemo(
+    () => timerSessions.filter((ts) => tsToISTDateStr(ts.created_at) === currentToday).reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0),
+    [timerSessions, currentToday]
+  );
   const todayMinutes = todayManualMinutes + todayTimerMinutes;
   const todayHours = +(todayMinutes / 60).toFixed(1);
   const todayLoggedHours = +(todayManualMinutes / 60).toFixed(1);
@@ -629,21 +670,27 @@ export default function App() {
   // qualifying day yet, start counting from yesterday instead of returning
   // 0 outright. That means the number only drops to 0 once *both* today and
   // yesterday have gone by with nothing logged — i.e. a real 2-day gap.
-  const streakActiveToday = useMemo(() => streakDays.has(todayStr()), [streakDays]);
+  const streakActiveToday = useMemo(() => streakDays.has(currentToday), [streakDays, currentToday]);
 
   const streak = useMemo(() => {
     const days = streakDays;
-    let d = todayStr();
+    let d = currentToday;
     if (!days.has(d)) d = toISTDateStr(new Date(d).getTime() - 86400000);
     let n = 0;
     while (days.has(d)) { n++; d = toISTDateStr(new Date(d).getTime() - 86400000); }
     return n;
-  }, [streakDays]);
+  }, [streakDays, currentToday]);
 
-  const backlogChapters = ALL_CHAPTERS.filter((c) => !["Completed", "Mastered"].includes(getChStatus(c.key).status));
+  const backlogChapters = useMemo(
+    () => ALL_CHAPTERS.filter((c) => !["Completed", "Mastered"].includes(getChStatus(c.key).status)),
+    [getChStatus]
+  );
   const completedCount = ALL_CHAPTERS.length - backlogChapters.length;
   const overallPct = (completedCount / ALL_CHAPTERS.length) * 100;
-  const masteredCount = ALL_CHAPTERS.filter((c) => getChStatus(c.key).status === "Mastered").length;
+  const masteredCount = useMemo(
+    () => ALL_CHAPTERS.filter((c) => getChStatus(c.key).status === "Mastered").length,
+    [getChStatus]
+  );
 
   // All-time history stats — these power the long-haul achievements. They're
   // deliberately based on *lifetime* records (longest streak ever hit, total
@@ -651,9 +698,16 @@ export default function App() {
   // stays earned even after a day gets missed and the current streak resets.
   const sortedStudyDays = useMemo(() => Array.from(streakDays).sort(), [streakDays]);
   const totalStudyDays = sortedStudyDays.length;
-  const totalManualMinutes = manualSessions.reduce((a, s) => a + Number(s.minutes || 0), 0);
-  const totalTimerMinutes = timerSessions.reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0);
-  const totalHours = +((totalManualMinutes + totalTimerMinutes) / 60).toFixed(1);
+  const totalManualMinutes = useMemo(
+    () => manualSessions.reduce((a, s) => a + Number(s.minutes || 0), 0),
+    [manualSessions]
+  );
+  const totalTimerMinutes = useMemo(
+    () => timerSessions.reduce((a, ts) => a + Number(ts.actual_minutes || 0), 0),
+    [timerSessions]
+  );
+  const totalMinutes = totalManualMinutes + totalTimerMinutes;
+  const totalHours = +(totalMinutes / 60).toFixed(1);
   const totalLoggedHours = +(totalManualMinutes / 60).toFixed(1);
   const totalTimerHours = +(totalTimerMinutes / 60).toFixed(1);
   const { longestStreak, hadComeback } = useMemo(() => {
@@ -669,9 +723,9 @@ export default function App() {
     });
     return { longestStreak: longest, hadComeback: comeback };
   }, [sortedStudyDays]);
-  const revisionsCompletedCount = revisions.filter((r) => r.status === "Completed").length;
-  const completedTasksCount = tasks.filter((t) => t.status === "Completed").length;
-  const backlogClearedCount = backlogItems.filter((b) => b.status === "Completed").length;
+  const revisionsCompletedCount = useMemo(() => revisions.filter((r) => r.status === "Completed").length, [revisions]);
+  const completedTasksCount = useMemo(() => tasks.filter((t) => t.status === "Completed").length, [tasks]);
+  const backlogClearedCount = useMemo(() => backlogItems.filter((b) => b.status === "Completed").length, [backlogItems]);
 
   const weeklyData = useMemo(() => {
     const arr = [];
@@ -686,7 +740,8 @@ export default function App() {
       });
     }
     return arr;
-  }, [manualSessions, timerSessions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manualSessions, timerSessions, currentToday]);
 
   const subjectPie = useMemo(() => {
     const map = {};
@@ -694,8 +749,11 @@ export default function App() {
     return Object.entries(map).map(([name, mins]) => ({ name, value: +(mins / 60).toFixed(2) }));
   }, [sessions]);
 
-  const totalQuestions = questions.reduce((a, q) => a + Number(q.count || 0), 0);
-  const todayQuestions = questions.filter((q) => q.log_date === todayStr()).reduce((a, q) => a + Number(q.count || 0), 0);
+  const totalQuestions = useMemo(() => questions.reduce((a, q) => a + Number(q.count || 0), 0), [questions]);
+  const todayQuestions = useMemo(
+    () => questions.filter((q) => q.log_date === currentToday).reduce((a, q) => a + Number(q.count || 0), 0),
+    [questions, currentToday]
+  );
   const dailyQuestionTarget = profile?.daily_question_target || 50;
   const questionTargetPct = Math.min(100, (todayQuestions / dailyQuestionTarget) * 100);
   const questionTargetMet = todayQuestions >= dailyQuestionTarget;
@@ -710,16 +768,16 @@ export default function App() {
   // downstream regardless of page. A plain `.filter()` call here would
   // hand Dashboard a brand-new array every single render even when nothing
   // about revisions changed, which defeats that memo before it can help.
-  const dueRevisions = useMemo(() => revisions.filter((r) => r.status === "Pending" && r.due_date <= todayStr()), [revisions]);
-  const upcomingRevisions = useMemo(() => revisions.filter((r) => r.status === "Pending" && r.due_date > todayStr()), [revisions]);
-  const overdueRevisions = useMemo(() => revisions.filter((r) => r.status === "Pending" && r.due_date < todayStr()), [revisions]);
+  const dueRevisions = useMemo(() => revisions.filter((r) => r.status === "Pending" && r.due_date <= currentToday), [revisions, currentToday]);
+  const upcomingRevisions = useMemo(() => revisions.filter((r) => r.status === "Pending" && r.due_date > currentToday), [revisions, currentToday]);
+  const overdueRevisions = useMemo(() => revisions.filter((r) => r.status === "Pending" && r.due_date < currentToday), [revisions, currentToday]);
 
   const buddyMood = reactionMood({
     finishedGoal: todayHours >= (profile?.daily_goal || 6),
     streak: streak >= 3,
     revisionOverdue: overdueRevisions.length > 0,
     noStudyToday: todayHours === 0,
-    hour: istHour(),
+    hour: currentIstHour,
   });
   // Shared "how alive should the mascot look" value -- same numbers that
   // picked the mood also pick how energetically it plays that mood, so a
@@ -727,14 +785,14 @@ export default function App() {
   // though both are technically "happy".
   const buddyEnergy = mascotEnergy({ mood: buddyMood, todayHours, dailyGoal: profile?.daily_goal || 6 });
 
-  const lectureSessions = sessions.filter((s) => s.session_type === "Lecture").length;
+  const lectureSessions = useMemo(() => sessions.filter((s) => s.session_type === "Lecture").length, [sessions]);
   const finishedGoalToday = todayHours >= (profile?.daily_goal || 6);
 
   // Full achievement roster, grouped loosely by how hard it is to earn.
   // `current` / `target` drive the progress bar on the Achievements page;
   // `goal` is the plain-language "what to achieve" and `howTo` is the
   // explicit "how you unlock it" instruction shown on that page too.
-  const achievementDefs = [
+  const achievementDefs = useMemo(() => [
     // ---- Bronze: first steps ----
     { id: "first_hop", tier: "Bronze", label: `First ${mTheme.verbing}`, emoji: MASCOTS[mascot]?.emoji || "🐰",
       goal: "Log your very first study session.", howTo: "Add one session in Study Tracker.",
@@ -837,8 +895,13 @@ export default function App() {
       goal: "Hold a 30-day streak with zero overdue revisions.", howTo: "Reach a 30-day streak while keeping your Revision Planner completely caught up.",
       current: (longestStreak >= 30 && overdueRevisions.length === 0) ? 1 : 0, target: 1,
       cond: longestStreak >= 30 && overdueRevisions.length === 0 },
-  ];
-  const unlockedAchievements = achievementDefs.filter((a) => a.cond);
+  ], [
+    mTheme, mascot, sessions.length, lectureSessions, totalQuestions, mocks.length,
+    completedCount, profile?.daily_goal, finishedGoalToday, completedTasksCount,
+    backlogClearedCount, longestStreak, revisionsCompletedCount, totalHours,
+    overallPct, masteredCount, totalStudyDays, hadComeback, overdueRevisions.length,
+  ]);
+  const unlockedAchievements = useMemo(() => achievementDefs.filter((a) => a.cond), [achievementDefs]);
 
   // achievements table is the permanent record of what's ever been earned
   // (see the insert effect just below) — used here to make "unlocked" status
@@ -854,8 +917,10 @@ export default function App() {
   // something already earned. persistedUnlockedIds only ever grows (nothing
   // ever deletes from the achievements table), so unioning it in makes
   // unlockedAchievements monotonic like every other badge already is.
-  const persistedUnlockedIds = new Set(achievementsQ.rows.map((r) => r.achievement_key));
-  const stickyUnlockedAchievements = achievementDefs.filter((a) => a.cond || persistedUnlockedIds.has(a.id));
+  const stickyUnlockedAchievements = useMemo(() => {
+    const persistedUnlockedIds = new Set(achievementsQ.rows.map((r) => r.achievement_key));
+    return achievementDefs.filter((a) => a.cond || persistedUnlockedIds.has(a.id));
+  }, [achievementDefs, achievementsQ.rows]);
 
   // All the queries that feed achievementDefs' conditions (streaks, totals,
   // overdue counts, etc.) start empty and load in async on every reload.
@@ -1000,7 +1065,7 @@ export default function App() {
       });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataReady, user?.id, tasks]);
+  }, [dataReady, user?.id, tasks, currentToday]);
 
   /* ---------- actions ---------- */
   const addSession = async (payload, clientToken = crypto.randomUUID()) => {
@@ -1199,7 +1264,19 @@ export default function App() {
   // on one — until then a card is "Open" purely in memory. Acting on it
   // upserts by source_key, so re-tagging a mock never creates a duplicate.
   const upsertRecoveryItem = async (signal, patch = {}) => {
-    const existing = backlogItems.find((b) => b.source_key === signal.sourceKey);
+    // Row selection mirrors mergeWithPersisted (read side) exactly, via the
+    // shared pickBetterChapterRow, so reads and writes always hit the same row
+    // when duplicate legacy rows exist.
+    const bySourceKey = backlogItems
+      .filter((b) => b.source_key === signal.sourceKey)
+      .reduce((best, b) => pickBetterChapterRow(best, b), null);
+    const existing =
+      bySourceKey ||
+      (signal.chapter && signal.sourceType === "mock_analysis"
+        ? backlogItems
+            .filter((b) => b.source_type === "mock_analysis" && (b.subject === "Mathematics" ? "Maths" : b.subject) === signal.subject && b.chapter === signal.chapter)
+            .reduce((best, b) => pickBetterChapterRow(best, b), null)
+        : null);
     const base = {
       title: signal.title,
       subject: signal.subject,
@@ -1222,8 +1299,12 @@ export default function App() {
     concept_gap: "revision", revision_overdue: "revision",
     silly_mistake: "questions", calculation_error: "questions", guesswork: "questions",
     time_management: "timer", pacing: "mocks",
+    prerequisite_gap: "syllabus", syllabus_critical: "syllabus",
   };
-  const RECOVERY_TARGET_LABEL = { revision: "Revision Planner", questions: "Question Practice", timer: "Focus Timer", mocks: "Mock Tests" };
+  const RECOVERY_TARGET_LABEL = {
+    revision: "Revision Planner", questions: "Question Practice",
+    timer: "Focus Timer", mocks: "Mock Tests", syllabus: "Syllabus",
+  };
 
   const startRecoveryItem = async (signal) => {
     await upsertRecoveryItem(signal, { status: "In Progress" });
@@ -1249,7 +1330,9 @@ export default function App() {
   const reopenRecoveryRow = async (id, signal) => {
     await backlogItemsQ.update(id, {
       status: "Not Started", dismissed_until: null,
+      source_key: signal.sourceKey, problem_type: signal.problemType, title: signal.title,
       priority_score: signal.priorityScore, evidence_count: signal.evidenceCount, last_evidence_at: signal.lastEvidenceAt,
+      recommended_action: signal.recommendedAction, notes: signal.why,
       updated_at: new Date().toISOString(),
     });
   };
@@ -1351,7 +1434,7 @@ export default function App() {
 
   const pageProps = {
     profile, saveProfile, mascot, darkMode, setDarkMode, toggleDarkMode,
-    userId: user?.id, studyingIds,
+    userId: user?.id, studyingIds, studyingRooms,
     sessions, timerSessions, addSession, deleteSession: sessionsQ.remove, allChapters: ALL_CHAPTERS, getChStatus, setChapterField, completeChapter,
     questions, addQuestions, deleteQuestion: questionsQ.remove, mocks, addMock, updateMock, deleteMock,
     mockAnalysisMap: mockAnalysis.map, saveMockAnalysis,
@@ -1359,7 +1442,7 @@ export default function App() {
     aiInsights: aiInsightsRow.row, saveAiInsights,
     revisions, completeRevision, addRevision, deleteRevision,
     tasks, addTask, toggleTask, updateTask, deleteTask, deleteRecurringSeries, backlogChapters, todayHours, todayMinutes,
-    todayLoggedHours, todayTimerHours, totalLoggedHours, totalTimerHours,
+    todayLoggedHours, todayTimerHours, totalLoggedHours, totalTimerHours, totalMinutes,
     backlogItems, addBacklogItem, updateBacklogItem, setBacklogStatus, toggleSessionItem, deleteBacklogItem,
     upsertRecoveryItem, startRecoveryItem, addRecoveryToToday, dismissRecoveryItem, completeRecoveryItem, reopenRecoveryRow,
     goals, addGoal, updateGoal, completeGoal, deleteGoal,
@@ -1386,7 +1469,7 @@ export default function App() {
     // document.body: portaling to body escapes this variable scope and
     // the portaled content renders with no theme colors at all
     // (transparent surfaces, invisible borders).
-    <div className="sb-app" style={cssVars} data-dark={darkMode ? "true" : "false"} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"} data-paper={theme.paper ? "true" : "false"} data-photo-bg={theme.photoBg ? "true" : "false"}>
+    <div className={`sb-app${sidebarAnimating ? " sb-app-sidebar-animating" : ""}`} style={cssVars} data-dark={darkMode ? "true" : "false"} data-stitched={theme.stitched ? "true" : "false"} data-blocky={theme.blocky ? "true" : "false"} data-y2k={theme.y2k ? "true" : "false"} data-paper={theme.paper ? "true" : "false"} data-photo-bg={theme.photoBg ? "true" : "false"}>
       <GlobalStyle />
       <ThemePhotoLayer theme={theme} />
       <CustomBackgroundLayer />

@@ -16,13 +16,18 @@ export { fetchGroup };
  * join codes -- is enforced on the server, never trusted from here.
  *
  * Nothing here is realtime: lists refresh on mount, after every action, and
- * on demand. "Who is studying" is a separate, presence-only concern (see
- * useGroupTimerRoom) -- keeping the two apart means the lobby never holds a
- * websocket open.
+ * on demand. "Who is studying" in each room is computed trust-safely by
+ * intersecting the server-verified room membership (`gt_visible_group_members`)
+ * with the global `studyingIds` Set -- so non-members can never spoof presence
+ * into a room and private room memberships are never exposed to non-members.
  */
 export function useStudyGroups({ userId, enabled = true } = {}) {
   const [publicGroups, setPublicGroups] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
+  const [membersByRoom, setMembersByRoom] = useState(() => new Map());
+  // True only when gt_visible_group_members answered. If the SQL migration has
+  // not been run yet the call errors; the lobby then falls back to presence-only.
+  const [membersVerified, setMembersVerified] = useState(false);
   const [loading, setLoading] = useState(!!enabled);
   const [error, setError] = useState(null);
   const reqRef = useRef(0);
@@ -33,9 +38,12 @@ export function useStudyGroups({ userId, enabled = true } = {}) {
     if (!userId) return;
     const my = ++reqRef.current;
     setLoading(true);
-    const [pub, mine] = await Promise.all([
+    // Note: supabase.rpc(...) returns a PostgrestFilterBuilder (thenable without .catch),
+    // so wrap with Promise.resolve(...) before attaching .catch(...).
+    const [pub, mine, visMembers] = await Promise.all([
       supabase.rpc("gt_list_public_groups"),
       supabase.rpc("gt_my_groups"),
+      Promise.resolve(supabase.rpc("gt_visible_group_members")).catch((error) => ({ data: null, error })),
     ]);
     // A newer refresh (or an unmount) superseded this one -- drop the result
     // instead of letting a slow, stale response overwrite a fresher list.
@@ -43,8 +51,35 @@ export function useStudyGroups({ userId, enabled = true } = {}) {
     const err = pub.error || mine.error;
     if (err) setError(friendlyError(err));
     else setError(null);
-    if (!pub.error) setPublicGroups(pub.data || []);
-    if (!mine.error) setMyGroups(mine.data || []);
+    const pubList = !pub.error ? (pub.data || []) : [];
+    const mineList = !mine.error ? (mine.data || []) : [];
+    if (!pub.error) setPublicGroups(pubList);
+    if (!mine.error) setMyGroups(mineList);
+
+    // Build server-verified room -> Set<userId> map (always replacing the old map,
+    // even when empty, so counts always reset cleanly to zero).
+    const nextMap = new Map();
+    const addMember = (gid, uid) => {
+      if (!gid || !uid) return;
+      let set = nextMap.get(gid);
+      if (!set) { set = new Set(); nextMap.set(gid, set); }
+      set.add(uid);
+    };
+    const verified = !!(visMembers && !visMembers.error && Array.isArray(visMembers.data));
+    if (verified) {
+      visMembers.data.forEach((r) => addMember(r.group_id, r.user_id));
+    } else if (typeof console !== "undefined") {
+      // Most likely supabase/migration_gt_visible_members.sql hasn't been run.
+      console.warn("[group timer] gt_visible_group_members unavailable -- live room glow is using presence only. Run supabase/migration_gt_visible_members.sql.", visMembers?.error?.message || "");
+    }
+    [...pubList, ...mineList].forEach((g) => {
+      if (!g?.id) return;
+      if (g.is_member && userId) addMember(g.id, userId);
+      if (Array.isArray(g.member_ids)) g.member_ids.forEach((uid) => addMember(g.id, uid));
+    });
+    mineList.forEach((g) => { if (g?.id && userId) addMember(g.id, userId); });
+    setMembersByRoom(nextMap);
+    setMembersVerified(verified);
     setLoading(false);
   }, [userId]);
 
@@ -87,7 +122,10 @@ export function useStudyGroups({ userId, enabled = true } = {}) {
     return { ok: true };
   }, [refresh]);
 
-  return { publicGroups, myGroups, loading, error, refresh, createGroup, joinPublic, joinByCode, leaveGroup, deleteGroup };
+  return {
+    publicGroups, myGroups, membersByRoom, membersVerified, loading, error, refresh,
+    createGroup, joinPublic, joinByCode, leaveGroup, deleteGroup,
+  };
 }
 
 // Member count for the room header / info popup.

@@ -19,25 +19,48 @@
 
 import { prerequisitesFor, weightageFor } from "../data/syllabus";
 import { todayIST, daysBetweenDateStrs } from "./dateIST";
+import { toValidISTDateStr } from "./recoveryEngine";
 
 const num = (v) => Number(v) || 0;
 const DONE_STATUSES = ["Completed", "Mastered"];
 
-// ---------- Accuracy from question_logs ----------
+// ---------- Accuracy from question_logs (Bayesian Laplace-smoothed) ----------
 // Returns null (not a number) when there's simply no logged attempt data
 // for this chapter yet — an unknown accuracy must never silently become
 // "0% accuracy" (that would wrongly read as "failing everything").
+// Uses a gentle empirical-Bayes prior (k=3 virtual attempts at 65% baseline)
+// for priority scoring so a single 0/1 or 1/1 log doesn't wildly swing a
+// chapter to 0% or 100%, while still returning raw percentage for display.
 export function chapterAccuracy(subject, chapterName, questions) {
   let correct = 0, incorrect = 0, hasData = false;
-  (questions || []).forEach((q) => {
-    if (q.subject !== subject || q.chapter !== chapterName) return;
-    if (q.correct == null && q.incorrect == null) return; // quick-logged count only, no accuracy signal
+  const list = questions || [];
+  for (let i = 0; i < list.length; i++) {
+    const q = list[i];
+    if (!q || q.subject !== subject || q.chapter !== chapterName) continue;
+    if (q.correct == null && q.incorrect == null) continue; // quick-logged count only, no accuracy signal
     hasData = true;
     correct += num(q.correct);
     incorrect += num(q.incorrect);
-  });
+  }
   if (!hasData || correct + incorrect === 0) return null;
   return Math.round((correct / (correct + incorrect)) * 100);
+}
+
+export function smoothedWeakness(subject, chapterName, questions) {
+  let correct = 0, incorrect = 0, hasData = false;
+  const list = questions || [];
+  for (let i = 0; i < list.length; i++) {
+    const q = list[i];
+    if (!q || q.subject !== subject || q.chapter !== chapterName) continue;
+    if (q.correct == null && q.incorrect == null) continue;
+    hasData = true;
+    correct += num(q.correct);
+    incorrect += num(q.incorrect);
+  }
+  if (!hasData || correct + incorrect === 0) return 50;
+  // Bayesian smoothing with prior = 3 questions at 65% accuracy
+  const smoothedAcc = ((correct + 3 * 0.65) / (correct + incorrect + 3)) * 100;
+  return Math.round(Math.max(0, Math.min(100, 100 - smoothedAcc)));
 }
 
 // ---------- Prerequisite gap ----------
@@ -55,15 +78,18 @@ export function prerequisiteStatus(subject, chapterName, getChStatus) {
   return { gap: Math.round((blockedBy.length / prereqs.length) * 100), blockedBy };
 }
 
-// ---------- Forgetting risk ----------
+// ---------- Forgetting risk (Ebbinghaus exponential decay) ----------
 // Only meaningful once a chapter has actually been revised at least once —
 // a chapter that's simply "Not Started" isn't at risk of being *forgotten*.
-// Ramps to 100 by ~45 days since last revision (roughly the point JEE
-// students report needing a full re-read rather than a quick refresher).
-function forgettingRisk(lastRevised) {
-  if (!lastRevised) return 0;
-  const daysSince = daysBetweenDateStrs(todayIST(), lastRevised);
-  return Math.max(0, Math.min(100, Math.round((daysSince / 45) * 100)));
+// Follows 100 * (1 - exp(-daysSince / 22)) so decay is fastest in the first
+// 2–3 weeks and saturates smoothly toward 100 by ~45–60 days.
+export function forgettingRisk(lastRevised) {
+  const validDate = toValidISTDateStr(lastRevised);
+  if (!validDate) return 0;
+  const rawDays = daysBetweenDateStrs(todayIST(), validDate);
+  if (!Number.isFinite(rawDays)) return 0;
+  const daysSince = Math.max(0, rawDays);
+  return Math.max(0, Math.min(100, Math.round(100 * (1 - Math.exp(-daysSince / 22)))));
 }
 
 const TIER_META = {
@@ -117,9 +143,9 @@ export function computeChapterPriority(ctx, deps) {
   const { gap: prereqGap, blockedBy } = prerequisiteStatus(subject, chapter, deps.getChStatus);
   const decay = forgettingRisk(last_revised);
 
-  // Unknown accuracy is treated as a neutral 50 (neither "doing great" nor
-  // "failing") rather than 0 or 100 — we genuinely don't know yet.
-  const weaknessComponent = accuracy === null ? 50 : 100 - accuracy;
+  // Unknown accuracy is treated as a neutral 50; small sample sizes are
+  // Bayesian-smoothed so 1 question doesn't cause extreme jumps.
+  const weaknessComponent = smoothedWeakness(subject, chapter, deps.questions);
 
   const examRelevance = weightage * 10; // weightage is out of 10
   const score = Math.round(
@@ -149,18 +175,6 @@ export function computeAllPriorities(chapterList, deps) {
 }
 
 // ---------- Bridge into the Backlog recovery queue ----------
-// recoveryEngine.js's queue is entirely *reactive* — it only surfaces a
-// chapter once a mock mistake or an overdue revision has already happened.
-// This adds a small, capped set of *proactive* cards for chapters that this
-// engine already knows are Critical or blocked on a prerequisite, even if
-// no mock has caught that yet. Shaped identically to recoveryEngine's
-// signal objects (sourceKey, priorityScore, impactTier, etc.) so Backlog.jsx
-// can render both kinds of card through the same component.
-//
-// `excludeChapterKeys` should be the set of "Subject::Chapter" pairs already
-// covered by a reactive (mock-mistake) signal — never show two cards for
-// the same chapter. `limit` keeps this proactive, not overwhelming: a
-// handful of the highest-signal chapters, not the whole syllabus.
 const SUBJECT_DISPLAY = { Mathematics: "Maths" };
 const displaySubject = (s) => SUBJECT_DISPLAY[s] || s;
 
@@ -187,7 +201,7 @@ export function buildProactiveSyllabusSignals({ allChapters, getChStatus, questi
       problemLabel: isBlocked ? "Prerequisite gap" : "Critical chapter",
       evidenceCount: 1,
       mockOccurrences: 0,
-      lastEvidenceAt: todayIST(),
+      lastEvidenceAt: toValidISTDateStr(st.last_revised) || null,
       priorityScore: auto.score,
       impactTier: isBlocked ? "medium" : (auto.score >= 80 ? "high" : "medium"),
       recommendedAction: auto.nextAction,

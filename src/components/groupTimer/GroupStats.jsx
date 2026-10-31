@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Trophy, HelpCircle, Flame, Target, CalendarCheck, Users, Clock, BookOpen } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Trophy, HelpCircle, Flame, Target, CalendarCheck, Users, Clock, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { SectionTitle } from "../ui";
 import GtDialog from "./GtDialog";
 import MemberAvatar from "./MemberAvatar";
@@ -12,6 +12,9 @@ const RANGES = [
   { id: "week", label: "This week" },
   { id: "all", label: "All time" },
 ];
+
+export const BOARD_COLLAPSE_LIMIT = 5;
+export const RECAP_COLLAPSE_LIMIT = 3;
 
 /**
  * Room numbers straight from the server's saved timer_sessions
@@ -72,39 +75,77 @@ export function GroupRulesDialog({ onClose }) {
   );
 }
 
-function Board({ rows, userId, profiles }) {
+function Board({ rows, userId, profiles, expanded, onToggleExpanded }) {
   const top = Math.max(1, ...rows.map((r) => Number(r.minutes) || 0));
   if (!rows.length) return <p className="sb-muted sb-gt-none">No members yet.</p>;
+
+  const canCollapse = rows.length > BOARD_COLLAPSE_LIMIT;
+  const visibleRows = !canCollapse || expanded ? rows : rows.slice(0, BOARD_COLLAPSE_LIMIT);
+  const myRow = !expanded && canCollapse ? rows.slice(BOARD_COLLAPSE_LIMIT).find((r) => r.user_id === userId) : null;
+  // Subtract 1 if `myRow` is already pinned and visible below the top 5 so
+  // "Show N more" reflects the exact number of hidden rows.
+  const hiddenCount = rows.length - BOARD_COLLAPSE_LIMIT - (myRow ? 1 : 0);
+
+  const renderRow = (r, isPinned = false) => {
+    const me = r.user_id === userId;
+    const p = profiles.get(r.user_id);
+    const mins = Number(r.minutes) || 0;
+    return (
+      <li key={r.user_id} className={`sb-gt-board-row ${me ? "me" : ""} ${isPinned ? "pinned" : ""} rank-${r.rank <= 3 ? r.rank : "n"}`}>
+        <span className="sb-gt-rank" aria-label={`Rank ${r.rank}`}>{r.rank}</span>
+        <span className="sb-gt-board-avatar"><MemberAvatar species={p?.mascot} studying={false} size={34} /></span>
+        <span className="sb-gt-board-main">
+          <span className="sb-gt-board-name">{me ? "You" : (p?.name || "Study Buddy")}</span>
+          <span className="sb-gt-board-bar" aria-hidden="true"><span style={{ width: `${(mins / top) * 100}%` }} /></span>
+        </span>
+        <span className="sb-gt-board-val">
+          <b>{fmtMinutes(mins)}</b>
+          <small>{Number(r.sessions)} {Number(r.sessions) === 1 ? "session" : "sessions"}</small>
+        </span>
+      </li>
+    );
+  };
+
   return (
-    <ol className="sb-gt-board">
-      {rows.map((r) => {
-        const me = r.user_id === userId;
-        const p = profiles.get(r.user_id);
-        const mins = Number(r.minutes) || 0;
-        return (
-          <li key={r.user_id} className={`sb-gt-board-row ${me ? "me" : ""} rank-${r.rank <= 3 ? r.rank : "n"}`}>
-            <span className="sb-gt-rank" aria-label={`Rank ${r.rank}`}>{r.rank}</span>
-            <span className="sb-gt-board-avatar"><MemberAvatar species={p?.mascot} studying={false} size={34} /></span>
-            <span className="sb-gt-board-main">
-              <span className="sb-gt-board-name">{me ? "You" : (p?.name || "Study Buddy")}</span>
-              <span className="sb-gt-board-bar" aria-hidden="true"><span style={{ width: `${(mins / top) * 100}%` }} /></span>
-            </span>
-            <span className="sb-gt-board-val">
-              <b>{fmtMinutes(mins)}</b>
-              <small>{Number(r.sessions)} {Number(r.sessions) === 1 ? "session" : "sessions"}</small>
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+    <>
+      <ol className="sb-gt-board">
+        {visibleRows.map((r) => renderRow(r, false))}
+        {myRow && renderRow(myRow, true)}
+      </ol>
+      {canCollapse && (expanded || hiddenCount > 0) && (
+        <button
+          type="button"
+          className="sb-gt-collapse-btn"
+          aria-expanded={expanded}
+          onClick={onToggleExpanded}
+        >
+          {expanded ? (
+            <><ChevronUp size={14} /> Show top {BOARD_COLLAPSE_LIMIT} only</>
+          ) : (
+            <><ChevronDown size={14} /> Show {hiddenCount} more {hiddenCount === 1 ? "member" : "members"}</>
+          )}
+        </button>
+      )}
+    </>
   );
 }
 
 export function GroupStatsCard({ groupId, goalHours, isHost, userId, refreshToken }) {
   const [range, setRange] = useState("week");
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [boardExpanded, setBoardExpanded] = useState(false);
   const { data, error, loading } = useGroupStats(groupId, range, refreshToken);
-  const profiles = useProfileMap((data?.board || []).map((r) => r.user_id));
+
+  useEffect(() => { setBoardExpanded(false); }, [groupId, range]);
+
+  const boardRows = data?.board || [];
+  const profileIdsToFetch = useMemo(() => {
+    const slice = boardExpanded ? boardRows : boardRows.slice(0, BOARD_COLLAPSE_LIMIT);
+    const ids = slice.map((r) => r.user_id);
+    if (userId) ids.push(userId);
+    return ids;
+  }, [boardRows, boardExpanded, userId]);
+  const profiles = useProfileMap(profileIdsToFetch);
 
   const total = Number(data?.total_minutes) || 0;
   const goal = data?.goal_hours ?? goalHours ?? null;
@@ -153,7 +194,13 @@ export function GroupStatsCard({ groupId, goalHours, isHost, userId, refreshToke
             <p className="sb-muted sb-gt-none">No weekly goal yet — set one in Manage room.</p>
           ) : null)}
 
-          <Board rows={data.board || []} userId={userId} profiles={profiles} />
+          <Board
+            rows={boardRows}
+            userId={userId}
+            profiles={profiles}
+            expanded={boardExpanded}
+            onToggleExpanded={() => setBoardExpanded((v) => !v)}
+          />
           <p className="sb-muted sb-gt-foot">Ranked on exact minutes; shown rounded. Members who left still count toward the room total.</p>
         </>
       )}
@@ -167,8 +214,32 @@ const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 const fmtDate = (iso) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
 
 export function GroupRecapCard({ groupId, userId, refreshToken }) {
+  const [recapExpanded, setRecapExpanded] = useState(false);
   const { data, error, loading } = useGroupStats(groupId, "last_week", refreshToken, { poll: false });
-  const profiles = useProfileMap((data?.board || []).slice(0, 3).map((r) => r.user_id));
+
+  useEffect(() => { setRecapExpanded(false); }, [groupId]);
+
+  const activeContributors = useMemo(
+    () => (data?.board || []).filter((r) => Number(r.minutes) > 0),
+    [data?.board]
+  );
+  const canCollapse = activeContributors.length > RECAP_COLLAPSE_LIMIT;
+  const visibleContributors = !canCollapse || recapExpanded
+    ? activeContributors
+    : activeContributors.slice(0, RECAP_COLLAPSE_LIMIT);
+  const pinnedSelf = !recapExpanded && canCollapse
+    ? activeContributors.slice(RECAP_COLLAPSE_LIMIT).find((r) => r.user_id === userId)
+    : null;
+  // Subtract 1 if `pinnedSelf` is already shown below the top 3 so "Show N more"
+  // never claims 1 more contributor is hidden when all contributors are already visible.
+  const hiddenCount = activeContributors.length - RECAP_COLLAPSE_LIMIT - (pinnedSelf ? 1 : 0);
+
+  const profileIdsToFetch = useMemo(() => {
+    const ids = visibleContributors.map((r) => r.user_id);
+    if (pinnedSelf) ids.push(pinnedSelf.user_id);
+    return ids;
+  }, [visibleContributors, pinnedSelf]);
+  const profiles = useProfileMap(profileIdsToFetch);
 
   const days = data ? weekDates(String(data.from).slice(0, 10)) : [];
   const byDay = new Map((data?.daily || []).map((d) => [String(d.date).slice(0, 10), Number(d.minutes)]));
@@ -176,7 +247,18 @@ export function GroupRecapCard({ groupId, userId, refreshToken }) {
   const total = Number(data?.total_minutes) || 0;
   const goal = data?.goal_hours;
   const goalPct = goal ? Math.round((total / (goal * 60)) * 100) : null;
-  const top3 = (data?.board || []).filter((r) => Number(r.minutes) > 0).slice(0, 3);
+
+  const renderRecapItem = (r, isPinned = false) => {
+    const me = r.user_id === userId;
+    const p = profiles.get(r.user_id);
+    return (
+      <li key={r.user_id} className={`${me ? "me" : ""} ${isPinned ? "pinned" : ""}`.trim()}>
+        <span className="sb-gt-rank">{r.rank}</span>
+        <span className="sb-gt-recap-name">{me ? "You" : (p?.name || "Study Buddy")}</span>
+        <b>{fmtMinutes(r.minutes)}</b>
+      </li>
+    );
+  };
 
   return (
     <section className="sb-card sb-gt-recap" aria-label="Last week's recap">
@@ -210,19 +292,27 @@ export function GroupRecapCard({ groupId, userId, refreshToken }) {
                   );
                 })}
               </div>
-              {top3.length > 0 && (
-                <ol className="sb-gt-recap-top">
-                  {top3.map((r) => {
-                    const p = profiles.get(r.user_id);
-                    return (
-                      <li key={r.user_id}>
-                        <span className="sb-gt-rank">{r.rank}</span>
-                        <span className="sb-gt-recap-name">{r.user_id === userId ? "You" : (p?.name || "Study Buddy")}</span>
-                        <b>{fmtMinutes(r.minutes)}</b>
-                      </li>
-                    );
-                  })}
-                </ol>
+              {visibleContributors.length > 0 && (
+                <>
+                  <ol className="sb-gt-recap-top">
+                    {visibleContributors.map((r) => renderRecapItem(r, false))}
+                    {pinnedSelf && renderRecapItem(pinnedSelf, true)}
+                  </ol>
+                  {canCollapse && (recapExpanded || hiddenCount > 0) && (
+                    <button
+                      type="button"
+                      className="sb-gt-collapse-btn"
+                      aria-expanded={recapExpanded}
+                      onClick={() => setRecapExpanded((v) => !v)}
+                    >
+                      {recapExpanded ? (
+                        <><ChevronUp size={14} /> Show top {RECAP_COLLAPSE_LIMIT} only</>
+                      ) : (
+                        <><ChevronDown size={14} /> Show {hiddenCount} more {hiddenCount === 1 ? "contributor" : "contributors"}</>
+                      )}
+                    </button>
+                  )}
+                </>
               )}
               <p className="sb-muted sb-gt-foot"><Flame size={12} /> Room streak now: {data.streak_days} {data.streak_days === 1 ? "day" : "days"}</p>
             </>

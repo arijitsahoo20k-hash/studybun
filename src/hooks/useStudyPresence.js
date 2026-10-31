@@ -16,21 +16,39 @@ import { useAuth } from "../lib/AuthContext";
  * at the Leaderboard page themselves.
  */
 export function useStudyPresence(isStudyingNow) {
+  return useStudyPresenceDetailed(isStudyingNow, null).studyingIds;
+}
+
+/**
+ * Same channel, plus WHICH group room each studying person is currently inside
+ * (an opaque tag from roomPresenceTag, only published while the timer is
+ * running). `roomsByUser` maps userId -> tag; the Group Timer lobby uses it so
+ * a room glows only when someone is studying in that very room, not just
+ * somewhere in the app.
+ */
+export function useStudyPresenceDetailed(isStudyingNow, roomTag) {
   const { user } = useAuth();
   const userId = user?.id;
   const [studyingIds, setStudyingIds] = useState(() => new Set());
+  const [roomsByUser, setRoomsByUser] = useState(() => new Map());
+  // Current payload, readable from connect() at (re)join time without stale closures.
+  // `tab` + `at` let readers pick each tab's NEWEST record even if the realtime
+  // server keeps older ones around (it can, per key) -- otherwise a stale
+  // "I'm in room A" record would keep room A lit after I exit it.
+  const tabIdRef = useRef(null);
+  if (!tabIdRef.current) tabIdRef.current = Math.random().toString(36).slice(2, 10);
+  const payloadRef = useRef(null);
+  payloadRef.current = {
+    studying: !!isStudyingNow,
+    room: isStudyingNow ? roomTag || null : null,
+    tab: tabIdRef.current,
+    at: Date.now(),
+  };
   const channelRef = useRef(null);
-  // Always holds the CURRENT isStudyingNow, independent of which render the
-  // [userId]-effect below happened to run in. Read by connect() below at
-  // (re)join time so a join that lands after isStudyingNow has already
-  // changed still tracks the up-to-date value instead of a stale one
-  // captured at effect-setup time.
-  const isStudyingNowRef = useRef(isStudyingNow);
-  useEffect(() => { isStudyingNowRef.current = isStudyingNow; }, [isStudyingNow]);
-
   useEffect(() => {
     if (!userId) {
       setStudyingIds(new Set());
+      setRoomsByUser(new Map());
       return;
     }
 
@@ -46,10 +64,25 @@ export function useStudyPresence(isStudyingNow) {
       channel.on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
         const studying = new Set();
+        const rooms = new Map();
         Object.entries(state).forEach(([key, metas]) => {
-          if (metas.some((m) => m.studying)) studying.add(key);
+          // newest record per tab (records without `tab`/`at` come from older
+          // builds: treat each as its own tab, later array position = newer)
+          const latestByTab = new Map();
+          metas.forEach((m, i) => {
+            const tab = m.tab || `legacy-${i}`;
+            const at = Number(m.at) || 0;
+            const prev = latestByTab.get(tab);
+            if (!prev || at >= prev.at) latestByTab.set(tab, { ...m, at });
+          });
+          const live = [...latestByTab.values()].filter((m) => m.studying);
+          if (!live.length) return;
+          studying.add(key);
+          const newest = live.reduce((a, b) => (b.at >= a.at ? b : a));
+          if (newest.room) rooms.set(key, newest.room);
         });
         setStudyingIds(studying);
+        setRoomsByUser(rooms);
       });
 
       channel.subscribe((status) => {
@@ -57,7 +90,7 @@ export function useStudyPresence(isStudyingNow) {
           // .catch: harmless if this loses a race with the teardown below
           // (channel already being replaced) -- never let it surface as an
           // uncaught rejection.
-          channel.track({ studying: !!isStudyingNowRef.current }).catch(() => {});
+          channel.track(payloadRef.current).catch(() => {});
         }
       });
     };
@@ -101,8 +134,8 @@ export function useStudyPresence(isStudyingNow) {
   useEffect(() => {
     // Also fires immediately (not just on the next wake/reconnect) so
     // pause/resume/end feel instant while the tab is in the foreground.
-    if (channelRef.current) channelRef.current.track({ studying: !!isStudyingNow }).catch(() => {});
-  }, [isStudyingNow]);
+    if (channelRef.current) channelRef.current.track(payloadRef.current).catch(() => {});
+  }, [isStudyingNow, roomTag]);
 
-  return studyingIds;
+  return { studyingIds, roomsByUser };
 }

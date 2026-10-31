@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, BookOpen, HelpCircle, ClipboardCheck, ListChecks, RotateCcw } from "lucide-react";
 import { SYLLABUS } from "../data/syllabus";
 import { todayIST, tsToISTDateStr, formatISTCalendarDate } from "../lib/dateIST";
+import { totalOf, defaultTotalFor } from "../lib/mockScore";
 
 const pad = (n) => String(n).padStart(2, "0");
 const toKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
@@ -58,7 +59,12 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
   const goToday = () => { setCursor(cursorFromKey(todayKey())); setSelected(todayKey()); };
 
   const day = byDate[selected];
-  const studyMinutes = (day?.sessions.reduce((a, s) => a + Number(s.minutes || 0), 0) || 0) + (day?.timerMinutes || 0);
+  // Match App.jsx's exact deduplication policy: always exclude `platform === "Focus Timer"`
+  // from `study_sessions` when summing manual minutes, and add `day.timerMinutes` from `timer_sessions`.
+  const manualStudyMinutes = (day?.sessions || [])
+    .filter((s) => s.platform !== "Focus Timer")
+    .reduce((a, s) => a + Number(s.minutes || 0), 0);
+  const studyMinutes = manualStudyMinutes + (day?.timerMinutes || 0);
   const selLabel = selected ? formatISTCalendarDate(selected, { weekday: "long", month: "long", day: "numeric" }) : "";
   const hasAnything = day && (day.sessions.length || day.timerMinutes || day.questionCount || day.mocks.length || day.tasks.length || day.revisions.length);
 
@@ -159,13 +165,17 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
             <div className="sb-cal-section">
               <div className="sb-cal-section-title"><ClipboardCheck size={13} /> Mock tests</div>
               <div className="sb-cal-items">
-                {day.mocks.map((mk) => (
-                  <div className="sb-cal-item" key={mk.id}>
-                    <span className="sb-cal-item-flag" style={{ background: "var(--p1)" }} />
-                    <span className="sb-cal-item-main">{mk.exam_name}</span>
-                    <span className="sb-cal-item-sub">{mk.total_marks != null ? `${mk.total_marks} marks` : ""}</span>
-                  </div>
-                ))}
+                {day.mocks.map((mk) => {
+                  const scored = totalOf(mk);
+                  const maxMarks = Number(mk.total_marks) || defaultTotalFor(mk);
+                  return (
+                    <div className="sb-cal-item" key={mk.id}>
+                      <span className="sb-cal-item-flag" style={{ background: "var(--p1)" }} />
+                      <span className="sb-cal-item-main">{mk.exam_name}</span>
+                      <span className="sb-cal-item-sub">{`${scored}/${maxMarks}`}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -205,4 +215,4 @@ export default function StudyCalendar({ sessions = [], timerSessions = [], quest
   );
 }
 
-function key_is_today(key, today) { return key === today; }
+const key_is_today = (a, b) => a === b;

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FolderClock, Plus, X, Star, Trash2, Archive, Pencil, RotateCcw, AlertTriangle,
-  Sparkles, Target, TrendingDown, Map, CalendarCheck, PlayCircle, EyeOff, CheckCircle2,
+  Sparkles, Target, TrendingDown, Map as MapIcon, CalendarCheck, PlayCircle, EyeOff, CheckCircle2,
 } from "lucide-react";
 import { Card, SectionTitle, Btn, EmptyState, ProgressRing } from "../components/ui";
 import { todayIST, formatISTCalendarDate, formatISTTimestamp, tsToISTDateStr, daysBetweenDateStrs } from "../lib/dateIST";
@@ -131,7 +131,9 @@ function RecoveryCard({ item, onStart, onAddToday, onDismiss, onComplete, compac
       {!compact && (
         <div className="sb-recovery-card-actions">
           <Btn onClick={() => onStart(item)}><PlayCircle size={14} /> Start recovery</Btn>
-          <Btn variant="soft" onClick={() => onAddToday(item)}>Add to today</Btn>
+          <Btn variant="soft" onClick={() => onAddToday(item)}>
+            {item.inSession ? "Pinned today ✓" : "Add to today"}
+          </Btn>
           <Btn variant="ghost" onClick={() => onComplete(item)}><CheckCircle2 size={14} /> Mark recovered</Btn>
           <Btn variant="ghost" onClick={() => onDismiss(item)}><EyeOff size={14} /> Not now</Btn>
         </div>
@@ -153,10 +155,9 @@ export default function BacklogPage(p) {
   const revisions = p.revisions || [];
 
   // ---------- Layer A → B → C: the recovery queue ----------
-  // Reactive half: driven by mock mistakes / overdue revisions (unchanged).
+  // Reactive half: driven by mock mistakes / overdue revisions.
   const reactiveSignals = useMemo(
     () => buildRecoverySignals({ mocks, mockAnalysisMap, revisions }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [mocks, mockAnalysisMap, revisions]
   );
   // Proactive half: chapters the Syllabus priority engine already flags as
@@ -169,7 +170,6 @@ export default function BacklogPage(p) {
       allChapters: p.allChapters, getChStatus: p.getChStatus, questions: p.questions || [],
       excludeChapterKeys, limit: 5,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reactiveSignals, p.allChapters, p.getChStatus, p.questions]);
   const liveSignals = useMemo(() => [...reactiveSignals, ...syllabusSignals], [reactiveSignals, syllabusSignals]);
   const { merged: queue, toReopen } = useMemo(() => mergeWithPersisted(liveSignals, allItems), [liveSignals, allItems]);
@@ -180,7 +180,7 @@ export default function BacklogPage(p) {
   const reopenedRef = useRef(new Set());
   useEffect(() => {
     toReopen.forEach(({ id, sig }) => {
-      const guardKey = `${id}:${sig.evidenceCount}`;
+      const guardKey = `${id}:${sig.evidenceCount}:${sig.lastEvidenceAt || ""}`;
       if (reopenedRef.current.has(guardKey)) return;
       reopenedRef.current.add(guardKey);
       p.reopenRecoveryRow(id, sig);
@@ -196,14 +196,9 @@ export default function BacklogPage(p) {
   const dismissedQueue = useMemo(() => queue.filter((it) => it.recoveryStatus === "Dismissed" && it.dismissedUntil && it.dismissedUntil > today), [queue, today]);
   const recoveredQueue = useMemo(() => queue.filter((it) => it.recoveryStatus === "Recovered"), [queue]);
 
-  const todayPlan = useMemo(() => {
-    const pinned = activeQueue.filter((it) => it.inSession);
-    const auto = buildTodayPlan(activeQueue).picks;
-    const combined = [...pinned];
-    auto.forEach((it) => { if (!combined.some((c) => c.sourceKey === it.sourceKey)) combined.push(it); });
-    const picks = combined.slice(0, 4);
-    return { picks, totalMin: picks.reduce((s, it) => s + it.effortMin, 0) };
-  }, [activeQueue]);
+  // buildTodayPlan natively handles both pinned (inSession) and auto-picked items
+  // while respecting the daily effort budget.
+  const todayPlan = useMemo(() => buildTodayPlan(activeQueue), [activeQueue]);
 
   const leakage = useMemo(() => computeScoreLeakage(mocks, queue), [mocks, queue]);
   const chapterMap = useMemo(() => buildChapterMap(queue), [queue]);
@@ -260,12 +255,18 @@ export default function BacklogPage(p) {
   const recoveryHealthPct = activeQueue.length === 0
     ? 100
     : Math.round(100 - activeQueue.reduce((sum, it) => sum + it.priorityScore, 0) / activeQueue.length);
+
+  // O(N) lookup map instead of O(N*M) nested .find()
   const recoveredThisWeek = useMemo(() => {
+    const bySourceKey = new Map();
+    for (let i = 0; i < allItems.length; i++) {
+      const b = allItems[i];
+      if (b && b.source_key) bySourceKey.set(b.source_key, b);
+    }
     return recoveredQueue.filter((it) => {
-      const row = allItems.find((b) => b.source_key === it.sourceKey);
+      const row = bySourceKey.get(it.sourceKey);
       return row?.completed_at && daysBetweenDateStrs(today, tsToISTDateStr(row.completed_at)) <= 6;
     }).length;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recoveredQueue, allItems, today]);
 
   return (
@@ -390,7 +391,9 @@ export default function BacklogPage(p) {
                       </div>
                     );
                   })}
-                  <p className="sb-muted small" style={{ marginTop: 2 }}>Actual negative marks from JEE Main mocks (+4/-1 scheme).</p>
+                  <p className="sb-muted small" style={{ marginTop: 2 }}>
+                    Actual negative marks across {leakage.mainsCount || 1} JEE Main mock{(leakage.mainsCount || 1) === 1 ? "" : "s"} (+4/-1 scheme).
+                  </p>
                 </div>
               ) : (
                 <p className="sb-muted small">Log a JEE Main mock to see actual negative marks by subject.</p>
@@ -406,7 +409,7 @@ export default function BacklogPage(p) {
           {/* ---------- Chapter Recovery Map ---------- */}
           {Object.keys(chapterMap).length > 0 && (
             <Card>
-              <SectionTitle icon={Map}>Chapter recovery map</SectionTitle>
+              <SectionTitle icon={MapIcon}>Chapter recovery map</SectionTitle>
               {Object.entries(chapterMap).map(([subject, chapters]) => (
                 <div key={subject} className="sb-chaptermap-subject">
                   <div className="sb-chaptermap-subject-title">{subject}</div>

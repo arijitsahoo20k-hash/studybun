@@ -1,7 +1,10 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { usePrivateChannels } from "../../../hooks/usePrivateChannels";
 import { usePrivateChat } from "../../../hooks/usePrivateChat";
+import { useModalScrollLock } from "../../../hooks/useModalScrollLock";
+import { pauseDecor } from "../../../lib/decorPause";
 import PrivateChannelList from "./PrivateChannelList";
 import PrivateChatWindow from "./PrivateChatWindow";
 import PrivateChannelModal from "./PrivateChannelModal";
@@ -13,22 +16,37 @@ import ConfirmDialog from "./ConfirmDialog";
 function RenameDialog({ open, initialName, onSubmit, onClose }) {
   const [value, setValue] = useState(initialName || "");
   const [submitting, setSubmitting] = useState(false);
+  const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useModalScrollLock(dialogRef, open);
   // BUG FIX: `value` was initialised from useState(initialName) which only
   // runs once. If the channel was already renamed once and the dialog is
   // reopened, the input kept the old name. The useEffect below syncs `value`
   // whenever `open` flips to true or `initialName` changes, covering both
-  // the first-open and re-open cases.
+  // the first-open and re-open cases. (Kept separate from `onClose` so an
+  // inline `onClose` arrow on a parent re-render never resets `value`.)
   React.useEffect(() => { if (open) setValue(initialName || ""); }, [open, initialName]);
-  if (!open) return null;
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") onCloseRef.current?.(); };
+    window.addEventListener("keydown", onKey);
+    const resumeDecor = pauseDecor();
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      resumeDecor();
+    };
+  }, [open]);
+  if (!open || typeof document === "undefined") return null;
   const submit = async () => {
     if (!value.trim() || submitting) return;
     setSubmitting(true);
     await onSubmit(value.trim());
     setSubmitting(false);
   };
-  return (
+  return createPortal(
     <div className="sb-pt-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="sb-pt-dialog sb-pchat-modal" role="dialog" aria-modal="true" aria-label="Rename channel">
+      <div ref={dialogRef} tabIndex={-1} className="sb-pt-dialog sb-pchat-modal" role="dialog" aria-modal="true" aria-label="Rename channel">
         <button className="sb-pt-dialog-close" title="Close" aria-label="Close" onClick={onClose}><X size={15} /></button>
         <h3 className="sb-pchat-confirm-title">Rename channel</h3>
         <input
@@ -47,7 +65,8 @@ function RenameDialog({ open, initialName, onSubmit, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.querySelector(".sb-app") || document.body
   );
 }
 

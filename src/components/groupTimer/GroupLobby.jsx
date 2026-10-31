@@ -1,10 +1,38 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Globe2, Lock, KeyRound, Plus, ChevronRight, Users, RefreshCw, AlertTriangle, CheckCircle2, Timer as TimerIcon,
 } from "lucide-react";
 import { EmptyState } from "../ui";
 import { CreateGroupDialog, JoinCodeDialog } from "./GroupDialogs";
 import { LOBBY_STATIC_SRC } from "../../lib/groupTimer";
+import { roomPresenceTag } from "../../lib/roomGlow";
+
+/* ------------------------------------------------------------------ */
+/* Helper: does this room have someone studying INSIDE it right now?    */
+/* ------------------------------------------------------------------ */
+// Presence publishes, per studying person, an opaque tag of the room they are
+// currently in (see roomPresenceTag). A room is "live" when any of its
+// verified members is studying with THAT room's tag -- so someone
+// studying in room A never lights up room B, and a non-member can't fake a
+// private room (its tag is unguessable). Returns a boolean on purpose: the
+// lobby shows a glow, never a count or a name. If the roster RPC isn't
+// available (SQL not run yet) we fall back to the tag alone rather than
+// showing nothing.
+export function isRoomLive(g, { membersByRoom, membersVerified, studyingRooms }) {
+  if (!g || !(studyingRooms instanceof Map) || studyingRooms.size === 0) return false;
+  const tag = roomPresenceTag(g.id);
+  if (!tag) return false;
+  // Rooms I belong to have a server-verified roster: require a real member.
+  // Rooms I'm only browsing (public list) have no roster for me, so the
+  // room-specific tag is the evidence.
+  const memberSet = membersVerified && membersByRoom instanceof Map ? membersByRoom.get(g.id) : null;
+  if (memberSet && memberSet.size > 0) {
+    for (const uid of memberSet) if (studyingRooms.get(uid) === tag) return true;
+    return false;
+  }
+  for (const t of studyingRooms.values()) if (t === tag) return true;
+  return false;
+}
 
 /* ------------------------------------------------------------------ */
 /* Left pane: the static picture + the one-line instruction on top      */
@@ -24,7 +52,7 @@ function HeroPane() {
 /* ------------------------------------------------------------------ */
 /* Right pane, tab 1: public groups as full-width pills                 */
 /* ------------------------------------------------------------------ */
-function PublicList({ groups, loading, busyId, onJoin }) {
+function PublicList({ groups, loading, busyId, onJoin, isLive }) {
   if (loading && groups.length === 0) {
     return (
       <ul className="sb-gt-list" aria-busy="true">
@@ -37,26 +65,31 @@ function PublicList({ groups, loading, busyId, onJoin }) {
   }
   return (
     <ul className="sb-gt-list">
-      {groups.map((g) => (
-        <li key={g.id}>
-          <button
-            type="button"
-            className="sb-gt-row"
-            onClick={() => onJoin(g)}
-            disabled={busyId === g.id}
-            aria-label={`${g.is_member ? "Open" : "Join"} ${g.name}`}
-          >
-            <span className="sb-gt-row-icon" aria-hidden="true"><Globe2 size={17} /></span>
-            <span className="sb-gt-row-main">
-              <span className="sb-gt-row-name">{g.name}</span>
-              <span className="sb-gt-row-meta"><Users size={12} /> {Number(g.member_count)} {Number(g.member_count) === 1 ? "member" : "members"}</span>
-            </span>
-            <span className={`sb-gt-row-cta ${g.is_member ? "joined" : ""}`}>
-              {busyId === g.id ? "Opening…" : g.is_member ? <><CheckCircle2 size={13} /> Joined</> : <>Join <ChevronRight size={14} /></>}
-            </span>
-          </button>
-        </li>
-      ))}
+      {groups.map((g) => {
+        const live = !!isLive?.(g);
+        return (
+          <li key={g.id}>
+            <button
+              type="button"
+              className={`sb-gt-row ${live ? "sb-gt-row-live" : ""}`}
+              onClick={() => onJoin(g)}
+              disabled={busyId === g.id}
+              aria-label={`${g.is_member ? "Open" : "Join"} ${g.name}`}
+            >
+              <span className={`sb-gt-row-icon ${live ? "live" : ""}`} aria-hidden="true"><Globe2 size={17} /></span>
+              <span className="sb-gt-row-main">
+                <span className="sb-gt-row-name">{g.name}</span>
+                <span className="sb-gt-row-meta">
+                  <Users size={12} /> {Number(g.member_count)} {Number(g.member_count) === 1 ? "member" : "members"}
+                </span>
+              </span>
+              <span className={`sb-gt-row-cta ${g.is_member ? "joined" : ""}`}>
+                {busyId === g.id ? "Opening…" : g.is_member ? <><CheckCircle2 size={13} /> Joined</> : <>Join <ChevronRight size={14} /></>}
+              </span>
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -64,7 +97,7 @@ function PublicList({ groups, loading, busyId, onJoin }) {
 /* ------------------------------------------------------------------ */
 /* Right pane, tab 2: join with a code / make a group / my private ones */
 /* ------------------------------------------------------------------ */
-function PrivatePanel({ myGroups, loading, busyId, onJoinOpen, onCreateOpen, onOpenGroup }) {
+function PrivatePanel({ myGroups, loading, busyId, onJoinOpen, onCreateOpen, onOpenGroup, isLive }) {
   const mine = myGroups.filter((g) => !g.is_public);
   return (
     <div className="sb-gt-private">
@@ -90,18 +123,29 @@ function PrivatePanel({ myGroups, loading, busyId, onJoinOpen, onCreateOpen, onO
         <p className="sb-muted sb-gt-none">You haven't joined any private groups yet.</p>
       ) : (
         <ul className="sb-gt-list">
-          {mine.map((g) => (
-            <li key={g.id}>
-              <button type="button" className="sb-gt-row" onClick={() => onOpenGroup(g)} disabled={busyId === g.id} aria-label={`Open ${g.name}`}>
-                <span className="sb-gt-row-icon priv" aria-hidden="true"><Lock size={16} /></span>
-                <span className="sb-gt-row-main">
-                  <span className="sb-gt-row-name">{g.name}</span>
-                  <span className="sb-gt-row-meta"><Users size={12} /> {Number(g.member_count)} {Number(g.member_count) === 1 ? "member" : "members"}</span>
-                </span>
-                <span className="sb-gt-row-cta">{busyId === g.id ? "Opening…" : <>Open <ChevronRight size={14} /></>}</span>
-              </button>
-            </li>
-          ))}
+          {mine.map((g) => {
+            const live = !!isLive?.(g);
+            return (
+              <li key={g.id}>
+                <button
+                  type="button"
+                  className={`sb-gt-row ${live ? "sb-gt-row-live" : ""}`}
+                  onClick={() => onOpenGroup(g)}
+                  disabled={busyId === g.id}
+                  aria-label={`Open ${g.name}`}
+                >
+                  <span className={`sb-gt-row-icon priv ${live ? "live" : ""}`} aria-hidden="true"><Lock size={16} /></span>
+                  <span className="sb-gt-row-main">
+                    <span className="sb-gt-row-name">{g.name}</span>
+                    <span className="sb-gt-row-meta">
+                      <Users size={12} /> {Number(g.member_count)} {Number(g.member_count) === 1 ? "member" : "members"}
+                    </span>
+                  </span>
+                  <span className="sb-gt-row-cta">{busyId === g.id ? "Opening…" : <>Open <ChevronRight size={14} /></>}</span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -111,11 +155,31 @@ function PrivatePanel({ myGroups, loading, busyId, onJoinOpen, onCreateOpen, onO
 /* ------------------------------------------------------------------ */
 /* The lobby                                                            */
 /* ------------------------------------------------------------------ */
-export default function GroupLobby({ groups, canMakePublic, finishedSessionWaiting, onOpenFocusTimer, onEnter, notice, onDismissNotice }) {
+export default function GroupLobby({
+  groups, studyingRooms, canMakePublic,
+  finishedSessionWaiting, onOpenFocusTimer, onEnter, notice, onDismissNotice,
+}) {
   const [tab, setTab] = useState("public");
   const [dialog, setDialog] = useState(null); // null | "join" | "create"
   const [busyId, setBusyId] = useState(null);
   const [actionError, setActionError] = useState(null);
+
+  // The roster behind the glow check only loads on mount; re-read it now and
+  // then (foreground only) so someone who joins a room while the lobby is open
+  // still lights it up.
+  const refreshGroups = groups.refresh;
+  useEffect(() => {
+    if (!refreshGroups) return undefined;
+    const id = setInterval(() => { if (!document.hidden) refreshGroups(); }, 45000);
+    return () => clearInterval(id);
+  }, [refreshGroups]);
+
+  const isLive = (g) =>
+    isRoomLive(g, {
+      membersByRoom: groups.membersByRoom,
+      membersVerified: groups.membersVerified,
+      studyingRooms,
+    });
 
   const openPublic = async (g) => {
     setBusyId(g.id);
@@ -189,7 +253,13 @@ export default function GroupLobby({ groups, canMakePublic, finishedSessionWaiti
 
           <div className="sb-gt-side-body" role="tabpanel">
             {tab === "public" ? (
-              <PublicList groups={groups.publicGroups} loading={groups.loading} busyId={busyId} onJoin={openPublic} />
+              <PublicList
+                groups={groups.publicGroups}
+                loading={groups.loading}
+                busyId={busyId}
+                onJoin={openPublic}
+                isLive={isLive}
+              />
             ) : (
               <PrivatePanel
                 myGroups={groups.myGroups}
@@ -198,6 +268,7 @@ export default function GroupLobby({ groups, canMakePublic, finishedSessionWaiti
                 onJoinOpen={() => setDialog("join")}
                 onCreateOpen={() => setDialog("create")}
                 onOpenGroup={openMine}
+                isLive={isLive}
               />
             )}
           </div>

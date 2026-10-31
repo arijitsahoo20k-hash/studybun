@@ -98,13 +98,17 @@ export default function GroupTimerStyle() {
       .sb-gt-side { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: hidden; padding: 18px; }
       .sb-gt-side-body {
         flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
-        /* room for the pills' hard drop-shadows so they aren't clipped */
-        padding: 2px 8px 8px 2px; margin-right: -4px;
+        /* An overflow:auto box clips anything that spills past its edge, which is
+           what made the live glow look like a cut-off rectangle. Pad the scroller
+           by more than the glow's reach and cancel it with an equal negative
+           margin (it eats into .sb-gt-side's own 18px padding), so rows keep
+           their exact position but the glow always has room to fade out. */
+        padding: 14px 18px 14px 18px; margin: -14px -18px -14px -18px;
       }
 
       .sb-gt-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
       .sb-gt-row {
-        width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 14px 11px 11px;
+        position: relative; width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 14px 11px 11px;
         border-radius: 999px; border: 2.5px solid var(--mascot-outline); background: var(--bg);
         color: var(--mascot-ink); text-align: left; cursor: pointer; font-family: inherit;
         box-shadow: 3px 3px 0 var(--sticker-shadow, var(--mascot-outline));
@@ -113,6 +117,29 @@ export default function GroupTimerStyle() {
       .sb-gt-row:hover:not(:disabled) { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--sticker-shadow, var(--mascot-outline)); background: var(--soft); }
       .sb-gt-row:active:not(:disabled) { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--sticker-shadow, var(--mascot-outline)); }
       .sb-gt-row:disabled { opacity: .65; cursor: wait; }
+
+      /* ---------- Live room glow (green, pulsing) ----------
+         A room that has someone studying in it wears a green ring + soft halo.
+         It is purely decorative: no count, no names, nothing readable by a
+         screen reader -- from the outside you only see that the room is alive.
+         The halo lives on ::after and only its OPACITY animates, so the pulse
+         runs on the compositor with no per-frame paint. Reach of the halo is
+         kept under the 14px the scroller pads for it (see .sb-gt-side-body). */
+      @keyframes sb-gt-live-pulse {
+        0%, 100% { opacity: .35; }
+        50% { opacity: 1; }
+      }
+      .sb-gt-row.sb-gt-row-live { border-color: #22c55e; }
+      .sb-gt-row.sb-gt-row-live::after,
+      .sb-gt-vis.sb-gt-vis-live::after {
+        content: ""; position: absolute; inset: -2px; border-radius: inherit; pointer-events: none;
+        border: 2px solid rgba(34, 197, 94, .75);
+        box-shadow: 0 0 5px 1px rgba(34, 197, 94, .65), 0 0 10px 1px rgba(34, 197, 94, .40);
+        animation: sb-gt-live-pulse 2.6s ease-in-out infinite;
+      }
+      .sb-gt-row-icon.live { border-color: #22c55e; }
+      .sb-gt-vis.sb-gt-vis-live { position: relative; border-color: #22c55e; }
+
       .sb-gt-row-icon {
         flex: none; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
         background: var(--soft); border: 2px solid var(--mascot-outline); color: var(--mascot-ink);
@@ -122,7 +149,7 @@ export default function GroupTimerStyle() {
         font-family: var(--font-display); font-weight: 800; font-size: 15.5px;
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       }
-      .sb-gt-row-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--muted); }
+      .sb-gt-row-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--muted); flex-wrap: wrap; }
       .sb-gt-row-cta {
         flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px;
         background: var(--mascot-outline); color: var(--bg); font-weight: 800; font-size: 12.5px;
@@ -410,6 +437,7 @@ export default function GroupTimerStyle() {
         border: 2px solid var(--mascot-outline); background: var(--bg); color: var(--mascot-ink);
       }
       .sb-gt-board-row.me { background: var(--soft); }
+      .sb-gt-board-row.pinned { border-style: dashed; }
       .sb-gt-rank {
         flex: none; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
         font-family: var(--font-display); font-weight: 800; font-size: 13px; background: var(--card); border: 2px solid var(--mascot-outline); color: var(--mascot-ink);
@@ -426,6 +454,17 @@ export default function GroupTimerStyle() {
       .sb-gt-board-val b { font-family: var(--font-display); font-size: 15px; }
       .sb-gt-board-val small { font-size: 11px; font-weight: 700; color: var(--muted); }
 
+      /* Collapsible toggle buttons for Week Recap, Leaderboard, and Member Grid */
+      .sb-gt-collapse-btn {
+        align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+        width: 100%; padding: 8px 14px; margin-top: 2px; border-radius: 14px;
+        border: 2px dashed var(--mascot-outline); background: var(--soft); color: var(--mascot-ink);
+        font-family: var(--font-display); font-size: 12.5px; font-weight: 800; cursor: pointer;
+        transition: background-color .15s ease, transform .12s ease;
+      }
+      .sb-gt-collapse-btn:hover { background: var(--bg); transform: translateY(-1px); }
+      .sb-gt-collapse-btn-sm { padding: 6px 12px; font-size: 12px; margin-bottom: 4px; flex: none; }
+
       .sb-gt-recap-range { margin: -6px 0 0; font-size: 12.5px; font-weight: 700; color: var(--muted); }
       .sb-gt-recap-total { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; color: var(--mascot-ink); }
       .sb-gt-recap-total b { font-family: var(--font-display); font-size: 30px; line-height: 1; }
@@ -437,7 +476,8 @@ export default function GroupTimerStyle() {
       .sb-gt-recap-bar .fill { display: block; width: 100%; max-width: 34px; border-radius: 8px 8px 3px 3px; background: var(--accent); border: 1.5px solid var(--mascot-outline); min-height: 0; }
       .sb-gt-recap-bar em { font-style: normal; font-size: 11px; font-weight: 800; color: var(--muted); }
       .sb-gt-recap-top { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-      .sb-gt-recap-top li { display: flex; align-items: center; gap: 10px; color: var(--mascot-ink); font-weight: 700; font-size: 13.5px; }
+      .sb-gt-recap-top li { display: flex; align-items: center; gap: 10px; color: var(--mascot-ink); font-weight: 700; font-size: 13.5px; padding: 4px 8px; border-radius: 12px; }
+      .sb-gt-recap-top li.me { background: var(--soft); border: 1.5px dashed var(--mascot-outline); }
       .sb-gt-recap-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
       .sb-gt-rules-dialog { width: min(520px, 100%); }
@@ -547,7 +587,11 @@ export default function GroupTimerStyle() {
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .sb-gt-status.running .sb-gt-dot, .sb-gt-card.studying .sb-gt-dot, .sb-gt-row-skeleton { animation: none; }
+        .sb-gt-status.running .sb-gt-dot,
+        .sb-gt-card.studying .sb-gt-dot,
+        .sb-gt-row-skeleton,
+        .sb-gt-row.sb-gt-row-live::after,
+        .sb-gt-vis.sb-gt-vis-live::after { animation: none; opacity: .9; }
         .sb-gt-gear:hover { transform: none; }
         .sb-gt-stage-bar > span, .sb-gt-card-bar > span { transition: none; }
       }
@@ -562,6 +606,13 @@ export default function GroupTimerStyle() {
         background: var(--card);
         border: 1px solid var(--border-subtle);
         box-shadow: var(--clay-raised);
+      }
+      [data-dark="true"] .sb-gt-row.sb-gt-row-live,
+      [data-dark="true"] .sb-gt-vis.sb-gt-vis-live { border-color: #4ade80; }
+      [data-dark="true"] .sb-gt-row.sb-gt-row-live::after,
+      [data-dark="true"] .sb-gt-vis.sb-gt-vis-live::after {
+        border-color: rgba(74, 222, 128, .8);
+        box-shadow: 0 0 5px 1px rgba(74, 222, 128, .6), 0 0 10px 1px rgba(74, 222, 128, .38);
       }
       [data-dark="true"] .sb-gt-card-subject {
         background: var(--soft);

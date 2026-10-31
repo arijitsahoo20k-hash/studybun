@@ -356,13 +356,14 @@ export default function GlobalStyle() {
       .sb-decor-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
       .sb-decor {
         position: absolute; display: block; opacity: .5; animation: sb-bob 6s ease-in-out infinite;
-        filter: saturate(1.1); transform: rotate(var(--sb-decor-rot, 0deg));
+        transform: rotate(var(--sb-decor-rot, 0deg));
       }
       /* two loose depth bands so the backdrop reads as layered illustration
-         rather than a flat ring of identical icons: "far" pieces sit larger,
-         softer and slightly blurred; "near" pieces are crisper and a touch
-         bolder, closer to the foreground content. */
-      .sb-decor-far { opacity: .32; filter: saturate(1) blur(.4px); animation-duration: 7.5s; }
+         rather than a flat ring of identical icons: "far" pieces sit larger
+         and softer; "near" pieces are crisper and a touch bolder, closer to
+         the foreground content. (Avoids filter: blur/saturate so all 8
+         drifting motifs run on the compositor with zero per-frame filter pass.) */
+      .sb-decor-far { opacity: .32; animation-duration: 7.5s; }
       .sb-decor-near { opacity: .55; animation-duration: 5.2s; }
       @media (prefers-reduced-motion: reduce) {
         .sb-decor { animation: none; }
@@ -373,7 +374,8 @@ export default function GlobalStyle() {
          freezing 8 elements' worth of transform animation costs nothing
          visually and just stops burning compositor cycles/battery for a
          backdrop nobody can see. */
-      .sb-decor-paused .sb-decor { animation-play-state: paused; }
+      .sb-decor-paused .sb-decor,
+      .sb-app-sidebar-animating .sb-decor { animation-play-state: paused; }
       @keyframes sb-bob {
         0%, 100% { transform: rotate(var(--sb-decor-rot, 0deg)) translateY(0); }
         50% { transform: rotate(var(--sb-decor-rot, 0deg)) translateY(-10px); }
@@ -434,12 +436,12 @@ export default function GlobalStyle() {
          like, but without tying its paint cost to an unrelated animation.
          Dashboard stacks more of these paper cards at once than any other
          page, which is exactly where that cost was showing up. */
-      .sb-paper { position: relative; isolation: isolate; }
+      .sb-paper { position: relative; }
       .sb-paper::before {
         content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-        border-radius: inherit; opacity: .5; mix-blend-mode: multiply;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        background-size: 140px 140px;
+        border-radius: inherit; opacity: .055;
+        background-image: url("/landing/grain.webp");
+        background-size: 160px 160px;
       }
 
       /* washi-tape corner accent */
@@ -492,12 +494,12 @@ export default function GlobalStyle() {
          so the whole app reads like it's printed on stock paper. Static
          data-URI + opacity only, no blend mode on the card itself, no
          per-frame cost. */
-      .sb-app[data-paper="true"] .sb-card { box-shadow: 4px 4px 0 var(--sticker-shadow, var(--mascot-outline)); isolation: isolate; }
+      .sb-app[data-paper="true"] .sb-card { box-shadow: 4px 4px 0 var(--sticker-shadow, var(--mascot-outline)); }
       .sb-app[data-paper="true"] .sb-card::before {
         content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-        border-radius: inherit; opacity: .45; mix-blend-mode: multiply;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        background-size: 140px 140px;
+        border-radius: inherit; opacity: .05;
+        background-image: url("/landing/grain.webp");
+        background-size: 160px 160px;
       }
 
       .sb-app[data-y2k="true"] .sb-brand-title {
@@ -669,7 +671,7 @@ export default function GlobalStyle() {
          writeup. Don't remove contain: layout to fix a dialog instead --
          it's there on purpose (perf boundary for .sb-main's own reflows);
          portal the dialog out instead. */
-      .sb-main { flex: 1 1 auto; min-width: 0; width: calc(100% - 244px); height: 100vh; padding: clamp(20px, 2.6vw, 40px) clamp(20px, 3vw, 44px) 90px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; contain: layout; }
+      .sb-main { flex: 1 1 0%; min-width: 0; height: 100vh; padding: clamp(20px, 2.6vw, 40px) clamp(20px, 3vw, 44px) 90px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; position: relative; z-index: 1; display: flex; justify-content: center; contain: layout; }
       /* Only contains its own bounce (stopping the chain before it reaches
          html/body above) while a dialog is open -- see .sb-scroll-chain-lock
          above. The rest of the time .sb-main is free to chain a pull-down
@@ -2558,7 +2560,7 @@ export default function GlobalStyle() {
          this and keep the real top nav. */
       @media (max-width: 1080px) and (min-width: 721px) {
         .sb-sidebar { flex-basis: 210px; width: 210px; padding-left: 10px; padding-right: 10px; }
-        .sb-main { width: calc(100% - 210px); padding-left: 24px; padding-right: 24px; }
+        .sb-main { padding-left: 24px; padding-right: 24px; }
         .sb-sidebar-brand-sub { display: none; }
         .sb-sidebar-item { font-size: 12px; }
         .sb-sidebar-collapsed { flex-basis: 64px; width: 64px; padding-left: 8px; padding-right: 8px; }

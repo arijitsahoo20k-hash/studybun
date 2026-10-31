@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, Info, Settings, Play, Pause, Save, RefreshCw, Pencil, Minus, Plus, X, Lock,
   CheckCircle2, Sparkles, AlertTriangle, Globe2, Users, WifiOff, BookOpen, Target, SmilePlus, Bell, Send, ThumbsDown,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Btn, SectionTitle, EmptyState } from "../ui";
 import GtDialog from "./GtDialog";
@@ -18,6 +19,7 @@ import { gifById, plateFor, fmtClock, liveElapsed, comparePhase, timeAgo, GT_CHE
 
 const MODE_ORDER = [...Object.keys(DEFAULT_MODE_MINUTES), STOPWATCH_MODE];
 const SUBJECTS = Object.keys(SYLLABUS);
+export const MEMBERS_GRID_COLLAPSE_LIMIT = 8;
 
 const PHASE_LABEL = {
   studying: "Studying",
@@ -154,11 +156,30 @@ function RoomFeed({ feed, userId, profiles, locked, onCheerRoom }) {
 }
 
 function MembersPane({ others, self, userId, myMascot, myName, connected, group, clockOffset, room }) {
+  const [gridExpanded, setGridExpanded] = useState(false);
+  useEffect(() => { setGridExpanded(false); }, [group?.id]);
+
   const anyStudying = self.phase === "studying" || others.some((m) => m.phase === "studying");
   const anyPaused = others.some((m) => m.phase === "paused");
   const now = useNow(anyStudying || anyPaused);
+
+  // Pre-sort by phase + userId so when collapsed we only fetch profiles for
+  // the visible slice (plus feed participants) rather than all 60 members.
+  const maxOthersCollapsed = Math.max(1, MEMBERS_GRID_COLLAPSE_LIMIT - 1); // 1 card is "You"
+  const canCollapseGrid = others.length > maxOthersCollapsed;
+  const phaseOrderedOthers = useMemo(
+    () => [...others].sort((a, b) => comparePhase(a.phase, b.phase) || a.userId.localeCompare(b.userId)),
+    [others]
+  );
+  const visiblePhaseSlice = useMemo(
+    () => (!canCollapseGrid || gridExpanded ? phaseOrderedOthers : phaseOrderedOthers.slice(0, maxOthersCollapsed)),
+    [canCollapseGrid, gridExpanded, phaseOrderedOthers, maxOthersCollapsed]
+  );
   const feedIds = useMemo(() => room.feed.flatMap((f) => [f.from, f.to]).filter(Boolean), [room.feed]);
-  const profiles = useProfileMap(useMemo(() => [...others.map((m) => m.userId), ...feedIds], [others, feedIds]));
+  const profiles = useProfileMap(
+    useMemo(() => [...visiblePhaseSlice.map((m) => m.userId), ...feedIds], [visiblePhaseSlice, feedIds])
+  );
+
   const locked = !!group.focus_lock;
   const [cheerFor, setCheerFor] = useState(null);
 
@@ -182,16 +203,19 @@ function MembersPane({ others, self, userId, myMascot, myName, connected, group,
   }, [cheerFor]);
 
   const serverNow = now + (clockOffset || 0);
-  const entries = useMemo(() => others
+  // `profiles` is a fresh Map snapshot whenever useProfileMap resolves new names,
+  // so idle rooms automatically re-sort by member name once profiles load.
+  const visibleEntries = useMemo(() => visiblePhaseSlice
     .map((m) => ({ ...m, seconds: liveElapsed(m, serverNow) }))
     .sort((a, b) => comparePhase(a.phase, b.phase)
       || (profiles.get(a.userId)?.name || "").localeCompare(profiles.get(b.userId)?.name || "")
       || a.userId.localeCompare(b.userId)),
-  [others, serverNow, profiles]);
+  [visiblePhaseSlice, serverNow, profiles]);
 
-  const studyingCount = entries.filter((e) => e.phase === "studying").length + (self.phase === "studying" ? 1 : 0);
-  const inRoom = entries.length + 1;
-  const alone = entries.length === 0;
+  const studyingCount = others.filter((e) => e.phase === "studying").length + (self.phase === "studying" ? 1 : 0);
+  const inRoom = others.length + 1;
+  const alone = others.length === 0;
+  const hiddenOthersCount = others.length - visibleEntries.length;
 
   return (
     <section className="sb-card sb-gt-members" aria-label="Studying now">
@@ -220,7 +244,7 @@ function MembersPane({ others, self, userId, myMascot, myName, connected, group,
 
       <ul className="sb-gt-card-grid">
         <MemberCard key={userId} isMe locked={locked} profile={{ name: myName, mascot: myMascot }} entry={self} />
-        {entries.map((e) => {
+        {visibleEntries.map((e) => {
           const nudgeable = room.canNudge(e, now);
           const pausedMin = e.phase === "paused" && e.since ? Math.max(0, Math.floor((serverNow - e.since) / 60000)) : 0;
           return (
@@ -241,6 +265,21 @@ function MembersPane({ others, self, userId, myMascot, myName, connected, group,
           );
         })}
       </ul>
+
+      {canCollapseGrid && (
+        <button
+          type="button"
+          className="sb-gt-collapse-btn sb-gt-collapse-btn-sm"
+          aria-expanded={gridExpanded}
+          onClick={() => setGridExpanded((v) => !v)}
+        >
+          {gridExpanded ? (
+            <><ChevronUp size={14} /> Show top {MEMBERS_GRID_COLLAPSE_LIMIT} only</>
+          ) : (
+            <><ChevronDown size={14} /> Show {hiddenOthersCount} more in room</>
+          )}
+        </button>
+      )}
 
       {alone && (
         <div className="sb-gt-alone">
@@ -571,6 +610,9 @@ export default function GroupRoom({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [g.members, g.phase]);
 
+  // Drives the green live glow on the room visibility pill.
+  const roomStudyingCount = (self.phase === "studying" ? 1 : 0) + g.members.filter((m) => m.phase === "studying").length;
+
   // The room's numbers re-read from the server when MY session ends / is discarded.
   const statsToken = `${t.askDone ? 1 : 0}-${t.sessionActive ? 1 : 0}`;
 
@@ -582,7 +624,7 @@ export default function GroupRoom({
         </button>
         <h2 className="sb-gt-room-name" title={group.name}>{group.name}</h2>
         <span className="sb-gt-head-pills">
-          <span className={`sb-gt-vis ${group.is_public ? "pub" : "priv"}`}>
+          <span className={`sb-gt-vis ${group.is_public ? "pub" : "priv"} ${roomStudyingCount > 0 ? "sb-gt-vis-live" : ""}`}>
             {group.is_public ? <Globe2 size={13} /> : <Lock size={13} />} {group.is_public ? "Public" : "Private"}
           </span>
           {group.focus_lock && <span className="sb-gt-vis sb-gt-lock-pill" title="Cheers and nudges are paused"><Lock size={12} /> Focus lock</span>}

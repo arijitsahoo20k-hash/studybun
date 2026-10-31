@@ -1,4 +1,5 @@
-import React, { useState, lazy, Suspense } from "react";
+import React, { useEffect, useRef, useState, lazy, Suspense } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft, Play, Pause, RefreshCw, RotateCcw, Eye, EyeOff, Expand, Shrink, X,
 } from "lucide-react";
@@ -6,6 +7,8 @@ import { Card, Btn } from "../ui";
 import { STEPS } from "./proteinData";
 import PrimaryStructure from "./PrimaryStructure";
 import SecondaryStructure from "./SecondaryStructure";
+import { useModalScrollLock } from "../../hooks/useModalScrollLock";
+import { pauseDecor } from "../../lib/decorPause";
 
 // Three.js only ever loads once one of these two mounts (see useProteinScene.js) —
 // splitting them here too keeps the initial Study Stuffs -> Protein Structure
@@ -34,9 +37,25 @@ export default function ProteinVisualizer({ onBack }) {
   const [exploded, setExploded] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+  const fsDialogRef = useRef(null);
 
   const step = STEPS[stepIndex];
   const is3D = step.id === "tertiary" || step.id === "quaternary";
+  const isFullscreenOpen = Boolean(fullscreen && is3D);
+
+  useModalScrollLock(fsDialogRef, isFullscreenOpen);
+
+  useEffect(() => {
+    if (!isFullscreenOpen) return;
+    fsDialogRef.current?.focus();
+    const onKey = (e) => { if (e.key === "Escape") setFullscreen(false); };
+    window.addEventListener("keydown", onKey);
+    const resumeDecor = pauseDecor();
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      resumeDecor();
+    };
+  }, [isFullscreenOpen]);
 
   const onKeyNav = (e) => {
     if (e.key === "ArrowRight") setStepIndex((i) => Math.min(STEPS.length - 1, i + 1));
@@ -136,7 +155,7 @@ export default function ProteinVisualizer({ onBack }) {
         </div>
       </Card>
 
-      {!(fullscreen && is3D) && <Card className="sb-pv-stage-card">{stage}</Card>}
+      {!isFullscreenOpen && <Card className="sb-pv-stage-card">{stage}</Card>}
 
       <Card className="sb-pv-info-card">
         <div className="sb-pv-info-grid">
@@ -155,15 +174,16 @@ export default function ProteinVisualizer({ onBack }) {
         </div>
       </Card>
 
-      {fullscreen && is3D && (
+      {isFullscreenOpen && typeof document !== "undefined" && createPortal(
         <div className="sb-pt-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setFullscreen(false); }}>
-          <div className="sb-pv-fs-dialog">
+          <div className="sb-pv-fs-dialog" ref={fsDialogRef} role="dialog" aria-modal="true" aria-label="Fullscreen 3D protein view" tabIndex={-1}>
             <button className="sb-pt-dialog-close" onClick={() => setFullscreen(false)} aria-label="Exit fullscreen">
               <X size={18} />
             </button>
             <div className="sb-pv-fs-body">{stage}</div>
           </div>
-        </div>
+        </div>,
+        document.querySelector(".sb-app") || document.body
       )}
     </div>
   );
